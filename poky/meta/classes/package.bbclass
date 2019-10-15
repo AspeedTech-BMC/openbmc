@@ -1580,6 +1580,7 @@ SHLIBSDIRS = "${WORKDIR_PKGDATA}/${MLPREFIX}shlibs2"
 SHLIBSWORKDIR = "${PKGDESTWORK}/${MLPREFIX}shlibs2"
 
 python package_do_shlibs() {
+    import itertools
     import re, pipes
     import subprocess
 
@@ -1646,7 +1647,8 @@ python package_do_shlibs() {
                 prov = (this_soname, ldir, pkgver)
                 if not prov in sonames:
                     # if library is private (only used by package) then do not build shlib for it
-                    if not private_libs or this_soname not in private_libs:
+                    import fnmatch
+                    if not private_libs or len([i for i in private_libs if fnmatch.fnmatch(this_soname, i)]) == 0:
                         sonames.add(prov)
                 if libdir_re.match(os.path.dirname(file)):
                     needs_ldconfig = True
@@ -1829,20 +1831,21 @@ python package_do_shlibs() {
             # /opt/abc/lib/libfoo.so.1 and contains /usr/bin/abc depending on system library libfoo.so.1
             # but skipping it is still better alternative than providing own
             # version and then adding runtime dependency for the same system library
-            if private_libs and n[0] in private_libs:
+            import fnmatch
+            if private_libs and len([i for i in private_libs if fnmatch.fnmatch(n[0], i)]) > 0:
                 bb.debug(2, '%s: Dependency %s covered by PRIVATE_LIBS' % (pkg, n[0]))
                 continue
             if n[0] in shlib_provider.keys():
-                shlib_provider_path = []
-                for k in shlib_provider[n[0]].keys():
-                    shlib_provider_path.append(k)
-                match = None
-                for p in list(n[2]) + shlib_provider_path + libsearchpath:
-                    if p in shlib_provider[n[0]]:
-                        match = p
-                        break
-                if match:
-                    (dep_pkg, ver_needed) = shlib_provider[n[0]][match]
+                shlib_provider_map = shlib_provider[n[0]]
+                matches = set()
+                for p in itertools.chain(list(n[2]), sorted(shlib_provider_map.keys()), libsearchpath):
+                    if p in shlib_provider_map:
+                        matches.add(p)
+                if len(matches) > 1:
+                    matchpkgs = ', '.join([shlib_provider_map[match][0] for match in matches])
+                    bb.error("%s: Multiple shlib providers for %s: %s (used by files: %s)" % (pkg, n[0], matchpkgs, n[1]))
+                elif len(matches) == 1:
+                    (dep_pkg, ver_needed) = shlib_provider_map[matches.pop()]
 
                     bb.debug(2, '%s: Dependency %s requires package %s (used by files: %s)' % (pkg, n[0], dep_pkg, n[1]))
 

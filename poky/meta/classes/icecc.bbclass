@@ -73,10 +73,16 @@ ICECC_ENV_DEBUG ??= ""
 #
 # libgcc-initial - fails with CPP sanity check error if host sysroot contains
 #                  cross gcc built for another target tune/variant
+# pixman - prng_state: TLS reference mismatches non-TLS reference, possibly due to
+#          pragma omp threadprivate(prng_state)
+# systemtap - _HelperSDT.c undefs macros and uses the identifiers in macros emitting
+#             inline assembly
 # target-sdk-provides-dummy - ${HOST_PREFIX} is empty which triggers the "NULL
 #                             prefix" error.
 ICECC_SYSTEM_PACKAGE_BL += "\
     libgcc-initial \
+    pixman \
+    systemtap \
     target-sdk-provides-dummy \
     "
 
@@ -130,6 +136,10 @@ def use_icecc(bb,d):
         return "no"
 
     if icecc_is_cross_canadian(bb, d):
+        return "no"
+
+    if d.getVar('INHIBIT_DEFAULT_DEPS', False):
+        # We don't have a compiler, so no icecc
         return "no"
 
     pn = d.getVar('PN')

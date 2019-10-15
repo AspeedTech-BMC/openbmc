@@ -6,9 +6,7 @@ PROVIDES += "virtual/kernel"
 
 KCONFIG_MODE="--alldefconfig"
 
-#disable pull from openbmc linux
-#KSRC ?= "git://github.com/openbmc/linux;protocol=git;branch=${KBRANCH}"
-KSRC ?= "git://github.com/AspeedTech-BMC/linux;protocol=git;branch=${KBRANCH}"
+KSRC ?= "git://github.com/openbmc/linux;protocol=git;branch=${KBRANCH}"
 SRC_URI = "${KSRC}"
 SRC_URI += " file://defconfig"
 
