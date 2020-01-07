@@ -2,7 +2,7 @@ DESCRIPTION = "netkit-rusers includes rusers - Displays who is logged in to mach
     rusersd - Logged in users server"
 HOMEPAGE = "ftp://ftp.uk.linux.org/pub/linux/Networking/netkit"
 SECTION = "net"
-LICENSE = "BSD"
+LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://rusers/rusers.c;beginline=2;endline=3;md5=f4fc634a4ce8c569911196b72b10770e"
 DEPENDS = " tcp-wrappers libtirpc rpcbind rpcsvc-proto rpcsvc-proto-native"
 
@@ -69,3 +69,4 @@ RDEPENDS_${PN}-server += "tcp-wrappers xinetd rpcbind"
 
 # http://errors.yoctoproject.org/Errors/Details/186962/
 COMPATIBLE_HOST_libc-musl = 'null'
+PNBLACKLIST[netkit-rusers] = "Fails to build rup.c:51:10: fatal error: rstat.h: No such file or directory"

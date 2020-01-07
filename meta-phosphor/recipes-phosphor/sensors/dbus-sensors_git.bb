@@ -2,7 +2,7 @@ SUMMARY = "dbus-sensors"
 DESCRIPTION = "Dbus Sensor Services Configured from D-Bus"
 
 SRC_URI = "git://github.com/openbmc/dbus-sensors.git"
-SRCREV = "43d32fefe4831d22fc06e7a08daa0f66c48c7155"
+SRCREV = "b9122030ef274cdc503bcde71d93fe5eaec20a2a"
 
 PV = "0.1+git${SRCPV}"
 
@@ -24,8 +24,4 @@ inherit cmake systemd
 
 S = "${WORKDIR}/git/"
 
-# linux-libc-headers guides this way to include custom uapi headers
-CXXFLAGS_append = " -I ${STAGING_KERNEL_DIR}/include/uapi"
-CXXFLAGS_append = " -I ${STAGING_KERNEL_DIR}/include"
-do_configure[depends] += "virtual/kernel:do_shared_workdir"
 EXTRA_OECMAKE = "-DYOCTO=1"

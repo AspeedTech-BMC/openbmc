@@ -632,8 +632,10 @@ class Wic2(WicTestCase):
         # 1:0.00MiB:200MiB:200MiB:ext4::;\n
         partlns = res.output.splitlines()[2:]
 
-        self.assertEqual(1, len(partlns))
-        self.assertEqual("1:0.00MiB:200MiB:200MiB:ext4::;", partlns[0])
+        self.assertEqual(1, len(partlns),
+                         msg="Partition list '%s'" % res.output)
+        self.assertEqual("1:0.00MiB:200MiB:200MiB:ext4::;", partlns[0],
+                         msg="Partition list '%s'" % res.output)
 
     def test_fixed_size_error(self):
         """
@@ -1023,3 +1025,10 @@ class Wic2(WicTestCase):
         # check if it's removed
         result = runCmd("wic ls %s:2/etc/ -n %s" % (images[0], sysroot))
         self.assertTrue('fstab' not in [line.split()[-1] for line in result.output.split('\n') if line])
+
+        # remove non-empty directory
+        runCmd("wic rm -r %s:2/etc/ -n %s" % (images[0], sysroot))
+
+        # check if it's removed
+        result = runCmd("wic ls %s:2/ -n %s" % (images[0], sysroot))
+        self.assertTrue('etc' not in [line.split()[-1] for line in result.output.split('\n') if line])

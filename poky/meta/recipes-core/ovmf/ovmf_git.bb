@@ -2,7 +2,7 @@ SUMMARY = "OVMF - UEFI firmware for Qemu and KVM"
 DESCRIPTION = "OVMF is an EDK II based project to enable UEFI support for \
 Virtual Machines. OVMF contains sample UEFI firmware for QEMU and KVM"
 HOMEPAGE = "https://github.com/tianocore/tianocore.github.io/wiki/OVMF"
-LICENSE = "BSD"
+LICENSE = "BSD-2-Clause"
 LICENSE_class-target = "${@bb.utils.contains('PACKAGECONFIG', 'secureboot', 'BSD & OpenSSL', 'BSD', d)}"
 LIC_FILES_CHKSUM = "file://OvmfPkg/License.txt;md5=06357ddc23f46577c2aeaeaf7b776d65"
 
@@ -29,10 +29,7 @@ PARALLEL_MAKE = ""
 
 S = "${WORKDIR}/git"
 
-DEPENDS_class-native="util-linux-native iasl-native"
-DEPENDS_class-target="ovmf-native bc-native"
-
-DEPENDS_append = " nasm-native"
+DEPENDS = "nasm-native acpica-native ovmf-native util-linux-native"
 
 EDK_TOOLS_DIR="edk2_basetools"
 

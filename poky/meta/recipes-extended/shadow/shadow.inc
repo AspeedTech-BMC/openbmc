@@ -1,6 +1,6 @@
 SUMMARY = "Tools to change and administer password and group data"
-HOMEPAGE = "http://pkg-shadow.alioth.debian.org"
-BUGTRACKER = "https://alioth.debian.org/tracker/?group_id=30580"
+HOMEPAGE = "http://github.com/shadow-maint/shadow"
+BUGTRACKER = "http://github.com/shadow-maint/shadow/issues"
 SECTION = "base/utils"
 LICENSE = "BSD | Artistic-1.0"
 LIC_FILES_CHKSUM = "file://COPYING;md5=ed80ff1c2b40843cf5768e5229cf16e5 \
@@ -14,12 +14,12 @@ SRC_URI = "https://github.com/shadow-maint/shadow/releases/download/${PV}/${BP}.
            file://0001-Make-the-sp_lstchg-shadow-field-reproducible-re.-71.patch  \
            file://0001-configure.ac-fix-configure-error-with-dash.patch \
            ${@bb.utils.contains('PACKAGECONFIG', 'pam', '${PAM_SRC_URI}', '', d)} \
+           file://shadow-relaxed-usernames.patch \
            "
 
 SRC_URI_append_class-target = " \
            file://login_defs_pam.sed \
            file://shadow-update-pam-conf.patch \
-           file://shadow-relaxed-usernames.patch \
            "
 
 SRC_URI_append_class-native = " \
@@ -59,7 +59,7 @@ NSCDOPT = ""
 NSCDOPT_class-native = "--without-nscd"
 NSCDOPT_class-nativesdk = "--without-nscd"
 NSCDOPT_libc-glibc = "--with-nscd"
-          
+
 PAM_PLUGINS = "libpam-runtime \
                pam-plugin-faildelay \
                pam-plugin-securetty \
@@ -136,7 +136,7 @@ do_install_append() {
 		sed -i -f ${WORKDIR}/login_defs_pam.sed ${D}${sysconfdir}/login.defs
 	fi
 
-	install -d ${D}${sbindir} ${D}${base_sbindir} ${D}${base_bindir} 
+	install -d ${D}${sbindir} ${D}${base_sbindir} ${D}${base_bindir}
 
 	# Move binaries to the locations we want
 	rm ${D}${sbindir}/vigr

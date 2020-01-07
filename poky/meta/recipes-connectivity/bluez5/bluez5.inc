@@ -57,12 +57,14 @@ SRC_URI = "\
     file://0001-Makefile.am-Fix-a-race-issue-for-tools.patch \
     file://CVE-2018-10910.patch \
     file://gcc9-fixes.patch \
+    file://0001-tools-Fix-build-after-y2038-changes-in-glibc.patch \
+    file://0001-tools-btpclient.c-include-signal.h.patch \
 "
 S = "${WORKDIR}/bluez-${PV}"
 
 CVE_PRODUCT = "bluez"
 
-inherit autotools pkgconfig systemd update-rc.d distro_features_check ptest gobject-introspection-data
+inherit autotools pkgconfig systemd update-rc.d features_check ptest gobject-introspection-data
 
 EXTRA_OECONF = "\
   --enable-test \
@@ -154,3 +156,5 @@ do_install_ptest() {
 	cp -r ${B}/unit/ ${D}${PTEST_PATH}
 	rm -f ${D}${PTEST_PATH}/unit/*.o
 }
+
+RDEPENDS_${PN}-ptest_append_libc-glibc = " glibc-gconv-utf-16"

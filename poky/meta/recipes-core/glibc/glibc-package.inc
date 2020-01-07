@@ -1,6 +1,6 @@
 INHIBIT_SYSROOT_STRIP = "1"
 
-PACKAGES = "${PN}-dbg catchsegv sln nscd ldd tzcode glibc-thread-db ${PN}-pic libcidn libmemusage libnss-db libsegfault ${PN}-pcprofile libsotruss ${PN} ${PN}-utils glibc-extra-nss ${PN}-dev ${PN}-staticdev ${PN}-doc"
+PACKAGES = "${PN}-dbg catchsegv sln nscd ldd tzcode glibc-thread-db ${PN}-pic libcidn libmemusage libnss-db libsegfault ${PN}-pcprofile libsotruss ${PN} ${PN}-utils glibc-extra-nss ${PN}-dev ${PN}-staticdev ${PN}-doc ldconfig"
 
 # The ld.so in this glibc supports the GNU_HASH
 RPROVIDES_${PN} = "eglibc rtld(GNU_HASH)"
@@ -23,7 +23,9 @@ ARCH_DYNAMIC_LOADER_aarch64 = "ld-linux-${TARGET_ARCH}.so.1"
 libc_baselibs_append = " ${@oe.utils.conditional('ARCH_DYNAMIC_LOADER', '', '', '${root_prefix}/lib/${ARCH_DYNAMIC_LOADER}', d)}"
 INSANE_SKIP_${PN}_append_aarch64 = " libdir"
 
-FILES_${PN} = "${libc_baselibs} ${libexecdir}/* ${base_sbindir}/ldconfig ${sysconfdir}/ld.so.conf"
+FILES_${PN} = "${libc_baselibs} ${libexecdir}/*"
+RRECOMMENDS_${PN} = "${@bb.utils.filter('DISTRO_FEATURES', 'ldconfig', d)}"
+FILES_ldconfig = "${base_sbindir}/ldconfig ${sysconfdir}/ld.so.conf"
 FILES_ldd = "${bindir}/ldd"
 FILES_libsegfault = "${base_libdir}/libSegFault*"
 FILES_libcidn = "${base_libdir}/libcidn-*.so ${base_libdir}/libcidn.so.*"
@@ -83,21 +85,6 @@ do_install_append () {
 		rm -f ${D}${infodir}/dir
 	fi
 
-	if ! ${@bb.utils.contains('DISTRO_FEATURES', 'ldconfig', 'true', 'false', d)}; then
-		# The distro doesn't want these files so let's not install them
-		rm -f ${D}${sysconfdir}/ld.so.conf
-		rm -f ${D}${base_sbindir}/ldconfig
-		# This directory will be empty now so remove it too.
-		# But check whether it exists first, since it won't for glibc-initial.
-		if [ -d ${D}${sysconfdir} ]; then
-			rmdir ${D}${sysconfdir}
-		fi
-	fi
-
-	if echo ${PN}|grep -q "glibc-initial"; then
-		return
-	fi
-
 	install -d ${D}${sysconfdir}/init.d
 	install -d ${D}${localstatedir}/db/nscd
 	install -m 0755 ${S}/nscd/nscd.init ${D}${sysconfdir}/init.d/nscd
@@ -109,6 +96,19 @@ do_install_append () {
 	install -d ${D}${systemd_unitdir}/system
 	install -m 0644 ${S}/nscd/nscd.service ${D}${systemd_unitdir}/system/
 
+	# The dynamic loader will have been installed into
+	# ${base_libdir}. However, if that isn't going to end up being
+	# available in the ABI-mandated location, then a symlink must
+	# be created.
+
+	if [ -n "${ARCH_DYNAMIC_LOADER}" -a ! -e "${D}${root_prefix}/lib/${ARCH_DYNAMIC_LOADER}" ]; then
+		install -d ${D}${root_prefix}/lib
+		ln -s ${@oe.path.relative('${root_prefix}/lib', '${base_libdir}')}/${ARCH_DYNAMIC_LOADER} \
+				${D}${root_prefix}/lib/${ARCH_DYNAMIC_LOADER}
+	fi
+}
+
+do_install_append_class-target() {
 	if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
 		install -d ${D}${sysconfdir}/tmpfiles.d
 		echo "d /run/nscd 755 root root -" \
@@ -121,18 +121,7 @@ do_install_append () {
 			> ${D}${sysconfdir}/default/volatiles/98_nscd
 	fi
 
-	# The dynamic loader will have been installed into
-	# ${base_libdir}. However, if that isn't going to end up being
-	# available in the ABI-mandated location, then a symlink must
-        # be created.
-
-	if [ -n "${ARCH_DYNAMIC_LOADER}" -a ! -e "${D}${root_prefix}/lib/${ARCH_DYNAMIC_LOADER}" ]; then
-		install -d ${D}${root_prefix}/lib
-		ln -s ${@oe.path.relative('${root_prefix}/lib', '${base_libdir}')}/${ARCH_DYNAMIC_LOADER} \
-				${D}${root_prefix}/lib/${ARCH_DYNAMIC_LOADER}
-	fi
 }
-
 do_install_append_aarch64 () {
 	do_install_armmultilib
 }

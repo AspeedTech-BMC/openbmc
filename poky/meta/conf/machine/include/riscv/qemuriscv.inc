@@ -11,7 +11,9 @@ KEEPUIMAGE = "no"
 
 SERIAL_CONSOLES ?= "115200;ttyS0 115200;hvc0"
 
-IMAGE_FSTYPES_append = " ext4"
+IMAGE_FSTYPES += "ext4 wic.qcow2"
+
+WKS_FILE ?= "qemuriscv.wks"
 
 MACHINE_EXTRA_RRECOMMENDS += " kernel-modules"
 
@@ -24,7 +26,6 @@ UBOOT_ENTRYPOINT_riscv64 = "0x80200000"
 
 # qemuboot options
 QB_KERNEL_CMDLINE_APPEND = "earlycon=sbi"
-QB_MEM = "-m 512"
 QB_MACHINE = "-machine virt"
 QB_DEFAULT_BIOS = "fw_jump.elf"
 QB_TAP_OPT = "-netdev tap,id=net0,ifname=@TAP@,script=no,downscript=no"
@@ -35,16 +36,3 @@ QB_TCPSERIAL_OPT = " -device virtio-serial-device -chardev socket,id=virtcon,por
 # Add the 'virtio-rng-pci' device otherwise the guest may run out of entropy
 QB_OPT_APPEND = " -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-device,rng=rng0"
 
-BAD_RECOMMENDATIONS += "\
-    libcxx-dev \
-    libcxx-staticdev \
-    compiler-rt-dev \
-    compiler-rt-staticdev \
-"
-
-ASSUME_PROVIDED += "\
-    libcxx-dev \
-    libcxx-staticdev \
-    compiler-rt-dev \
-    compiler-rt-staticdev \
-"

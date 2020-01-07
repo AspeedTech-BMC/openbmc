@@ -29,6 +29,21 @@ EXTRA_OECONF = "--disable-ldap \
 		--with-readline=${STAGING_LIBDIR}/.. \
 		--enable-gpg-is-gpg2 \
                "
+
+# A minimal package containing just enough to run gpg+gpgagent (E.g. use gpgme in opkg)
+PACKAGES =+ "${PN}-gpg"
+FILES_${PN}-gpg = " \
+	${bindir}/gpg \
+	${bindir}/gpg2 \
+	${bindir}/gpg-agent \
+"
+
+# Normal package (gnupg) should depend on minimal package (gnupg-gpg)
+# to ensure all tools are included. This is done only in non-native
+# builds. Native builds don't have sub-packages, so appending RDEPENDS
+# in this case breaks recipe parsing.
+RDEPENDS_${PN} += "${@ "" if ("native" in d.getVar("PN")) else (d.getVar("PN") + "-gpg")}"
+
 RRECOMMENDS_${PN} = "pinentry"
 
 do_configure_prepend () {
@@ -46,10 +61,13 @@ do_install_append() {
 
 do_install_append_class-native() {
 	create_wrapper ${D}${bindir}/gpg2 GNUPG_BINDIR=${STAGING_BINDIR_NATIVE}
+	create_wrapper ${D}${bindir}/gpgconf GNUPG_BINDIR=${STAGING_BINDIR_NATIVE}
+	create_wrapper ${D}${bindir}/gpg-agent GNUPG_BINDIR=${STAGING_BINDIR_NATIVE}
+	create_wrapper ${D}${bindir}/gpg-connect-agent GNUPG_BINDIR=${STAGING_BINDIR_NATIVE}
 }
 
 PACKAGECONFIG ??= "gnutls"
 PACKAGECONFIG[gnutls] = "--enable-gnutls, --disable-gnutls, gnutls"
 PACKAGECONFIG[sqlite3] = "--enable-sqlite, --disable-sqlite, sqlite3"
 
-BBCLASSEXTEND = "native"
+BBCLASSEXTEND = "native nativesdk"

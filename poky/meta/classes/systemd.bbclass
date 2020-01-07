@@ -32,11 +32,7 @@ if type systemctl >/dev/null 2>/dev/null; then
 
 	if [ "${SYSTEMD_AUTO_ENABLE}" = "enable" ]; then
 		for service in ${SYSTEMD_SERVICE_ESCAPED}; do
-			case "${service}" in
-			*@*)
-				systemctl ${OPTS} enable "${service}"
-				;;
-			esac
+			systemctl ${OPTS} enable "$service"
 		done
 	fi
 
@@ -231,5 +227,6 @@ python rm_sysvinit_initddir (){
 
 do_install[postfuncs] += "${RMINITDIR} "
 RMINITDIR_class-target = " rm_sysvinit_initddir rm_systemd_unitdir "
+RMINITDIR_class-nativesdk = " rm_sysvinit_initddir rm_systemd_unitdir "
 RMINITDIR = ""
 

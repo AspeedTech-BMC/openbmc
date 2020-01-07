@@ -1,4 +1,6 @@
 SUMMARY = "OpenGL driver testing framework"
+DESCRIPTION = "Piglit is an open-source test suite for OpenGL and OpenCL \
+implementations."
 LICENSE = "MIT & LGPLv2+ & GPLv3 & GPLv2+ & BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://COPYING;md5=b2beded7103a3d8a442a2a0391d607b0"
 
@@ -8,7 +10,7 @@ SRC_URI = "git://gitlab.freedesktop.org/mesa/piglit.git;protocol=https \
            "
 UPSTREAM_CHECK_COMMITS = "1"
 
-SRCREV = "f0e868ac6fbdc295b2955c1b8f73169e7a52f938"
+SRCREV = "0d1a47a4c10d4dd7225bd6510f8191684b31235e"
 # (when PV goes above 1.0 remove the trailing r)
 PV = "1.0+gitr${SRCPV}"
 
@@ -19,7 +21,7 @@ X11_RDEPS = "${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'mesa-demos', '', d)
 
 DEPENDS = "libpng waffle libxkbcommon virtual/libgl python3-mako-native python3-numpy-native python3-six-native virtual/egl"
 
-inherit cmake pkgconfig python3native distro_features_check bash-completion
+inherit cmake pkgconfig python3native features_check bash-completion
 
 # depends on virtual/libgl
 REQUIRED_DISTRO_FEATURES += "opengl"

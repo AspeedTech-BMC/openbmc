@@ -8,7 +8,7 @@ HOMEPAGE = "http://software.es.net/iperf/"
 SECTION = "console/network"
 BUGTRACKER = "https://github.com/esnet/iperf/issues"
 AUTHOR = "ESNET <info@es.net>, Lawrence Berkeley National Laboratory <websupport@lbl.gov>"
-LICENSE = "BSD"
+LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=f9088fe7ffdccd042f7645f1012d7f70"
 
 DEPENDS = "openssl"
@@ -28,5 +28,3 @@ PACKAGECONFIG[lksctp] = "ac_cv_header_netinet_sctp_h=yes,ac_cv_header_netinet_sc
 CFLAGS += "-D_GNU_SOURCE"
 
 EXTRA_OECONF = "--with-openssl=${RECIPE_SYSROOT}${prefix}"
-
-BBCLASSEXTEND = "native"
