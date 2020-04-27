@@ -24,7 +24,13 @@ DEFAULTTUNE_aspeed-g6 ?= "armv7ahf-vfpv4d16"
 
 UBOOT_ENTRYPOINT_aspeed-g4 ?= "0x40001000"
 UBOOT_ENTRYPOINT_aspeed-g5 ?= "0x80001000"
-UBOOT_ENTRYPOINT_aspeed-g6 ?= "0x80001000"
+#openbmc 
+#UBOOT_ENTRYPOINT_aspeed-g6 ?= "0x80001000"
+#aspeed github
+UBOOT_ENTRYPOINT_aspeed-g6 ?= "0x80008000"
 UBOOT_LOADADDRESS_aspeed-g4 ?= "0x40001000"
 UBOOT_LOADADDRESS_aspeed-g5 ?= "0x80001000"
-UBOOT_LOADADDRESS_aspeed-g6 ?= "0x80001000"
+#openbmc
+#UBOOT_LOADADDRESS_aspeed-g6 ?= "0x80001000"
+#aspeed github
+UBOOT_LOADADDRESS_aspeed-g6 ?= "0x80008000"

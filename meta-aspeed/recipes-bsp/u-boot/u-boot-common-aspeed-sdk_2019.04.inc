@@ -8,9 +8,15 @@ PE = "1"
 
 # We use the revision in order to avoid having to fetch it from the
 # repo during parse
-SRCREV = "0991f0b8ae2eaad7d06977d2fabbb599f0d28a97"
+#openbmc github
+#SRC_URI = "git://git@github.com/openbmc/u-boot.git;nobranch=1;protocol=https"
+#SRCREV = "0991f0b8ae2eaad7d06977d2fabbb599f0d28a97"
 
-SRC_URI = "git://git@github.com/openbmc/u-boot.git;nobranch=1;protocol=https"
+#aspeed github
+UBRANCH = "aspeed-master-v2019.04"
+SRCREV = "a03e6989cead9465d4bb3bc5f2d96ffa4920f653"
+SRC_URI = "git://github.com/AspeedTech-BMC/u-boot;branch=${UBRANCH};protocol=https"
+
 
 S = "${WORKDIR}/git"
 
