@@ -11,7 +11,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/op-host-control:"
 PROVIDES += 'virtual/obmc-host-ctl'
 RPROVIDES_${PN} += 'virtual-obmc-host-ctl'
 
-RDEPENDS_${PN} += "p9-vcs-workaround op-proc-control"
+RDEPENDS_${PN} += "op-proc-control \
+                   op-proc-control-systemd-links"
 
 S = "${WORKDIR}"
 
