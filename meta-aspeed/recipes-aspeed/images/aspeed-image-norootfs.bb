@@ -5,6 +5,9 @@ LICENSE = "MIT"
 inherit deploy
 
 UBOOT_SUFFIX ?= "bin"
+#aspeed spl
+ASPEED_IMAGE_UBOOT_OFFSET_KB ?= "64"
+
 ASPEED_IMAGE_KERNEL_OFFSET_KB ?= "1024"
 ASPEED_IMAGE_SIZE_KB ?= "32768"
 ASPEED_IMAGE_KERNEL_IMAGE ?= "fitImage-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE}"
@@ -13,8 +16,15 @@ ASPEED_IMAGE_NAME ?= "aspeed-norootfs-${MACHINE}.bin"
 do_compile() {
     dd if=/dev/zero bs=1k count=${ASPEED_IMAGE_SIZE_KB} | \
         tr '\000' '\377' > ${B}/aspeed-norootfs.bin
-    dd if=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX} of=${B}/aspeed-norootfs.bin \
+    #openbmc
+    #dd if=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX} of=${B}/aspeed-norootfs.bin \
+    #    conv=notrunc
+    #aspeed
+    dd if=${DEPLOY_DIR_IMAGE}/u-boot-spl.${UBOOT_SUFFIX} of=${B}/aspeed-norootfs.bin \
         conv=notrunc
+    dd if=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX} of=${B}/aspeed-norootfs.bin \
+        conv=notrunc \
+	seek=${ASPEED_IMAGE_UBOOT_OFFSET_KB} bs=1k
     dd if=${DEPLOY_DIR_IMAGE}/${ASPEED_IMAGE_KERNEL_IMAGE} \
         of=${B}/aspeed-norootfs.bin conv=notrunc \
         seek=${ASPEED_IMAGE_KERNEL_OFFSET_KB} bs=1k
