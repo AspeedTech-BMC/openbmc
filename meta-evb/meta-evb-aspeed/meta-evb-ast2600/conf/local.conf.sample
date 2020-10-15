@@ -19,4 +19,4 @@ INHERIT += "extrausers"
 EXTRA_USERS_PARAMS = " \
   usermod -p '\$1\$UGMqyqdG\$FZiylVFmRRfl9Z0Ue8G7e/' root; \
   "
-IMAGE_INSTALL_append = " lighttpd"
+IMAGE_INSTALL_append = " lighttpd bmcweb obmc-console ipmitool"
