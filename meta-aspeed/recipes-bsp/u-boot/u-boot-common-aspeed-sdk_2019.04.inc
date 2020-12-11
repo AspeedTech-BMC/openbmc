@@ -14,7 +14,7 @@ PE = "1"
 
 #aspeed github
 UBRANCH = "aspeed-master-v2019.04"
-SRCREV = "e95e10afc085dd5de549468e4a161105782e1272"
+SRCREV = "6d6e9c942ccb635b4520ecb6ab11e89386ebc674"
 SRC_URI = "git://github.com/AspeedTech-BMC/u-boot;branch=${UBRANCH};protocol=https"
 
 
