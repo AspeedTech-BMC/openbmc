@@ -79,6 +79,16 @@
 			"pfm": 1,
 			"hash": 0,
 			"compress": 0
+		},
+		{
+			"name": "afm-rcv",
+			"index": 8,
+			"offset": "0xd300000",
+			"size": "0x20000",
+			"prot_mask": 0,
+			"pfm": 1,
+			"hash": 0,
+			"compress": 0
 		}
 	],
 	"i2c-rules": [{
