@@ -17,6 +17,9 @@ PV = "${LINUX_VERSION}+git"
 inherit kernel
 require recipes-kernel/linux/linux-yocto.inc
 
+ERROR_QA:remove = "buildpaths"
+WARN_QA:append = "buildpaths"
+
 LIC_FILES_CHKSUM ?= "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 # Do not install the kernel image into rootfs at /boot directory
