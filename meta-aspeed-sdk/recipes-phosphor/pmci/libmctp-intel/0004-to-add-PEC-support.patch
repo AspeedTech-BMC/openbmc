@@ -3,6 +3,8 @@ From: Kane-Chen-AS <kane_chen@aspeedtech.com>
 Date: Mon, 2 Sep 2024 15:40:01 +0800
 Subject: [PATCH] to add PEC support
 
+Upstream-Status: Pending
+
 Some hardware or driver doesn't support the PEC validation so
 we need to handle the PEC in application level.
 

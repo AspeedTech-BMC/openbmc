@@ -3,6 +3,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ad
 
 inherit pkgconfig meson
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 SRC_URI = " file://include/provision.h;subdir=${S} \
             file://include/checkpoint.h;subdir=${S} \
             file://include/i2c_utils.h;subdir=${S} \

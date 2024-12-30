@@ -3,6 +3,7 @@ From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Mon, 16 Jan 2023 14:03:36 +0800
 Subject: [PATCH] Enabling MCTP over Kernel Socket
 
+Upstream-Status: Pending
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 
 ---

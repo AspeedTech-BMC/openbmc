@@ -3,6 +3,7 @@ From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 14:14:41 +0800
 Subject: [PATCH] bmcweb: fixes virtual media buffer overflow
 
+Upstream-Status: Pending
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---
  include/vm_websocket.hpp | 10 +++++++++-

@@ -11,6 +11,7 @@ Use '-m' to assign jpeg format
 
 Both 0/2 can be used with TightVNC like vnc-clients.
 
+Upstream-Status: Pending
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---

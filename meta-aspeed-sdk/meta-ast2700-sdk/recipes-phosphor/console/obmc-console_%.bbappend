@@ -26,5 +26,5 @@ do_install:append() {
     # Remove OpenBMC obmc-console default rules
     rm -rf ${D}${nonarch_base_libdir}/udev/rules.d/80-obmc-console-uart.rules
     # Install the console client configurations
-    install -m 0644 ${WORKDIR}/client.*.conf ${D}${sysconfdir}/${BPN}/
+    install -m 0644 ${UNPACKDIR}/client.*.conf ${D}${sysconfdir}/${BPN}/
 }

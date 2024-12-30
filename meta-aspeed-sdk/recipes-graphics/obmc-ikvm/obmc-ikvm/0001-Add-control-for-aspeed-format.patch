@@ -10,6 +10,7 @@ aspeed jpeg is aspeed propietary format which only compress data
 which is different with previous video frame to reduce compression
 output.
 
+Upstream-Status: Pending
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---

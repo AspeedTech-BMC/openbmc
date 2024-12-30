@@ -3,6 +3,7 @@ From: Kane-Chen-AS <kane_chen@aspeedtech.com>
 Date: Wed, 14 Aug 2024 15:20:59 +0800
 Subject: [PATCH] to add PEC support
 
+Upstream-Status: Pending
 Some hardware or driver don't support PEC. Now, the libmctp-intel will
 handle the PEC if the hardware or driver don't support PEC. To configure
 libmctp-intel from spdm-emu side for further operation.

@@ -24,10 +24,11 @@ IMAGE_INSTALL:append = " \
 # uninstall packagegroup-oss-extra by default.
 # IMAGE_INSTALL:append = " packagegroup-oss-extra "
 
-# remove from AST25xx series rofs as the free space of AST25xx rofs is not enough.
+# removefrom AST25xx series rofs as the free space of AST25xx rofs is not enough.
 IMAGE_INSTALL:remove:aspeed-g5 = " \
         packagegroup-aspeed-ktools \
         packagegroup-oss-extra \
+        entity-manager \
         "
 
 # packagegroup for ast2600

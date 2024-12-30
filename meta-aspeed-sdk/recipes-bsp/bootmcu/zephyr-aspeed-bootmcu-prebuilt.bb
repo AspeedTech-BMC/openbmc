@@ -11,6 +11,8 @@ DEPENDS += "fmc-imgtool-native"
 
 BOOTMCU_FIRMWARE ?= "ast2700-zephyr.bin"
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 SRC_URI = "file://${BOOTMCU_FIRMWARE};subdir=${S}"
 
 inherit python3native deploy

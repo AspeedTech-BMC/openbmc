@@ -7,6 +7,8 @@ This ia a workaround solution.
 AST2700 A0 doesn't support SGPIO Slave interrupt.
 The power-status-sync.sh will update SGPIO value to DBus.
 
+Upstream-Status: Inappropriate [AST2700 A0 workaround]
+
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  .../openbmc_project/State/Host.interface.yaml | 21 +++++++++++++++++++

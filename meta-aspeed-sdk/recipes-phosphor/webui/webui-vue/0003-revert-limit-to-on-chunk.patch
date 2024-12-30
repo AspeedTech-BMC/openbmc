@@ -28,8 +28,9 @@ $ npm list webpack
     └── webpack@4.47.0
 ```
 
-This patch is a workarund to avoid build failures.
+This patch is a workaround to avoid build failures.
 
+Upstream-Status: Inappropriate [ASPEED specific]
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  vue.config.js | 20 --------------------

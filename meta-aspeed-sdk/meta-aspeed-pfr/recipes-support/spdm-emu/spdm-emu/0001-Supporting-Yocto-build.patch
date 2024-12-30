@@ -3,6 +3,7 @@ From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Wed, 11 Jan 2023 18:39:35 +0800
 Subject: [PATCH] Supporting Yocto build
 
+Upstream-Status: Pending
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---
  CMakeLists.txt | 12 +++++++++++-

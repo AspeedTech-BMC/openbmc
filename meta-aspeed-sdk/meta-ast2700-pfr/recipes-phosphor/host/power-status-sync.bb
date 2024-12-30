@@ -18,5 +18,5 @@ SRC_URI = " file://power-status-sync.sh \
 
 do_install:append() {
     install -d ${D}${sbindir}
-    install -m 0755 ${WORKDIR}/power-status-sync.sh ${D}${sbindir}
+    install -m 0755 ${UNPACKDIR}/power-status-sync.sh ${D}${sbindir}
 }

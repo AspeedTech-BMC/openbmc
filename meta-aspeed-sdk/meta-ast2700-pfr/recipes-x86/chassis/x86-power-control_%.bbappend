@@ -14,7 +14,7 @@ SYSTEMD_OVERRIDE:${PN}:append:ast2700-a0 = "${DEPS_CFG}:${DEPS_TGT}.d/${DEPS_CFG
 
 do_install:append() {
     install -d ${D}${datadir}/${PN}
-    install -m 0644 ${WORKDIR}/power-config-host0.json ${D}${datadir}/${PN}
+    install -m 0644 ${UNPACKDIR}/power-config-host0.json ${D}${datadir}/${PN}
 }
 
 # Add nostamp to avoid build failure when the machine changes from ast2700-a0 to a1.

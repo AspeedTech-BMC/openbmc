@@ -18,7 +18,7 @@ OTPTOOL_USER_DIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/data
 # public keys. Please add "ecc_region": false in OTP CONFIG to disable
 # ECC. Once users have done all OTP programming, then enable region ECC.
 #
-#OTPTOOL_EXTRA_OPTS ?= " --no_last_bit "
+#OTPTOOL_EXTRA_OPTS ?= "--no_last_bit"
 
 # RSA2048_SHA256
 #OTPTOOL_CONFIGS ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/otp/evbA3_RSA2048_SHA256.json"

@@ -7,6 +7,7 @@ If the PFR mailbox is not on I2C4 or the address is not 0x38 on the I2C bus,
 it cannot retrieve the provision state and create the postcode interface.
 postcodeIface = "xyz.openbmc_project.State.Boot.Platform";
 
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pfr-manager/+/75385]
 Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  service/src/mainapp.cpp | 9 +++------

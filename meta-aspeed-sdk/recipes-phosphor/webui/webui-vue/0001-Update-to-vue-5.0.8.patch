@@ -3,6 +3,7 @@ From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Thu, 6 Jun 2024 17:14:50 +0800
 Subject: [PATCH] Update to vue-5.0.8
 
+Upstream-Status: Inappropriate [ASPEED specific]
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---

@@ -6,6 +6,7 @@ Subject: [PATCH] Use aspeed's novnc fork
 aspeed's novnc fork supports aspeed proprietary jpg.
 Modify webpack's config for WebAssembly.
 
+Upstream-Status: Inappropriate [ASPEED specific]
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---

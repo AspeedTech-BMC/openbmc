@@ -12,6 +12,8 @@ PR = "r0"
 SSP_FIRMWARE ?= "ast2700-ssp.bin"
 SSP_FIRMWARE:aspeed-g6 ?= "ast2600_ssp.bin"
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 SRC_URI = "file://${SSP_FIRMWARE};subdir=${S}"
 
 do_patch[noexec] = "1"

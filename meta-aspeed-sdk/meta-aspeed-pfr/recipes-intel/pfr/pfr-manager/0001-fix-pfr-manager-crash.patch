@@ -24,6 +24,7 @@ Jul 09 00:36:56 ast2600-dcscm systemd[1]:
 xyz.openbmc_project.PFR.Manager.service: Failed with result 'core-dump'.
 ```
 
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pfr-manager/+/72983]
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  service/src/mainapp.cpp | 4 +++-

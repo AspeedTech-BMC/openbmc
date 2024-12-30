@@ -5,5 +5,5 @@ SRC_URI:append:ast-ufs = " file://ufs-init.sh \
                          "
 
 do_install:append:ast-ufs () {
-    install -m 0755 ${WORKDIR}/ufs-init.sh ${D}/init
+    install -m 0755 ${UNPACKDIR}/ufs-init.sh ${D}/init
 }

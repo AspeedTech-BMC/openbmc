@@ -6,6 +6,7 @@ Subject: [PATCH] webui-vue: support ast2750 dual nodes.
 1. Add KVM1 page.
 2. Add Host1 Virtual Media device.
 
+Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  src/assets/styles/bmc/custom/_index.scss      |   1 +

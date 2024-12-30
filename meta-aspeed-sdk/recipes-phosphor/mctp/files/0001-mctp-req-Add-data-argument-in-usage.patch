@@ -6,6 +6,7 @@ Subject: [PATCH 1/2] mctp-req: Add data argument in usage
 The usage description is missing the `data` argument, add it and an
 example of how it is used.
 
+Upstream-Status: Pending
 Signed-off-by: Lei YU <yulei.sh@bytedance.com>
 ---
  src/mctp-req.c | 6 +++++-

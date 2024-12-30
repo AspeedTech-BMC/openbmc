@@ -5,6 +5,8 @@ Subject: [PATCH] add pfr last event properties
 
 Add PFR LastEvents for pfr-manager.
 
+Upstream-Status: Pending
+
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  .../PFR/LastEvents/meson.build                | 15 +++++++++++

@@ -57,11 +57,10 @@ RDEPENDS:${PN}-inband = " \
     phosphor-ipmi-bt \
     phosphor-ipmi-kcs \
     "
-
+#ToDo : Fix at-scale-debug
 SUMMARY:${PN}-apps = "Open Source Applications for OpenBMC Image"
 RDEPENDS:${PN}-apps = " \
     ipmitool \
-    at-scale-debug \
     pdbg \
     "
 

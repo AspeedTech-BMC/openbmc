@@ -28,27 +28,27 @@ do_install() {
     install -d -m 0755 ${D}${datadir}/cerberus/manifest_tools
     install -m 0644 ${S}/tools/manifest_tools/*.* ${D}${datadir}/cerberus/manifest_tools/.
     # install config, xml and key
-    install -m 0644 ${WORKDIR}/keys/*.* ${D}${datadir}/cerberus/manifest_tools/.
-    install -m 0644 ${WORKDIR}/manifest_tools/*.* ${D}${datadir}/cerberus/manifest_tools/.
+    install -m 0644 ${UNPACKDIR}/keys/*.* ${D}${datadir}/cerberus/manifest_tools/.
+    install -m 0644 ${UNPACKDIR}/manifest_tools/*.* ${D}${datadir}/cerberus/manifest_tools/.
 
     # recovery tools
     install -d -m 0755 ${D}${datadir}/cerberus/recovery_tools
     install -m 0644 ${S}/tools/recovery_tools/*.* ${D}${datadir}/cerberus/recovery_tools/.
     # install config, xml and key
-    install -m 0644 ${WORKDIR}/keys/*.* ${D}${datadir}/cerberus/recovery_tools/.
-    install -m 0644 ${WORKDIR}/recovery_tools/*.* ${D}${datadir}/cerberus/recovery_tools/.
+    install -m 0644 ${UNPACKDIR}/keys/*.* ${D}${datadir}/cerberus/recovery_tools/.
+    install -m 0644 ${UNPACKDIR}/recovery_tools/*.* ${D}${datadir}/cerberus/recovery_tools/.
 
     # provision tools
     install -d -m 0755 ${D}${datadir}/cerberus/provision_tools
     install -m 0644 ${S}/tools/provision_tools/*.* ${D}${datadir}/cerberus/provision_tools/.
     # install key
-    install -m 0644 ${WORKDIR}/keys/*.* ${D}${datadir}/cerberus/provision_tools/.
+    install -m 0644 ${UNPACKDIR}/keys/*.* ${D}${datadir}/cerberus/provision_tools/.
 
     # key management
     install -d -m 0755 ${D}${datadir}/cerberus/key_management_tools
     install -m 0644 ${S}/tools/key_management_tools/*.* ${D}${datadir}/cerberus/key_management_tools/.
     # install key
-    install -m 0644 ${WORKDIR}/keys/*.* ${D}${datadir}/cerberus/key_management_tools/.
+    install -m 0644 ${UNPACKDIR}/keys/*.* ${D}${datadir}/cerberus/key_management_tools/.
 }
 
 BBCLASSEXTEND = "native nativesdk"

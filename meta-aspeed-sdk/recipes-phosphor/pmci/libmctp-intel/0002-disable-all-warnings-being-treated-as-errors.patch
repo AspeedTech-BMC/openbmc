@@ -3,6 +3,8 @@ From: Jamin Lin <jamin_lin@aspeedtech.com>
 Date: Tue, 19 Jul 2022 17:26:33 +0800
 Subject: [PATCH] disable all warnings being treated as errors
 
+Upstream-Status: Pending
+
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 ---
  CMakeLists.txt | 1 -

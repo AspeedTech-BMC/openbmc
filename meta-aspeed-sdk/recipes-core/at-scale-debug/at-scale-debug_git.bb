@@ -29,7 +29,7 @@ EXTRA_OECMAKE = "-DBUILD_UT=OFF"
 SRC_URI:append = " file://uapi "
 
 do_configure:prepend() {
-    cp -r ${WORKDIR}/uapi ${S}/.
+    cp -r ${UNPACKDIR}/uapi ${S}/.
 }
 
 CFLAGS:append = " -I ${S}"

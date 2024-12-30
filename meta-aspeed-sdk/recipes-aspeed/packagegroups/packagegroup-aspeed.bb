@@ -18,10 +18,11 @@ PACKAGES = " \
     ${PN}-usbtools \
     "
 
-SUMMARY:${PN}-apps = "AspeedTech Test App"
-RDEPENDS:${PN}-apps = " \
-    aspeed-app \
-    "
+#ToDo
+#SUMMARY:${PN}-apps = "AspeedTech Test App"
+#RDEPENDS:${PN}-apps = " \
+#    aspeed-app \
+#    "
 
 SUMMARY:${PN}-crypto = "AspeedTech Crypto"
 RDEPENDS:${PN}-crypto = " \

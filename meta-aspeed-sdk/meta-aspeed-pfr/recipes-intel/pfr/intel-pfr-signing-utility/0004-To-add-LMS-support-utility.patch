@@ -3,6 +3,7 @@ From: Kane-Chen-AS <kane_chen@aspeedtech.com>
 Date: Mon, 22 Jan 2024 10:01:02 +0800
 Subject: [PATCH] To add LMS support utility
 
+Upstream-Status: Pending
 Signed-off-by: Kane-Chen-AS <kane_chen@aspeedtech.com>
 ---
  CMakeLists.txt |   8 ++

@@ -8,6 +8,7 @@ happens for WebAssembly.
 
 Add 'unsafe-eval' to script-src of CSP to fix it.
 
+Upstream-Status: Pending
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 ---
  include/security_headers.hpp | 2 +-

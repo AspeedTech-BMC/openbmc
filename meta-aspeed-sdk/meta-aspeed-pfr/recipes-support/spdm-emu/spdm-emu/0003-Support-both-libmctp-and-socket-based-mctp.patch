@@ -3,6 +3,7 @@ From: Steven Lee <steven_lee@aspeedtech.com>
 Date: Thu, 18 Jan 2024 15:10:18 +0800
 Subject: [PATCH] Support both libmctp and socket-based mctp
 
+Upstream-Status: Pending
 Signed-off-by: Steven Lee <steven_lee@aspeedtech.com>
 ---
  spdm_emu/spdm_emu_common/command.c            | 233 +++++++++++++-

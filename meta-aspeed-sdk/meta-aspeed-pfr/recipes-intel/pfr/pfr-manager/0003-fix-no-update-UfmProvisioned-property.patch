@@ -10,6 +10,7 @@ and UfmSupport properties to false.
 After getting the correct I2C bus and address from the entity-manager,
 where UfmLocked, UfmProvisioned, and UfmSupport D-Bus properties do not update.
 
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pfr-manager/+/75386]
 Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  service/src/pfr_mgr.cpp | 6 +++---

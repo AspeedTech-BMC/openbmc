@@ -9,6 +9,8 @@ PR = "r0"
 
 TSP_FIRMWARE ?= "ast2700-tsp.bin"
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 SRC_URI = "file://${TSP_FIRMWARE};subdir=${S}"
 
 do_patch[noexec] = "1"

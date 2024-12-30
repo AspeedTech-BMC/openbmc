@@ -21,6 +21,7 @@ v8:
 - Clear interrupt status before exiting sli_init.
 v9: Disable printf in release mode
 
+Upstream-Status: Inappropriate [ASPEED specific]
 Signed-off-by: Dylan Hung <dylan_hung@aspeedtech.com>
 ---
  plat/aspeed/ast2700/include/platform_reg.h |  64 +++

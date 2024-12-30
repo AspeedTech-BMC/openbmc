@@ -8,6 +8,8 @@ PR = "r0"
 
 CALIPTRA_FIRMWARE ?= "ast2700-caliptra-fw.bin"
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 SRC_URI = "file://${CALIPTRA_FIRMWARE};subdir=${S}"
 
 do_patch[noexec] = "1"

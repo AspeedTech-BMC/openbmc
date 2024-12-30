@@ -6,6 +6,7 @@ Subject: [PATCH 3/3] fansensor update regular expression to find pwm
 Update the regular expression to only find pwm* while excluding
 pwm*_enable.
 
+Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  src/FanMain.cpp | 2 +-

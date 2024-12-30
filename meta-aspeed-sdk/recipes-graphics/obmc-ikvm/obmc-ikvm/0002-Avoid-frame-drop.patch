@@ -25,6 +25,7 @@ New policy is:
 Record all done buf in getFrame(). Send all done buf to clients in
 sendFrame and then queue back to driver.
 
+Upstream-Status: Pending
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---

@@ -12,6 +12,7 @@ Expect result:
 /dev/hidg0 use "12011000.usb-vhub" UDC
 /dev/hidg2 use "12021000.usb-vhub" UDC
 
+Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  ikvm_input.cpp  | 12 ++++++++++++

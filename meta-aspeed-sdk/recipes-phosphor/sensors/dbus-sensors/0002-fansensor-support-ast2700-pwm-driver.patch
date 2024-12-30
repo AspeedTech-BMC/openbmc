@@ -3,6 +3,7 @@ From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Fri, 7 Jun 2024 13:51:44 +0800
 Subject: [PATCH 2/3] fansensor support ast2700 pwm driver
 
+Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  src/FanMain.cpp | 2 ++

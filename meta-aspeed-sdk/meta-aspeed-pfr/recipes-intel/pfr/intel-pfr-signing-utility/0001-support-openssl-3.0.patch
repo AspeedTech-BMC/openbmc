@@ -8,6 +8,7 @@ but the APIs necessary for conversion also do not exist in 1.1.
 Add a #define on the OPENSSL_VERSION_NUMBER to identify 3.x (or greater)
 support and switch between the two API sets.
 
+Upstream-Status: Pending
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 ---
  sslhelper.c | 20 ++++++++++++++++++++

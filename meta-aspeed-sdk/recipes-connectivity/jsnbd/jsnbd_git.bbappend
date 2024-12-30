@@ -8,6 +8,6 @@ SRC_URI:append = " file://config.json"
 
 do_install:append() {
     install -d ${D}${sysconfdir}/nbd-proxy/
-    install -m 0755 ${WORKDIR}/state_hook ${D}${sysconfdir}/nbd-proxy/state
-    install -m 0644 ${WORKDIR}/config.json ${D}${sysconfdir}/nbd-proxy/config.json
+    install -m 0755 ${UNPACKDIR}/state_hook ${D}${sysconfdir}/nbd-proxy/state
+    install -m 0644 ${UNPACKDIR}/config.json ${D}${sysconfdir}/nbd-proxy/config.json
 }

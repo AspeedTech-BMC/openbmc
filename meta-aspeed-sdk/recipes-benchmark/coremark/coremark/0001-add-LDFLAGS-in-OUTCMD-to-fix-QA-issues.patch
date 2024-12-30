@@ -14,6 +14,9 @@ Compiler flags   : -O2 -DMULTITHREAD=2 -DUSE_FORK -pthread  -lrt
 However, LDFLAGS of Yocto build environment includes the build path and it causes "buildpath"
 QA warning/error. To fix all QA errors/warnings, adds LDFLAGS in the OUTCMD.
 
+Upstream-Status: Submitted
+[https://github.com/eembc/coremark/pull/66]
+
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 ---
  Makefile | 2 +-

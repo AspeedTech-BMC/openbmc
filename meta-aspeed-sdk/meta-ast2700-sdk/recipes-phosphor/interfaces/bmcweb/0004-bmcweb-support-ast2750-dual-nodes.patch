@@ -18,6 +18,7 @@ VM:
     BMCWEB_ROUTE(app, "/vm/1/0")
     Use media=8
 
+Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  include/kvm_websocket.hpp |  36 ++-

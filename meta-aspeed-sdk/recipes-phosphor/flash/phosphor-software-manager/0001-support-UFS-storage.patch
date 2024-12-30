@@ -8,6 +8,8 @@ Device mappings for UFS storage:
 /dev/mmcblk0boot0 => /dev/sdb
 /dev/mmcblk0boot1 => /dev/sdc
 
+Upstream-Status: Pending
+
 Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  obmc-flash-bmc | 18 +++++++++---------

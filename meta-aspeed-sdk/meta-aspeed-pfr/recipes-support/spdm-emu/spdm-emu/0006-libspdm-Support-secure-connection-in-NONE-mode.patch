@@ -8,6 +8,7 @@ secure connection. It causes a problem to test session
 feature with MCTP socket environment. To adjust the code
 for supporting the secure communication in NONE mode.
 
+Upstream-Status: Pending
 Signed-off-by: Kane-Chen-AS <kane_chen@aspeedtech.com>
 ---
  include/hal/library/debuglib.h                |  1 +

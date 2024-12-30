@@ -12,12 +12,12 @@ RPROVIDES:${PN} = "${PACKAGES}"
 PACKAGES = " \
     ${PN}-apps \
     "
-
-SUMMARY:${PN}-apps = "AspeedTech PFR App package"
-RDEPENDS:${PN}-apps = " \
-    aspeed-pfr-tool \
-    spdm-emu \
-    pfr-mctp-i3c \
-    pfr-i3ctool \
-    "
+#ToDo : Fix spdm-emu
+#SUMMARY:${PN}-apps = "AspeedTech PFR App package"
+#RDEPENDS:${PN}-apps = " \
+#    aspeed-pfr-tool \
+#    spdm-emu \
+#    pfr-mctp-i3c \
+#    pfr-i3ctool \
+#    "
 

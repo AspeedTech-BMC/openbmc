@@ -1,9 +1,10 @@
 SUMMARY = "Turn On USB gadget"
 DESCRIPTION = "Script to turn on usb gadget after BMC is ready"
+#ToDo
+#RDEPENDS:${PN} = "aspeed-app"
 
-RDEPENDS:${PN} = "aspeed-app"
-
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 SRC_URI = "file://usbA-net.sh \
            file://usbB-net.sh \
            file://usbA-rndis.sh \
@@ -24,7 +25,7 @@ inherit systemd
 
 do_install() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/netusb.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/netusb.service ${D}${systemd_system_unitdir}
     install -d ${D}${bindir}
     install -m 0755 ${S}/usbA-net.sh ${D}/${bindir}/usbA-net.sh
     install -m 0755 ${S}/usbB-net.sh ${D}/${bindir}/usbB-net.sh

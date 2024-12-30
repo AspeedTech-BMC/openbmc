@@ -18,5 +18,5 @@ SRC_URI = " file://set-post-code-led.sh \
 
 do_install:append() {
     install -d ${D}${sbindir}
-    install -m 0755 ${WORKDIR}/set-post-code-led.sh ${D}${sbindir}
+    install -m 0755 ${UNPACKDIR}/set-post-code-led.sh ${D}${sbindir}
 }
