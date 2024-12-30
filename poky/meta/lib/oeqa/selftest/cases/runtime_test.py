@@ -273,7 +273,7 @@ TEST_RUNQEMUPARAMS += " slirp"
         import subprocess, os
 
         distro = oe.lsb.distro_identifier()
-        if distro and (distro in ['debian-9', 'debian-10', 'centos-7', 'centos-8', 'ubuntu-16.04', 'ubuntu-18.04'] or
+        if distro and (distro in ['debian-9', 'debian-10', 'centos-7', 'centos-8', 'centos-9', 'ubuntu-16.04', 'ubuntu-18.04'] or
             distro.startswith('almalinux') or distro.startswith('rocky')):
             self.skipTest('virgl headless cannot be tested with %s' %(distro))
 
@@ -310,10 +310,7 @@ class Postinst(OESelftestTestCase):
                 features += 'IMAGE_FEATURES += "package-management empty-root-password"\n'
                 features += 'PACKAGE_CLASSES = "%s"\n' % classes
                 if init_manager == "systemd":
-                    features += 'DISTRO_FEATURES:append = " systemd usrmerge"\n'
-                    features += 'VIRTUAL-RUNTIME_init_manager = "systemd"\n'
-                    features += 'DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"\n'
-                    features += 'VIRTUAL-RUNTIME_initscripts = ""\n'
+                    features += 'INIT_MANAGER = "systemd"\n'
                 self.write_config(features)
 
                 bitbake('core-image-minimal')

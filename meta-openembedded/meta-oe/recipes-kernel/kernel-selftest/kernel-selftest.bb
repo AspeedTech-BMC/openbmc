@@ -2,7 +2,7 @@ SUMMARY = "Kernel selftest for Linux"
 DESCRIPTION = "Kernel selftest for Linux"
 LICENSE = "GPL-2.0-only"
 
-LIC_FILES_CHKSUM = "file://../COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
+LIC_FILES_CHKSUM = "file://${UNPACKDIR}/COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
 
 DEPENDS = "rsync-native llvm-native"
 
@@ -12,6 +12,7 @@ SRC_URI:append:libc-musl = "\
                       "
 SRC_URI += "file://run-ptest \
             file://COPYING \
+            file://0001-selftests-timers-Fix-clock_adjtime-for-newer-32-bit-.patch \
             "
 
 # now we just test bpf and vm
@@ -55,7 +56,7 @@ TEST_LIST = "\
 EXTRA_OEMAKE = '\
     CROSS_COMPILE=${TARGET_PREFIX} \
     ARCH=${ARCH} \
-    CC="${CC}" \
+    CC="${CC} ${DEBUG_PREFIX_MAP}" \
     AR="${AR}" \
     LD="${LD}" \
     CLANG="clang -fno-stack-protector -target ${TARGET_ARCH} ${TOOLCHAIN_OPTIONS} -isystem ${S} -D__WORDSIZE=\'64\' -Wno-error=unused-command-line-argument" \
@@ -96,31 +97,19 @@ either install it and add it to HOSTTOOLS, or add clang-native from meta-clang t
     sed -i -e '/mrecord-mcount/d' ${S}/Makefile
     sed -i -e '/Wno-alloc-size-larger-than/d' ${S}/Makefile
     sed -i -e '/Wno-alloc-size-larger-than/d' ${S}/scripts/Makefile.*
-    for i in ${TEST_LIST}
-    do
-        oe_runmake -C ${S}/tools/testing/selftests/${i}
-    done
+    oe_runmake -C ${S}/tools/testing/selftests TARGETS="${TEST_LIST}"
 }
 
 do_install() {
-    for i in ${TEST_LIST}
-    do
-        oe_runmake -C ${S}/tools/testing/selftests/${i} INSTALL_PATH=${D}/usr/kernel-selftest/${i} install
-        # Install kselftest-list.txt that required by kselftest runner.
-        oe_runmake -s --no-print-directory COLLECTION=${i} -C ${S}/tools/testing/selftests/${i} emit_tests \
-            >> ${D}/usr/kernel-selftest/kselftest-list.txt
-    done
-    # Install kselftest runner.
-    install -m 0755 ${S}/tools/testing/selftests/run_kselftest.sh ${D}/usr/kernel-selftest/
-    cp -R --no-dereference --preserve=mode,links -v ${S}/tools/testing/selftests/kselftest ${D}/usr/kernel-selftest/
+    oe_runmake -C ${S}/tools/testing/selftests INSTALL_PATH=${D}/usr/kernel-selftest TARGETS="${TEST_LIST}" install
     if [ -e ${D}/usr/kernel-selftest/bpf/test_offload.py ]; then
-	sed -i -e '1s,#!.*python3,#! /usr/bin/env python3,' ${D}/usr/kernel-selftest/bpf/test_offload.py
+        sed -i -e '1s,#!.*python3,#! /usr/bin/env python3,' ${D}/usr/kernel-selftest/bpf/test_offload.py
     fi
     chown root:root  -R ${D}/usr/kernel-selftest
 }
 
 do_configure() {
-    install -D -m 0644 ${WORKDIR}/COPYING ${S}/COPYING
+    install -D -m 0644 ${UNPACKDIR}/COPYING ${S}/COPYING
 }
 
 do_patch[prefuncs] += "copy_kselftest_source_from_kernel remove_unrelated"
@@ -149,6 +138,8 @@ remove_unrelated() {
     fi
 }
 
+do_configure[dirs] = "${S}"
+
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 INHIBIT_PACKAGE_DEBUG_SPLIT="1"
@@ -157,6 +148,12 @@ FILES:${PN} += "/usr/kernel-selftest"
 RDEPENDS:${PN} += "python3 perl perl-module-io-handle"
 
 INSANE_SKIP:${PN} += "libdir"
+
+# A few of the selftests set compile flags that trip up the "ldflags" and
+# "already-stripped" QA checks.  As this is mainly a testing package and
+# not really meant for user level execution, disable these two checks.
+INSANE_SKIP:${PN} += "ldflags"
+INSANE_SKIP:${PN} += "already-stripped"
 
 SECURITY_CFLAGS = ""
 COMPATIBLE_HOST:libc-musl = 'null'

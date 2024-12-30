@@ -4,6 +4,7 @@ DEPENDS += "${PYTHON_PN}-native"
 DEPENDS += "${PYTHON_PN}-pyyaml-native"
 DEPENDS += "${PYTHON_PN}-inflection-native"
 DEPENDS += "cli11"
+DEPENDS += "libcereal"
 DEPENDS += "nlohmann-json"
 DEPENDS += "phosphor-logging"
 DEPENDS += "sdbusplus ${PYTHON_PN}-sdbus++-native"
@@ -58,8 +59,8 @@ do_compile:prepend() {
         cp "${LED_YAML_PATH}/led.yaml" "${S}/led.yaml"
     elif [ -f "${STAGING_DATADIR_NATIVE}/${PN}/led.yaml" ]; then
         cp "${STAGING_DATADIR_NATIVE}/${PN}/led.yaml" "${S}/led.yaml"
-    elif [ -f "${WORKDIR}/led.yaml" ]; then
-        cp "${WORKDIR}/led.yaml" "${S}/led.yaml"
+    elif [ -f "${UNPACKDIR}/led.yaml" ]; then
+        cp "${UNPACKDIR}/led.yaml" "${S}/led.yaml"
     fi
 }
 

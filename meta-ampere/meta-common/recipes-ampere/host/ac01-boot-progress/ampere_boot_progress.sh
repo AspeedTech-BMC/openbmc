@@ -122,11 +122,11 @@ function set_boot_progress()
 
 function log_redfish_biosboot_ok_event()
 {
-	logger-systemd --journald << EOF
+	logger --journald << EOF
 MESSAGE=
 PRIORITY=2
 SEVERITY=
-REDFISH_MESSAGE_ID=OpenBMC.0.1.BIOSBoot.OK
+REDFISH_MESSAGE_ID=OpenBMC.0.1.BIOSBoot
 REDFISH_MESSAGE_ARGS="UEFI firmware booting done"
 EOF
 }
@@ -135,11 +135,11 @@ function log_redfish_bios_panic_event()
 {
 	boot_state_str=$(get_boot_stage_string "$1" "$2")
 
-	logger-systemd --journald << EOF
+	logger --journald << EOF
 MESSAGE=
 PRIORITY=2
 SEVERITY=
-REDFISH_MESSAGE_ID=OpenBMC.0.1.BIOSFirmwarePanicReason.Warning
+REDFISH_MESSAGE_ID=OpenBMC.0.1.BIOSFirmwarePanicReason
 REDFISH_MESSAGE_ARGS=${boot_state_str}
 EOF
 }

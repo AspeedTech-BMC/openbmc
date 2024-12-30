@@ -1,5 +1,4 @@
 EXTRA_OEMESON:append = " \
-    -Dinsecure-tftp-update=enabled \
     -Dibm-management-console=enabled \
     -Dredfish-dump-log=enabled \
     -Dredfish-oem-manager-fan-data=disabled \
@@ -12,12 +11,20 @@ EXTRA_OEMESON:append = " \
 EXTRA_OEMESON:append:p10bmc = " \
     -Dkvm=disabled \
     -Dvm-websocket=disabled \
+    -Dredfish-allow-deprecated-power-thermal=disabled \
+    -Dhypervisor-computer-system=enabled \
 "
+
+EXTRA_OEMESON:append:system1 = " \
+    -Dredfish-allow-deprecated-power-thermal=disabled \
+"
+
 PACKAGECONFIG:remove:p10bmc = "mutual-tls-auth"
 
 EXTRA_OEMESON:append:witherspoon-tacoma = " \
     -Dkvm=disabled \
     -Dvm-websocket=disabled \
+    -Dhypervisor-computer-system=enabled \
 "
 PACKAGECONFIG:remove:witherspoon-tacoma = "mutual-tls-auth"
 

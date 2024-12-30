@@ -3,15 +3,13 @@ OBMC_IMAGE_EXTRA_INSTALL:remove:witherspoon-tacoma = " liberation-fonts uart-ren
 OBMC_IMAGE_EXTRA_INSTALL:append:p10bmc = " mboxd"
 # No host firmware related features for huygens wanted yet
 OBMC_IMAGE_EXTRA_INSTALL:remove:huygens = " mboxd"
+OBMC_IMAGE_EXTRA_INSTALL:append:df-chrony = " chrony"
 
 IMAGE_FEATURES:append = " obmc-dbus-monitor"
 
 # remove so things fit in available flash space
 IMAGE_FEATURES:remove:witherspoon = "obmc-user-mgmt-ldap"
 IMAGE_FEATURES:remove:witherspoon = "obmc-telemetry"
-
-# Generic IPMI FRU vpd collection not needed on p10bmc
-IMAGE_FEATURES:remove:p10bmc = "obmc-fru-ipmi"
 
 # Optionally configure IBM service accounts
 #

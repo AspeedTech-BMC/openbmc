@@ -10,7 +10,7 @@ HOMEPAGE = "http://mhash.sourceforge.net/"
 LICENSE = "LGPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=3bf50002aefd002f49e7bb854063f7e7"
 
-S = "${WORKDIR}/mhash-${PV}"
+S = "${UNPACKDIR}/mhash-${PV}"
 
 SECTION = "libs"
 
@@ -31,8 +31,8 @@ do_install:append() {
 
 do_compile_ptest() {
     if [ ! -d ${S}/demo ]; then mkdir ${S}/demo; fi
-    cp ${WORKDIR}/Makefile.test ${S}/demo/Makefile
-    cp ${WORKDIR}/mhash.c ${S}/demo/
+    cp ${UNPACKDIR}/Makefile.test ${S}/demo/Makefile
+    cp ${UNPACKDIR}/mhash.c ${S}/demo/
     make -C ${S}/demo CFLAGS="${CFLAGS} -I${S}/include/" LDFLAGS="${LDFLAGS} -L${S}/lib/.libs"
 }
 

@@ -7,6 +7,9 @@ inherit pkgconfig
 inherit systemd
 inherit obmc-phosphor-systemd
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 RDEPENDS:${PN} += "bash"
 
 SRC_URI += " \
@@ -16,7 +19,7 @@ SRC_URI += " \
 
 do_install() {
     install -d ${D}${libexecdir}/${PN}
-    install -m 0755 ${WORKDIR}/greatlakes-system-state-init ${D}${libexecdir}/${PN}/
+    install -m 0755 ${UNPACKDIR}/greatlakes-system-state-init ${D}${libexecdir}/${PN}/
 }
 
 TGT = "${SYSTEMD_DEFAULT_TARGET}"

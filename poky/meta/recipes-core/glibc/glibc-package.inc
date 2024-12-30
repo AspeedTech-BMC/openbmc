@@ -39,7 +39,7 @@ FILES:sln = "${base_sbindir}/sln"
 FILES:${PN}-pic = "${libdir}/*_pic.a ${libdir}/*_pic.map ${libdir}/libc_pic/*.o"
 FILES:libsotruss = "${libdir}/audit/sotruss-lib.so"
 FILES_SOLIBSDEV = "${libdir}/lib*${SOLIBSDEV}"
-FILES:${PN}-dev += "${libdir}/libpthread.a ${libdir}/libdl.a ${libdir}/libutil.a ${libdir}/libanl.a ${libdir}/*_nonshared.a ${base_libdir}/*_nonshared.a ${base_libdir}/*.o ${datadir}/aclocal"
+FILES:${PN}-dev += "${libdir}/libpthread.a ${libdir}/libdl.a ${libdir}/libutil.a ${libdir}/libanl.a ${libdir}/*_nonshared.a ${base_libdir}/*_nonshared.a ${base_libdir}/*.o ${datadir}/aclocal ${libdir}/gcc/${TARGET_SYS}/*/finclude"
 RDEPENDS:${PN}-dev = "linux-libc-headers-dev"
 FILES:${PN}-staticdev += "${libdir}/*.a ${base_libdir}/*.a"
 FILES:nscd = "${sbindir}/nscd* ${sysconfdir}/init.d/nscd ${systemd_system_unitdir}/nscd* ${nonarch_libdir}/tmpfiles.d/nscd.conf \
@@ -69,9 +69,9 @@ inherit multilib_header
 
 do_install() {
 	oe_runmake install_root=${D} install
-	install -Dm 0644 ${WORKDIR}/etc/ld.so.conf ${D}/${sysconfdir}/ld.so.conf
+	install -Dm 0644 ${UNPACKDIR}/etc/ld.so.conf ${D}/${sysconfdir}/ld.so.conf
 	install -d ${D}${localedir}
-	make -f ${WORKDIR}/generate-supported.mk IN="${S}/localedata/SUPPORTED" OUT="${WORKDIR}/SUPPORTED"
+	make -f ${UNPACKDIR}/generate-supported.mk IN="${S}/localedata/SUPPORTED" OUT="${WORKDIR}/SUPPORTED"
 	# get rid of some broken files...
 	for i in ${GLIBC_BROKEN_LOCALES}; do
 		sed -i "/$i/d" ${WORKDIR}/SUPPORTED
@@ -101,7 +101,7 @@ do_install() {
 	install -d ${D}${localstatedir}/db/nscd
 	install -m 0755 ${S}/nscd/nscd.init ${D}${sysconfdir}/init.d/nscd
 	install -m 0755 ${S}/nscd/nscd.conf ${D}${sysconfdir}/nscd.conf
-	install -m 0755 ${WORKDIR}/makedbs.sh ${D}${localstatedir}/db
+	install -m 0755 ${UNPACKDIR}/makedbs.sh ${D}${localstatedir}/db
 	sed -i "s%daemon%start-stop-daemon --start --exec%g" ${D}${sysconfdir}/init.d/nscd
 	sed -i "s|\(enable-cache\t\+netgroup\t\+\)yes|\1no|" ${D}${sysconfdir}/nscd.conf
 
@@ -169,6 +169,12 @@ do_install_armmultilib () {
 	oe_multilib_header sys/elf.h sys/procfs.h sys/ptrace.h sys/ucontext.h sys/user.h
 }
 
+do_install_armmultilib:append:class-target() {
+    gcc_version=$($CC -dumpversion)
+    mkdir -p ${D}${libdir}/gcc/${TARGET_SYS}/${gcc_version}/finclude
+    mv ${D}${includedir}/finclude/math-vector-fortran.h ${D}${libdir}/gcc/${TARGET_SYS}/${gcc_version}/finclude/
+    rmdir --ignore-fail-on-non-empty ${D}${includedir}/finclude
+}
 
 LOCALESTASH = "${WORKDIR}/stashed-locale"
 bashscripts = "mtrace sotruss xtrace"

@@ -88,7 +88,7 @@ TOOLS:class-native = "fastboot ext4_utils mkbootimg"
 TOOLS:class-nativesdk = "fastboot ext4_utils mkbootimg"
 
 do_compile() {
-    cp ${WORKDIR}/gitignore ${S}/.gitignore
+    cp ${UNPACKDIR}/gitignore ${S}/.gitignore
 
     # Setting both variables below causing our makefiles to not work with
     # implicit make rules
@@ -123,7 +123,7 @@ do_compile() {
 
     for tool in ${TOOLS}; do
       mkdir -p ${B}/${tool}
-      oe_runmake -f ${B}/${tool}.mk -C ${B}/${tool}
+      oe_runmake -f ${UNPACKDIR}/${BPN}/${tool}.mk -C ${B}/${tool}
     done
 }
 
@@ -151,7 +151,7 @@ do_install() {
     fi
 
     # Outside the if statement to avoid errors during do_package
-    install -D -p -m0644 ${WORKDIR}/android-tools-adbd.service \
+    install -D -p -m0644 ${UNPACKDIR}/android-tools-adbd.service \
       ${D}${systemd_unitdir}/system/android-tools-adbd.service
 
     if echo ${TOOLS} | grep -q "fastboot" ; then
@@ -189,7 +189,12 @@ FILES:${PN}-fstools = "\
 BBCLASSEXTEND = "native"
 
 android_tools_enable_devmode() {
-    touch ${IMAGE_ROOTFS}/var/usb-debugging-enabled
+    touch ${IMAGE_ROOTFS}/etc/usb-debugging-enabled
 }
 
 ROOTFS_POSTPROCESS_COMMAND_${PN}-adbd += "${@bb.utils.contains("USB_DEBUGGING_ENABLED", "1", "android_tools_enable_devmode;", "", d)}"
+
+# http://errors.yoctoproject.org/Errors/Details/766881/
+# android-tools/5.1.1.r37/git/system/core/adb/adb_auth_host.c:86:23: error: passing argument 2 of 'RSA_get0_key' from incompatible pointer type [-Wincompatible-pointer-types]
+# android-tools/5.1.1.r37/git/system/core/adb/adb_auth_host.c:86:27: error: passing argument 3 of 'RSA_get0_key' from incompatible pointer type [-Wincompatible-pointer-types]
+CC += "-Wno-error=incompatible-pointer-types"

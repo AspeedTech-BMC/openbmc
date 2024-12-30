@@ -124,6 +124,7 @@ PACKAGECONFIG[lirc] = "-Dlirc=enabled,-Dlirc=disabled,lirc"
 PACKAGECONFIG[webrtc] = "-Dwebrtc-aec=enabled,-Dwebrtc-aec=disabled,webrtc-audio-processing"
 PACKAGECONFIG[ipv6] = "-Dipv6=true,-Dipv6=false,"
 PACKAGECONFIG[manpages] = "-Dman=true,-Dman=false,"
+PACKAGECONFIG[oss-output] = "-Doss-output=enabled,-Doss-output=disabled,"
 
 export TARGET_PFPU = "${TARGET_FPU}"
 
@@ -142,7 +143,7 @@ do_compile:append () {
 
 do_install:append() {
 	install -d ${D}${sysconfdir}/default/volatiles
-	install -m 0644 ${WORKDIR}/volatiles.04_pulse  ${D}${sysconfdir}/default/volatiles/04_pulse
+	install -m 0644 ${UNPACKDIR}/volatiles.04_pulse  ${D}${sysconfdir}/default/volatiles/04_pulse
 }
 
 USERADD_PACKAGES = "pulseaudio-server"

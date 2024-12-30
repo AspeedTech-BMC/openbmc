@@ -21,6 +21,7 @@ SRC_URI = "git://github.com/mininet/openflow;protocol=https;branch=master \
            file://0001-generate-not-static-get_dh-functions.patch \
            file://0001-socket-util-Include-sys-stat.h-for-fchmod.patch \
            file://0001-Makefile.am-Specify-export-dynamic-directly-to-linke.patch \
+           file://0001-Link-in-libexecinfo-if-it-has-backtrace-API.patch \
 "
 CVE_STATUS[CVE-2015-1611] = "not-applicable-config: Not referred to our implementation of openflow"
 CVE_STATUS[CVE-2015-1612] = "not-applicable-config: Not referred to our implementation of openflow"
@@ -34,9 +35,7 @@ EXTRA_OECONF += " \
                  KARCH=${TARGET_ARCH} \
                  ${@bb.utils.contains('PACKAGECONFIG', 'openssl', 'SSL_LIBS="-lssl -lcrypto"', '', d)} \
                 "
-
 DEPENDS:append:libc-musl = " libexecinfo"
-LDFLAGS:append:libc-musl = " -lexecinfo"
 
 S = "${WORKDIR}/git"
 
@@ -68,3 +67,8 @@ do_install:append() {
 }
 
 FILES:${PN} += "${nonarch_libdir}/tmpfiles.d"
+
+# http://errors.yoctoproject.org/Errors/Details/766898/
+# lib/flow.c:213:48: error: initialization of 'const struct arp_eth_header *' from incompatible pointer type 'struct arp_header *' [-Wincompatible-pointer-types]
+# lib/backtrace.c:126:32: error: passing argument 1 of 'backtrace' from incompatible pointer type [-Wincompatible-pointer-types]
+CFLAGS += "-Wno-error=incompatible-pointer-types"

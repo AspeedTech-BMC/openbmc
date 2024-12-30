@@ -4,7 +4,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=e3fc50a88d0a364313df4b21ef20c29e"
 DEPENDS += "systemd"
 PROVIDES += "virtual/obmc-host-ipmi-hw"
-SRCREV = "b847a932b79ef5d57a04d71908bec310c28b0c9f"
+SRCREV = "53757b38f3e6d9f504fb8d5ce2db32ac5a034b8a"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 

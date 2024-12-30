@@ -2,22 +2,42 @@
 
 sd_eid=$(($1 * 10))
 wf_eid=$(($1 * 10 + 2))
+count=0
 
-# It takes about 6 seconds for setting up MCTP endpoint after slot plugged-in
-sleep 10
+# We found one corner case is that if the rescan-wf-bic script checks a WF
+# slot and not probe MCTP EID yet, and then go to the workaround to probe
+# MCTP EID again. In this case we found that MCTP EID was already probed
+# successfully before going to the workaround. But at this moment we saw
+# MCTP response timeout for EID e.g. 72 (WF-7) occurred and it caused mctpd
+# to remove this EID 72 due to this timeout and then PLDM sensor missing happened.
+
+# To avoid this issue, a 10-second delay is not enough when the BMC is busy
+# handling the power cycle for all 8 slots.
+# Instead, increase the delay to 30 seconds as a solution.
+sleep 30
+
+# This method of probing the Wf EID through SetupEndpointByConfigPath
+# should ensure that it only executes if the Wf EID has truly not been probed.
 # Check if we got WF BIC's EID
-wf_eid=$(($1 * 10 + 2))
-busctl get-property xyz.openbmc_project.MCTP /xyz/openbmc_project/mctp/1/"$wf_eid" xyz.openbmc_project.MCTP.Endpoint EID
-status=$?
-if [ $status -eq 0 ]; then
-    exit 0
-fi
+while [ $count -lt 12 ]; do
+    busctl get-property xyz.openbmc_project.MCTP /xyz/openbmc_project/mctp/1/"$wf_eid" xyz.openbmc_project.MCTP.Endpoint EID
+    isMctpConnect=$?;
+    echo $isMctpConnect
+    if [ $isMctpConnect -eq 0 ]; then
+        echo "WF BIC's EID $wf_eid found successfully"
+        exit 0;
+    fi
+    echo "WF BIC's EID $wf_eid not found yet."
+    sleep 5;
+    count=$((count + 1))
+done
 
 count=0
 while [ $count -lt 3 ]; do
     # Check WF BIC status
     output=$(pldmtool raw -m "$sd_eid" -d 0x80 0x02 0x3A 0x4c 0xff)
     status=$?
+    echo "Check pldm raw command output: $output"
     if [ $status -ne 0 ]; then
         echo "Error executing pldmtool command"
         exit 1
@@ -28,9 +48,17 @@ while [ $count -lt 3 ]; do
     wf_ready=$(echo "$rx_data" | tail -n 1)
     # 02 means WF BIC ready, otherwise 01.
     if [ "$wf_ready" == "02" ]; then
+        echo "WF BIC ready (status: $wf_ready), count=$count"
         busctl call xyz.openbmc_project.MCTP /xyz/openbmc_project/mctp au.com.CodeConstruct.MCTP SetupEndpointByConfigPath s /xyz/openbmc_project/inventory/system/board/Yosemite_4_Wailua_Falls_Slot_"$1"/BIC
+        status=$?
+        if [ $status -ne 0 ]; then
+            echo "call MCTP method SetupEndpointByConfigPath probe EID $wf_eid failed."
+        else
+            echo "call MCTP method SetupEndpointByConfigPath probe EID $wf_eid succeeded."
+        fi
         break
     else
+        echo "WF BIC not ready (status: $wf_ready), count=$count"
         count=$((count + 1))
         sleep 2
     fi

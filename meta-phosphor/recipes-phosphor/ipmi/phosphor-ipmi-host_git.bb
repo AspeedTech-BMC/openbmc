@@ -14,6 +14,9 @@ inherit obmc-phosphor-systemd
 inherit phosphor-ipmi-host
 inherit python3native
 
+ERROR_QA:remove = "buildpaths"
+WARNING_QA:append = "buildpaths"
+
 def ipmi_whitelists(d):
     whitelists = d.getVar(
         'VIRTUAL-RUNTIME_phosphor-ipmi-providers', True) or ''
@@ -93,7 +96,6 @@ EXTRA_OEMESON:append = " \
 EXTRA_OEMESON:append = " -Dtests=disabled"
 
 S = "${WORKDIR}/git"
-
 SRC_URI += "file://merge_yamls.py "
 
 HOSTIPMI_PROVIDER_LIBRARY += "libipmi20.so"
@@ -123,7 +125,7 @@ python do_merge_sensors () {
     import subprocess
 
     # TODO: Perform the merge in a temporary directory?
-    workdir = d.getVar('WORKDIR', True)
+    workdir = d.getVar('UNPACKDIR', True)
     nativedir = d.getVar('STAGING_DIR_NATIVE', True)
     sensorsdir = d.getVar('sensor_datadir', True)
     sensorsdir = sensorsdir[1:]

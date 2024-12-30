@@ -1,0 +1,53 @@
+#!/bin/bash -e
+# shellcheck source=meta-facebook/recipes-fb/obmc_functions/files/fb-common-functions
+source /usr/libexec/fb-common-functions
+
+config_fan()
+{
+    # Set fan tack sample count for each tach channel to highest value to avoid
+    # wrong fan tach reading.
+    #
+    # FanX_Dynamics
+    # - register offset: 0x08 (tach1) - 0x0d (tach6)
+    # |------------------------ -----------------------------------------------|
+    # | bit[7:5]         | 000b | 001b | 010b | 011b | 110b | 101b, 110b, 111b |
+    # |------------------------------------------------------------------------|
+    # | tach sample count|  1   |  2   |  4   |  8   |  16  |  32              |
+    # |------------------------------------------------------------------------|
+    for addr in "0x21" "0x27"
+    do
+        for offset in $(seq 0x08 0x0d)
+        do
+            fan_dynam_val=$(printf "%d" "$(i2cget -y -f 18 "$addr" "$offset")")
+            fan_dynam_val=$((fan_dynam_val | 0xe0))
+            i2cset -y -f 18 "$addr" "$offset" "$fan_dynam_val"
+        done
+    done
+
+    # set fan enable
+    if find /sys/bus/i2c/devices/*/hwmon/*/fan*_enable -print -quit 2>/dev/null | grep -q .; then
+        for file in /sys/bus/i2c/devices/*/hwmon/*/fan*_enable
+        do
+            echo 1 > "${file}"
+        done
+    fi
+}
+
+# Enable standby power and bind i2c components
+/usr/libexec/catalina/standby-power-enable
+
+# Workaround
+# rebind PDB i2c mux
+bind_i2c_device pca954x 1-0070
+# rebind PDB Fan IC
+bind_i2c_device max31790 18-0021
+bind_i2c_device max31790 18-0027
+# rebind PDB FRU
+bind_i2c_device at24 21-0054
+# rebind FIO FRU
+bind_i2c_device at24 23-0053
+
+# Set fan target and enable all fan input as early as possible
+config_fan
+
+exit 0

@@ -6,8 +6,6 @@ LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=53b4a999993871a28ab1488fdbd2e73e"
 SECTION = "net"
 
-RDEPENDS:${PN} += "bash"
-
 RRECOMMENDS:${PN} += "kernel-module-ebtables \
     "
 
@@ -29,14 +27,14 @@ do_install:append () {
 	# Replace upstream ebtables-save perl script with Fedora bash based rewrite
 	# http://pkgs.fedoraproject.org/cgit/rpms/ebtables.git/tree/ebtables-save
 	rm -f ${D}${sbindir}/ebtables-legacy-save
-	install -m 0755 ${WORKDIR}/ebtables-legacy-save ${D}${sbindir}/ebtables-legacy-save
+	install -m 0755 ${UNPACKDIR}/ebtables-legacy-save ${D}${sbindir}/ebtables-legacy-save
 
 	# Install systemd service files
 	if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
 		install -d ${D}${systemd_unitdir}/system
-		install -m 0644 ${WORKDIR}/ebtables.service ${D}${systemd_unitdir}/system
+		install -m 0644 ${UNPACKDIR}/ebtables.service ${D}${systemd_unitdir}/system
 		sed -i -e 's#@SBINDIR@#${sbindir}#g' ${D}${systemd_unitdir}/system/ebtables.service
-		install -m 0755 ${WORKDIR}/ebtables.common ${D}${sbindir}/ebtables.common
+		install -m 0755 ${UNPACKDIR}/ebtables.common ${D}${sbindir}/ebtables.common
 	fi
 
 	install -d ${D}${base_sbindir}

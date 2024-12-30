@@ -2,7 +2,6 @@ SUMMARY = "Ampere OEM IPMI commands"
 DESCRIPTION = "Ampere OEM IPMI commands"
 
 LICENSE = "Apache-2.0"
-S = "${WORKDIR}"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 
@@ -14,7 +13,7 @@ LIBRARY_NAMES = "libzampoemcmds.so"
 
 S = "${WORKDIR}/git"
 SRC_URI = "git://github.com/openbmc/ampere-ipmi-oem.git;branch=master;protocol=https"
-SRCREV = "2491e06d4a832d34dfd439ff11d6edd5ca4fb443"
+SRCREV = "27374f6ab65a93357435b5977414a76292d8c32b"
 
 HOSTIPMI_PROVIDER_LIBRARY += "${LIBRARY_NAMES}"
 NETIPMI_PROVIDER_LIBRARY += "${LIBRARY_NAMES}"

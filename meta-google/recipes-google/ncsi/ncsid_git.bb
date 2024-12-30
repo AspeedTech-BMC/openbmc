@@ -11,16 +11,9 @@ EXTRA_OEMESON = " \
         "
 
 SYSTEMD_SERVICE:${PN} += " \
-  dhcp4@.service \
-  dhcp6@.service \
   ncsid@.service \
   nic-hostful@.target \
   nic-hostless@.target \
-  update-ra-gw@.service \
-  update-ra-neighbor@.service \
-  update-ra-neighbor@.timer \
-  update-static-neighbors@.service \
-  update-static-neighbors@.timer \
   "
 
 DEPENDS += " \
@@ -37,3 +30,9 @@ RDEPENDS:${PN} += " \
   ndisc6-rdisc6 \
   systemd \
   "
+
+# TODO: Remove when package is bumped to formally delete this service
+do_install:append() {
+  rm ${D}${systemd_system_unitdir}/update-ra-gw@.service
+  rm ${D}${libexecdir}/update_ra_gw.sh
+}

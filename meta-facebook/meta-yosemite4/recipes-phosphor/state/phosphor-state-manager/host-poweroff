@@ -11,7 +11,9 @@ IO_EXP_P0_PWRGD_R_OUT=18
 GPIOCHIP_IO_EXP_HOST_POWER_STATUS=$(basename "/sys/bus/i2c/devices/$CHASSIS_BUS-0023/"*gpiochip*)
 
 get_host_status() {
-    if ! host_status=$(gpioget "$GPIOCHIP_IO_EXP_HOST_POWER_STATUS" "$IO_EXP_P0_PWRGD_R_OUT"); then
+    host_status=$(gpio_get "$GPIOCHIP_IO_EXP_HOST_POWER_STATUS" "$IO_EXP_P0_PWRGD_R_OUT")
+
+    if [ "$host_status" = "gpioget failed" ]; then
         echo "Failed to get host status"
         exit 1
     fi
@@ -23,6 +25,17 @@ if [ "$host_status" == "$STATE_OFF" ]
 then
     echo "Already host power off."
     exit 0;
+fi
+
+# Check if PRSNT_SB_SLOT{1~8}_N is exist, if not exist, continues power-off process
+if [ ! -f "/tmp/gpio/PRSNT_SB_SLOT${1}_N" ]; then
+    echo "PRSNT_SB_SLOT${1}_N is not exist, continue power-off process"
+else
+    slot_presence=$(cat /tmp/gpio/PRSNT_SB_SLOT"${1}"_N)
+    if [ "$slot_presence" -ne 0 ]; then
+        echo "Host$1 is not present, skip power-off process"
+        exit 1
+    fi
 fi
 
 # Set state effecter state: Entity ID 0x0000 for host power control, 0x2 for power off
@@ -43,9 +56,11 @@ get_host_status
 
 if [ "$host_status" == "$STATE_OFF" ]
 then
-    echo "Host power off success"
+    echo "Host$1 power off success"
     exit 0;
 else
-    echo "Failed to set host$1 power off"
+    msg="Failed to set host$1 power off"
+    echo "${msg}"
+    add_sel "${msg}"
     exit 1
 fi

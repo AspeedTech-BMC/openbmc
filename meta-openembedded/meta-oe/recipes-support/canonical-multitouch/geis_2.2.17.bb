@@ -27,7 +27,6 @@ SRC_URI = "https://launchpad.net/${BPN}/trunk/${PV}/+download/${BPN}-${PV}.tar.x
 
 UPSTREAM_CHECK_URI = "https://launchpad.net/geis/trunk"
 
-SRC_URI[md5sum] = "2ff9d76a3ea5794516bb02c9d1924faf"
 SRC_URI[sha256sum] = "8a60f5683852094038904e690d23cc5a90a980fc52da67f0f28890baa25c70eb"
 
 EXTRA_OECONF = "--disable-integration-tests"
@@ -48,12 +47,12 @@ RDEPENDS:${PN}-bin = " \
 
 FILES:${PN} += " \
     ${datadir}/geisview \
-    ${libdir}/${PYTHON_DIR}/site-packages/geis* \
-    ${libdir}/${PYTHON_DIR}/site-packages/_*.so \
+    ${PYTHON_SITEPACKAGES_DIR}/geis* \
+    ${PYTHON_SITEPACKAGES_DIR}/_*.so \
 "
 
-FILES:${PN}-dbg += "${libdir}/${PYTHON_DIR}/site-packages/.debug"
+FILES:${PN}-dbg += "${PYTHON_SITEPACKAGES_DIR}/.debug"
 
-FILES:${PN}-dev += "${libdir}/${PYTHON_DIR}/site-packages/_*.la"
+FILES:${PN}-dev += "${PYTHON_SITEPACKAGES_DIR}/_*.la"
 
-FILES:${PN}-staticdev += "${libdir}/${PYTHON_DIR}/site-packages/_*.a"
+FILES:${PN}-staticdev += "${PYTHON_SITEPACKAGES_DIR}/_*.a"

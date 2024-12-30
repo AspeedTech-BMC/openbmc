@@ -33,29 +33,42 @@ source /usr/share/gbmc-br-lib.sh || exit
 # hooks that are executed after each event.
 gbmc_br_source_dir /usr/share/gbmc-br-dhcp || exit
 
+# We don't want to allow 2 simultaneous sessions. Check for a pidfile
+PID_FILE=/run/gbmc-br-dhcp.pid
+exec {PID_FD}<>$PID_FILE
+# If we can't acquire the lock we already have a successful DHCP process in the works
+flock -xn $PID_FD || exit 0
+
 # Write out the current PID and cleanup when complete
-trap 'rm -f /run/gbmc-br-dhcp.pid' EXIT
-echo "$$" >/run/gbmc-br-dhcp.pid
+trap 'rm -f $PID_FILE' EXIT
+echo "$$" >&$PID_FD
 
 if [ "$1" = bound ]; then
   # Variable is from the environment via udhcpc6
   # shellcheck disable=SC2154
   echo "DHCPv6(gbmcbr): $ipv6/128" >&2
 
+  update-dhcp-status 'ONGOING' "Received dhcp response ${ipv6}"
   pfx_bytes=()
   ip_to_bytes pfx_bytes "$ipv6"
   # Ensure we are a BMC and have a suffix nibble, the 0th index is reserved
-  if (( pfx_bytes[8] != 0xfd || (pfx_bytes[9] & 0xf) == 0 )); then
-    echo "Invalid address" >&2
+  # Alternatively, we may also have received a /64 for the OOB address
+  if (( pfx_bytes[8] != 0xfd || (pfx_bytes[9] & 0xf) == 0 )) &&
+     (( pfx_bytes[8] != 0 || pfx_bytes[9] != 0 )); then
+    echo "Invalid address prefix ${ipv6}" >&2
+    update-dhcp-status 'ONGOING' "Invalid address prefix ${ipv6}"
     exit 1
   fi
   # Ensure we don't have more than a /80 address
   for (( i = 10; i < 16; ++i )); do
     if (( pfx_bytes[i] != 0 )); then
-      echo "Invalid address" >&2
+      echo "Invalid address ${ipv6}" >&2
+      update-dhcp-status 'ONGOING' "Invalid address ${ipv6}"
       exit 1
     fi
   done
+
+  update-dhcp-status 'ONGOING' "Setting hostname ${fqdn} and ip ${ipv6}"
 
   pfx="$(ip_bytes_to_str pfx_bytes)"
   gbmc_br_set_ip "$pfx" || exit
@@ -70,11 +83,12 @@ if [ "$1" = bound ]; then
   # If any of our hooks had expectations we should fail here
   if [ "${#GBMC_BR_DHCP_OUTSTANDING[@]}" -gt 0 ]; then
     echo "Not done with DHCP process: ${!GBMC_BR_DHCP_OUTSTANDING[*]}" >&2
+    update-dhcp-status 'ONGOING' "Outstanding DHCP hooks ${!GBMC_BR_DHCP_OUTSTANDING[*]}"
     exit 1
   fi
 
   # Ensure that the installer knows we have completed processing DHCP by
   # running a service that reports completion
-  echo 'Start DHCP Done' >&2
-  systemctl start dhcp-done@DONE --no-block
+  echo 'Signaling dhcp done' >&2
+  update-dhcp-status 'DONE' "Netboot finished"
 fi

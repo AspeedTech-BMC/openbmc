@@ -18,7 +18,7 @@
 inherit rust-common
 
 # Where we download our registry and dependencies to
-export CARGO_HOME = "${WORKDIR}/cargo_home"
+export CARGO_HOME = "${UNPACKDIR}/cargo_home"
 
 # The pkg-config-rs library used by cargo build scripts disables itself when
 # cross compiling unless this is defined. We set up pkg-config appropriately
@@ -41,7 +41,7 @@ CARGO_SRC_DIR ??= ""
 CARGO_MANIFEST_PATH ??= "${S}/${CARGO_SRC_DIR}/Cargo.toml"
 
 # Path to Cargo.lock
-CARGO_LOCK_PATH ??= "${@ os.path.join(os.path.dirname(d.getVar('CARGO_MANIFEST_PATH', True)), 'Cargo.lock')}"
+CARGO_LOCK_PATH ??= "${@ os.path.join(os.path.dirname(d.getVar('CARGO_MANIFEST_PATH')), 'Cargo.lock')}"
 
 CARGO_RUST_TARGET_CCLD ??= "${RUST_TARGET_CCLD}"
 cargo_common_do_configure () {
@@ -138,11 +138,11 @@ python cargo_common_do_patch_paths() {
         return
 
     patches = dict()
-    workdir = d.getVar('WORKDIR')
+    workdir = d.getVar('UNPACKDIR')
     fetcher = bb.fetch2.Fetch(src_uri, d)
     for url in fetcher.urls:
         ud = fetcher.ud[url]
-        if ud.type == 'git':
+        if ud.type == 'git' or ud.type == 'gitsm':
             name = ud.parm.get('name')
             destsuffix = ud.parm.get('destsuffix')
             if name is not None and destsuffix is not None:
@@ -171,7 +171,7 @@ python cargo_common_do_patch_paths() {
     # here is better than letting cargo tell (in case the file is missing)
     # "Cargo.lock should be modified but --frozen was given"
 
-    lockfile = d.getVar("CARGO_LOCK_PATH", True)
+    lockfile = d.getVar("CARGO_LOCK_PATH")
     if not os.path.exists(lockfile):
         bb.fatal(f"{lockfile} file doesn't exist")
 

@@ -30,7 +30,6 @@ SRC_URI = "${SOURCEFORGE_MIRROR}/lmbench/lmbench-${PV}.tgz \
            file://0001-bench.h-Fix-typo-in-specifying-string.h.patch \
            file://0001-scripts-build-Fix-the-tests-to-build-with-clang15.patch \
            "
-SRC_URI[md5sum] = "b3351a3294db66a72e2864a199d37cbf"
 SRC_URI[sha256sum] = "cbd5777d15f44eab7666dcac418054c3c09df99826961a397d9acf43d8a2a551"
 
 UPSTREAM_CHECK_URI = "https://sourceforge.net/projects/lmbench/files/development/"
@@ -75,7 +74,7 @@ do_install () {
             DESTDIR="${D}" \
             -C src install
     mv ${D}${bindir}/line ${D}${bindir}/lm_line
-    install -m 0755 ${WORKDIR}/lmbench-run ${D}${bindir}/
+    install -m 0755 ${UNPACKDIR}/lmbench-run ${D}${bindir}/
     install -m 0755 ${S}/bin/${TARGET_SYS}/cache ${D}${bindir}/
     sed -i -e 's,^SHAREDIR=.*$,SHAREDIR=${datadir}/${BPN},;' \
            -e 's,^CONFIG=.*$,CONFIG=`$SCRIPTSDIR/config`,;' \

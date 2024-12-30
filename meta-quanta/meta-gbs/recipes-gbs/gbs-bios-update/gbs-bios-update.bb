@@ -7,13 +7,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 inherit systemd
 inherit obmc-phosphor-systemd
 
-
 DEPENDS += "systemd"
 DEPENDS += "phosphor-ipmi-flash"
 RDEPENDS:${PN} += "bash"
-
-PROVIDES += "virtual/bios-update"
-RPROVIDES:${PN} += "virtual/bios-update"
 
 SRC_URI += " file://bios-verify.sh \
              file://bios-update.sh \
@@ -26,15 +22,15 @@ FILES:${PN} += "${datadir}/phosphor-ipmi-flash/config-bios.json"
 
 do_install() {
     install -d ${D}${bindir}
-    install -m 0755 ${WORKDIR}/bios-verify.sh ${D}${bindir}/
-    install -m 0755 ${WORKDIR}/bios-update.sh ${D}${bindir}/
+    install -m 0755 ${UNPACKDIR}/bios-verify.sh ${D}${bindir}/
+    install -m 0755 ${UNPACKDIR}/bios-update.sh ${D}${bindir}/
 
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/phosphor-ipmi-flash-bios-verify.service ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/phosphor-ipmi-flash-bios-update.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/phosphor-ipmi-flash-bios-verify.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/phosphor-ipmi-flash-bios-update.service ${D}${systemd_system_unitdir}
 
     install -d ${D}${datadir}/phosphor-ipmi-flash
-    install -m 0644 ${WORKDIR}/config-bios.json ${D}${datadir}/phosphor-ipmi-flash
+    install -m 0644 ${UNPACKDIR}/config-bios.json ${D}${datadir}/phosphor-ipmi-flash
 }
 
 

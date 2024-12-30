@@ -3,6 +3,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit allarch systemd obmc-phosphor-systemd
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 RDEPENDS:${PN} += "bash"
 RDEPENDS:${PN} += "libgpiod-tools"
 RDEPENDS:${PN} += "minerva-common-functions"
@@ -22,7 +25,7 @@ SYSTEMD_SERVICE:${PN}:append = " \
 
 do_install() {
     install -d ${D}${libexecdir}
-    install -m 0755 ${WORKDIR}/minerva-early-sys-init ${D}${libexecdir}
-    install -m 0755 ${WORKDIR}/minerva-fan-status-monitor ${D}${libexecdir}
+    install -m 0755 ${UNPACKDIR}/minerva-early-sys-init ${D}${libexecdir}
+    install -m 0755 ${UNPACKDIR}/minerva-fan-status-monitor ${D}${libexecdir}
 }
 

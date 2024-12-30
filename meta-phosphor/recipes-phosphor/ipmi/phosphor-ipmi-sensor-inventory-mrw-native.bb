@@ -18,7 +18,8 @@ DEPENDS += " \
 
 PROVIDES += "virtual/phosphor-ipmi-sensor-inventory"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 SRC_URI += "file://merge_sensor_config.py"
 
 do_install() {
@@ -36,7 +37,7 @@ python do_merge_sensor_config () {
     import subprocess
 
     # TODO: Perform the merge in a temporary directory?
-    workdir = d.getVar('WORKDIR', True)
+    workdir = d.getVar('UNPACKDIR', True)
     nativedir = d.getVar('STAGING_DIR_NATIVE', True)
     sensoryamldir = d.getVar('sensor_yamldir', True)
     cmd = []

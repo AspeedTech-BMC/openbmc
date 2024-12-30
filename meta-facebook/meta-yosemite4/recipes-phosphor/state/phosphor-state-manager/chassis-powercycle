@@ -5,6 +5,9 @@
 # Provide source directive to shellcheck.
 # shellcheck source=meta-facebook/meta-yosemite4/recipes-phosphor/state/phosphor-state-manager/power-cmd
 source /usr/libexec/phosphor-state-manager/power-cmd
+# shellcheck source=meta-facebook/meta-yosemite4/recipes-yosemite4/plat-tool/files/yosemite4-common-functions
+source /usr/libexec/yosemite4-common-functions
+
 #IO 0:7 input port for showing slot 1:8 power status
 #IO 8:16 output port for controlling slot 1:8 power status
 CHASSIS_ID=$1
@@ -12,57 +15,169 @@ IO_EXP_SLOT_PWR_STATUS=$((CHASSIS_ID - 1))
 IO_EXP_SLOT_PWR_CTRL=$((IO_EXP_SLOT_PWR_STATUS + 8))
 IO_EXP_SLED_CYCLE=12
 #IO_EXP_BIC_PWR_CTRL=32
+IO_EXP_SLOT_12V_STATUS=$((CHASSIS_ID + 23))
+MANAGEMENT_BOARD_VERSION=$(get_product_version Management_Board)
+
+if [ -z "$MANAGEMENT_BOARD_VERSION" ]; then
+    echo "Failed to check management board fru info, sled cycle keep default setting"
+fi
 
 GPIOCHIP_IO_EXP_SLOT_PWR_CTRL=$(basename "/sys/bus/i2c/devices/$SPIDER_BOARD_IO_EXP_BUS_NUM-00$IO_EXP_SLOT_PWR_CTRL_ADDR/"*gpiochip*)
 GPIOCHIP_IO_EXP_SLED_PWR_CTRL=$(basename "/sys/bus/i2c/devices/$MANAGEMENT_BOARD_IO_EXP_BUS_NUM-00$IO_EXP_SLED_PWR_CTRL_ADDR/"*gpiochip*)
 #GPIOCHIP_IO_EXP_BIC_PWR_CTRL=$(basename "/sys/bus/i2c/devices/$IO_EXP_SLOT_PWR_STATUS-00$IO_EXP_BIC_PWR_CTRL_ADDR/"*gpiochip*)
 
+is_nuvoton_board="$(check_nuvoton_board)"
+
+disable_i3c_hub()
+{
+    local target_slot="$CHASSIS_ID"
+    local hub_path
+    local offset_file
+    local access_file
+    local current_port
+    local mask=1
+    local i3c_hub_lock
+
+    echo "Do 12V cycle disable i3c hub"
+    if [ "$target_slot" -lt 5 ]; then
+        hub_path="/sys/kernel/debug/i3c-hub-0-*/reg"
+        i3c_hub_lock="/tmp/i3c-hub0.lock"
+        echo "Slot$target_slot on i3c hub 0."
+    else
+        hub_path="/sys/kernel/debug/i3c-hub-1-*/reg"
+        i3c_hub_lock="/tmp/i3c-hub1.lock"
+        echo "Slot$target_slot on i3c hub 1."
+    fi
+
+    for file in $hub_path/{offset,access}; do
+        if [[ $file == *"/offset" ]]; then
+            offset_file="$file"
+        elif [[ $file == *"/access" ]]; then
+            access_file="$file"
+        fi
+    done
+
+    {
+        flock -x 100
+        echo "Unlock i3c hub register."
+        echo 16 > "$offset_file"
+        echo 105 > "$access_file"
+
+        echo "Disable slot${target_slot} i3c port."
+        echo 18 > "$offset_file"
+        current_port=$(cat "$access_file")
+        if [ "$target_slot" -gt 4 ]; then
+            ((target_slot=target_slot-4))
+        fi
+        mask=$((mask << (--target_slot)))
+        mask=$((~mask))
+        current_port=$((current_port & mask))
+        echo $current_port > "$access_file"
+        cat "$access_file"
+
+        echo "Lock i3c hub register."
+        echo 16 > "$offset_file"
+        echo 0 > "$access_file"
+    } 100>$i3c_hub_lock
+}
+
 chassis-power-cycle()
 {
     CHASSIS_ID=$1
+    chassis_power_cycle_lock="/tmp/chassis_power_cycle.lock"
+
+    exec 200>"$chassis_power_cycle_lock"
+    flock -x 200
+    trap 'flock -u 200' EXIT
 
     if [ "$CHASSIS_ID" -le 8  ]
     then
-        chassis_status=$(gpioget "$GPIOCHIP_IO_EXP_SLOT_PWR_CTRL" "$IO_EXP_SLOT_PWR_STATUS")
+        chassis_status=$(gpio_get "$GPIOCHIP_IO_EXP_SLOT_PWR_CTRL" "$IO_EXP_SLOT_PWR_STATUS")
         if [ "$chassis_status" == "$STATE_ON" ]
         then
-            busctl call xyz.openbmc_project.MCTP "/xyz/openbmc_project/mctp/1/${CHASSIS_ID}0" au.com.CodeConstruct.MCTP.Endpoint Remove
-            busctl call xyz.openbmc_project.MCTP "/xyz/openbmc_project/mctp/1/${CHASSIS_ID}2" au.com.CodeConstruct.MCTP.Endpoint Remove
-            sleep 1
-            if ! gpioset "$GPIOCHIP_IO_EXP_SLOT_PWR_CTRL" "$IO_EXP_SLOT_PWR_CTRL"=1
+            if [ -n "$is_nuvoton_board" ]
             then
-                echo "Failed to set slot$1 power off"
+                # inform management CPLD that the slot is 12V off
+                if ! gpio_set "$GPIOCHIP_IO_EXP_SLED_PWR_CTRL" "$IO_EXP_SLOT_12V_STATUS"=0
+                then
+                    echo "Failed to inform management CPLD that slot$1 is 12V off"
+                fi
             fi
-            sleep 10
+            disable_i3c_hub
+            sleep 1
+            if ! gpio_set "$GPIOCHIP_IO_EXP_SLOT_PWR_CTRL" "$IO_EXP_SLOT_PWR_CTRL"=1
+            then
+                msg="Failed to set slot$CHASSIS_ID power off"
+                echo "${msg}"
+                add_sel "${msg}"
+            else
+                echo "Succeed to set slot$CHASSIS_ID power off"
+            fi
+            # Set chassis power state off
+            busctl set-property "$CHASSIS_BUS_NAME""$CHASSIS_ID" "$CHASSIS_OBJ_PATH""$CHASSIS_ID" "$CHASSIS_INTF_NAME" "$CHASSIS_PROPERTY_NAME" s "$CHASSIS_OFF_PROPERTY"
+            sleep 20
+            /usr/libexec/phosphor-state-manager/wait-until-mctp-EID-remove "$CHASSIS_ID" "36"
         fi
-        if ! gpioset "$GPIOCHIP_IO_EXP_SLOT_PWR_CTRL" "$IO_EXP_SLOT_PWR_CTRL"=0
+        if ! gpio_set "$GPIOCHIP_IO_EXP_SLOT_PWR_CTRL" "$IO_EXP_SLOT_PWR_CTRL"=0
         then
-            echo "Failed to set slot$1 power on"
+            msg="Failed to set slot$CHASSIS_ID power on"
+            echo "${msg}"
+            add_sel "${msg}"
         fi
         sleep 2
 
         # Check chassis status after doing 12V cycle
-        chassis_status=$(gpioget "$GPIOCHIP_IO_EXP_SLOT_PWR_CTRL" "$IO_EXP_SLOT_PWR_STATUS")
+        chassis_status=$(get_ac_on_status "$GPIOCHIP_IO_EXP_SLOT_PWR_CTRL" "$IO_EXP_SLOT_PWR_STATUS")
         if [ "$chassis_status" == "$STATE_ON" ]
         then
+            if [ -n "$is_nuvoton_board" ]
+            then
+                # inform management CPLD that the slot is 12V on
+                if ! gpio_set "$GPIOCHIP_IO_EXP_SLED_PWR_CTRL" "$IO_EXP_SLOT_12V_STATUS"=1
+                then
+                    echo "Failed to inform management CPLD that slot$1 is 12V on"
+                fi
+            fi
+
+            # Wait for standby sensors to be ready
+            sleep 2
             busctl set-property "$CHASSIS_BUS_NAME""$CHASSIS_ID" "$CHASSIS_OBJ_PATH""$CHASSIS_ID" "$CHASSIS_INTF_NAME" "$CHASSIS_PROPERTY_NAME" s "$CHASSIS_ON_PROPERTY"
             /usr/libexec/phosphor-state-manager/wait-until-mctp-connection-done "$CHASSIS_ID" && systemctl restart "phosphor-discover-system-state@$CHASSIS_ID.service"
-            echo "Chassis$CHASSIS_ID cycle success"
+            msg="Chassis$CHASSIS_ID cycle success"
+            echo "${msg}"
+            add_sel "${msg}"
+            flock -u 200
             exit 0;
         else
             busctl set-property "$CHASSIS_BUS_NAME""$CHASSIS_ID" "$CHASSIS_OBJ_PATH""$CHASSIS_ID" "$CHASSIS_INTF_NAME" "$CHASSIS_PROPERTY_NAME" s "$CHASSIS_OFF_PROPERTY"
+            msg="Chassis$CHASSIS_ID cycle failed, Chassis$CHASSIS_ID is power off"
+            echo "${msg}"
+            add_sel "${msg}"
+            flock -u 200
             exit 1;
         fi
     fi
 
     echo "Invalid slot id"
+    flock -u 200
     exit 1;
+}
+
+sled-cycle()
+{
+    if [ -z "$MANAGEMENT_BOARD_VERSION" ]; then
+        set_gpio FM_BMC_SLED_CYCLE_R 1
+    elif [ "$MANAGEMENT_BOARD_VERSION" = "DVT" ] || [ "$MANAGEMENT_BOARD_VERSION" = "EVT" ]; then
+        gpio_set "$GPIOCHIP_IO_EXP_SLED_PWR_CTRL" "$IO_EXP_SLED_CYCLE"=1
+    else
+        set_gpio FM_BMC_SLED_CYCLE_R 1
+    fi
 }
 
 if [ "$1" == 0 ]
 then
     echo "Starting sled cycle..."
-    if ! gpioset "$GPIOCHIP_IO_EXP_SLED_PWR_CTRL" "$IO_EXP_SLED_CYCLE"=1
+    if ! sled-cycle
     then
         echo "Failed to do sled cycle"
     fi

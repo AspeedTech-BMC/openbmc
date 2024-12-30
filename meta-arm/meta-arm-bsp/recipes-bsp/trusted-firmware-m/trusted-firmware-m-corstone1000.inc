@@ -10,36 +10,45 @@ TFM_DEBUG = "1"
 TFM_PLATFORM_IS_FVP ?= "FALSE"
 EXTRA_OECMAKE += "-DPLATFORM_IS_FVP=${TFM_PLATFORM_IS_FVP}"
 EXTRA_OECMAKE += "-DCC312_LEGACY_DRIVER_API_ENABLED=OFF"
+EXTRA_OECMAKE:append:corstone1000-fvp = " -DENABLE_MULTICORE=${@bb.utils.contains('MACHINE_FEATURES', 'corstone1000_fvp_smp', 'TRUE', 'FALSE', d)}"
+EXTRA_OECMAKE:append:corstone1000-mps3 = " -DPLATFORM_PSA_ADAC_SECURE_DEBUG=${@bb.utils.contains('MACHINE_FEATURES', 'secure-debug', 'ON', 'OFF', d)}"
+EXTRA_OECMAKE:append:corstone1000-mps3 = " -DPLATFORM_PSA_ADAC_SOURCE_PATH=${S}/../tfm-psa-adac -DPLATFORM_PSA_ADAC_BUILD_PATH=${B}/tfm-psa-adac-build"
 
-# libmetal v2023.04.0
-LICENSE += "& BSD-3-Clause"
-LIC_FILES_CHKSUM += "file://../libmetal/LICENSE.md;md5=f4d5df0f12dcea1b1a0124219c0dbab4"
-SRC_URI += "git://github.com/OpenAMP/libmetal.git;protocol=https;branch=main;name=libmetal;destsuffix=git/libmetal \
-            file://0001-cmake-modify-path-to-libmetal-version-file.patch;patchdir=../libmetal \
-            file://0002-arm-trusted-firmware-m-disable-address-warnings-into.patch \
+SRC_URI += " \
+            file://0001-arm-trusted-firmware-m-disable-address-warnings-into.patch \
            "
-SRCREV_libmetal = "28fa2351d6a8121ce6c1c2ac5ee43ce08d38dbae"
-EXTRA_OECMAKE += "-DLIBMETAL_SRC_PATH=${S}/../libmetal -DLIBMETAL_BIN_PATH=${B}/libmetal-build"
-# The configuration can fail if libmetal tries to generate the docs and the doxygen bin is found
-EXTRA_OECMAKE += "-DWITH_DOC=False"
-
-# OpenAMP v2023.04.0
-LICENSE += "& BSD-2-Clause & BSD-3-Clause"
-LIC_FILES_CHKSUM += "file://../openamp/LICENSE.md;md5=ab88daf995c0bd0071c2e1e55f3d3505"
-SRC_URI += "git://github.com/OpenAMP/open-amp.git;protocol=https;branch=main;name=openamp;destsuffix=git/openamp"
-SRCREV_openamp = "accac4d3610cbb268f3c3fe3c31dc45dd4c4dd17"
-EXTRA_OECMAKE += "-DLIBOPENAMP_SRC_PATH=${S}/../openamp -DLIBOPENAMP_BIN_PATH=${B}/libopenamp-build"
-
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:corstone1000 = " \
-    file://0001-platform-corstone1000-Update-MPU-configuration.patch \
-    file://0002-platform-corstone1000-Cover-S_DATA-with-MPU.patch \
-    file://0003-Platform-corstone1000-Fix-issues-due-to-adjustment-M.patch \
-    file://0004-platform-corstone1000-align-capsule-update-structs.patch \
-    file://0005-platform-corstone1000-fix-synchronization-issue-on-o.patch \
-    file://0006-Platform-Corstone1000-skip-the-first-nv-counter.patch \
-    file://0007-platform-corstone1000-add-unique-guid-for-mps3.patch \    
+    file://0001-Platform-Corstone1000-Align-capsule-UEFI-structs.patch \
+    file://0002-Platform-Corstone1000-Fix-NV-counter-writing.patch \
+    file://0003-Platform-Corstone1000-Enable-firewall-in-FVP.patch \
+    file://0004-Platform-CS1000-Increase-ITS-max-asset-size.patch \
+    file://0005-Platform-CS1000-Increase-RSE_COMMS-buffer-size.patch \
+    file://0006-Platform-CS1000-Increase-buffers-for-EFI-vars.patch \
+    file://0007-Plaform-Corstone1000-Switch-to-metadata-v2.patch \
+    file://0008-Platform-CS1000-Increase-flash-PS-area-size.patch \
+    file://0009-corstone1000-Remove-reset-after-capsule-update.patch \
+    file://0010-platform-CS1000-Add-multicore-support-for-FVP.patch \
+    file://0011-Platform-CS1000-Fix-Bank-offsets.patch \
+    file://0012-Platform-CS1000-Increase-BL2-partition-size.patch \
+    file://0013-CC312-ADAC-Add-PSA_WANT_ALG_SHA_256-definition.patch \
+    file://0014-Platform-CS1000-Add-crypto-configs-for-ADAC.patch \
+    file://0015-Platform-CS1000-Fix-platform-name-in-logs.patch \
+    file://0016-Platform-corstone1000-Fix-isolation-L2-memory-protection.patch \
+    file://0017-Platform-CS1000-Remove-unused-BL1-files.patch \
+    file://0018-Platform-CS1000-Remove-duplicated-metadata-write.patch \
+    file://0019-Platform-CS1000-Fix-compiler-switch-in-BL1.patch \
+    file://0020-Platform-CS1000-Validate-both-metadata-replicas.patch \
+    file://0021-platform-corstone1000-add-unique-guid-for-mps3.patch \
+    file://0022-CC312-alignment-of-cc312-differences.patch \
+    "
+
+FILESEXTRAPATHS:prepend:corstone1000-mps3 := "${THISDIR}/files/corstone1000/psa-adac:"
+SRC_URI:append:corstone1000-mps3 = " \
+    file://0001-PSA-revert-header-versions.patch;patchdir=../tfm-psa-adac \
+    file://0002-ADAC-Link-psa_interface-instead-of-tfm_sprt.patch;patchdir=../tfm-psa-adac \
+    file://0003-Fix-psa_key_handle_t-initialization.patch;patchdir=../tfm-psa-adac \
     "
 
 # TF-M ships patches for external dependencies that needs to be applied

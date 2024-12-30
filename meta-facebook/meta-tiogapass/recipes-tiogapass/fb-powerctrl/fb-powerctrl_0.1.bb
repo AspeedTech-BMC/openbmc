@@ -6,7 +6,7 @@ inherit allarch systemd obmc-phosphor-systemd
 RDEPENDS:${PN} += "bash"
 
 SRC_URI += " \
-    file://setup_gpio.sh \
+    file://setup_gpio \
     file://power-util \
     file://host-gpio.service \
     file://host-poweroff.service \
@@ -19,10 +19,11 @@ SYSTEMD_SERVICE:${PN}:append = " \
     host-poweroff.service \
     "
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_install() {
     install -d ${D}/usr/sbin
-    install -m 0755 ${S}/setup_gpio.sh ${D}/${sbindir}/
+    install -m 0755 ${S}/setup_gpio ${D}/${sbindir}/
     install -m 0755 ${S}/power-util ${D}/${sbindir}/
 }

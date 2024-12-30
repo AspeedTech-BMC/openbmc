@@ -6,6 +6,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 DEPENDS += "systemd"
 RDEPENDS:${PN} += "libsystemd bash"
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 inherit allarch systemd
 
 SRC_URI += "file://ampere-usbnet.service \
@@ -14,13 +17,13 @@ SRC_URI += "file://ampere-usbnet.service \
 
 do_install() {
     install -d ${D}${systemd_unitdir}/system/
-    install -m 0644 ${WORKDIR}/ampere-usbnet.service ${D}${systemd_unitdir}/system
+    install -m 0644 ${UNPACKDIR}/ampere-usbnet.service ${D}${systemd_unitdir}/system
 
     install -d ${D}${sysconfdir_native}/systemd/network/
-    install -m 0644 ${WORKDIR}/00-bmc-usb0.network ${D}${sysconfdir_native}/systemd/network
+    install -m 0644 ${UNPACKDIR}/00-bmc-usb0.network ${D}${sysconfdir_native}/systemd/network
 
     install -d ${D}/${sbindir}
-    install -m 755 ${WORKDIR}/ampere_usbnet.sh ${D}/${sbindir}
+    install -m 755 ${UNPACKDIR}/ampere_usbnet.sh ${D}/${sbindir}
 }
 
 NATIVE_SYSTEMD_SUPPORT = "1"

@@ -10,11 +10,11 @@ SRC_URI = "${SAVANNAH_NONGNU_MIRROR}/hddtemp/hddtemp-0.3-beta15.tar.bz2 \
            file://0001-backtrace-Replace-struct-ucontext-with-ucontext_t.patch \
            file://0001-configure.ac-Rename-to-configure.ac-and-use-external.patch \
            file://0001-sata.c-Declare-ata_get_powermode-prototype.patch \
+           file://0001-po-force-Language-header-for-fr-and-de-locals.patch \
            file://hddtemp.db \
            file://init \
 "
 
-SRC_URI[md5sum] = "8b829339e1ae9df701684ec239021bb8"
 SRC_URI[sha256sum] = "618541584054093d53be8a2d9e81c97174f30f00af91cb8700a97e442d79ef5b"
 
 LIC_FILES_CHKSUM = "file://GPL-2;md5=eb723b61539feef013de476e68b5c50a"
@@ -25,9 +25,9 @@ FILES:${PN} += "/usr/share/misc/hddtemp.db"
 
 do_install:append() {
     install -d ${D}/usr/share/misc/
-    install -m 0644 ${WORKDIR}/hddtemp.db ${D}/usr/share/misc/hddtemp.db
+    install -m 0644 ${UNPACKDIR}/hddtemp.db ${D}/usr/share/misc/hddtemp.db
     install -d ${D}${sysconfdir}/init.d
-    install -m 0644 ${WORKDIR}/init ${D}${sysconfdir}/init.d/hddtemp
+    install -m 0644 ${UNPACKDIR}/init ${D}${sysconfdir}/init.d/hddtemp
 }
 
 INITSCRIPT_NAME = "hddtemp"

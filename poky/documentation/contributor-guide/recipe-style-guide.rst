@@ -395,7 +395,7 @@ one CVE is fixed, separate them using spaces.
 CVE Examples
 ------------
 
-This should be the header of patch that fixes :cve:`2015-8370` in GRUB2::
+This should be the header of patch that fixes :cve_nist:`2015-8370` in GRUB2::
 
    grub2: Fix CVE-2015-8370
 
@@ -409,3 +409,15 @@ This should be the header of patch that fixes :cve:`2015-8370` in GRUB2::
    Upstream-Status: Backport [http://git.savannah.gnu.org/cgit/grub.git/commit/?id=451d80e52d851432e109771bb8febafca7a5f1f2]
    CVE: CVE-2015-8370
    Signed-off-by: Joe Developer <joe.developer@example.com>
+
+Patch format
+============
+
+By default, patches created with ``git format-patch`` have a `Git` version signature at the end.
+To avoid having a `Git` signature at the end of generated or updated patches,
+you can use `Git` configuration settings::
+
+   git config --global format.signature ""
+
+.. note::
+   Patches generated or updated by ``devtool`` are created with no signature.

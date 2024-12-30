@@ -10,7 +10,7 @@ DEPENDS = " \
          sdbusplus \
          openssl \
          "
-SRCREV = "64c18b07e867920ec53e47bf387f2d5e5b08ca0e"
+SRCREV = "20a045f6854efe2dd11d5bb717ba72093034c83b"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
@@ -27,6 +27,7 @@ inherit obmc-phosphor-systemd
 EXTRA_OEMESON = " \
         -Dtests=disabled \
         ${PSU_VERSION_UTIL} \
+        ${PSU_MODEL_UTIL} \
         ${PSU_VERSION_COMPARE_UTIL} \
         ${PSU_UPDATE_SERVICE} \
         "
@@ -39,9 +40,12 @@ RDEPENDS:${PN} += "phosphor-power"
 ## The psutils here comes from phosphor-power repo where
 ## * PSU_VERSION_UTIL accepts a PSU inventory path and returns the PSU
 ##   firmware version string
+## * PSU_MODEL_UTIL accepts a PSU inventory path and returns the PSU
+##   model string
 ## * PSU_VERSION_COMPARE_UTIL accepts several PSU inventory paths and return
 ##   the newest version string
 PSU_VERSION_UTIL ?= "-DPSU_VERSION_UTIL='/usr/bin/psutils --raw --get-version'"
+PSU_MODEL_UTIL ?= "-DPSU_MODEL_UTIL='/usr/bin/psutils --raw --get-model'"
 PSU_VERSION_COMPARE_UTIL ?= "-DPSU_VERSION_COMPARE_UTIL='/usr/bin/psutils --raw --compare'"
 ## The psu-update@.service from repo is an example service that only prints a log and fails
 ## Override it in a machine layer to invoke the psu update util

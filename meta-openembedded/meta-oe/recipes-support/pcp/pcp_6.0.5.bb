@@ -52,7 +52,7 @@ RDEPENDS:${PN}-testsuite += "${PN} bash perl"
 RDEPENDS:python3-${PN} += "${PN} python3"
 
 do_configure:prepend () {
-    cp ${WORKDIR}/config.linux ${B}
+    cp ${UNPACKDIR}/config.linux ${B}
     rm -rf ${S}/include/pcp/configsz.h
     rm -rf ${S}/include/pcp/platformsz.h
     export SED=${TMPDIR}/hosttools/sed
@@ -93,6 +93,10 @@ do_install () {
 	sed -i "s#PCP_SORT_PROG=.*#PCP_SORT_PROG=sort#" ${D}/${sysconfdir}/pcp.conf
 	sed -i "s#PCP_ECHO_PROG=.*#PCP_ECHO_PROG=echo#" ${D}/${sysconfdir}/pcp.conf
 	sed -i "s#PCP_WHICH_PROG=.*#PCP_WHICH_PROG=which#" ${D}/${sysconfdir}/pcp.conf
+	sed -i -e 's#${RECIPE_SYSROOT}##g' ${D}/${sysconfdir}/pcp.conf
+	sed -i -e 's#${RECIPE_SYSROOT}##g' \
+		-e 's#${RECIPE_SYSROOT_NATIVE}##g' \
+		-e 's#${TMPDIR}##g' ${D}${includedir}/pcp/builddefs
 }
 
 PACKAGES += " ${PN}-export-zabbix-agent ${PN}-testsuite \

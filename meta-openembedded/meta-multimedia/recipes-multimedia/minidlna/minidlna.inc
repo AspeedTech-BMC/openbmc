@@ -11,9 +11,8 @@ inherit gettext autotools-brokensep update-rc.d systemd
 SRC_URI = "git://git.code.sf.net/p/minidlna/git;branch=master;module=git \
            file://minidlna-daemon.init.d \
            file://minidlna.service \
-           file://0001-Update-Gettext-version.patch \
            file://0001-configure-Check-for-clock_gettime-seprately-from-__N.patch \
-           file://0001-configure.ac-drop-non-standard-checks.patch \
+           file://0001-Add-compatibility-with-FFMPEG-7.0.patch \
            "
 
 S = "${WORKDIR}/git"
@@ -22,17 +21,21 @@ S = "${WORKDIR}/git"
 # configure.ac:30: error: required file './ABOUT-NLS' not found
 EXTRA_AUTORECONF = ""
 
+# Reproducibility: force os-name and os-version to constants to avoid host
+# related build differences
+EXTRA_OECONF = "--with-os-name='${DISTRO_NAME}' --with-os-version=''"
+
 do_install:append(){
     install -d ${D}${sysconfdir}
     install -m 0755 minidlna.conf ${D}${sysconfdir}
 
 # Systemd script
     install -d ${D}${nonarch_base_libdir}/systemd/system
-    install -m 0755 ${WORKDIR}/minidlna.service ${D}${nonarch_base_libdir}/systemd/system
+    install -m 0755 ${UNPACKDIR}/minidlna.service ${D}${nonarch_base_libdir}/systemd/system
 
 # Sysvinit script
     install -d ${D}${sysconfdir}/init.d
-    install -m 0755 ${WORKDIR}/minidlna-daemon.init.d ${D}${sysconfdir}/init.d/minidlna
+    install -m 0755 ${UNPACKDIR}/minidlna-daemon.init.d ${D}${sysconfdir}/init.d/minidlna
 
 }
 

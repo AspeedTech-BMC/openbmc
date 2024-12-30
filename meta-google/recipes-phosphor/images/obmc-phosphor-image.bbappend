@@ -17,6 +17,8 @@ OBMC_IMAGE_EXTRA_INSTALL:append:gbmc:dev = " gbmc-dev-ssh-key"
 OBMC_IMAGE_EXTRA_INSTALL:append:gbmc = \
   '${@"" if not d.getVar("GBMC_NCSI_IF_NAME") else " gbmc-ncsi-config"}'
 OBMC_IMAGE_EXTRA_INSTALL:append:gbmc = \
+  '${@"" if not d.getVar("GBMC_EXT_NICS") else " gbmc-nic-config"}'
+OBMC_IMAGE_EXTRA_INSTALL:append:gbmc = \
   '${@"" if not d.getVar("GBMC_MAC_EEPROM_OF_NAME") else " gbmc-mac-config"}'
 OBMC_IMAGE_EXTRA_INSTALL:append:gbmc = \
   '${@"" if not d.getVar("GBMC_ETHER_MAP") else " gbmc-nic-rename"}'
@@ -28,7 +30,7 @@ OBMC_IMAGE_EXTRA_INSTALL:append:gbmc = " tcpdump"
 
 # Add gBMC update recipes
 OBMC_IMAGE_EXTRA_INSTALL:append:gbmc = " dummy-gbmc-update"
-OBMC_IMAGE_EXTRA_INSTALL:append:gbmc = " virtual/bmc-update"
+OBMC_IMAGE_EXTRA_INSTALL:append:gbmc = " ${VIRTUAL-RUNTIME_bmc-update}"
 
 # Jettison the cracklib package to save space.
 PACKAGE_INSTALL:remove:gbmc = "cracklib libpwquality"

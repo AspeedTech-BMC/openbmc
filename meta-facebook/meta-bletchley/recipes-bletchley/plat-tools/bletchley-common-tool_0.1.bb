@@ -3,6 +3,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit obmc-phosphor-systemd
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 RDEPENDS:${PN} += " bash motor-ctrl"
 RDEPENDS:${PN} += " mdio-tools"
 
@@ -15,11 +18,11 @@ SRC_URI += " \
 
 do_install() {
     install -d ${D}${libexecdir}
-    install -m 0755 ${WORKDIR}/bletchley-system-state-init ${D}${libexecdir}
+    install -m 0755 ${UNPACKDIR}/bletchley-system-state-init ${D}${libexecdir}
 
     install -d ${D}${bindir}
-    install -m 0755 ${WORKDIR}/bletchley-usbmux-util ${D}${bindir}
-    install -m 0755 ${WORKDIR}/bletchley-net-util ${D}${bindir}
+    install -m 0755 ${UNPACKDIR}/bletchley-usbmux-util ${D}${bindir}
+    install -m 0755 ${UNPACKDIR}/bletchley-net-util ${D}${bindir}
 }
 
 

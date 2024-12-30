@@ -11,9 +11,10 @@ LIC_FILES_CHKSUM = "file://COPYING.TXT;md5=932ca542d6c6cb8a59a0bcd76ab67cc3"
 SRC_URI = "http://www.kermitproject.org/ftp/kermit/archives/cku${PV}.tar.gz;subdir=${BPN}-${PV} \
            file://0001-Fix-function-prototype-errors.patch \
            "
-SRC_URI[md5sum] = "eac4dbf18b45775e4cdee5a7c74762b0"
 SRC_URI[sha256sum] = "0d5f2cd12bdab9401b4c836854ebbf241675051875557783c332a6a40dac0711"
 
+UPSTREAM_CHECK_URI = "https://www.kermitproject.org/ck90.html"
+UPSTREAM_CHECK_REGEX = "cku(?P<pver>\d+)\.tar"
 
 export CC2 = "${CC}"
 export BINDIR = "${bindir}"
@@ -45,7 +46,7 @@ do_compile () {
         -DNORESEND -DNOAUTODL -DNOSTREAMING -DNOHINTS -DNOCKXYZ -DNOLEARN \
         -DNOMKDIR -DNOPERMS -DNOCKTIMERS -DNOCKREGEX -DNOREALPATH \
         -DCK_SMALL -DNOLOGDIAL -DNORENAME -DNOWHATAMI \
-        -DNOARROWKEYS"
+        -DNOARROWKEYS -DMAINTYPE=int"
 }
 
 do_install () {
@@ -55,3 +56,11 @@ do_install () {
     rm ${D}${BINDIR}/kermit-sshsub
     (cd ${D}${BINDIR} && ln -s ${BINDIR}/kermit kermit-sshusb)
 }
+
+# This one is reproducible only on 32bit MACHINEs
+# http://errors.yoctoproject.org/Errors/Details/766966/
+# ckutio.c:12057:10: error: passing argument 1 of 'time' from incompatible pointer type [-Wincompatible-pointer-types]
+# ckutio.c:12058:20: error: passing argument 1 of 'localtime' from incompatible pointer type [-Wincompatible-pointer-types]
+# ckufio.c:5043:32: error: passing argument 1 of 'localtime' from incompatible pointer type [-Wincompatible-pointer-types]
+# ckufio.c:5263:32: error: passing argument 1 of 'localtime' from incompatible pointer type [-Wincompatible-pointer-types]
+CFLAGS += "-Wno-error=incompatible-pointer-types"

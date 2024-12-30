@@ -339,7 +339,7 @@ python do_ar_mirror() {
     dl_dir = d.getVar('DL_DIR')
     mirror_exclusions = (d.getVar('ARCHIVER_MIRROR_EXCLUDE') or '').split()
     mirror_mode = d.getVarFlag('ARCHIVER_MODE', 'mirror')
-    have_mirror_tarballs = d.getVar('BB_GENERATE_MIRROR_TARBALLS')
+    have_mirror_tarballs = oe.types.boolean(d.getVar('BB_GENERATE_MIRROR_TARBALLS'))
 
     if mirror_mode == 'combined':
         destdir = d.getVar('ARCHIVER_COMBINED_MIRRORDIR')
@@ -473,7 +473,8 @@ def create_diff_gz(d, src_orig, src, ar_outdir):
 
 def is_work_shared(d):
     sharedworkdir = os.path.join(d.getVar('TMPDIR'), 'work-shared')
-    return d.getVar('S').startswith(sharedworkdir)
+    sourcedir = os.path.realpath(d.getVar('S'))
+    return sourcedir.startswith(sharedworkdir)
 
 # Run do_unpack and do_patch
 python do_unpack_and_patch() {
