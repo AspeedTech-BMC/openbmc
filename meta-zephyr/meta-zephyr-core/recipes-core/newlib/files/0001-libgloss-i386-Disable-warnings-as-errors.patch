@@ -1,0 +1,41 @@
+From 5dd8c118c904f5dd956ac754a10faddd35d22df2 Mon Sep 17 00:00:00 2001
+From: Naveen Saini <naveen.kumar.saini@intel.com>
+Date: Thu, 26 Sep 2024 16:43:43 +0800
+Subject: [PATCH] libgloss/i386: Disable warnings as errors
+
+i586-yocto-elf/libgloss/4.4.0+git/git/libgloss/i386/cygmon-gmon.c:109:21: warning: implicit declaration of function 'sbrk' [-Wimplicit-function-declaration]
+  109 |   buffer = (char *) sbrk (monsize);
+      |                     ^~~~
+i586-yocto-elf/libgloss/4.4.0+git/git/libgloss/i386/cygmon-gmon.c:112:7: warning: implicit declaration of function 'write'; did you mean 'fwrite'? [-Wimplicit-function-declaration]
+  112 |       write (2, MSG , sizeof(MSG));
+      |       ^~~~~
+      |       fwrite
+i586-yocto-elf/libgloss/4.4.0+git/git/libgloss/i386/cygmon-gmon.c:113:7: warning: 'return' with no value, in function returning non-void [-Wreturn-mismatch]
+  113 |       return;
+      |       ^~~~~~
+i586-yocto-elf/libgloss/4.4.0+git/git/libgloss/i386/cygmon-gmon.c:198:1: warning: return type defaults to 'int' [-Wimplicit-int]
+  198 | _mcount()
+
+Upstream-Status: Inappropriate  [OE-Specific]
+
+Signed-off-by: Naveen Saini <naveen.kumar.saini@intel.com>
+---
+ libgloss/i386/Makefile.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libgloss/i386/Makefile.in b/libgloss/i386/Makefile.in
+index 7ed0b075f..729f33d90 100644
+--- a/libgloss/i386/Makefile.in
++++ b/libgloss/i386/Makefile.in
+@@ -69,7 +69,7 @@ OBJCOPY = `if [ -f ${objroot}/../binutils/objcopy ] ; \
+ CRT0 = cygmon-crt0.o
+ CYGMON_OBJS = cygmon-salib.o cygmon-gmon.o
+ 
+-CFLAGS = -g
++CFLAGS = @CFLAGS@ -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=return-mismatch
+ 
+ GCC_LDFLAGS = `if [ -d ${objroot}/../gcc ] ; \
+ 	then echo -L${objroot}/../gcc ; fi`
+-- 
+2.37.3
+

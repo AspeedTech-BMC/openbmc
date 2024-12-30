@@ -12,10 +12,13 @@ DEPENDS += "cmake"
 
 SDK_ARCHIVE = "zephyr-sdk-${PV}_linux-${BUILD_ARCH}.tar.xz"
 SDK_NAME = "${BUILD_ARCH}"
-SRC_URI = "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${PV}/${SDK_ARCHIVE};subdir=${S};name=${SDK_NAME}"
+SRC_URI = "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${PV}/${SDK_ARCHIVE};name=${SDK_NAME}"
 
-SRC_URI[x86_64.sha256sum] = "01f942146d2fc6d6afd5afe6f4b5c315525d2c937c7e613d3312b0992b33bc68"
-SRC_URI[aarch64.sha256sum] = "1749b6891a6a6e70b013d8b31ff067c5a94891f651985a6da9a20367b2deb6c7"
+SRC_URI[x86_64.sha256sum] = "9b4b96f8df594801a84fce1aa112a84cdfcd430efc2a74229907b6421fb859a8"
+SRC_URI[aarch64.sha256sum] = "a8c1731ad602553304e539a7ade9cdb34caabc1850d581585cbba0372a7493b2"
+
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
@@ -24,7 +27,7 @@ ZEPHYR_SDK_DIR = "${prefix}/zephyr-sdk"
 
 do_install() {
     install -d ${D}${prefix}
-    cp -r ${S}/zephyr-sdk-${PV} ${D}${ZEPHYR_SDK_DIR}
+    cp -r ${UNPACKDIR}/zephyr-sdk-${PV} ${D}${ZEPHYR_SDK_DIR}
 
     # Install host tools
     ${D}${ZEPHYR_SDK_DIR}/setup.sh -h
