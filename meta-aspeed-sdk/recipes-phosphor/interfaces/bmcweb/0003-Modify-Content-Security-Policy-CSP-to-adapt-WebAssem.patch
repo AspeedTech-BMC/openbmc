@@ -1,4 +1,4 @@
-From 173ad621b7a74e57f3f76c1fb944f238ae85bf97 Mon Sep 17 00:00:00 2001
+From 30a2eceb03fe327bdc213d98b5b274a7bae101c3 Mon Sep 17 00:00:00 2001
 From: Jammy Huang <jammy_huang@aspeedtech.com>
 Date: Wed, 16 Feb 2022 15:29:30 +0800
 Subject: [PATCH] Modify Content-Security-Policy(CSP) to adapt WebAssembly
@@ -15,15 +15,18 @@ Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/include/security_headers.hpp b/include/security_headers.hpp
-index 2a2eb40d..1228d32f 100644
+index f48a22ab..a302ca36 100644
 --- a/include/security_headers.hpp
 +++ b/include/security_headers.hpp
-@@ -65,7 +65,7 @@ inline void addSecurityHeaders(const crow::Request& req [[maybe_unused]],
-                                                  "img-src 'self' data:; "
-                                                  "font-src 'self'; "
-                                                  "style-src 'self'; "
--                                                 "script-src 'self'; "
-+                                                 "script-src 'self' 'unsafe-eval'; "
-                                                  "connect-src 'self' wss:; "
-                                                  "form-action 'none'; "
-                                                  "frame-ancestors 'none'; "
+@@ -67,7 +67,7 @@ inline void addSecurityHeaders(crow::Response& res)
+                       "img-src 'self' data:; "
+                       "font-src 'self'; "
+                       "style-src 'self'; "
+-                      "script-src 'self'; "
++                      "script-src 'self' 'unsafe-eval'; "
+                       "connect-src 'self' wss:; "
+                       "form-action 'none'; "
+                       "frame-ancestors 'none'; "
+-- 
+2.25.1
+

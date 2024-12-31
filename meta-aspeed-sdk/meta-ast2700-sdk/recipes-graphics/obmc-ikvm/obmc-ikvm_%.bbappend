@@ -1,9 +1,8 @@
 FILESEXTRAPATHS:append := "${THISDIR}/${PN}:"
 
-#ToDo
 SRC_URI:append = " file://start-ipkvm1.service"
 SRC_URI:append = " file://create_usbhid.sh"
-#SRC_URI:append = " file://0004-obmc-ikvm-support-ast2750-dual-nodes.patch"
+SRC_URI:append = " file://0004-obmc-ikvm-support-ast2750-dual-nodes.patch"
 
 SYSTEMD_SERVICE:${PN}:append = " start-ipkvm1.service"
 

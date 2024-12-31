@@ -1,7 +1,7 @@
-From fd08fc1dc8ccad7aa99b9d4997183d15a8e21816 Mon Sep 17 00:00:00 2001
+From 677623904c61d8c1c7cd08a819777d031cf35d19 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 15:34:35 +0800
-Subject: [PATCH 3/3] Add support of partial jpeg
+Subject: [PATCH 3/4] Add support of partial jpeg
 
 Partial jpeg is a standard jpeg but only include the changed blocks to
 save amount of data to be transferred.
@@ -21,11 +21,11 @@ Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
  ikvm_video.hpp  | 23 +++++++++++++++++++++++
  4 files changed, 53 insertions(+), 7 deletions(-)
 
-Index: git/ikvm_args.cpp
-===================================================================
---- git.orig/ikvm_args.cpp
-+++ git/ikvm_args.cpp
-@@ -39,7 +39,7 @@ Args::Args(int argc, char* argv[]) :
+diff --git a/ikvm_args.cpp b/ikvm_args.cpp
+index b3a95fc..8747518 100644
+--- a/ikvm_args.cpp
++++ b/ikvm_args.cpp
+@@ -40,7 +40,7 @@ Args::Args(int argc, char* argv[]) :
                  break;
              case 'm':
                  format = (int)strtol(optarg, NULL, 0);
@@ -34,10 +34,10 @@ Index: git/ikvm_args.cpp
                      format = 0;
                  break;
              case 'h':
-Index: git/ikvm_server.cpp
-===================================================================
---- git.orig/ikvm_server.cpp
-+++ git/ikvm_server.cpp
+diff --git a/ikvm_server.cpp b/ikvm_server.cpp
+index b775e3c..c8ddcb7 100644
+--- a/ikvm_server.cpp
++++ b/ikvm_server.cpp
 @@ -157,8 +157,13 @@ void Server::sendFrame()
                  cl->ublen = sz_rfbFramebufferUpdateMsg;
                  rfbSendUpdateBuf(cl);
@@ -54,11 +54,11 @@ Index: git/ikvm_server.cpp
                  cl->updateBuf[cl->ublen++] = (char)(rfbTightJpeg << 4);
                  rfbSendCompressedDataTight(cl, data, video.getFrameSize(i));
                  if (cl->enableLastRectEncoding)
-Index: git/ikvm_video.cpp
-===================================================================
---- git.orig/ikvm_video.cpp
-+++ git/ikvm_video.cpp
-@@ -33,17 +33,21 @@ using namespace sdbusplus::xyz::openbmc_
+diff --git a/ikvm_video.cpp b/ikvm_video.cpp
+index 6bce429..49e7c00 100644
+--- a/ikvm_video.cpp
++++ b/ikvm_video.cpp
+@@ -33,17 +33,21 @@ using namespace sdbusplus::xyz::openbmc_project::Common::Device::Error;
  Video::Video(const std::string& p, Input& input, int fr, int sub, int fmt) :
      resizeAfterOpen(false), timingsError(false), fd(-1), frameRate(fr),
      height(600), width(800), subSampling(sub), input(input),
@@ -120,10 +120,10 @@ Index: git/ikvm_video.cpp
      rc = ioctl(fd, VIDIOC_S_FMT, &fmt);
      if (rc < 0)
      {
-Index: git/ikvm_video.hpp
-===================================================================
---- git.orig/ikvm_video.hpp
-+++ git/ikvm_video.hpp
+diff --git a/ikvm_video.hpp b/ikvm_video.hpp
+index 1197b08..4255f87 100644
+--- a/ikvm_video.hpp
++++ b/ikvm_video.hpp
 @@ -6,6 +6,7 @@
  #include <string>
  #include <vector>
@@ -132,10 +132,11 @@ Index: git/ikvm_video.hpp
  
  #ifndef V4L2_PIX_FMT_AJPG
  #define V4L2_PIX_FMT_AJPG     v4l2_fourcc('A', 'J', 'P', 'G')
-@@ -126,6 +127,14 @@ class Video
+@@ -125,6 +126,14 @@ class Video
+     {
          return pixelformat;
      }
-     /*
++    /*
 +     * @brief Gets the pixel format flags of the video frame
 +     *
 +     * @return Value of the pixel format flags of video frame */
@@ -143,10 +144,9 @@ Index: git/ikvm_video.hpp
 +    {
 +        return pixelformatflags;
 +    }
-+    /*
+     /*
       * @brief Gets the width of the video frame
       *
-      * @return Value of the width of video frame in pixels
 @@ -153,6 +162,17 @@ class Video
          subSampling = _sub;
      }
@@ -182,3 +182,6 @@ Index: git/ikvm_video.hpp
  };
  
  } // namespace ikvm
+-- 
+2.25.1
+

@@ -1,4 +1,4 @@
-From 2d074b279e9a0ea7dc7510e8da4404e11a5b2d4b Mon Sep 17 00:00:00 2001
+From 4b81a42d4a290227ab9e0cf7f3816246edcb80e0 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Tue, 12 Dec 2023 18:22:39 +0800
 Subject: [PATCH 3/3] fansensor update regular expression to find pwm
@@ -9,14 +9,14 @@ pwm*_enable.
 Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
- src/FanMain.cpp | 2 +-
+ src/fan/FanMain.cpp | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/src/FanMain.cpp b/src/FanMain.cpp
-index 4166541..9557e1a 100644
---- a/src/FanMain.cpp
-+++ b/src/FanMain.cpp
-@@ -132,7 +132,7 @@ bool findPwmfanPath(unsigned int configPwmfanIndex, fs::path& pwmPath)
+diff --git a/src/fan/FanMain.cpp b/src/fan/FanMain.cpp
+index 73d3c73..f6faac6 100644
+--- a/src/fan/FanMain.cpp
++++ b/src/fan/FanMain.cpp
+@@ -148,7 +148,7 @@ bool findPwmfanPath(unsigned int configPwmfanIndex, fs::path& pwmPath)
  
      pwnfanDevName += std::to_string(configPwmfanIndex);
  

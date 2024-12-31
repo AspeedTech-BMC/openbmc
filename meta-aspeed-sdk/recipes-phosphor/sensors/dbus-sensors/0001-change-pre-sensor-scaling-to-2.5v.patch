@@ -1,4 +1,4 @@
-From 5efad8f6b7b57ed1d7e2c25b38b8d271d293d10a Mon Sep 17 00:00:00 2001
+From 242fbd21dbc777ecfa853faa490100963e94b422 Mon Sep 17 00:00:00 2001
 From: Jamin Lin <jamin_lin@aspeedtech.com>
 Date: Mon, 5 Jul 2021 17:39:28 +0800
 Subject: [PATCH 1/3] change pre sensor scaling to 2.5v
@@ -6,14 +6,14 @@ Subject: [PATCH 1/3] change pre sensor scaling to 2.5v
 Upstream-Status: Inappropriate [ASPEED EVB specific]
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 ---
- src/ADCSensor.cpp | 2 +-
+ src/adc/ADCSensor.cpp | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/src/ADCSensor.cpp b/src/ADCSensor.cpp
-index 3c95a41..a319d15 100644
---- a/src/ADCSensor.cpp
-+++ b/src/ADCSensor.cpp
-@@ -36,7 +36,7 @@
+diff --git a/src/adc/ADCSensor.cpp b/src/adc/ADCSensor.cpp
+index 0b3fd28..80d9987 100644
+--- a/src/adc/ADCSensor.cpp
++++ b/src/adc/ADCSensor.cpp
+@@ -45,7 +45,7 @@
  static constexpr unsigned int sensorScaleFactor = 1000;
  
  static constexpr double roundFactor = 10000;     // 3 decimal places
@@ -21,7 +21,7 @@ index 3c95a41..a319d15 100644
 +static constexpr double maxVoltageReading = 2.5; // pre sensor scaling
  static constexpr double minVoltageReading = 0;
  
- ADCSensor::ADCSensor(const std::string& path,
+ ADCSensor::ADCSensor(
 -- 
 2.25.1
 

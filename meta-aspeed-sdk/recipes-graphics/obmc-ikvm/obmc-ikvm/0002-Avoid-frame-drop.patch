@@ -1,7 +1,7 @@
-From 7d8c020d438b68141439797178ef6629eccc795e Mon Sep 17 00:00:00 2001
+From a629c5b7a0ee601d7c0f1641668a32e373ec16a6 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 15:26:31 +0800
-Subject: [PATCH 2/3] Avoid frame drop
+Subject: [PATCH 2/4] Avoid frame drop
 
 For standard jpeg, frame-drop is OK. Just send the latest frame
 to the client is fine. But for aspeed jpeg, frame-drop will lead
@@ -29,15 +29,15 @@ Upstream-Status: Pending
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---
- ikvm_server.cpp | 41 +++++++++---------------
- ikvm_video.cpp  | 84 ++++++++++++++++++++++++++++++++-----------------
+ ikvm_server.cpp | 39 ++++++++--------------
+ ikvm_video.cpp  | 86 ++++++++++++++++++++++++++++++++-----------------
  ikvm_video.hpp  | 33 +++++++++++++++++--
  3 files changed, 100 insertions(+), 58 deletions(-)
 
-Index: git/ikvm_server.cpp
-===================================================================
---- git.orig/ikvm_server.cpp
-+++ git/ikvm_server.cpp
+diff --git a/ikvm_server.cpp b/ikvm_server.cpp
+index 36c57c1..b775e3c 100644
+--- a/ikvm_server.cpp
++++ b/ikvm_server.cpp
 @@ -10,6 +10,7 @@
  #include <xyz/openbmc_project/Common/error.hpp>
  
@@ -73,9 +73,9 @@ Index: git/ikvm_server.cpp
 -            {
 -                /* JFIF header contains some varying data so skip it for
 -                 * checksum calculation */
--                frame_crc = boost::crc<32, 0x04C11DB7, 0xFFFFFFFF, 0xFFFFFFFF,
--                                       true, true>(data + 0x30,
--                                                   video.getFrameSize() - 0x30);
+-                frame_crc =
+-                    boost::crc<32, 0x04C11DB7, 0xFFFFFFFF, 0xFFFFFFFF, true,
+-                               true>(data + 0x30, video.getFrameSize() - 0x30);
 -            }
 -
 -            if (cd->last_crc == frame_crc)
@@ -136,13 +136,11 @@ Index: git/ikvm_server.cpp
  }
  
  void Server::clientFramebufferUpdateRequest(
-@@ -248,8 +236,8 @@ enum rfbNewClientAction Server::newClien
- {
+@@ -249,7 +237,7 @@ enum rfbNewClientAction Server::newClient(rfbClientPtr cl)
      Server* server = (Server*)cl->screen->screenData;
  
--    cl->clientData = new ClientData(server->video.getFrameRate(),
--                                    &server->input);
-+    cl->clientData =
+     cl->clientData =
+-        new ClientData(server->video.getFrameRate(), &server->input);
 +        new ClientData(ROUND_DOWN(server->video.getFrameRate(), 8), &server->input);
      cl->clientGoneHook = clientGone;
      cl->clientFramebufferUpdateRequestHook = clientFramebufferUpdateRequest;
@@ -158,11 +156,11 @@ Index: git/ikvm_server.cpp
      }
  
      rfbReleaseClientIterator(it);
-Index: git/ikvm_video.cpp
-===================================================================
---- git.orig/ikvm_video.cpp
-+++ git/ikvm_video.cpp
-@@ -32,7 +32,7 @@ using namespace sdbusplus::xyz::openbmc_
+diff --git a/ikvm_video.cpp b/ikvm_video.cpp
+index 3fa26a0..6bce429 100644
+--- a/ikvm_video.cpp
++++ b/ikvm_video.cpp
+@@ -32,7 +32,7 @@ using namespace sdbusplus::xyz::openbmc_project::Common::Device::Error;
  
  Video::Video(const std::string& p, Input& input, int fr, int sub, int fmt) :
      resizeAfterOpen(false), timingsError(false), fd(-1), frameRate(fr),
@@ -301,6 +299,15 @@ Index: git/ikvm_video.cpp
          return true;
      }
  
+@@ -489,7 +515,7 @@ void Video::start()
+     pixelformat = fmt.fmt.pix.pixelformat;
+ 
+     if (pixelformat != V4L2_PIX_FMT_RGB24 && pixelformat != V4L2_PIX_FMT_JPEG
+-        && pixelformat != V4L2_PIX_FMT_AJPG)
++	&& pixelformat != V4L2_PIX_FMT_AJPG)
+     {
+         log<level::ERR>("Pixel Format not supported",
+                         entry("PIXELFORMAT=%d", pixelformat));
 @@ -514,7 +540,7 @@ void Video::stop()
          return;
      }
@@ -310,10 +317,10 @@ Index: git/ikvm_video.cpp
  
      rc = ioctl(fd, VIDIOC_STREAMOFF, &type);
      if (rc)
-Index: git/ikvm_video.hpp
-===================================================================
---- git.orig/ikvm_video.hpp
-+++ git/ikvm_video.hpp
+diff --git a/ikvm_video.hpp b/ikvm_video.hpp
+index 591d1e4..1197b08 100644
+--- a/ikvm_video.hpp
++++ b/ikvm_video.hpp
 @@ -5,6 +5,7 @@
  #include <mutex>
  #include <string>
@@ -393,3 +400,6 @@ Index: git/ikvm_video.hpp
      /* @brief Height in pixels of the video frame */
      size_t height;
      /* @brief Width in pixels of the video frame */
+-- 
+2.25.1
+

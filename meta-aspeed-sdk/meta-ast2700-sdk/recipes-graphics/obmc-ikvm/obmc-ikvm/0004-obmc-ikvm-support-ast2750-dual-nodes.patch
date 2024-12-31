@@ -1,4 +1,4 @@
-From a3ffd4c8c904e4225d8543054667d2b5ebe34052 Mon Sep 17 00:00:00 2001
+From eb03e8c25d9d7d90b6ab82a4bc7619a9e50a6540 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Wed, 29 Nov 2023 11:19:03 +0800
 Subject: [PATCH 4/4] obmc-ikvm: support ast2750 dual nodes.
@@ -20,13 +20,13 @@ Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
  ikvm_server.cpp |  6 ++++++
  3 files changed, 29 insertions(+), 3 deletions(-)
 
-Index: git/ikvm_input.cpp
-===================================================================
---- git.orig/ikvm_input.cpp
-+++ git/ikvm_input.cpp
-@@ -28,6 +28,18 @@ Input::Input(const std::string& kbdPath,
-     pointerFd(-1), keyboardReport{0}, pointerReport{0}, keyboardPath(kbdPath),
-     pointerPath(ptrPath), udcName(udc)
+diff --git a/ikvm_input.cpp b/ikvm_input.cpp
+index 8cdefe4..09a19c8 100644
+--- a/ikvm_input.cpp
++++ b/ikvm_input.cpp
+@@ -27,6 +27,18 @@ Input::Input(const std::string& kbdPath, const std::string& ptrPath,
+     keyboardFd(-1), pointerFd(-1), keyboardReport{0}, pointerReport{0},
+     keyboardPath(kbdPath), pointerPath(ptrPath), udcName(udc)
  {
 +    // Support AST2750 dual nodes
 +    if (kbdPath == "/dev/hidg2")
@@ -43,10 +43,10 @@ Index: git/ikvm_input.cpp
      hidUdcStream.exceptions(std::ofstream::failbit | std::ofstream::badbit);
      hidUdcStream.open(hidUdcPath, std::ios::out | std::ios::app);
  }
-Index: git/ikvm_input.hpp
-===================================================================
---- git.orig/ikvm_input.hpp
-+++ git/ikvm_input.hpp
+diff --git a/ikvm_input.hpp b/ikvm_input.hpp
+index 00d8e7f..0669f81 100644
+--- a/ikvm_input.hpp
++++ b/ikvm_input.hpp
 @@ -79,11 +79,15 @@ class Input
          0x40  // right alt
      };
@@ -77,11 +77,11 @@ Index: git/ikvm_input.hpp
      /*
       * @brief Mapping of RFB key code to report data index to keep track
       *        of which keys are down
-Index: git/ikvm_server.cpp
-===================================================================
---- git.orig/ikvm_server.cpp
-+++ git/ikvm_server.cpp
-@@ -49,6 +49,12 @@ Server::Server(const Args& args, Input&
+diff --git a/ikvm_server.cpp b/ikvm_server.cpp
+index c8ddcb7..4626351 100644
+--- a/ikvm_server.cpp
++++ b/ikvm_server.cpp
+@@ -49,6 +49,12 @@ Server::Server(const Args& args, Input& i, Video& v) :
      server->cursor->xhot = 1;
      server->cursor->yhot = 1;
  
@@ -94,3 +94,6 @@ Index: git/ikvm_server.cpp
      rfbStringToAddr(&ip[0], &server->listenInterface);
  
      rfbInitServer(server);
+-- 
+2.25.1
+
