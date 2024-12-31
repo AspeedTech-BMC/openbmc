@@ -13,6 +13,9 @@ FILESEXTRAPATHS:append := "${THISDIR}/${PN}:"
 
 SYSTEMD_SERVICE:${PN} = " power-status-sync.service"
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 SRC_URI = " file://power-status-sync.sh \
           "
 

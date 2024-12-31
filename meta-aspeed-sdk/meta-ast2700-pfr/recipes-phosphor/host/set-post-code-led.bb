@@ -13,6 +13,9 @@ FILESEXTRAPATHS:append := "${THISDIR}/${PN}:"
 
 SYSTEMD_SERVICE:${PN} = " set-post-code-led.service"
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 SRC_URI = " file://set-post-code-led.sh \
           "
 

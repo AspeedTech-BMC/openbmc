@@ -6,6 +6,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ad
 
 inherit obmc-phosphor-systemd
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 SRC_URI = " \
 	file://bmc-boot-done.sh \
 	file://xyz.openbmc_project.bmc_boot_done.service \
