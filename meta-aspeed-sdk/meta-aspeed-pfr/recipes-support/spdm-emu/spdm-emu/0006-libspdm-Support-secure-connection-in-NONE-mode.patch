@@ -1,4 +1,4 @@
-From e61479b2a67f26f640249d219d4c010abd0be83c Mon Sep 17 00:00:00 2001
+From 11a7b3edc0da637f5a6dc9a66788003ab5cc3a52 Mon Sep 17 00:00:00 2001
 From: Kane-Chen-AS <kane_chen@aspeedtech.com>
 Date: Thu, 19 Sep 2024 11:41:07 +0800
 Subject: [PATCH] libspdm: Support secure connection in NONE mode
@@ -15,15 +15,15 @@ Signed-off-by: Kane-Chen-AS <kane_chen@aspeedtech.com>
  include/library/spdm_responder_lib.h          |  3 +-
  include/library/spdm_secured_message_lib.h    |  2 ++
  .../spdm_common_lib/libspdm_com_opaque_data.c |  4 ++-
- .../libspdm_rsp_communication.c               | 23 ++++++++++++-
+ .../libspdm_rsp_communication.c               | 24 +++++++++++++-
  .../libspdm_rsp_receive_send.c                |  4 ++-
  .../libspdm_secmes_encode_decode.c            | 33 +++++++++++++++++++
  .../libspdm_mctp_mctp.c                       |  3 +-
  os_stub/debuglib/debuglib.c                   | 11 +++++--
- 9 files changed, 77 insertions(+), 7 deletions(-)
+ 9 files changed, 78 insertions(+), 7 deletions(-)
 
 diff --git a/include/hal/library/debuglib.h b/include/hal/library/debuglib.h
-index 218cc4cc..591d8059 100644
+index 218cc4cc3d..591d80592f 100644
 --- a/include/hal/library/debuglib.h
 +++ b/include/hal/library/debuglib.h
 @@ -25,6 +25,7 @@
@@ -35,7 +35,7 @@ index 218cc4cc..591d8059 100644
  /**
   * Prints a debug message to the debug output device if the specified error level is enabled.
 diff --git a/include/library/spdm_responder_lib.h b/include/library/spdm_responder_lib.h
-index fcbc10a2..47f61d05 100644
+index fcbc10a2d8..47f61d05ec 100644
 --- a/include/library/spdm_responder_lib.h
 +++ b/include/library/spdm_responder_lib.h
 @@ -95,7 +95,8 @@ libspdm_return_t libspdm_process_request(void *spdm_context,
@@ -49,7 +49,7 @@ index fcbc10a2..47f61d05 100644
  /**
   * This is the main dispatch function in SPDM responder.
 diff --git a/include/library/spdm_secured_message_lib.h b/include/library/spdm_secured_message_lib.h
-index 07cc1e89..ef1b0333 100644
+index 07cc1e8946..ef1b0333bc 100644
 --- a/include/library/spdm_secured_message_lib.h
 +++ b/include/library/spdm_secured_message_lib.h
 @@ -12,6 +12,8 @@
@@ -62,7 +62,7 @@ index 07cc1e89..ef1b0333 100644
      LIBSPDM_SESSION_TYPE_NONE,
      LIBSPDM_SESSION_TYPE_MAC_ONLY,
 diff --git a/library/spdm_common_lib/libspdm_com_opaque_data.c b/library/spdm_common_lib/libspdm_com_opaque_data.c
-index 3d53a526..11a297ba 100644
+index 3d53a526ef..11a297ba80 100644
 --- a/library/spdm_common_lib/libspdm_com_opaque_data.c
 +++ b/library/spdm_common_lib/libspdm_com_opaque_data.c
 @@ -325,10 +325,12 @@ bool libspdm_get_element_from_opaque_data(libspdm_context_t *spdm_context,
@@ -80,18 +80,20 @@ index 3d53a526..11a297ba 100644
      return result;
  }
 diff --git a/library/spdm_responder_lib/libspdm_rsp_communication.c b/library/spdm_responder_lib/libspdm_rsp_communication.c
-index 6ef71ec9..763ac49a 100644
+index 6ef71ec936..d034183ca2 100644
 --- a/library/spdm_responder_lib/libspdm_rsp_communication.c
 +++ b/library/spdm_responder_lib/libspdm_rsp_communication.c
-@@ -6,6 +6,7 @@
+@@ -5,7 +5,9 @@
+  **/
  
  #include "internal/libspdm_responder_lib.h"
++#include <stdio.h>
  
 +bool mctp_socket_mode = false;
  /**
   * This is the main dispatch function in SPDM responder.
   *
-@@ -33,6 +34,7 @@ libspdm_return_t libspdm_responder_dispatch_message(void *context)
+@@ -33,6 +35,7 @@ libspdm_return_t libspdm_responder_dispatch_message(void *context)
      bool is_app_message;
      void *message;
      size_t message_size;
@@ -99,7 +101,7 @@ index 6ef71ec9..763ac49a 100644
  
      spdm_context = context;
  
-@@ -76,7 +78,7 @@ libspdm_return_t libspdm_responder_dispatch_message(void *context)
+@@ -76,7 +79,7 @@ libspdm_return_t libspdm_responder_dispatch_message(void *context)
      libspdm_zero_mem(response, response_size);
  
      status = libspdm_build_response(spdm_context, session_id_ptr, is_app_message,
@@ -108,7 +110,7 @@ index 6ef71ec9..763ac49a 100644
      if (LIBSPDM_STATUS_IS_ERROR(status)) {
          libspdm_release_sender_buffer (spdm_context);
          return status;
-@@ -87,5 +89,24 @@ libspdm_return_t libspdm_responder_dispatch_message(void *context)
+@@ -87,5 +90,24 @@ libspdm_return_t libspdm_responder_dispatch_message(void *context)
  
      libspdm_release_sender_buffer (spdm_context);
  
@@ -134,7 +136,7 @@ index 6ef71ec9..763ac49a 100644
      return status;
  }
 diff --git a/library/spdm_responder_lib/libspdm_rsp_receive_send.c b/library/spdm_responder_lib/libspdm_rsp_receive_send.c
-index 1cede9c0..062e8997 100644
+index 1cede9c0b5..062e89970a 100644
 --- a/library/spdm_responder_lib/libspdm_rsp_receive_send.c
 +++ b/library/spdm_responder_lib/libspdm_rsp_receive_send.c
 @@ -327,7 +327,8 @@ void libspdm_set_connection_state(libspdm_context_t *spdm_context,
@@ -156,7 +158,7 @@ index 1cede9c0..062e8997 100644
          switch (spdm_response->request_response_code) {
          case SPDM_FINISH_RSP:
 diff --git a/library/spdm_secured_message_lib/libspdm_secmes_encode_decode.c b/library/spdm_secured_message_lib/libspdm_secmes_encode_decode.c
-index 75f2a21c..d0500e94 100644
+index 75f2a21c93..d0500e949a 100644
 --- a/library/spdm_secured_message_lib/libspdm_secmes_encode_decode.c
 +++ b/library/spdm_secured_message_lib/libspdm_secmes_encode_decode.c
 @@ -58,6 +58,7 @@ libspdm_return_t libspdm_encode_secured_message(
@@ -234,7 +236,7 @@ index 75f2a21c..d0500e94 100644
      return LIBSPDM_STATUS_SUCCESS;
  }
 diff --git a/library/spdm_transport_mctp_lib/libspdm_mctp_mctp.c b/library/spdm_transport_mctp_lib/libspdm_mctp_mctp.c
-index 21c6691c..3927d630 100644
+index 21c6691ccc..3927d63099 100644
 --- a/library/spdm_transport_mctp_lib/libspdm_mctp_mctp.c
 +++ b/library/spdm_transport_mctp_lib/libspdm_mctp_mctp.c
 @@ -124,7 +124,8 @@ libspdm_return_t libspdm_mctp_decode_message(uint32_t **session_id,
@@ -248,7 +250,7 @@ index 21c6691c..3927d630 100644
          LIBSPDM_ASSERT(session_id != NULL);
          if (session_id == NULL) {
 diff --git a/os_stub/debuglib/debuglib.c b/os_stub/debuglib/debuglib.c
-index f4109ffd..11c66b8c 100644
+index f4109ffd7e..11c66b8cf5 100644
 --- a/os_stub/debuglib/debuglib.c
 +++ b/os_stub/debuglib/debuglib.c
 @@ -30,6 +30,7 @@
@@ -281,3 +283,6 @@ index f4109ffd..11c66b8c 100644
 +    else
 +        printf("%s", buffer);
  }
+-- 
+2.25.1
+

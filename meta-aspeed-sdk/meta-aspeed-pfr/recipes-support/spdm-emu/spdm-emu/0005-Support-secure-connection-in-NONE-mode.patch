@@ -1,4 +1,4 @@
-From be20025f93f8da5b96aa2fc947bdb49b8d8a404e Mon Sep 17 00:00:00 2001
+From 7d820ec2251724ade1ea76132865af910a8f4d20 Mon Sep 17 00:00:00 2001
 From: Kane-Chen-AS <kane_chen@aspeedtech.com>
 Date: Mon, 7 Oct 2024 11:15:03 +0800
 Subject: [PATCH] spdm-emu: Support secure connection in NONE mode
@@ -322,7 +322,7 @@ index 841ce8f..4beffa8 100644
 +    return sizeof(spdm_secured_message_cipher_header_t) + 1;
  }
 diff --git a/spdm_emu/spdm_emu_common/command.c b/spdm_emu/spdm_emu_common/command.c
-index 7c85de8..7f92fd0 100644
+index 7b806c8..7f92fd0 100644
 --- a/spdm_emu/spdm_emu_common/command.c
 +++ b/spdm_emu/spdm_emu_common/command.c
 @@ -23,6 +23,8 @@ size_t m_send_receive_buffer_size;
@@ -352,10 +352,10 @@ index 7c85de8..7f92fd0 100644
 +
      result = recvfrom(socket, (char *)(buffer),
              number_of_bytes, MSG_TRUNC,
--            &my_address, &addrlen);
+-            (struct sockaddr *)&my_address, &addrlen);
 +            (struct sockaddr *)pMCTP, &addrlen);
      *recv_bytes = result;
--    printf("message (%zd bytes) from remote EID 0x%02x\n", result, my_address.smctp_addr);
+-    printf("message (%zd bytes) from remote EID 0x%02x\n", result, my_address.smctp_addr.s_addr);
 +    //printf("message (%zd bytes) from remote EID 0x%02x\n", result, pMCTP->smctp_addr.s_addr);
      if (result == -1) {
          printf("Receive error - 0x%x\n",
@@ -536,7 +536,7 @@ index 9ddaf4d..8db512d 100644
  
      /* Open PCAP file as last option, after the user indicates transport type.*/
 diff --git a/spdm_emu/spdm_emu_common/spdm_emu.h b/spdm_emu/spdm_emu_common/spdm_emu.h
-index 51492b2..486c581 100644
+index 4644aa1..82f43b8 100644
 --- a/spdm_emu/spdm_emu_common/spdm_emu.h
 +++ b/spdm_emu/spdm_emu_common/spdm_emu.h
 @@ -61,7 +61,14 @@ extern uint8_t m_mctp_medium;
@@ -555,7 +555,7 @@ index 51492b2..486c581 100644
  extern char *m_load_state_file_name;
  extern char *m_save_state_file_name;
 diff --git a/spdm_emu/spdm_requester_emu/spdm_requester_emu.c b/spdm_emu/spdm_requester_emu/spdm_requester_emu.c
-index 2f6ef4e..6c999af 100644
+index 2f6ef4e..7eff159 100644
 --- a/spdm_emu/spdm_requester_emu/spdm_requester_emu.c
 +++ b/spdm_emu/spdm_requester_emu/spdm_requester_emu.c
 @@ -9,10 +9,12 @@
@@ -735,7 +735,7 @@ index 2f6ef4e..6c999af 100644
  {
      struct spdm_mctp_ctx *mctp_ctx = ctx;
      struct mctp_binding_smbus *smbus = (struct mctp_binding_smbus *)mctp_ctx->prot;
-+    struct mctp_binding_asti3c *i3c = (struct mctp_binding_smbus *)mctp_ctx->prot;
++    struct mctp_binding_asti3c *i3c = (struct mctp_binding_asti3c *)mctp_ctx->prot;
 +    struct mctp_asti3c_pkt_private *i3c_private = mctp_ctx->priv_binding;
      struct mctp *mctp = mctp_ctx->mctp;
      struct pollfd pfd = { 0 };
@@ -1162,3 +1162,6 @@ index 48e5062..7ce95dc 100644
      result = send_platform_data(m_server_socket, SOCKET_SPDM_COMMAND_NORMAL,
                                  request, (uint32_t)request_size);
      if (!result) {
+-- 
+2.25.1
+

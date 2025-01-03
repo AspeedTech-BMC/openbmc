@@ -1,4 +1,4 @@
-From 30bc7f92d720922e73224edf8cbd0804541424f3 Mon Sep 17 00:00:00 2001
+From d3b5208988a10a94d64059c8ee379a62b17be6b1 Mon Sep 17 00:00:00 2001
 From: Steven Lee <steven_lee@aspeedtech.com>
 Date: Thu, 18 Jan 2024 15:10:18 +0800
 Subject: [PATCH] Support both libmctp and socket-based mctp
@@ -27,7 +27,7 @@ Signed-off-by: Steven Lee <steven_lee@aspeedtech.com>
  create mode 100644 spdm_emu/spdm_emu_common/working_queue.h
 
 diff --git a/spdm_emu/spdm_emu_common/command.c b/spdm_emu/spdm_emu_common/command.c
-index 00850c5..7c85de8 100644
+index 6c1434b..7b806c8 100644
 --- a/spdm_emu/spdm_emu_common/command.c
 +++ b/spdm_emu/spdm_emu_common/command.c
 @@ -23,11 +23,43 @@ size_t m_send_receive_buffer_size;
@@ -437,7 +437,7 @@ index eace0c1..9ddaf4d 100644
              if (argc >= 2) {
                  value_string_entry_t *CapabilitiesStringTable;
 diff --git a/spdm_emu/spdm_emu_common/spdm_emu.h b/spdm_emu/spdm_emu_common/spdm_emu.h
-index 08fbef9..51492b2 100644
+index 55afdd6..4644aa1 100644
 --- a/spdm_emu/spdm_emu_common/spdm_emu.h
 +++ b/spdm_emu/spdm_emu_common/spdm_emu.h
 @@ -57,6 +57,12 @@ extern uint8_t m_support_other_params_support;
