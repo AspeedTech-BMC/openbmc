@@ -1,7 +1,7 @@
 SUMMARY = "Turn On USB gadget"
 DESCRIPTION = "Script to turn on usb gadget after BMC is ready"
-#ToDo
-#RDEPENDS:${PN} = "aspeed-app"
+
+RDEPENDS:${PN} = "aspeed-app"
 
 S = "${WORKDIR}/sources"
 UNPACKDIR = "${S}"
