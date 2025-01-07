@@ -66,5 +66,6 @@ RDEPENDS:${PN}-apps = " \
 
 # Only install in AST26xx and AST27xx series rofs as the free space of AST25xx rofs is not enough.
 RDEPENDS:${PN}-apps:remove:aspeed-g5 = " \
+    at-scale-debug \
     pdbg \
     "

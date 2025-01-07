@@ -83,6 +83,7 @@ RDEPENDS:${PN}-apps:remove:aspeed-g5 = " \
     pciutils \
     dhrystone \
     nvme-cli \
+    stressapptest \
     "
 
 SUMMARY:${PN}-libs = "Open Source Library"
