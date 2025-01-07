@@ -1,4 +1,4 @@
-From 881f8ba0b17b306ac39f7bd8de1408deb277810f Mon Sep 17 00:00:00 2001
+From d5ae9d196c19eea5524644a42a26bef698117a90 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Thu, 6 Jun 2024 17:35:26 +0800
 Subject: [PATCH] Use aspeed's novnc fork
@@ -10,12 +10,12 @@ Upstream-Status: Inappropriate [ASPEED specific]
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
- package.json  | 6 +++++-
+ package.json  | 7 +++++--
  vue.config.js | 8 ++++++++
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
 diff --git a/package.json b/package.json
-index 123dd15..57e60f2 100644
+index f80e620..78a3750 100644
 --- a/package.json
 +++ b/package.json
 @@ -4,6 +4,7 @@
@@ -23,33 +23,45 @@ index 123dd15..57e60f2 100644
      "description": "OpenBMC Web UI using the Vue.js front-end framework",
      "scripts": {
 +        "start": "react-scripts start --openssl-legacy-provider",
-         "serve": "check-node-version --package && vue-cli-service serve",
+         "serve": "check-node-version --package && vue-cli-service serve --mode development",
          "build": "check-node-version --package && vue-cli-service build",
          "test:unit": "vue-cli-service test:unit",
-@@ -16,7 +17,9 @@
+@@ -16,7 +17,7 @@
      },
      "dependencies": {
-         "@carbon/icons-vue": "10.28.0",
--        "@novnc/novnc": "1.2.0",
+         "@carbon/icons-vue": "10.49.1",
+-        "@novnc/novnc": "1.3.0",
 +        "@novnc/novnc": "git+https://github.com/AspeedTech-BMC/noVNC.git#c133fc8",
+         "@vue/compat": "3.4.29",
+         "@vue/vue3-jest": "27.0.0",
+         "@vuelidate/core": "2.0.3",
+@@ -30,6 +31,8 @@
+         "date-fns-tz": "1.3.6",
+         "js-cookie": "3.0.1",
+         "lodash": "4.17.21",
 +        "react": "17.0.2",
 +        "react-scripts": "5.0.1",
-         "axios": "1.6.0",
-         "axios-cache-interceptor": "1.5.1",
-         "bootstrap": "4.6.0",
-@@ -51,6 +54,7 @@
-         "eslint": "8.57.0",
-         "eslint-plugin-prettier": "5.1.3",
-         "eslint-plugin-vue": "9.22.0",
+         "vue": "3.4.29",
+         "vue-i18n": "9.13.1",
+         "vue-loader": "17.4.2",
+@@ -62,11 +65,11 @@
+         "eslint-plugin-vue": "9.2.0",
+         "eslint-scope": "7.1.1",
+         "lint-staged": "13.0.3",
 +        "path-browserify": "^1.0.1",
-         "lint-staged": "10.5.4",
+         "postcss-loader": "8.1.1",
          "prettier": "3.2.5",
-         "sass": "1.32.8",
+         "sass": "1.75.0",
+         "sass-loader": "14.2.1",
+-        "vue-cli-plugin-i18n": "2.3.1",
+         "vue-style-loader": "4.1.3",
+         "vue-svg-inline-loader": "2.1.5",
+         "vuepress": "1.9.7"
 diff --git a/vue.config.js b/vue.config.js
-index 01d48b9..9bcc017 100644
+index e33918e..0467ff5 100644
 --- a/vue.config.js
 +++ b/vue.config.js
-@@ -114,6 +114,10 @@ module.exports = {
+@@ -92,6 +92,10 @@ module.exports = {
            `@/env/components/AppNavigation/${envName}.js`;
        }
      }
@@ -60,7 +72,7 @@ index 01d48b9..9bcc017 100644
  
      if (process.env.NODE_ENV === 'production') {
        config.plugins.push(
-@@ -123,6 +127,10 @@ module.exports = {
+@@ -101,6 +105,10 @@ module.exports = {
        );
      }
  
@@ -71,3 +83,6 @@ index 01d48b9..9bcc017 100644
      config.performance = {
        hints: 'warning',
        maxEntrypointSize: 512000,
+-- 
+2.25.1
+

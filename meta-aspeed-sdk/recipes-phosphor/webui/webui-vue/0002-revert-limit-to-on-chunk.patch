@@ -1,4 +1,4 @@
-From 71851c72207f8db15c690133d7f7d0ae8bedec6c Mon Sep 17 00:00:00 2001
+From 51abc6f5b1242dedf1288127d779d560883f58c5 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Fri, 21 Jun 2024 16:56:52 +0800
 Subject: [PATCH] revert limit to on chunk
@@ -6,29 +6,17 @@ Subject: [PATCH] revert limit to on chunk
 Revert limit to on chunk commit.
 https://github.com/openbmc/webui-vue/commit/740cbd525fa619e6a4190ec08c80f45ae72435eb
 
-We need the "0001-Update-to-vue-5.0.8.patch" to upgrade vue/cli to version 5.0.8.
-However, using "LimitChunkCountPlugin " causes the following build error:
+Using "LimitChunkCountPlugin " causes the following build error:
 ```
-Cannot read properties of undefined (reading 'tap')
-```
-
-This issue is due to differences between webpack 4 and 5.
-```
-$ npm list webpack
-├─┬ @vue/cli-plugin-babel@5.0.8
-│ └── webpack@5.92.1
-├─┬ @vue/cli-plugin-eslint@5.0.8
-│ └── webpack@5.92.0
-├─┬ @vue/cli-service@5.0.8
-│ └── webpack@5.92.1
-├─┬ react-scripts@5.0.1
-│ └── webpack@5.92.1
-└─┬ vuepress@1.8.2
-  └─┬ @vuepress/core@1.8.2
-    └── webpack@4.47.0
+|  error  in webpack/runtime/runtimeId
+|
+| RuntimeIdRuntimeModule must be in a single runtime
 ```
 
 This patch is a workaround to avoid build failures.
+
+Another possible solution can be found at
+https://github.com/webpack/webpack/issues/11431.
 
 Upstream-Status: Inappropriate [ASPEED specific]
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
@@ -37,7 +25,7 @@ Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
  1 file changed, 20 deletions(-)
 
 diff --git a/vue.config.js b/vue.config.js
-index d073335..598ca43 100644
+index 0467ff5..4f6f4a1 100644
 --- a/vue.config.js
 +++ b/vue.config.js
 @@ -1,6 +1,4 @@
@@ -46,8 +34,8 @@ index d073335..598ca43 100644
 -const LimitChunkCountPlugin = webpack.optimize.LimitChunkCountPlugin;
  
  module.exports = {
-   css: {
-@@ -75,16 +73,6 @@ module.exports = {
+   devServer: {
+@@ -51,16 +49,6 @@ module.exports = {
      }
    },
    configureWebpack: (config) => {
@@ -61,10 +49,10 @@ index d073335..598ca43 100644
 -        default: false,
 -      },
 -    };
-     const crypto = require('crypto');
-     const crypto_orig_createHash = crypto.createHash;
-     crypto.createHash = (algorithm) =>
-@@ -129,14 +117,6 @@ module.exports = {
+     if (process.env.NODE_ENV === 'development') {
+       config.devtool = 'source-map';
+     }
+@@ -108,14 +96,6 @@ module.exports = {
      config.experiments = {
        asyncWebAssembly: true,
      };
@@ -79,3 +67,6 @@ index d073335..598ca43 100644
    },
    pluginOptions: {
      i18n: {
+-- 
+2.25.1
+
