@@ -1,0 +1,66 @@
+From 5015e786cfc492b2a79d2cc9902b08af336b1282 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Thu, 9 Jan 2025 08:39:36 +0800
+Subject: [PATCH] transporthandler: fix ipmid crash
+
+The ipmid crashes when the set LAN configuration command is executed,
+and the journal log shows the following messages.
+
+```
+/usr/include/c++/14.2.0/optional:475: constexpr _Tp&
+std::_Optional_base_impl<_Tp, _Dp>::_M_get() [with _Tp =
+ipmi::transport::IfAddr<2>; _Dp =
+std::_Optional_base<ipmi::transport::IfAddr<2>, false, false>]:
+Assertion 'this->_M_is_engaged()' failed.
+```
+
+Add checks to ensure that the return value of getIfAddr or getIfAddr4 is
+not null.
+
+Tested:
+1. Change to static source and set satatic IP
+ipmitool lan set 1 ipsrc static; ipmitool lan set 1 ipaddr 10.0.0.10;
+ipmitool lan set 1 netmask 255.255.255.0; ipmitool lan set 1 defgw
+ipaddr 10.0.0.254
+
+2. Check the IP Lan print.
+ipmitool lan print 1
+
+Expect the IP address and IP source address report accordingly.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-host-ipmid/+/77146]
+Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ transporthandler.cpp | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/transporthandler.cpp b/transporthandler.cpp
+index 772925e..8763f5f 100644
+--- a/transporthandler.cpp
++++ b/transporthandler.cpp
+@@ -271,7 +271,7 @@ auto getIfAddr4(sdbusplus::bus_t& bus, const ChannelParams& params)
+     for (uint8_t i = 0; i < MAX_IPV4_ADDRESSES; ++i)
+     {
+         ifaddr4 = getIfAddr<AF_INET>(bus, params, i, originsV4);
+-        if (src == ifaddr4->origin)
++        if (ifaddr4 && src == ifaddr4->origin)
+         {
+             break;
+         }
+@@ -301,12 +301,14 @@ void reconfigureIfAddr4(sdbusplus::bus_t& bus, const ChannelParams& params,
+         elog<InternalFailure>();
+     }
+     uint8_t fallbackPrefix = AddrFamily<AF_INET>::defaultPrefix;
++    auto addr = stdplus::In4Addr{};
+     if (ifaddr)
+     {
++        addr = ifaddr->address;
+         fallbackPrefix = ifaddr->prefix;
+         deleteObjectIfExists(bus, params.service, ifaddr->path);
+     }
+-    auto addr = address.value_or(ifaddr->address);
++    addr = address.value_or(addr);
+     if (addr != stdplus::In4Addr{})
+     {
+         createIfAddr<AF_INET>(bus, params, addr,
