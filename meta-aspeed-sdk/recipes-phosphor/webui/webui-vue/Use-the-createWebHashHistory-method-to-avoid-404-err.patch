@@ -1,0 +1,58 @@
+From f4616789f6ad8cdc611b5085b122259c7d343fd1 Mon Sep 17 00:00:00 2001
+From: Huy Le Anh <hule@amperecomputing.com>
+Date: Tue, 19 Nov 2024 14:53:35 +0700
+Subject: [PATCH] Use the createWebHashHistory method to avoid 404 errors
+
+When using createWebHistory method in Vue 3, we may encounter a 404
+error when reloading a page or accessing a specific URL directly due to
+a server configuration that does not properly support HTML5 history,
+references at [1] and [2]. Switching to createWebHashHistory method
+avoids a 404 error when reloading a page, as it doesn't require a server
+configuration to handle navigation. By using the # sign in the URL, the
+browser processes everything after the # sign without sending it to the
+server, which helps maintain the application state smoothly when
+reloading the page.
+
+Tested:
+ 1. Go to the Obmc web page.
+ 2. Switch between different pages.
+ 3. Reload the website by pressing the reload button on the web browser.
+ 4. The Obmc web page reloads normally, without any errors
+ 5. Go to the KVM page and press "Open In New Tab"; the new KVM screen
+    window displays normally, without 404 error.
+ 6. Go to the SOL page and press "Open In New Tab"; the new SOL screen
+    window displays normally, without 404 error.
+
+[1]: https://router.vuejs.org/guide/essentials/history-mode.html
+[2]: https://stackoverflow.com/questions/66514813/error-404-on-page-reload-with-vue3-routing
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/webui-vue/+/75926]
+
+Change-Id: I6f4dbd2b27888c852b627d74471671352ee43a39
+Signed-off-by: Huy Le Anh <hule@amperecomputing.com>
+---
+ src/router/index.js | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/router/index.js b/src/router/index.js
+index 27fd96e..625eac0 100644
+--- a/src/router/index.js
++++ b/src/router/index.js
+@@ -1,4 +1,4 @@
+-import { createRouter, createWebHistory } from 'vue-router';
++import { createRouter, createWebHashHistory } from 'vue-router';
+ 
+ //Do not change store or routes import.
+ //Exact match alias set to support
+@@ -7,7 +7,7 @@ import store from '../store';
+ import routes from './routes';
+ 
+ const router = createRouter({
+-  history: createWebHistory(process.env.BASE_URL),
++  history: createWebHashHistory(),
+   routes,
+   linkExactActiveClass: 'nav-link--current',
+   scrollBehavior() {
+-- 
+2.25.1
+
