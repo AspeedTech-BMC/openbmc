@@ -1,7 +1,7 @@
 [Unit]
-Description=OpenBMC ipKVM daemon 
+Description=OpenBMC ipKVM daemon
 ConditionPathIsMountPoint=/sys/kernel/config
-After=start-ipkvm.service
+After=obmc-ikvm.service
 
 [Service]
 Restart=always
