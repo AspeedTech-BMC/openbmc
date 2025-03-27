@@ -3,7 +3,7 @@ DESCRIPTION = "BootMCU is designated to load the first, verified image for the m
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 PROVIDES += "virtual/bootmcu"
-DEPENDS = "ast2700-riscv-linux-gnu-native kern-tools-native swig-native ${PYTHON_PN}-setuptools-native"
+DEPENDS = "ast2700-riscv-linux-gnu-native kern-tools-native swig-native ${PYTHON_PN}-setuptools-native fmc-imgtool-native"
 
 do_install[noexec] = "1"
 
@@ -24,6 +24,8 @@ PACKAGECONFIG[openssl] = ",,openssl-native"
 # u-boot build system and appended to the u-boot version.  If the .scmversion
 # file already exists it will not be overwritten.
 UBOOT_LOCALVERSION ?= ""
+
+IS_AST2700_A0 ?= "${@bb.utils.contains('MACHINE_FEATURES', 'ast2700-a0', 'yes', 'no', d)}"
 
 
 # returns all the elements from the src uri that are .cfg files
@@ -64,20 +66,42 @@ do_deploy() {
     # spl
     install -m 644 ${B}/spl/u-boot-spl.dtb ${DEPLOYDIR}
     install -m 644 ${B}/spl/u-boot-spl-nodtb.bin ${DEPLOYDIR}
-    install -m 644 ${B}/u-boot-spl.bin ${DEPLOYDIR}
+    # boot from uart for AST2700 A0
+    if [ "${IS_AST2700_A0}" = "yes" ]; then
+        install -m 644 ${B}/u-boot-spl.bin ${DEPLOYDIR}
+    else
+        install -m 644 ${B}/spl/u-boot-spl.bin ${DEPLOYDIR}
+    fi
 
-    # spl binman
+    # spl binman for AST2700 A0
+    # spl fmc since AST2700 A1
     install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
     install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}/${BOOTMCU_FW_BINARY}-${sub_ver}
-
-    # prebuilt
-    if [ -d ${S}/board/aspeed/ibex_ast2700/prebuilt ]; then
-        if [ -n "$(ls -A ${S}/board/aspeed/ibex_ast2700/prebuilt)" ]; then
-            install -m 644 ${S}/board/aspeed/ibex_ast2700/prebuilt/*.bin ${DEPLOYDIR}
-        fi
-    fi
 }
 
 addtask deploy before do_build after do_compile
+
+# Use fmc-imgtool to create fmc image since A1
+# export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
+# OpenSSL 3.0 legacy provider failed to load
+# https://github.com/pyca/cryptography/issues/10598
+do_create_fmc_image() {
+    if [ "${IS_AST2700_A0}" = "yes" ]; then
+        echo "AST2700 A0 do not need to create fmc image"
+        return 0
+    fi
+
+    export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
+
+    cd ${STAGING_LIBDIR_NATIVE}/${PYTHON_DIR}/fmc-imgtool
+    python3 main.py \
+        --verbose \
+        --version 2 \
+        --input ${B}/spl/u-boot-spl.bin \
+        --output ${B}/${BOOTMCU_FW_BINARY}
+    cd -
+}
+
+addtask create_fmc_image before do_deploy after do_compile
 
 ALLOW_EMPTY:${PN} = "1"

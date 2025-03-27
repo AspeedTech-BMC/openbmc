@@ -9,6 +9,7 @@ UNPACKDIR = "${S}"
 
 SRC_URI = "file://gen_emmc_boot_image.py \
            file://gen_uart_booting_image.py \
+           file://recovery_spl_extraction.py \
            file://LICENSE-2.0.txt \
           "
 
@@ -22,6 +23,7 @@ do_install() {
     install -d ${D}/${bindir}
     install -m 0755 ${UNPACKDIR}/gen_emmc_boot_image.py ${D}/${bindir}
     install -m 0755 ${UNPACKDIR}/gen_uart_booting_image.py ${D}/${bindir}
+    install -m 0755 ${UNPACKDIR}/recovery_spl_extraction.py ${D}/${bindir}
 }
 
 FILES:${PN} += "${bindir}"

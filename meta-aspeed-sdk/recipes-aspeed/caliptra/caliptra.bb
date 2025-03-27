@@ -1,7 +1,7 @@
 SUMMARY = "The Caliptra firmware"
 DESCRIPTION = "The Caliptra prebuild firmware for AST2700."
 LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://${ASPEEDSDKBASE}/LICENSE;md5=a3740bd0a194cd6dcafdc482a200a56f"
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 PR = "r0"

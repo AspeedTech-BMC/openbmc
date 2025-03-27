@@ -31,7 +31,7 @@ index f80e620..78a3750 100644
      "dependencies": {
          "@carbon/icons-vue": "10.49.1",
 -        "@novnc/novnc": "1.3.0",
-+        "@novnc/novnc": "git+https://github.com/AspeedTech-BMC/noVNC.git#c133fc8",
++        "@novnc/novnc": "git+https://github.com/AspeedTech-BMC/noVNC.git#346ec35",
          "@vue/compat": "3.4.29",
          "@vue/vue3-jest": "27.0.0",
          "@vuelidate/core": "2.0.3",

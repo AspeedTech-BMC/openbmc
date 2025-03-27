@@ -31,6 +31,7 @@ RDEPENDS:${PN}-crypto = " \
     openssl-bin \
     openssl-conf \
     openssl-engines \
+    ast-crypto-engine \
     "
 
 SUMMARY:${PN}-ssif = "IPMI SMBus System Interface"

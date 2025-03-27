@@ -1,0 +1,64 @@
+{
+    "Exposes": [
+        {
+            "Address": "0x50",
+            "Bus": 9,
+            "Name": "DCSCM BMC FRU",
+            "Type": "EEPROM"
+        },
+        {
+            "Address": "0x4b",
+            "Bus": 12,
+            "Name": "Ambient_Temp",
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 40
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 38
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 5
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 0
+                }
+            ],
+            "Type": "LM75A"
+        },
+        {
+            "Class": "Aspeed2600_Hwmon",
+            "Name": "Chassis Intrusion Sensor",
+            "Type": "ChassisIntrusionSensor"
+        },
+        {
+            "Address": "0x38",
+            "Bus": 10,
+            "Name": "PFR",
+            "Type": "PFR"
+        }
+    ],
+    "xyz.openbmc_project.Inventory.Decorator.FruDevice": {
+        "Address": 80,
+        "Bus": 9
+    },
+    "xyz.openbmc_project.Inventory.Decorator.Ipmi": {
+        "EntityId": 7,
+        "EntityInstance": 0
+    },
+    "Name": "AST2700 DCSCM Baseboard",
+    "Probe": "TRUE",
+    "Type": "Board"
+}

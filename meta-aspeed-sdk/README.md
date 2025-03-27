@@ -63,15 +63,14 @@ ast2700-a0-dcscm-ast1700-demo
 ```
 
 - Linux kernel version is `6.6` by default. machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
-- AST2600 revision is `A3` by default.
-- OPTEE-OS
-  - AST2600
-    - OPTEE-OS is disabled by default. machine with `tee` postfix for OPTEE-OS enable.
-  - AST2700
-    - OPTEE-OS is enabled by default.
-- ARM Trusted Firmware
-  - AST2700
-    - ATF is enabled by default and only support BL31.
+- AST2600
+  - Default revision for A3.
+  - Optee is disabled by default. machine with `tee` postfix for Optee enable.
+  - ATF is not support.
+- AST2700
+  - Default revision for A1.
+  - Optee is enabled by default.
+  - ATF is enabled by default and only support BL31.
 
 1. AST2700
 

@@ -1,7 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI:append = " file://power-config-host0.json \
-                 "
+CONFIGFILE = "${@bb.utils.contains('MACHINE_FEATURES', 'ast2700-a0', \
+                'power-config-host0_a0.json', 'power-config-host0.json', d)}"
+
+SRC_URI:append = " file://${CONFIGFILE}"
+
 # AST2700 A0 doesn't support SGPIO Slave interrupt.
 # If the SGPIOS input pin is configured for x86-power-control PowerOk,
 # the power status will not update.
@@ -11,10 +14,9 @@ DEPS_CFG = "power.conf"
 DEPS_TGT = "xyz.openbmc_project.Chassis.Control.Power@.service"
 SYSTEMD_OVERRIDE:${PN}:append:ast2700-a0 = "${DEPS_CFG}:${DEPS_TGT}.d/${DEPS_CFG}"
 
-
 do_install:append() {
     install -d ${D}${datadir}/${PN}
-    install -m 0644 ${UNPACKDIR}/power-config-host0.json ${D}${datadir}/${PN}
+    install -m 0644 ${UNPACKDIR}/${CONFIGFILE} ${D}${datadir}/${PN}/power-config-host0.json
 }
 
 # Add nostamp to avoid build failure when the machine changes from ast2700-a0 to a1.

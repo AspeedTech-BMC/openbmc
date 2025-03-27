@@ -7,14 +7,24 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${ASPEEDSDKBASE}/LICENSE;md5=a3740bd0a194cd6dcafdc482a200a56f"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
+PROVIDES += "virtual/ssp"
+RPROVIDES:${PN} += "virtual-ssp"
 PR = "r0"
+
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 SSP_FIRMWARE ?= "ast2700-ssp.bin"
 SSP_FIRMWARE:aspeed-g6 ?= "ast2600_ssp.bin"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-SRC_URI = "file://${SSP_FIRMWARE};subdir=${S}"
+SSP_FIRMWARE_ELF ?= "ast2700-ssp.elf"
+SSP_FIRMWARE_ELF:aspeed-g6 ?= ""
+
+SSP_FIRMWARE_EXTRA ?= "${@'file://${SSP_FIRMWARE_ELF};subdir=${S}' if len('${SSP_FIRMWARE_ELF}') else ''}"
+
+SRC_URI = "file://${SSP_FIRMWARE};subdir=${S} \
+           ${SSP_FIRMWARE_EXTRA} \
+          "
 
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"
@@ -33,6 +43,9 @@ do_deploy () {
     if [ "${SOC_FAMILY}" = "aspeed-g7" ]; then
         install -d ${DEPLOYDIR}
         install -m 644 ${S}/${SSP_FIRMWARE} ${DEPLOYDIR}/.
+        if [ -f ${S}/${SSP_FIRMWARE_ELF} ]; then
+            install -m 644 ${S}/${SSP_FIRMWARE_ELF} ${DEPLOYDIR}/.
+        fi
     fi
 }
 

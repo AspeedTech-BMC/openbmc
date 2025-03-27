@@ -15,7 +15,7 @@ PACKAGES = " \
 
 SUMMARY:${PN}-ssp = "AspeedTech Secondary Service Processor"
 RDEPENDS:${PN}-ssp = " \
-    ssp \
+    virtual-ssp \
     "
 RRECOMMENDS:${PN}-ssp= " \
     kernel-module-aspeed-ssp \

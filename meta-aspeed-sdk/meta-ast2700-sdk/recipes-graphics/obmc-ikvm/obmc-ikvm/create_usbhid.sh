@@ -1,12 +1,24 @@
 #!/bin/sh
 
+cpu_rev_id=$(devmem 0x12c02000 32)
+
 if [ "$2" = "1" ]; then
     # For AST2750 dual nodes. 
     hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid1"
-    dev_name="12021000.usb-vhub"  
+    if [[ $(( (cpu_rev_id >> 24) & 0xFF )) -eq 0x06 && \
+          $(( (cpu_rev_id >> 16) & 0xFF )) -eq 0x00 ]]; then
+        dev_name="12021000.usb-vhub"  # For AST2700 A0
+    else
+        dev_name="12021000.usb-vhub"  # For AST2700 A1
+    fi
 else
     hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid"
-    dev_name="12011000.usb-vhub"
+    if [[ $(( (cpu_rev_id >> 24) & 0xFF )) -eq 0x06 && \
+          $(( (cpu_rev_id >> 16) & 0xFF )) -eq 0x00 ]]; then
+        dev_name="12011000.usb-vhub"  # For AST2700 A0
+    else
+        dev_name="12060000.usb-vhub"  # For AST2700 A1
+    fi
 fi
 
 create_hid() {

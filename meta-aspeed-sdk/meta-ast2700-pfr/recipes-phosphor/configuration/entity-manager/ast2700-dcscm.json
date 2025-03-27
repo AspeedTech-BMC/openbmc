@@ -8,20 +8,20 @@
         },
         {
             "Address": "0x4b",
-            "Bus": 12,
+            "Bus": 5,
             "Name": "Ambient_Temp",
             "Thresholds": [
                 {
                     "Direction": "greater than",
                     "Name": "upper critical",
                     "Severity": 1,
-                    "Value": 40
+                    "Value": 70
                 },
                 {
                     "Direction": "greater than",
                     "Name": "upper non critical",
                     "Severity": 0,
-                    "Value": 38
+                    "Value": 50
                 },
                 {
                     "Direction": "less than",
@@ -37,6 +37,70 @@
                 }
             ],
             "Type": "LM75A"
+        },
+        {
+            "Index": 0,
+            "Name": "VCC_BAT",
+            "ScaleFactor": 1,
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 3.5
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 3.4
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 2.79
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 2.7
+                }
+            ],
+            "Type": "ADC"
+        },
+        {
+            "Index": 1,
+            "Name": "VCC_RTC_HPM",
+            "ScaleFactor": 1,
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 3.5
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 3.4
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 2.79
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 2.7
+                }
+            ],
+            "Type": "ADC"
         },
         {
             "Class": "Aspeed2600_Hwmon",
