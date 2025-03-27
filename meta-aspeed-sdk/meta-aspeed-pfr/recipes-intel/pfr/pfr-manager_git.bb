@@ -9,6 +9,8 @@ SRC_URI = "git://github.com/openbmc/pfr-manager;branch=master;protocol=https \
            file://0001-fix-pfr-manager-crash.patch \
            file://0002-fix-no-postcodeIface.patch \
            file://0003-fix-no-update-UfmProvisioned-property.patch \
+           file://0004-Fix-build-issues-with-boost-1.87.patch \
+           file://0005-Fix-build-issue-updatde-to-C-23.patch \
            "
 
 PV = "0.1+git"

@@ -7,6 +7,7 @@ For AST2700-A1:
 Node0 KVM and VM use 0x12060000 (PCIe-EHCI-vHUB + PCIe-XHCI-PHY)
 Node1 KVM and VM use 0x12021000 (PCIe-XHCI-vHUB)
 
+Upstream-Status: Pending
 Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  ikvm_input.hpp | 2 +-

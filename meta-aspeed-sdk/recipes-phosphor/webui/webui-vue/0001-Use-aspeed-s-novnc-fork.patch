@@ -1,4 +1,4 @@
-From d5ae9d196c19eea5524644a42a26bef698117a90 Mon Sep 17 00:00:00 2001
+From b0b56032901c0747ce7ec736d93111ffbf5fde8e Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Thu, 6 Jun 2024 17:35:26 +0800
 Subject: [PATCH] Use aspeed's novnc fork
@@ -10,12 +10,12 @@ Upstream-Status: Inappropriate [ASPEED specific]
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
- package.json  | 7 +++++--
+ package.json  | 6 +++++-
  vue.config.js | 8 ++++++++
- 2 files changed, 13 insertions(+), 2 deletions(-)
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
 diff --git a/package.json b/package.json
-index f80e620..78a3750 100644
+index 0ca43073..3c2a5815 100644
 --- a/package.json
 +++ b/package.json
 @@ -4,6 +4,7 @@
@@ -42,9 +42,9 @@ index f80e620..78a3750 100644
 +        "react": "17.0.2",
 +        "react-scripts": "5.0.1",
          "vue": "3.4.29",
-         "vue-i18n": "9.13.1",
+         "vue-i18n": "10.0.5",
          "vue-loader": "17.4.2",
-@@ -62,11 +65,11 @@
+@@ -61,6 +64,7 @@
          "eslint-plugin-vue": "9.2.0",
          "eslint-scope": "7.1.1",
          "lint-staged": "13.0.3",
@@ -52,13 +52,8 @@ index f80e620..78a3750 100644
          "postcss-loader": "8.1.1",
          "prettier": "3.2.5",
          "sass": "1.75.0",
-         "sass-loader": "14.2.1",
--        "vue-cli-plugin-i18n": "2.3.1",
-         "vue-style-loader": "4.1.3",
-         "vue-svg-inline-loader": "2.1.5",
-         "vuepress": "1.9.7"
 diff --git a/vue.config.js b/vue.config.js
-index e33918e..0467ff5 100644
+index e33918e4..0467ff52 100644
 --- a/vue.config.js
 +++ b/vue.config.js
 @@ -92,6 +92,10 @@ module.exports = {
@@ -84,5 +79,5 @@ index e33918e..0467ff5 100644
        hints: 'warning',
        maxEntrypointSize: 512000,
 -- 
-2.25.1
+2.43.0
 

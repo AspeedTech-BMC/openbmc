@@ -1,0 +1,31 @@
+From 630a7e7e604e4c73807bb696c4463541f6b8e4ee Mon Sep 17 00:00:00 2001
+From: "Jason M. Bills" <jason.m.bills@linux.intel.com>
+Date: Wed, 26 Feb 2025 09:32:20 -0800
+Subject: [PATCH 1/2] Fix build issues with boost 1.87
+
+Update deprecated terminology that was removed in boost 1.87.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pfr-manager/+/78512]
+
+Change-Id: Ifa5dbbd35aa8517b16941f0f7ad5df2028ddbc1e
+Signed-off-by: Jason M. Bills <jason.m.bills@linux.intel.com>
+---
+ service/src/mainapp.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/service/src/mainapp.cpp b/service/src/mainapp.cpp
+index f7f8603..e64d52e 100644
+--- a/service/src/mainapp.cpp
++++ b/service/src/mainapp.cpp
+@@ -680,7 +680,7 @@ void checkPFRandAddObjects(sdbusplus::asio::object_server& server,
+ int main()
+ {
+     // setup connection to dbus
+-    boost::asio::io_service io;
++    boost::asio::io_context io;
+     auto conn = std::make_shared<sdbusplus::asio::connection>(io);
+     pfr::stateTimer = std::make_unique<boost::asio::steady_timer>(io);
+     pfr::initTimer = std::make_unique<boost::asio::steady_timer>(io);
+-- 
+2.43.0
+

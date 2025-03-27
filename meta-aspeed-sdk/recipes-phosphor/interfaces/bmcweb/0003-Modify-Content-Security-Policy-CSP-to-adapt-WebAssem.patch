@@ -1,4 +1,4 @@
-From 30a2eceb03fe327bdc213d98b5b274a7bae101c3 Mon Sep 17 00:00:00 2001
+From 642d28e277364623d659846347f9b3e9c081e150 Mon Sep 17 00:00:00 2001
 From: Jammy Huang <jammy_huang@aspeedtech.com>
 Date: Wed, 16 Feb 2022 15:29:30 +0800
 Subject: [PATCH] Modify Content-Security-Policy(CSP) to adapt WebAssembly
@@ -15,10 +15,10 @@ Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/include/security_headers.hpp b/include/security_headers.hpp
-index f48a22ab..a302ca36 100644
+index 7639637b00..16ddff8af2 100644
 --- a/include/security_headers.hpp
 +++ b/include/security_headers.hpp
-@@ -67,7 +67,7 @@ inline void addSecurityHeaders(crow::Response& res)
+@@ -68,7 +68,7 @@ inline void addSecurityHeaders(crow::Response& res)
                        "img-src 'self' data:; "
                        "font-src 'self'; "
                        "style-src 'self'; "
@@ -28,5 +28,5 @@ index f48a22ab..a302ca36 100644
                        "form-action 'none'; "
                        "frame-ancestors 'none'; "
 -- 
-2.25.1
+2.43.0
 

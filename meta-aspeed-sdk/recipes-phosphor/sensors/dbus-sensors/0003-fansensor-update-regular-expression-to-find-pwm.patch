@@ -1,4 +1,4 @@
-From 4b81a42d4a290227ab9e0cf7f3816246edcb80e0 Mon Sep 17 00:00:00 2001
+From b1d5b2aa3965759aeee7edbe403e24e87d4d46bc Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Tue, 12 Dec 2023 18:22:39 +0800
 Subject: [PATCH 3/3] fansensor update regular expression to find pwm
@@ -13,18 +13,18 @@ Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/fan/FanMain.cpp b/src/fan/FanMain.cpp
-index 73d3c73..f6faac6 100644
+index 95f5d27..2810eba 100644
 --- a/src/fan/FanMain.cpp
 +++ b/src/fan/FanMain.cpp
-@@ -148,7 +148,7 @@ bool findPwmfanPath(unsigned int configPwmfanIndex, fs::path& pwmPath)
+@@ -147,7 +147,7 @@ bool findPwmfanPath(unsigned int configPwmfanIndex,
  
      pwnfanDevName += std::to_string(configPwmfanIndex);
  
--    if (!findFiles(fs::path("/sys/class/hwmon"), R"(pwm\d+)", pwmfanPaths))
-+    if (!findFiles(fs::path("/sys/class/hwmon"), R"(pwm\d+$)", pwmfanPaths))
+-    if (!findFiles(std::filesystem::path("/sys/class/hwmon"), R"(pwm\d+)",
++    if (!findFiles(std::filesystem::path("/sys/class/hwmon"), R"(pwm\d+$)",
+                    pwmfanPaths))
      {
-         std::cerr << "No PWMs are found!\n";
-         return false;
+         lg2::error("No PWMs are found!");
 -- 
-2.25.1
+2.43.0
 

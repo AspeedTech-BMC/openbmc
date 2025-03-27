@@ -1,4 +1,4 @@
-From 242fbd21dbc777ecfa853faa490100963e94b422 Mon Sep 17 00:00:00 2001
+From 5e17f8c7ef4a363b629aa0198f184ecd4125afa0 Mon Sep 17 00:00:00 2001
 From: Jamin Lin <jamin_lin@aspeedtech.com>
 Date: Mon, 5 Jul 2021 17:39:28 +0800
 Subject: [PATCH 1/3] change pre sensor scaling to 2.5v
@@ -10,10 +10,10 @@ Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/adc/ADCSensor.cpp b/src/adc/ADCSensor.cpp
-index 0b3fd28..80d9987 100644
+index 170e79b..2833d53 100644
 --- a/src/adc/ADCSensor.cpp
 +++ b/src/adc/ADCSensor.cpp
-@@ -45,7 +45,7 @@
+@@ -46,7 +46,7 @@
  static constexpr unsigned int sensorScaleFactor = 1000;
  
  static constexpr double roundFactor = 10000;     // 3 decimal places
@@ -23,5 +23,5 @@ index 0b3fd28..80d9987 100644
  
  ADCSensor::ADCSensor(
 -- 
-2.25.1
+2.43.0
 
