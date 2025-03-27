@@ -14,7 +14,7 @@
         "LineName": "RUN_POWER_PG",
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["assert-run-power-pg.service"],
+            "RISING": ["assert-run-power-pg.service", "backend-nic-driver-bind.service"],
             "FALLING": ["deassert-run-power-pg.service"]
         },
         "Continue": true
@@ -26,6 +26,16 @@
         "Targets": {
             "RISING": ["assert-reset-button.service"],
             "FALLING": ["deassert-reset-button.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "UART_MUX_SEL",
+        "LineName": "UART_MUX_SEL",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["assert-uart-select-led.service"],
+            "FALLING": ["deassert-uart-select-led.service"]
         },
         "Continue": true
     },

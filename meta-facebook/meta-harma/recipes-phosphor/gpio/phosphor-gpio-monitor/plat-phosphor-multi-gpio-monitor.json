@@ -17,13 +17,11 @@
         "EventMon": "BOTH",
         "Targets": {
             "RISING": [
-                "deassert-gpio-log@0_power-hsc-good.service",
-                "host-power-on.service",
-                "device-reinitial.service"
+                "auto-poweron@0_auto-poweron.service",
+                "device-reinitial@0_auto-poweron.service"
             ],
             "FALLING": [
-                "assert-gpio-log@0_power-hsc-good.service",
-                "host-power-off.service"
+                "auto-poweroff@0_auto-poweroff.service"
             ]
         },
         "Continue": true
@@ -67,6 +65,24 @@
         "EventMon": "FALLING",
         "Targets": {
             "FALLING": ["assert-gpio-log@1_ac-power-button.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "auto-power-on",
+        "ChipId": "2",
+        "GpioNum": 22,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "deassert-gpio-log@2_power-hsc-good.service",
+                "auto-poweron@2_auto-poweron.service",
+                "device-reinitial@2_auto-poweron.service"
+            ],
+            "FALLING": [
+                "assert-gpio-log@2_power-hsc-good.service",
+                "auto-poweroff@2_auto-poweroff.service"
+            ]
         },
         "Continue": true
     },
@@ -128,13 +144,13 @@
         "Continue": true
     },
     {
-        "Name": "cpu0-prochot-alert",
+        "Name": "irq-cpu-hsc-oc-n",
         "ChipId": "2",
         "GpioNum": 178,
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-gpio-log@2_cpu0-prochot-alert.service"],
-            "FALLING": ["assert-gpio-log@2_cpu0-prochot-alert.service"]
+            "RISING": ["deassert-gpio-log@2_irq-cpu-hsc-oc-n.service"],
+            "FALLING": ["assert-gpio-log@2_irq-cpu-hsc-oc-n.service"]
         },
         "Continue": true
     },
@@ -167,6 +183,28 @@
         "Targets": {
             "RISING": ["deassert-gpio-log@2_pvdd11-ocp-alert.service"],
             "FALLING": ["assert-gpio-log@2_pvdd11-ocp-alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "fcb1-activate",
+        "ChipId": "3",
+        "GpioNum": 13,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["deassert-gpio-log@3_fcb1-activate.service"],
+            "FALLING": ["assert-gpio-log@3_fcb1-activate.service", "fan-reload.service" ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "fcb0-activate",
+        "ChipId": "4",
+        "GpioNum": 13,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["deassert-gpio-log@4_fcb0-activate.service"],
+            "FALLING": ["assert-gpio-log@4_fcb0-activate.service", "fan-reload.service"]
         },
         "Continue": true
     }
