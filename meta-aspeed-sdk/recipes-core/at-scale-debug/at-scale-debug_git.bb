@@ -8,8 +8,8 @@ inherit cmake pkgconfig useradd obmc-phosphor-systemd
 DEPENDS = "sdbusplus openssl libpam libgpiod safec linux-libc-headers"
 
 SRC_URI = "git://github.com/Intel-BMC/asd;protocol=https;branch=master"
-# 1.5.1
-SRCREV = "5f6d69696bd1114c38041faad120b3fb6f661b78"
+# 1.6.2
+SRCREV = "b5427e9ac6fca485f4b7aad1c7817c2f32ede8a9"
 
 USERADD_PACKAGES = "${PN}"
 
