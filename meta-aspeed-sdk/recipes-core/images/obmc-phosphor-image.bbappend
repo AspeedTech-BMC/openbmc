@@ -31,6 +31,8 @@ IMAGE_INSTALL:remove:aspeed-g5 = " \
         packagegroup-oss-intel-pmci \
         entity-manager \
         "
+IMAGE_FEATURES:remove:aspeed-g5 = " obmc-telemetry"
+
 
 # packagegroup for ast2600
 IMAGE_INSTALL:append:aspeed-g6 = " \
