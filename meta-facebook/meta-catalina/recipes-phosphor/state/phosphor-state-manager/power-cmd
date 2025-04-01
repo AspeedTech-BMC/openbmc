@@ -63,17 +63,17 @@ is_rmc_main_power_disable()
         return 1
     fi
 
-    if ! reg_val="$(i2ctransfer -y -f 14 w1@0x1e 0x0d r1)"; then
-        # failed to get rmc main power state from cpld register
+    if ! reg_val="$(i2ctransfer -y -f 14 w1@0x12 0x01 r1)"; then
+        # failed to get rmc main power state from cpld ioexp
         # assume rmc main power is enabled
-        echo "[DEBUG] failed to get rmc main power state from cpld register"
+        echo "[DEBUG] failed to get rmc main power state from cpld ioexp"
         return 1
     fi
 
-    # check bit[3]
-    # 1: rmc main power disabled
-    # 0: rmc main power enabled
-    if (( (reg_val & 0x08) == 0 )); then
+    # check bit[1]
+    # 0: rmc main power disabled
+    # 1: rmc main power enabled
+    if (( (reg_val & 0x02) == 0x02 )); then
         echo "[DEBUG] rmc main power is enabled"
         return 1
     fi
@@ -179,8 +179,8 @@ host_power_on()
     fi
 
     if [ "$(host_power_status)" == "off" ]; then
-        press_host_power_button 1
-        if ! wait_host_power_on; then
+        press_host_power_button "on" 1
+        if ! wait_host_power_change "on" 20; then
             return 1
         fi
     fi
@@ -190,8 +190,8 @@ host_power_on()
 host_force_power_off()
 {
     if [ "$(host_power_status)" == "on" ]; then
-        press_host_power_button 6
-        if ! wait_host_power_off; then
+        press_host_power_button "off" 8
+        if ! wait_host_power_change "off" 20; then
             return 1
         fi
     fi
@@ -201,8 +201,8 @@ host_force_power_off()
 host_graceful_power_off()
 {
     if [ "$(host_power_status)" == "on" ]; then
-        press_host_power_button 1
-        if ! wait_host_power_off; then
+        press_host_power_button "off" 1
+        if ! wait_host_power_change "off" 30; then
             return 1
         fi
     fi
@@ -231,18 +231,31 @@ host_power_status()
 
 press_host_power_button()
 {
-    local press_delay_sec="$1"
+    local exp_val="$1"
+    local max_check_cnt="$2"
+    local count=0
+
     set_gpio "SYS_BMC_PWRBTN_R_N" 1
     set_gpio "SYS_BMC_PWRBTN_R_N" 0
-    sleep "$press_delay_sec"
+
+    until [ $count -ge "$max_check_cnt" ]
+    do
+        sleep 1
+        if [ "$(host_power_status)" == "$exp_val" ]; then
+            break
+        fi
+        ((count++))
+    done
+
     set_gpio "SYS_BMC_PWRBTN_R_N" 1
 }
 
 wait_host_power_change()
 {
     local exp_val="$1"
+    local max_check_cnt="$2"
     local count=0
-    until [ $count -gt 20 ]
+    until [ $count -gt "$max_check_cnt" ]
     do
         sleep 1
         if [ "$(host_power_status)" == "$exp_val" ]; then
@@ -252,16 +265,4 @@ wait_host_power_change()
     done
 
     return 1
-}
-
-wait_host_power_on()
-{
-    wait_host_power_change "on"
-    return $?
-}
-
-wait_host_power_off()
-{
-    wait_host_power_change "off"
-    return $?
 }
