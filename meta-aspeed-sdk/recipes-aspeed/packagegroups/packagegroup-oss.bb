@@ -50,6 +50,7 @@ RDEPENDS:${PN}-apps = " \
     mctp \
     memtester \
     coremark \
+    picocom \
     "
 
 # The size of opkg package manager is 6XX KB.
@@ -84,6 +85,7 @@ RDEPENDS:${PN}-apps:remove:aspeed-g5 = " \
     dhrystone \
     nvme-cli \
     stressapptest \
+    picocom \
     "
 
 SUMMARY:${PN}-libs = "Open Source Library"
