@@ -1,0 +1,87 @@
+From 84c39f1f19fd8246227c8ee1752980688e318c5c Mon Sep 17 00:00:00 2001
+From: Ian Rogers <irogers@google.com>
+Date: Fri, 10 Sep 2021 15:57:56 -0700
+Subject: [PATCH] perf tools: Add an option to build without libbfd
+
+Some distributions, like debian, don't link perf with libbfd. Add a
+build flag to make this configuration buildable and testable.
+
+This was inspired by:
+
+  https://lore.kernel.org/linux-perf-users/20210910102307.2055484-1-tonyg@leastfixedpoint.com/T/#u
+
+Signed-off-by: Ian Rogers <irogers@google.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: tony garnock-jones <tonyg@leastfixedpoint.com>
+Link: http://lore.kernel.org/lkml/20210910225756.729087-1-irogers@google.com
+
+Upstream-Status: Pending
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile.config | 42 +++++++++++++++++++++++---------------
+ 1 file changed, 25 insertions(+), 17 deletions(-)
+
+diff --git a/tools/perf/Makefile.config b/tools/perf/Makefile.config
+index 7578af250454..cc114dbe5cef 100644
+--- a/tools/perf/Makefile.config
++++ b/tools/perf/Makefile.config
+@@ -749,27 +749,35 @@ else
+   endif
+ endif
+ 
+-ifeq ($(feature-libbfd), 1)
+-  EXTLIBS += -lbfd -lopcodes
+-else
+-  # we are on a system that requires -liberty and (maybe) -lz
+-  # to link against -lbfd; test each case individually here
++ifndef NO_LIBBFD
++  ifeq ($(feature-libbfd), 1)
++    EXTLIBS += -lbfd -lopcodes
++  else
++    # we are on a system that requires -liberty and (maybe) -lz
++    # to link against -lbfd; test each case individually here
+ 
+-  # call all detections now so we get correct
+-  # status in VF output
+-  $(call feature_check,libbfd-liberty)
+-  $(call feature_check,libbfd-liberty-z)
++    # call all detections now so we get correct
++    # status in VF output
++    $(call feature_check,libbfd-liberty)
++    $(call feature_check,libbfd-liberty-z)
+ 
+-  ifeq ($(feature-libbfd-liberty), 1)
+-    EXTLIBS += -lbfd -lopcodes -liberty
+-    FEATURE_CHECK_LDFLAGS-disassembler-four-args += -liberty -ldl
+-  else
+-    ifeq ($(feature-libbfd-liberty-z), 1)
+-      EXTLIBS += -lbfd -lopcodes -liberty -lz
+-      FEATURE_CHECK_LDFLAGS-disassembler-four-args += -liberty -lz -ldl
++    ifeq ($(feature-libbfd-liberty), 1)
++      EXTLIBS += -lbfd -lopcodes -liberty
++      FEATURE_CHECK_LDFLAGS-disassembler-four-args += -liberty -ldl
++    else
++      ifeq ($(feature-libbfd-liberty-z), 1)
++        EXTLIBS += -lbfd -lopcodes -liberty -lz
++        FEATURE_CHECK_LDFLAGS-disassembler-four-args += -liberty -lz -ldl
++      endif
+     endif
++    $(call feature_check,disassembler-four-args)
++  endif
++
++  ifeq ($(feature-libbfd-buildid), 1)
++    CFLAGS += -DHAVE_LIBBFD_BUILDID_SUPPORT
++  else
++    msg := $(warning Old version of libbfd/binutils things like PE executable profiling will not be available);
+   endif
+-  $(call feature_check,disassembler-four-args)
+ endif
+ 
+ ifdef NO_DEMANGLE
+-- 
+2.43.0
+

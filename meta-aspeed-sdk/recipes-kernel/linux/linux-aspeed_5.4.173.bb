@@ -17,3 +17,4 @@ SRC_URI:append = " file://0001-perf-parse-events-Disable-a-subset-of-flex-warnin
 SRC_URI:append = " file://0002-perf-parse-events-Disable-a-subset-of-bison-warnings.patch "
 SRC_URI:append = " file://0003-perf-parse-events-Fix-an-incompatible-pointer.patch "
 SRC_URI:append = " file://0004-perf-parse-Add-struct-parse_events_state-pointer-to.patch "
+SRC_URI:append = " file://0005-perf-tools-Add-an-option-to-build-without-libbfd.patch "
