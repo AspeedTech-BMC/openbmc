@@ -7,13 +7,23 @@ GPIO_PINS=(BIOS_POST_CODE_LED_7 BIOS_POST_CODE_LED_6 BIOS_POST_CODE_LED_5 BIOS_P
 # Set GPIO value
 # ${1}: BIOS post code
 set_gpio() {
+    local hex_code=$1
+
+    # Validate hex format
+    if ! [[ "$hex_code" =~ ^[0-9a-fA-F]+$ ]]; then
+        echo "Invalid postcode (not hex): $hex_code"
+        return
+    fi
+
+    # Convert the hexadecimal postcode to decimal
+    local dec_code=$((16#$hex_code))
+
     # Convert the decimal number to binary
-    postcode=$1
     binary=""
-    while [ "$postcode" -ne 0 ]; do
-        remainder=$((postcode % 2))
+    while [ "$dec_code" -ne 0 ]; do
+        remainder=$((dec_code % 2))
         binary="$remainder$binary"
-        postcode=$((postcode / 2))
+        dec_code=$((dec_code / 2))
     done
 
     # Pad the binary number to 8 bits
@@ -46,8 +56,17 @@ dbus-monitor --system type='signal',interface='org.freedesktop.DBus.Properties',
 member='PropertiesChanged',arg0namespace='xyz.openbmc_project.State.Boot.Raw' | \
 while read -r line; do
     grep -q member <<< "$line" && continue
-    if grep -q "uint64" <<< "$line"; then
-        postcode=$(echo "$line" | awk -F ' ' '{print $2}' )
+
+    if grep -q "array of bytes" <<< "$line"; then
+        read -r value_line
+        postcode=$(echo "$value_line" | tr -d '[][:space:]')
+
+        # Validate hex format
+        if ! [[ "$postcode" =~ ^[0-9a-fA-F]{1,2}$ ]]; then
+            continue
+        fi
+
+        #echo "Detected postcode: $postcode"
         set_gpio "$postcode"
-    fi 
+    fi
 done
