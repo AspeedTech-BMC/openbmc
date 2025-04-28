@@ -1,5 +1,6 @@
 MACHINE ??= "ast2700-default"
 #MACHINE ??= "ast2700-default-ncsi"
+#MACHINE ??= "ast2700-default-raw"
 #MACHINE ??= "ast2700-default-ast1700-evb"
 #MACHINE ??= "ast2700-default-ast1700-evb-cdr"
 #MACHINE ??= "ast2700-emmc"
