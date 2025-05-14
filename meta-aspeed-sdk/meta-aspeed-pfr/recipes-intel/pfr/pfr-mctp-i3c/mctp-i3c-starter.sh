@@ -2,13 +2,15 @@
 
 SetupEndpoint()
 {
-	busctl call xyz.openbmc_project.MCTP \
-	/xyz/openbmc_project/mctp au.com.CodeConstruct.MCTP SetupEndpoint \
-	say "mctpi3c0" 6 0x07 0xec 0xa0 0x03 0x00 0x00
+	busctl call au.com.codeconstruct.MCTP1 \
+	/au/com/codeconstruct/mctp1/interfaces/mctpi3c0 \
+	au.com.codeconstruct.MCTP.BusOwner1 SetupEndpoint \
+	ay 6 0x07 0xec 0xa0 0x03 0x00 0x00
 
-	busctl call xyz.openbmc_project.MCTP \
-	/xyz/openbmc_project/mctp au.com.CodeConstruct.MCTP SetupEndpoint \
-	say "mctpi3c1" 6 0x07 0xec 0xa0 0x03 0x20 0x00
+	busctl call au.com.codeconstruct.MCTP1 \
+	/au/com/codeconstruct/mctp1/interfaces/mctpi3c1 \
+	au.com.codeconstruct.MCTP.BusOwner1 SetupEndpoint \
+	ay 6 0x07 0xec 0xa0 0x03 0x20 0x00
 }
 
 GetPlatformState()
