@@ -26,6 +26,7 @@
 
 # We need some variables from u-boot-config
 inherit uboot-config
+require conf/image-fitimage.conf
 
 # Enable use of a U-Boot fitImage
 UBOOT_FITIMAGE_ENABLE ?= "0"
@@ -85,27 +86,20 @@ UBOOT_FIT_KEY_SIGN_PKCS ?= "-x509"
 # ex: 1 32bits address, 2 64bits address
 UBOOT_FIT_ADDRESS_CELLS ?= "1"
 
-# This is only necessary for determining the signing configuration
-KERNEL_PN = "${PREFERRED_PROVIDER_virtual/kernel}"
-
 # ARM Trusted Firmware(ATF) is a reference implementation of secure world
 # software for Arm A-Profile architectures, (Armv8-A and Armv7-A), including
 # an Exception Level 3 (EL3) Secure Monitor.
 UBOOT_FIT_ARM_TRUSTED_FIRMWARE ?= "0"
 UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE ?= "bl31.bin"
 
-# A Trusted Execution Environment (TEE) is an environment for executing code,
+# A Trusted Execution Environment(TEE) is an environment for executing code,
 # in which those executing the code can have high levels of trust in the asset
 # management of that surrounding environment.
 UBOOT_FIT_TEE ?= "0"
 UBOOT_FIT_TEE_IMAGE ?= "tee-raw.bin"
 
-# It is searched first. If not found, "loadables" is used to identify images
-# to be loaded into memory.
-UBOOT_FIT_CONF_FIRMWARE ?= ""
-
-# User specific image
-UBOOT_FIT_USER_IMAGE ?= "0"
+# User specific settings
+UBOOT_FIT_USER_SETTINGS ?= ""
 
 # Unit name containing a list of users additional binaries to be loaded.
 # It is a comma-separated list of strings.
@@ -119,8 +113,8 @@ python() {
     sign = d.getVar('UBOOT_SIGN_ENABLE') == '1'
     if d.getVar('UBOOT_FITIMAGE_ENABLE') == '1' or sign:
         d.appendVar('DEPENDS', " u-boot-tools-native dtc-native")
-    if sign:
-        d.appendVar('DEPENDS', " " + d.getVar('KERNEL_PN'))
+    if d.getVar('FIT_GENERATE_KEYS') == '1' and sign:
+        d.appendVarFlag('do_uboot_assemble_fitimage', 'depends', ' virtual/kernel:do_kernel_generate_rsa_keys')
 }
 
 concat_dtb() {
@@ -128,17 +122,69 @@ concat_dtb() {
 	binary="$2"
 
 	if [ -e "${UBOOT_DTB_BINARY}" ]; then
-		# Re-sign the kernel in order to add the keys to our dtb
+		# Signing individual images is not recommended as that
+		# makes fitImage susceptible to mix-and-match attack.
+		#
+		# OE FIT_SIGN_INDIVIDUAL is implemented in an unusual manner,
+		# where the resulting signed fitImage contains both signed
+		# images and signed configurations. This is redundant. In
+		# order to prevent mix-and-match attack, it is sufficient
+		# to sign configurations. The FIT_SIGN_INDIVIDUAL = "1"
+		# support is kept to avoid breakage of existing layers, but
+		# it is highly recommended to avoid FIT_SIGN_INDIVIDUAL = "1",
+		# i.e. set FIT_SIGN_INDIVIDUAL = "0" .
+		if [ "${FIT_SIGN_INDIVIDUAL}" = "1" ] ; then
+			# Sign dummy image images in order to
+			# add the image signing keys to our dtb
+			${UBOOT_MKIMAGE_SIGN} \
+				${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
+				-f auto \
+				-k "${UBOOT_SIGN_KEYDIR}" \
+				-o "${FIT_HASH_ALG},${FIT_SIGN_ALG}" \
+				-g "${UBOOT_SIGN_IMG_KEYNAME}" \
+				-K "${UBOOT_DTB_BINARY}" \
+				-d /dev/null \
+				-r ${B}/unused.itb \
+				${UBOOT_MKIMAGE_SIGN_ARGS}
+		fi
+
+		# Sign dummy image configurations in order to
+		# add the configuration signing keys to our dtb
 		${UBOOT_MKIMAGE_SIGN} \
 			${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
-			-F -k "${UBOOT_SIGN_KEYDIR}" \
+			-f auto-conf \
+			-k "${UBOOT_SIGN_KEYDIR}" \
+			-o "${FIT_HASH_ALG},${FIT_SIGN_ALG}" \
+			-g "${UBOOT_SIGN_KEYNAME}" \
 			-K "${UBOOT_DTB_BINARY}" \
-			-r ${B}/fitImage-linux \
+			-d /dev/null \
+			-r ${B}/unused.itb \
 			${UBOOT_MKIMAGE_SIGN_ARGS}
-		# Verify the kernel image and u-boot dtb
-		${UBOOT_FIT_CHECK_SIGN} \
-			-k "${UBOOT_DTB_BINARY}" \
-			-f ${B}/fitImage-linux
+
+		# Verify the dummy fitImage signature against u-boot.dtb
+		# augmented using public key material.
+		#
+		# This only works for FIT_SIGN_INDIVIDUAL = "0", because
+		# mkimage -f auto-conf does not support -F to extend the
+		# existing unused.itb , and instead rewrites unused.itb
+		# from scratch.
+		#
+		# Using two separate unused.itb for mkimage -f auto and
+		# mkimage -f auto-conf invocation above would not help, as
+		# the signature verification process below checks whether
+		# all keys inserted into u-boot.dtb /signature node pass
+		# the verification. Separate unused.itb would each miss one
+		# of the signatures.
+		#
+		# The FIT_SIGN_INDIVIDUAL = "1" support is kept to avoid
+		# breakage of existing layers, but it is highly recommended
+		# to not use FIT_SIGN_INDIVIDUAL = "1", i.e. set
+		# FIT_SIGN_INDIVIDUAL = "0" .
+		if [ "${FIT_SIGN_INDIVIDUAL}" != "1" ] ; then
+			${UBOOT_FIT_CHECK_SIGN} \
+				-k "${UBOOT_DTB_BINARY}" \
+				-f ${B}/unused.itb
+		fi
 		cp ${UBOOT_DTB_BINARY} ${UBOOT_DTB_SIGNED}
 	fi
 
@@ -256,12 +302,6 @@ do_uboot_generate_rsa_keys() {
 }
 
 addtask uboot_generate_rsa_keys before do_uboot_assemble_fitimage after do_compile
-
-# Create a ITS file for the user specific image. It is an empty function and
-# users should create a bbappend to overwrite this function
-uboot_fitimage_user_image() {
-	bbwarn "Please add your specific image ITS settings for u-boot FIT image generation."
-}
 
 # Create a ITS file for the atf
 uboot_fitimage_atf() {
@@ -384,12 +424,14 @@ EOF
 		uboot_fitimage_atf
 	fi
 
-	if [ "${UBOOT_FIT_USER_IMAGE}" = "1" ] ; then
-		if [ -n "${UBOOT_FIT_CONF_USER_LOADABLES}" ] ; then
-			conf_loadables="${conf_loadables}${UBOOT_FIT_CONF_USER_LOADABLES}"
-		fi
-		uboot_fitimage_user_image
+	if [ -n "${UBOOT_FIT_USER_SETTINGS}" ] ; then
+		echo -e "${UBOOT_FIT_USER_SETTINGS}" >> ${UBOOT_ITS}
 	fi
+
+	if [ -n "${UBOOT_FIT_CONF_USER_LOADABLES}" ] ; then
+		conf_loadables="${conf_loadables}${UBOOT_FIT_CONF_USER_LOADABLES}"
+	fi
+
 	cat << EOF >> ${UBOOT_ITS}
     };
 
@@ -397,13 +439,6 @@ EOF
         default = "conf";
         conf {
             description = "Boot with signed U-Boot FIT";
-EOF
-	if [ -n "${UBOOT_FIT_CONF_FIRMWARE}" ] ; then
-		cat << EOF >> ${UBOOT_ITS}
-            firmware = "${UBOOT_FIT_CONF_FIRMWARE}";
-EOF
-	fi
-	cat << EOF >> ${UBOOT_ITS}
             loadables = ${conf_loadables};
             fdt = "fdt";
         };
@@ -447,7 +482,7 @@ uboot_assemble_fitimage_helper() {
 	binary="$2"
 
 	if [ "${UBOOT_SIGN_ENABLE}" = "1" -a -n "${UBOOT_DTB_BINARY}" ] ; then
-		concat_dtb $type $binary
+		concat_dtb "$type" "$binary"
 	fi
 
 	if [ "${UBOOT_FITIMAGE_ENABLE}" = "1" -a -n "${SPL_DTB_BINARY}" ]; then
@@ -460,13 +495,10 @@ uboot_assemble_fitimage_helper() {
 }
 
 do_uboot_assemble_fitimage() {
-	if [ "${UBOOT_SIGN_ENABLE}" = "1" ] ; then
-		cp "${STAGING_DIR_HOST}/sysroot-only/fitImage" "${B}/fitImage-linux"
-	fi
-
 	if [ -n "${UBOOT_CONFIG}" ]; then
-		unset i j k
+		unset i
 		for config in ${UBOOT_MACHINE}; do
+			unset j k
 			i=$(expr $i + 1);
 			for type in ${UBOOT_CONFIG}; do
 				j=$(expr $j + 1);
@@ -476,7 +508,7 @@ do_uboot_assemble_fitimage() {
 			done
 
 			for binary in ${UBOOT_BINARIES}; do
-				k=$(expr $j + 1);
+				k=$(expr $k + 1);
 				if [ $k -eq $i ]; then
 					break;
 				fi
