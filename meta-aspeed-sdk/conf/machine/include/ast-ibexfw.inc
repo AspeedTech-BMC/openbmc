@@ -1,5 +1,3 @@
 MACHINE_FEATURES:append = " ast-ibexfw"
 MACHINEOVERRIDES .= ":ast-ibexfw"
-UBOOT_FIT_USER_IMAGE = "1"
-UBOOT_FIT_IBEXFW = "1"
 UBOOT_FIT_CONF_FIRMWARE = "ibexfw"

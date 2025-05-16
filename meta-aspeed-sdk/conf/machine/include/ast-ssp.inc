@@ -7,6 +7,4 @@ KERNEL_MODULE_PROBECONF:append:aspeed-g6 = " aspeed-ssp"
 module_conf_aspeed-ssp = "blacklist aspeed-ssp"
 
 # AST2700
-UBOOT_FIT_USER_IMAGE:aspeed-g7 = "1"
-UBOOT_FIT_SSP:aspeed-g7 = "1"
 UBOOT_FIT_CONF_USER_LOADABLES:append:aspeed-g7 = ' ,\"sspfw\"'
