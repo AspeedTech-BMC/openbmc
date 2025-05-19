@@ -101,6 +101,10 @@ UBOOT_FIT_TEE_IMAGE ?= "tee-raw.bin"
 # User specific settings
 UBOOT_FIT_USER_SETTINGS ?= ""
 
+# Sets the firmware property to select the image to boot first.
+# If not set, the first entry in "loadables" is used instead.
+UBOOT_FIT_CONF_FIRMWARE ?= ""
+
 # Unit name containing a list of users additional binaries to be loaded.
 # It is a comma-separated list of strings.
 UBOOT_FIT_CONF_USER_LOADABLES ?= ''
@@ -439,6 +443,13 @@ EOF
         default = "conf";
         conf {
             description = "Boot with signed U-Boot FIT";
+EOF
+	if [ -n "${UBOOT_FIT_CONF_FIRMWARE}" ] ; then
+		cat << EOF >> ${UBOOT_ITS}
+            firmware = "${UBOOT_FIT_CONF_FIRMWARE}";
+EOF
+	fi
+	cat << EOF >> ${UBOOT_ITS}
             loadables = ${conf_loadables};
             fdt = "fdt";
         };
