@@ -2,22 +2,28 @@
 
 IP=192.168.20.1
 GADGET_BASE=/sys/kernel/config/usb_gadget
-USB_VHUB=/sys/bus/platform/devices/1e6a0000.usb-vhub
+CONFIG_FILE="/etc/usb-gadget.conf"
+if [ -f "$CONFIG_FILE" ]; then
+    . "$CONFIG_FILE"
+    echo "USB_VHUB: $USB_VHUB" >&2
+else
+    USB_VHUB=1e6a0000.usb-vhub
+    echo "Config file $CONFIG_FILE not found, using default USB_VHUB: $USB_VHUB" >&2
+fi
 NAME=netusb
 
-free_port() {
-    local p
-    for p in /sys/class/udc/*; do
-        p=$(basename $p)
-        if ! test -e $USB_VHUB/$p/gadget/suspended; then
-            echo $p
-            return
-        fi
+which_dev()
+{
+    in_use="$(cat $GADGET_BASE/*/UDC)"
+    cd /sys/class/udc || exit
+    for dev in $USB_VHUB*; do
+        case "$in_use" in
+            *"$dev"*) ;;
+            *) echo "$dev"; return 0;;
+        esac
     done
-    echo "All ports taken" >&2
-    exit 1
+    return 1
 }
-
 
 usb_net_create()
 {
@@ -37,21 +43,21 @@ usb_net_create()
     echo "OpenBMC Net" > strings/0x409/product
 
     mkdir configs/c.1
-    mkdir functions/rndis.$NAME
+    mkdir functions/ncm.$NAME
     mkdir configs/c.1/strings/0x409
 
     echo "Config-1" > configs/c.1/strings/0x409/configuration
     echo 120 > configs/c.1/MaxPower
-    ln -s functions/rndis.$NAME configs/c.1
-    echo $(free_port) > UDC
+    ln -s functions/ncm.$NAME configs/c.1
+    echo $(which_dev) > UDC
 }
 
 if test "$1" = stop; then
     ifconfig usb0 down
-    rm -f $GADGET_BASE/$NAME/configs/c.1/rndis.$NAME
+    rm -f $GADGET_BASE/$NAME/configs/c.1/ncm.$NAME
     rmdir $GADGET_BASE/$NAME/configs/c.1/strings/0x409
     rmdir $GADGET_BASE/$NAME/configs/c.1
-    rmdir $GADGET_BASE/$NAME/functions/rndis.$NAME
+    rmdir $GADGET_BASE/$NAME/functions/ncm.$NAME
     rmdir $GADGET_BASE/$NAME/strings/0x409
     rmdir $GADGET_BASE/$NAME
 else
