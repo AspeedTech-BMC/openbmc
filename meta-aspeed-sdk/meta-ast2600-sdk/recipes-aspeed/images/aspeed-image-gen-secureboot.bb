@@ -111,7 +111,11 @@ make_otp_image() {
     fi
 }
 
+# export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
+# OpenSSL 3.0 legacy provider failed to load
+# https://github.com/pyca/cryptography/issues/10598
 socsec_sign_spl_and_verify() {
+    export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
     socsec_sign_key_dir="$(dirname ${SOCSEC_SIGN_KEY})"
     socsec_sign_key="${socsec_sign_key_dir}/${ROT_SIGN_KEY_NAME}"
     signing_extra_default_opts="--stack_intersects_verification_region=false --rsa_key_order=big"
