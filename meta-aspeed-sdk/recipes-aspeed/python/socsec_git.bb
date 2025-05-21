@@ -4,7 +4,8 @@ HOMEPAGE = "https://github.com/AspeedTech-BMC/socsec/"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=d50b901333b4eedfee074ebcd6a6d611"
 
-SRC_URI = "git://github.com/AspeedTech-BMC/socsec;protocol=https;branch=master"
+BRANCH = "develop"
+SRC_URI = "git://gerrit.aspeed.com:29418/socsec;protocol=ssh;branch=${BRANCH}"
 
 PV = "2.0+git"
 SRCREV = "${AUTOREV}"
