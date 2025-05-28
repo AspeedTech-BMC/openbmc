@@ -4,6 +4,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 PROVIDES += "virtual/bootmcu"
 DEPENDS = "ast2700-riscv-linux-gnu-native kern-tools-native swig-native ${PYTHON_PN}-setuptools-native fmc-imgtool-native"
+DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native u-boot-tools-native', '', d)}"
 
 do_install[noexec] = "1"
 
@@ -24,6 +25,18 @@ PACKAGECONFIG[openssl] = ",,openssl-native"
 # u-boot build system and appended to the u-boot version.  If the .scmversion
 # file already exists it will not be overwritten.
 UBOOT_LOCALVERSION ?= ""
+
+# mkimage command
+UBOOT_MKIMAGE_SIGN ?= "uboot-mkimage"
+
+# uboot-fit_check_sign command
+UBOOT_FIT_CHECK_SIGN ?= "uboot-fit_check_sign"
+
+# Options for the device tree compiler passed to mkimage '-D' feature:
+SPL_MKIMAGE_DTCOPTS ?= ""
+
+# Arguments passed to mkimage for signing
+SPL_MKIMAGE_SIGN_ARGS ?= ""
 
 IS_AST2700_A0 ?= "${@bb.utils.contains('MACHINE_FEATURES', 'ast2700-a0', 'yes', 'no', d)}"
 
@@ -59,27 +72,45 @@ do_compile() {
     oe_runmake -C ${S} O=${B} all
 }
 
-do_deploy() {
-    sub_ver=$(cat ${B}/.subversion)
-    install -d ${DEPLOYDIR}
-
-    # spl
-    install -m 644 ${B}/spl/u-boot-spl.dtb ${DEPLOYDIR}
-    install -m 644 ${B}/spl/u-boot-spl-nodtb.bin ${DEPLOYDIR}
-    # boot from uart for AST2700 A0
-    if [ "${IS_AST2700_A0}" = "yes" ]; then
-        install -m 644 ${B}/u-boot-spl.bin ${DEPLOYDIR}
-    else
-        install -m 644 ${B}/spl/u-boot-spl.bin ${DEPLOYDIR}
+# Add the public key into the SPL device tree (u-boot-spl.dtb) by signing
+# a dummy FIT image and injecting the key into the /signature node of the DTB.
+#
+# This function only runs when:
+#   SPL_SIGN_ENABLE = "1"      --> Signing is enabled
+#   SPL_SIGN_ADD_PUBKEY = "0"  --> u-boot recipe does NOT add the public key
+#
+# This is typically used in a post-processing step outside the U-Boot recipe,
+# allowing the public key to be managed independently.
+do_add_pubkey_to_spl_dtb() {
+    # Proceed only when SPL signing is enabled, and public key needs to be added to the SPL DTB
+    if [ "${SPL_SIGN_ENABLE}" != "1" ] || [ "${SPL_SIGN_ADD_PUBKEY}" != "0" ]; then
+        echo "Skipping SPL DTB public key injection"
+        return 0
     fi
 
-    # spl binman for AST2700 A0
-    # spl fmc since AST2700 A1
-    install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
-    install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}/${BOOTMCU_FW_BINARY}-${sub_ver}
+    # Sign dummy image in order to add the signing keys to SPL dtb
+    ${UBOOT_MKIMAGE_SIGN} \
+        ${@'-D "${SPL_MKIMAGE_DTCOPTS}"' if len('${SPL_MKIMAGE_DTCOPTS}') else ''} \
+        -f auto \
+        -k "${SPL_SIGN_KEYDIR}" \
+        -o "${UBOOT_FIT_HASH_ALG},${UBOOT_FIT_SIGN_ALG}" \
+        -g "${SPL_SIGN_KEYNAME}" \
+        -K "${B}/spl/u-boot-spl.dtb" \
+        -d /dev/null \
+        -r ${B}/unused.itb \
+        ${SPL_MKIMAGE_SIGN_ARGS}
+
+    # Verify the dummy fitImage signature against SPL dtb
+    # augmented using public key material.
+    ${UBOOT_FIT_CHECK_SIGN} \
+        -k "${B}/spl/u-boot-spl.dtb" \
+        -f ${B}/unused.itb
+
+    # Reconstruct final SPL binary by concatenating nodtb part and signed DTB
+    cat ${B}/spl/u-boot-spl-nodtb.bin ${B}/spl/u-boot-spl.dtb > ${B}/spl/u-boot-spl.bin
 }
 
-addtask deploy before do_build after do_compile
+addtask add_pubkey_to_spl_dtb before do_deploy do_create_fmc_image after do_compile
 
 # Use fmc-imgtool to create fmc image since A1
 # export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
@@ -103,5 +134,27 @@ do_create_fmc_image() {
 }
 
 addtask create_fmc_image before do_deploy after do_compile
+
+do_deploy() {
+    sub_ver=$(cat ${B}/.subversion)
+    install -d ${DEPLOYDIR}
+
+    # spl
+    install -m 644 ${B}/spl/u-boot-spl.dtb ${DEPLOYDIR}
+    install -m 644 ${B}/spl/u-boot-spl-nodtb.bin ${DEPLOYDIR}
+    # boot from uart for AST2700 A0
+    if [ "${IS_AST2700_A0}" = "yes" ]; then
+        install -m 644 ${B}/u-boot-spl.bin ${DEPLOYDIR}
+    else
+        install -m 644 ${B}/spl/u-boot-spl.bin ${DEPLOYDIR}
+    fi
+
+    # spl binman for AST2700 A0
+    # spl fmc since AST2700 A1
+    install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
+    install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}/${BOOTMCU_FW_BINARY}-${sub_ver}
+}
+
+addtask deploy before do_build after do_compile
 
 ALLOW_EMPTY:${PN} = "1"
