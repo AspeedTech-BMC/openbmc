@@ -1,4 +1,5 @@
-require conf/machine/include/security/aspeed-secure-cot.inc
+# Secure Boot Settings for u-boot verified boot
+require ast2600-secure-cot.inc
 
 # Secure Boot Settings for OTP and SOCSEC
 # The following variables can be overridden in local.conf
