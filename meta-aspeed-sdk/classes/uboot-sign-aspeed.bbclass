@@ -274,7 +274,9 @@ deploy_spl_dtb() {
 	fi
 
 	# For backwards compatibility...
-	install -Dm644 ${SPL_BINARY} ${DEPLOYDIR}/${SPL_IMAGE}
+	if [ -e "${SPL_BINARY}" ]; then
+		install -Dm644 ${SPL_BINARY} ${DEPLOYDIR}/${SPL_IMAGE}
+	fi
 }
 
 do_uboot_generate_rsa_keys() {
@@ -599,7 +601,7 @@ do_deploy:prepend() {
 		ln -sf ${UBOOT_FITIMAGE_IMAGE} ${DEPLOYDIR}/${UBOOT_FITIMAGE_SYMLINK}
 	fi
 
-	if [ "${SPL_SIGN_ENABLE}" = "1" -a -n "${SPL_DTB_BINARY}" ] ; then
+	if [ "${SPL_SIGN_ENABLE}" = "1" -a -e "${SPL_DIR}/${SPL_DTB_BINARY}" ] ; then
 		ln -sf ${SPL_DTB_IMAGE} ${DEPLOYDIR}/${SPL_DTB_SYMLINK}
 		ln -sf ${SPL_DTB_IMAGE} ${DEPLOYDIR}/${SPL_DTB_BINARY}
 		ln -sf ${SPL_NODTB_IMAGE} ${DEPLOYDIR}/${SPL_NODTB_SYMLINK}
