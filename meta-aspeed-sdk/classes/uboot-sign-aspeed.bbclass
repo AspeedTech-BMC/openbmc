@@ -34,6 +34,12 @@ UBOOT_FITIMAGE_ENABLE ?= "0"
 # Signature activation - this requires UBOOT_FITIMAGE_ENABLE = "1"
 SPL_SIGN_ENABLE ?= "0"
 
+# Whether to add (embed) the public key into the SPL Device Tree (.dtb).
+# If set to "1", the key will be inserted into the /signature node of the DTB
+# and fit_check_sign will be used to verify the signature.
+# If set to "0", only signing will be performed, without modifying the DTB.
+SPL_SIGN_ADD_PUBKEY ?= "1"
+
 # Default value for deployment filenames.
 UBOOT_DTB_IMAGE ?= "u-boot-${MACHINE}-${PV}-${PR}.dtb"
 UBOOT_DTB_BINARY ?= "u-boot.dtb"
@@ -244,7 +250,9 @@ concat_spl_dtb() {
 	if [ -e "${SPL_DIR}/${SPL_NODTB_BINARY}" -a -e "${SPL_DIR}/${SPL_DTB_BINARY}" ] ; then
 		cat ${SPL_DIR}/${SPL_NODTB_BINARY} ${SPL_DIR}/${SPL_DTB_SIGNED} > "${SPL_BINARY}"
 	else
-		bbwarn "Failure while adding public key to spl binary. Verified U-Boot boot won't be available."
+		if [ "${SPL_SIGN_ADD_PUBKEY}" = "1" ]; then
+			bbwarn "Failure while adding public key to spl binary. Verified U-Boot boot won't be available."
+		fi
 	fi
 }
 
@@ -473,15 +481,17 @@ EOF
 		${UBOOT_MKIMAGE_SIGN} \
 			${@'-D "${SPL_MKIMAGE_DTCOPTS}"' if len('${SPL_MKIMAGE_DTCOPTS}') else ''} \
 			-F -k "${SPL_SIGN_KEYDIR}" \
-			-K "${SPL_DIR}/${SPL_DTB_BINARY}" \
+			${@'-K "${SPL_DIR}/${SPL_DTB_BINARY}"' if d.getVar("SPL_SIGN_ADD_PUBKEY") == "1" else ''} \
 			-r ${UBOOT_FITIMAGE_BINARY} \
 			${SPL_MKIMAGE_SIGN_ARGS}
 		#
 		# Verify the U-boot FIT image and SPL dtb
 		#
-		${UBOOT_FIT_CHECK_SIGN} \
-			-k "${SPL_DIR}/${SPL_DTB_BINARY}" \
-			-f ${UBOOT_FITIMAGE_BINARY}
+		if [ "${SPL_SIGN_ADD_PUBKEY}" = "1" ]; then
+			${UBOOT_FIT_CHECK_SIGN} \
+				-k "${SPL_DIR}/${SPL_DTB_BINARY}" \
+				-f ${UBOOT_FITIMAGE_BINARY}
+		fi
 	fi
 
 	if [ -e "${SPL_DIR}/${SPL_DTB_BINARY}" ]; then
