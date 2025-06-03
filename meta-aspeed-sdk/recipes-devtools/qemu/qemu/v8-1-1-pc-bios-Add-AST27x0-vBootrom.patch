@@ -1,0 +1,144 @@
+From patchwork Tue Apr 29 06:28:20 2025
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Patchwork-Submitter: Jamin Lin <jamin_lin@aspeedtech.com>
+X-Patchwork-Id: 14069975
+Return-Path: <qemu-devel-bounces+qemu-devel=archiver.kernel.org@nongnu.org>
+X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
+	aws-us-west-2-korg-lkml-1.web.codeaurora.org
+Received: from lists.gnu.org (lists.gnu.org [209.51.188.17])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+	(No client certificate requested)
+	by smtp.lore.kernel.org (Postfix) with ESMTPS id 1FF00C369CB
+	for <qemu-devel@archiver.kernel.org>; Tue, 29 Apr 2025 06:29:21 +0000 (UTC)
+Received: from localhost ([::1] helo=lists1p.gnu.org)
+	by lists.gnu.org with esmtp (Exim 4.90_1)
+	(envelope-from <qemu-devel-bounces@nongnu.org>)
+	id 1u9eSP-0003K9-Qn; Tue, 29 Apr 2025 02:28:41 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <jamin_lin@aspeedtech.com>)
+ id 1u9eSL-0003GO-6Q
+ for qemu-devel@nongnu.org; Tue, 29 Apr 2025 02:28:37 -0400
+Received: from mail.aspeedtech.com ([211.20.114.72] helo=TWMBX01.aspeed.com)
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <jamin_lin@aspeedtech.com>)
+ id 1u9eSI-0007AI-FB
+ for qemu-devel@nongnu.org; Tue, 29 Apr 2025 02:28:36 -0400
+Received: from TWMBX01.aspeed.com (192.168.0.62) by TWMBX01.aspeed.com
+ (192.168.0.62) with Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.2.1748.10; Tue, 29 Apr
+ 2025 14:28:22 +0800
+Received: from mail.aspeedtech.com (192.168.10.10) by TWMBX01.aspeed.com
+ (192.168.0.62) with Microsoft SMTP Server id 15.2.1748.10 via Frontend
+ Transport; Tue, 29 Apr 2025 14:28:22 +0800
+To: Thomas Huth <thuth@redhat.com>,
+ =?utf-8?q?Philippe_Mathieu-Daud=C3=A9?= <philmd@linaro.org>,
+ Peter Maydell <peter.maydell@linaro.org>,
+ "Richard Henderson" <richard.henderson@linaro.org>, =?utf-8?q?Alex_Benn?=
+	=?utf-8?q?=C3=A9e?= <alex.bennee@linaro.org>,
+ Nicholas Piggin <npiggin@gmail.com>, "Alexey Kardashevskiy" <aik@ozlabs.ru>,
+ Hao Wu <wuhaotsh@google.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+ Sunil V L <sunilvl@ventanamicro.com>, "Gerd Hoffmann" <kraxel@redhat.com>,
+ Alistair Francis <alistair.francis@wdc.com>,
+ "open list:All patches CC here" <qemu-devel@nongnu.org>
+CC: <jamin_lin@aspeedtech.com>, <troy_lee@aspeedtech.com>,
+ <nabihestefan@google.com>, =?utf-8?q?C=C3=A9dric_Le_Goater?= <clg@redhat.com>
+Subject: [PATCH v8 1/1] pc-bios: Add AST27x0 vBootrom
+Date: Tue, 29 Apr 2025 14:28:20 +0800
+Message-ID: <20250429062822.1184920-2-jamin_lin@aspeedtech.com>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20250429062822.1184920-1-jamin_lin@aspeedtech.com>
+References: <20250429062822.1184920-1-jamin_lin@aspeedtech.com>
+MIME-Version: 1.0
+Received-SPF: pass client-ip=211.20.114.72;
+ envelope-from=jamin_lin@aspeedtech.com; helo=TWMBX01.aspeed.com
+X-Spam_score_int: -18
+X-Spam_score: -1.9
+X-Spam_bar: -
+X-Spam_report: (-1.9 / 5.0 requ) BAYES_00=-1.9,
+ RCVD_IN_VALIDITY_CERTIFIED_BLOCKED=0.001,
+ RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001,
+ SPF_HELO_FAIL=0.001, SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: qemu-devel@nongnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: <qemu-devel.nongnu.org>
+List-Unsubscribe: <https://lists.nongnu.org/mailman/options/qemu-devel>,
+ <mailto:qemu-devel-request@nongnu.org?subject=unsubscribe>
+List-Archive: <https://lists.nongnu.org/archive/html/qemu-devel>
+List-Post: <mailto:qemu-devel@nongnu.org>
+List-Help: <mailto:qemu-devel-request@nongnu.org?subject=help>
+List-Subscribe: <https://lists.nongnu.org/mailman/listinfo/qemu-devel>,
+ <mailto:qemu-devel-request@nongnu.org?subject=subscribe>
+Reply-to: Jamin Lin <jamin_lin@aspeedtech.com>
+X-Patchwork-Original-From: Jamin Lin via <qemu-devel@nongnu.org>
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Errors-To: qemu-devel-bounces+qemu-devel=archiver.kernel.org@nongnu.org
+Sender: qemu-devel-bounces+qemu-devel=archiver.kernel.org@nongnu.org
+
+The boot ROM is a minimal implementation designed to load an AST27x0 boot image.
+Its source code is available at:
+https://github.com/google/vbootrom
+Commit id: d6e3386709b3e49322a94ffadc2aaab9944ab77b
+Build Information:
+```
+Build Date : Apr 29 2025 01:23:18
+FW Version : git-d6e3386
+```
+Upstream-Status: Submitted
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Reviewed-by: Nabih Estefan <nabihestefan@google.com>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
+Tested-by: Nabih Estefan <nabihestefan@google.com>
+---
+ MAINTAINERS                 |   1 +
+ pc-bios/README              |   6 ++++++
+ pc-bios/meson.build         |   1 +
+ 3 files changed, 8 insertions(+)
+
+index 34d6616c32..7d6f25eff8 100644
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d54b5578f8..70ab0d0afa 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1163,6 +1163,7 @@ F: docs/system/arm/fby35.rst
+ F: tests/*/*aspeed*
+ F: tests/*/*ast2700*
+ F: hw/arm/fby35.c
++F: pc-bios/ast27x0_bootrom.bin
+ 
+ NRF51
+ M: Joel Stanley <joel@jms.id.au>
+diff --git a/pc-bios/README b/pc-bios/README
+index f0f13e15f2..d009c37895 100644
+--- a/pc-bios/README
++++ b/pc-bios/README
+@@ -89,6 +89,12 @@
+   more features over time as needed. The source code is available at:
+   https://github.com/google/vbootrom
+ 
++- ast27x0_bootrom.bin is a simplified, free (Apache 2.0) boot ROM for
++  ASPEED AST27x0 BMC SOC. It currently implements the bare minimum to
++  load, parse, initialize and run boot images stored in SPI flash, but may grow
++  more features over time as needed. The source code is available at:
++  https://github.com/google/vbootrom
++
+ - hppa-firmware.img (32-bit) and hppa-firmware64.img (64-bit) are firmware
+   files for the HP-PARISC (hppa) architecture.
+   They are built form the SeaBIOS-hppa sources, which is a fork of SeaBIOS
+
+diff --git a/pc-bios/meson.build b/pc-bios/meson.build
+--- a/pc-bios/meson.build
++++ b/pc-bios/meson.build
+@@ -28,6 +28,7 @@ if unpack_edk2_blobs
+ endif
+ 
+ blobs = [
++  'ast27x0_bootrom.bin',
+   'bios.bin',
+   'bios-256k.bin',
+   'bios-microvm.bin',

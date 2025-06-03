@@ -31,6 +31,10 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0008-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0010-configure-lookup-meson-exutable-from-PATH.patch \
            file://0011-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
+           file://v6-1-6-hw-arm-aspeed_ast27x0-Introduce-vbootrom-memory-region.patch \
+           file://v6-3-6-hw-arm-aspeed-Add-support-for-loading-vbootrom-image-via--bios.patch \
+           file://v8-1-1-pc-bios-Add-AST27x0-vBootrom.patch \
+           file://ast27x0_bootrom.bin;subdir=${UNPACKDIR}/${BPN}-${PV}/pc-bios \
            file://qemu-guest-agent.init \
            file://qemu-guest-agent.udev \
            "
