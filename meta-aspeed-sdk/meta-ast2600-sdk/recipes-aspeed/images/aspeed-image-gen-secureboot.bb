@@ -478,8 +478,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_2048_1.pem",
             "rot_aes_key_name" : "",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha256,rsa2048",
-            "cot_kernel_algo": "sha256,rsa2048",
+            "cot_uboot_algo": "rsa2048",
+            "cot_uboot_hash": "sha256",
+            "cot_kernel_algo": "rsa2048",
+            "cot_kernel_hash": "sha256",
             "cot_spl_sign_key_name": "test_bl2_2048",
             "cot_uboot_sign_key_name": "test_bl3_2048"
         },
@@ -490,8 +492,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_2048_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha256,rsa2048",
-            "cot_kernel_algo": "sha256,rsa2048",
+            "cot_uboot_algo": "rsa2048",
+            "cot_uboot_hash": "sha256",
+            "cot_kernel_algo": "rsa2048",
+            "cot_kernel_hash": "sha256",
             "cot_spl_sign_key_name": "test_bl2_2048",
             "cot_uboot_sign_key_name": "test_bl3_2048"
         },
@@ -502,8 +506,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_2048_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "test_soc_private_key_2048.pem",
-            "cot_uboot_algo": "sha256,rsa2048",
-            "cot_kernel_algo": "sha256,rsa2048",
+            "cot_uboot_algo": "rsa2048",
+            "cot_uboot_hash": "sha256",
+            "cot_kernel_algo": "rsa2048",
+            "cot_kernel_hash": "sha256",
             "cot_spl_sign_key_name": "test_bl2_2048",
             "cot_uboot_sign_key_name": "test_bl3_2048"
         },
@@ -514,8 +520,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_3072_1.pem",
             "rot_aes_key_name" : "",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha384,rsa3072",
-            "cot_kernel_algo": "sha384,rsa3072",
+            "cot_uboot_algo": "rsa3072",
+            "cot_uboot_hash": "sha384",
+            "cot_kernel_algo": "rsa3072",
+            "cot_kernel_hash": "sha384",
             "cot_spl_sign_key_name": "test_bl2_3072",
             "cot_uboot_sign_key_name": "test_bl3_3072"
         },
@@ -526,8 +534,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_3072_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha384,rsa3072",
-            "cot_kernel_algo": "sha384,rsa3072",
+            "cot_uboot_algo": "rsa3072",
+            "cot_uboot_hash": "sha384",
+            "cot_kernel_algo": "rsa3072",
+            "cot_kernel_hash": "sha384",
             "cot_spl_sign_key_name": "test_bl2_3072",
             "cot_uboot_sign_key_name": "test_bl3_3072"
         },
@@ -538,8 +548,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_3072_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "test_soc_private_key_3072.pem",
-            "cot_uboot_algo": "sha384,rsa3072",
-            "cot_kernel_algo": "sha384,rsa3072",
+            "cot_uboot_algo": "rsa3072",
+            "cot_uboot_hash": "sha384",
+            "cot_kernel_algo": "rsa3072",
+            "cot_kernel_hash": "sha384",
             "cot_spl_sign_key_name": "test_bl2_3072",
             "cot_uboot_sign_key_name": "test_bl3_3072"
         },
@@ -550,8 +562,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_4096_1.pem",
             "rot_aes_key_name" : "",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha512,rsa4096",
-            "cot_kernel_algo": "sha512,rsa4096",
+            "cot_uboot_algo": "rsa4096",
+            "cot_uboot_hash": "sha512",
+            "cot_kernel_algo": "rsa4096",
+            "cot_kernel_hash": "sha512",
             "cot_spl_sign_key_name": "test_bl2_4096",
             "cot_uboot_sign_key_name": "test_bl3_4096"
         },
@@ -562,8 +576,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_4096_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha512,rsa4096",
-            "cot_kernel_algo": "sha512,rsa4096",
+            "cot_uboot_algo": "rsa4096",
+            "cot_uboot_hash": "sha512",
+            "cot_kernel_algo": "rsa4096",
+            "cot_kernel_hash": "sha512",
             "cot_spl_sign_key_name": "test_bl2_4096",
             "cot_uboot_sign_key_name": "test_bl3_4096"
         },
@@ -574,8 +590,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_4096_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "test_soc_private_key_4096.pem",
-            "cot_uboot_algo": "sha512,rsa4096",
-            "cot_kernel_algo": "sha512,rsa4096",
+            "cot_uboot_algo": "rsa4096",
+            "cot_uboot_hash": "sha512",
+            "cot_kernel_algo": "rsa4096",
+            "cot_kernel_hash": "sha512",
             "cot_spl_sign_key_name": "test_bl2_4096",
             "cot_uboot_sign_key_name": "test_bl3_4096"
         }
@@ -588,8 +606,10 @@ python do_deploy() {
         print("Disable gen secure image. Do nothing.")
         return
 
-    uboot_default_algo = d.getVar('UBOOT_FIT_HASH_ALG', True) + "," + d.getVar('UBOOT_FIT_SIGN_ALG', True)
-    kernel_default_algo = d.getVar('FIT_HASH_ALG', True) + "," + d.getVar('FIT_SIGN_ALG', True)
+    uboot_default_algo = d.getVar('UBOOT_FIT_SIGN_ALG', True)
+    uboot_default_hash = d.getVar('UBOOT_FIT_HASH_ALG', True)
+    kernel_default_algo = d.getVar('FIT_SIGN_ALG', True)
+    kernel_default_hash = d.getVar('FIT_HASH_ALG', True)
     spl_default_sign_key_name = d.getVar('SPL_SIGN_KEYNAME', True)
     uboot_default_sign_key_name = d.getVar('UBOOT_SIGN_KEYNAME', True)
     gen_secure_image = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE', True)
@@ -613,10 +633,12 @@ python do_deploy() {
         bb.build.exec_func("install_unsigned_image", d)
         kernel_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('KERNEL_FITIMAGE_ITS_NAME', True))
         print("Update kernel its file", kernel_its)
+        update_its_file(kernel_its, kernel_default_hash, sec_img["cot_kernel_hash"])
         update_its_file(kernel_its, kernel_default_algo, sec_img["cot_kernel_algo"])
         update_its_file(kernel_its, uboot_default_sign_key_name, sec_img["cot_uboot_sign_key_name"])
         uboot_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('UBOOT_FITIMAGE_ITS_NAME', True))
         print("Update uboot its file", uboot_its)
+        update_its_file(uboot_its, uboot_default_hash, sec_img["cot_uboot_hash"])
         update_its_file(uboot_its, uboot_default_algo, sec_img["cot_uboot_algo"])
         update_its_file(uboot_its, spl_default_sign_key_name, sec_img["cot_spl_sign_key_name"])
 
