@@ -8,7 +8,7 @@ DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secur
 
 do_install[noexec] = "1"
 
-inherit deploy cml1 python3native
+inherit deploy cml1 python3native otptool
 
 RISCV_PREBUILT_TOOLCHAIN = "${STAGING_DIR_NATIVE}${datadir}/ast2700-riscv-linux-gnu/bin/riscv32-unknown-linux-gnu-"
 

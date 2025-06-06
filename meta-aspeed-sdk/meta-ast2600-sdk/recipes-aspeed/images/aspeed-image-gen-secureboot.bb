@@ -85,7 +85,11 @@ make_otp_image() {
     otptool_config="$(dirname ${OTPTOOL_CONFIGS})/${OTPTOOL_JSON}"
     otptool_config_slug="$(basename ${otptool_config} .json)"
     otptool_config_outdir="${S}/${GEN_IMAGE_MODE}/${otptool_config_slug}"
-    otptool_user_folder="$([ -n "${OTPTOOL_USER_DIR}" ] && echo --user_data_folder ${OTPTOOL_USER_DIR})"
+    local otptool_user_folder=""
+
+    if [ -n "${OTPTOOL_USER_DIR}" ]; then
+        otptool_user_folder="--user_data_folder ${OTPTOOL_USER_DIR}"
+    fi
 
     echo "otptool_config=${otptool_config}"
     echo "otptool_user_folder=${otptool_user_folder}"
@@ -104,7 +108,7 @@ make_otp_image() {
         bbfatal "Generated OTP image failed."
     fi
 
-    otptool print "${otptool_config_outdir}"/otp-all.image
+    otptool print --soc ${OTPTOOL_SOC} "${otptool_config_outdir}"/otp-all.image
 
     if [ $? -ne 0 ]; then
         bbfatal "Printed OTP image failed."

@@ -14,6 +14,7 @@ UBOOT_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
 
 
 # Algorithm "sha384,ecdsa384"
+FIT_PAD_ALG ?= ""
 SPL_SIGN_KEYNAME ?= "test_bl2_ecdsa_secp384r1"
 UBOOT_SIGN_KEYNAME ?= "test_bl3_ecdsa_secp384r1"
 
