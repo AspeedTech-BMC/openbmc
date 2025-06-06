@@ -24,6 +24,8 @@ do_install() {
     install -d ${D}${datadir}/aspeed-secure-config/ast2600
     install -d ${D}${datadir}/aspeed-secure-config/ast2600/otp
     install -d ${D}${datadir}/aspeed-secure-config/ast2600/data
+    install -d ${D}${datadir}/aspeed-secure-config/ast2700
+    install -d ${D}${datadir}/aspeed-secure-config/ast2700/otp
 
     install -m 0755 ${S}/configs/*.sh \
         ${D}${datadir}/aspeed-secure-config
@@ -33,6 +35,8 @@ do_install() {
         ${D}${datadir}/aspeed-secure-config/ast2600/otp
     install -m 0644 ${S}/configs/ast2600/data/* \
         ${D}${datadir}/aspeed-secure-config/ast2600/data
+    install -m 0644 ${S}/configs/ast2700/otp/* \
+        ${D}${datadir}/aspeed-secure-config/ast2700/otp
 }
 
 BBCLASSEXTEND = "native"

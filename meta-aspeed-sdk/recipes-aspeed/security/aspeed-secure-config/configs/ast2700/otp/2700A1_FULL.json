@@ -1,0 +1,909 @@
+{
+    "name": "2700A1_FULL",
+    "version": "2700A1",
+    "rom_region": {},
+    "rbp_region": {
+        // OTPRBP0 - 16 bits
+        "SoC_FMC_ECC_Key_Retire_bits": "0x0",
+        // OTPRBP1 - 16 bits
+        "SoC_FMC_LMS_Key_Retire_bits": "0x0",
+        // OTPRBP2 - 16 bits
+        "Caliptra_Manufacture_pk_key_hash_retire": "0x0",
+        // OTPRBP3 - 16 bits
+        "Caliptra_Owner_pk_key_hash_retire": "0x0",
+        // OTPRBP4 - 64 bits
+        "SoC_FMC_Hardware_SVN_0": "0x0",
+        "SoC_FMC_Hardware_SVN_1": "0x0",
+        // OTPRBP8 - 32 bits
+        "Caliptra_FMC_Hardware_SVN": "0x0",
+        // OTPRBP10 - 128 bits
+        "Caliptra_Runtime_Hardware_SVN_0": "0x0",
+        "Caliptra_Runtime_Hardware_SVN_1": "0x0",
+        "Caliptra_Runtime_Hardware_SVN_2": "0x0",
+        "Caliptra_Runtime_Hardware_SVN_3": "0x0",
+        // OTPRBP18 - 4 bits
+        "Caliptra_Manufacture_ECC_key_mask": "0x0",
+        // OTPRBP19 - 32 bits
+        "Caliptra_Manufacture_LMS_key_mask": "0x0"
+    },
+    "config_region": {
+        // OTPCFG0[15]
+        "otp_mem_lock_enable": false,
+        // OTPCFG0[14]
+        "wr_protect_puf": false,
+        // OTPCFG0[13]
+        "dis_otp_bist": false,
+        // OTPCFG0[12]
+        "wr_protect_caliptra": false,
+        // OTPCFG0[11]
+        "rd_protect_caliptra": false,
+        // OTPCFG0[10]
+        "wr_protect_otp_rbp": false,
+        // OTPCFG0[9]
+        "enable_secure_boot": false,
+        // OTPCFG0[8]
+        "retire_mechanism_option": false,
+        // OTPCFG0[7]
+        "wr_protect_otp_strap": false,
+        // OTPCFG0[6]
+        "wr_protect_otp_cfg": false,
+        // OTPCFG0[5]
+        "wr_protect_rom": false,
+        // OTPCFG0[4]
+        "wr_protect_otp_strap_ext": false,
+        // OTPCFG0[3]
+        "rd_protect_otp_strap": false,
+        // OTPCFG0[2]
+        "rd_protect_otp_cfg": false,
+        // OTPCFG0[1]
+        "rd_protect_rom": false,
+        // OTPCFG0[0]
+        "rd_protect_otp_strap_ext": false,
+        // OTPCFG2[13]
+        "en_irot": false,
+        // OTPCFG2[12]
+        "ignore_secure_boot_hw_strap": false,
+        // OTPCFG2[11]
+        "dis_low_secure_key0": false,
+        // OTPCFG2[10]
+        "en_lms_verify": false,
+        // OTPCFG2[9:8]
+        "dev_life_cycle_state": "0x0",
+        // OTPCFG2[7]
+        "en_boot_msg_usb_uart_a": false,
+        // OTPCFG2[6]
+        "en_boot_msg_usb_uart_b": false,
+        // OTPCFG2[5]
+        "en_emmc_sw_reset": false,
+        // OTPCFG2[4]
+        "dis_boot_msg": false,
+        // OTPCFG2[3]
+        "dis_recovery_mode": false,
+        // OTPCFG2[2]
+        "dis_post_rom_patch": false,
+        // OTPCFG2[1]
+        "dis_pre_rom_patch": false,
+        // OTPCFG2[0]
+        "Boot_From_UART_Port_Selection": false,
+        // OTPCFG4[10:1]
+        "Pre_OTP_Patch_Code_location": "0x0",
+        // OTPCFG4[0]
+        "pre_otp_patch_vld": false,
+        // OTPCFG5[9:0]
+        "Pre_OTP_Patch_Size": "0x0",
+        // OTPCFG6[10:1]
+        "Post_OTP_Patch_Code_location": "0x0",
+        // OTPCFG6[0]
+        "post_otp_patch_vld": false,
+        // OTPCFG7[9:0]
+        "Post_OTP_Patch_Size": "0x0",
+        // OTPCFG9[15]
+        "en_auto_load": false,
+        // OTPCFG9[14:0]
+        "CPU_SCU0C8_auto_val": "0x0",
+        // OTPCFG10[7:0]
+        "IO_SCU0C8_auto_val": "0x0",
+        // OTPCFG11[15]
+        "en_auto_load_usr0": false,
+        // OTPCFG11[14]
+        "rd_protect_otp_usr0": false,
+        // OTPCFG11[13]
+        "wr_protect_otp_usr0": false,
+        // OTPCFG11[11:0]
+        "usr0_region_start_offset": "0x0",
+        // OTPCFG12[15:0]
+        "usr0_region_size": "0x0",
+        // OTPCFG13[15]
+        "en_auto_load_secure0": false,
+        // OTPCFG13[14]
+        "rd_protect_otp_secure0": false,
+        // OTPCFG13[13]
+        "wr_protect_otp_secure0": false,
+        // OTPCFG13[11:0]
+        "secure0_region_start_offset": "0x0",
+        // OTPCFG14[15:0]
+        "secure0_region_size": "0x0",
+        // OTPCFG15[15:0]
+        "recovery_mode_cfg_a": "0x0",
+        // OTPCFG16[15:0]
+        "recovery_mode_cfg_b": "0x0",
+        // OTPCFG24[15:12]
+        "IO_SLI_TX_clock_select": "0x0",
+        // OTPCFG24[11]
+        "IO_SLI_TX_clock_inverse": false,
+        // OTPCFG24[10:6]
+        "IO_SLI_TX_clock_delay": "0x0",
+        // OTPCFG24[5]
+        "IO_SLI_RX_clock_inverse": false,
+        // OTPCFG24[4:0]
+        "IO_SLI_RX_clock_delay": "0x0",
+        // OTPCFG25[15:12]
+        "CPU_SLI_TX_clock_select": "0x0",
+        // OTPCFG25[11]
+        "CPU_SLI_TX_clock_inverse": false,
+        // OTPCFG25[10]
+        "CPU_SLI_RX_clock_inverse": false,
+        // OTPCFG25[9]
+        "LTPI0_PHY_RX_clock_inverse": false,
+        // OTPCFG25[8]
+        "LTPI0_PHY_TX_clock_inverse": false,
+        // OTPCFG25[7]
+        "LTPI1_PHY_RX_clock_inverse": false,
+        // OTPCFG25[6]
+        "LTPI1_PHY_TX_clock_inverse": false,
+        // OTPCFG25[5:0]
+        "SLI_data_latch_control": "0x0",
+        // OTPCFG26[15:0]
+        "SLI-H_pad_delay": "0x0",
+        // OTPCFG27[15:0]
+        "SLI-M_pad_delay_-_CPU_die": "0x0",
+        // OTPCFG28[15:0]
+        "SLI-M_pad_delay_-_IO_die": "0x0",
+        // OTPCFG29[15:0]
+        "SLI-V_pad_delay": "0x0",
+        // OTPCFG30[15]
+        "LTPI0_DDR_mode_disable": false,
+        // OTPCFG30[14]
+        "LTPI_Runtime_firmware_enable": false,
+        // OTPCFG30[13]
+        "LTPI_CRC_format": false,
+        // OTPCFG30[12:0]
+        "LTPI0_speed_capability_disabling": "0x0",
+        // OTPCFG31[15]
+        "LTPI1_DDR_mode_disable": false,
+        // OTPCFG31[14:13]
+        "LTPI1_driving_strength": "0x0",
+        // OTPCFG31[12:0]
+        "LTPI1_speed_capability_disabling": "0x0"
+    },
+    "secure_region": {
+        "keys": [
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0xa0",
+                "number_id": 0
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0xd0",
+                "number_id": 1
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x100",
+                "number_id": 2
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x130",
+                "number_id": 3
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x160",
+                "number_id": 4
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x190",
+                "number_id": 5
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x1c0",
+                "number_id": 6
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x1f0",
+                "number_id": 7
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x220",
+                "number_id": 8
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x250",
+                "number_id": 9
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x280",
+                "number_id": 10
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x2b0",
+                "number_id": 11
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x2e0",
+                "number_id": 12
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x310",
+                "number_id": 13
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x340",
+                "number_id": 14
+            },
+            {
+                "type": "soc_ecdsa_pub",
+                "key_file": "test_oem_dss_public_key_ecdsa384.pem",
+                "w_offset": "0x370",
+                "number_id": 15
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x3a0",
+                "number_id": 0
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x3b8",
+                "number_id": 1
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x3d0",
+                "number_id": 2
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x3e8",
+                "number_id": 3
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x400",
+                "number_id": 4
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x418",
+                "number_id": 5
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x430",
+                "number_id": 6
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x448",
+                "number_id": 7
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x460",
+                "number_id": 8
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x478",
+                "number_id": 9
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x490",
+                "number_id": 10
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x4a8",
+                "number_id": 11
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x4c0",
+                "number_id": 12
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x4d8",
+                "number_id": 13
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x4f0",
+                "number_id": 14
+            },
+            {
+                "type": "soc_lms_pub",
+                "key_file": "test_oem_dss_public_key_lms.pem",
+                "w_offset": "0x508",
+                "number_id": 15
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x520",
+                "number_id": 0
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x538",
+                "number_id": 1
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x550",
+                "number_id": 2
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x568",
+                "number_id": 3
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x580",
+                "number_id": 4
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x598",
+                "number_id": 5
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x5b0",
+                "number_id": 6
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x5c8",
+                "number_id": 7
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x5e0",
+                "number_id": 8
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x5f8",
+                "number_id": 9
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x610",
+                "number_id": 10
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x628",
+                "number_id": 11
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x640",
+                "number_id": 12
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x658",
+                "number_id": 13
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x670",
+                "number_id": 14
+            },
+            {
+                "type": "cal_own_pub_hash",
+                "key_file": "test_owner_key_hash.bin",
+                "w_offset": "0x688",
+                "number_id": 15
+            },
+            {
+                "type": "soc_vault",
+                "key_file": "test_vault_key.bin",
+                "w_offset": "0x6a0"
+            },
+            {
+                "type": "soc_vault",
+                "key_file": "test_vault_key.bin",
+                "w_offset": "0x6b0"
+            },
+            {
+                "type": "soc_vault",
+                "key_file": "test_vault_key.bin",
+                "w_offset": "0x6c0"
+            },
+            {
+                "type": "soc_vault",
+                "key_file": "test_vault_key.bin",
+                "w_offset": "0x6d0"
+            }
+        ]
+    },
+    "caliptra_region": {
+        // OTPCAL0
+        "Enable_LMS_verify": false,
+        // OTPCAL1
+        "Anti-rollback_disable": false,
+        // OTPCAL2
+        "Field_Entropy": "0x0",
+        // OTPCAL18
+        "Manufacture_Key_Hash": "0x0",
+        // OTPCAL42
+        "IDEVID_Cert_attr": "0x0",
+        // OTPCAL90
+        "IDEVID_manuf_HSM_identifier": "0x0",
+        // OTPCAL98
+        "IDEVID_TBS": "0x0",
+        // OTPCAL610
+        "IDEVID_Cert_Signature": "0x0"
+    },
+    "strap_region": {
+        // OTPSTRAP[1]
+        "BootSPI": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[3:2]
+        // 00: 2.0GHz, 01: 1.9GHz, 10: 1.8GHz, 11: 1.7GHz
+        "HPLLFreq": {
+            "value": "0x0",
+            "protect": false
+        },
+        // OTPSTRAP[4]
+        "CPUHPLL": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[6:5]
+        // 0x: 400MHz, 10: 266MHz, 11: 200MHz when HCLKPLL=0\n0x: 500MHz, 10: 333MHz, 11: 250MHz when HCLKPLL=1
+        "HCLKSel": {
+            "value": "0x0",
+            "protect": false
+        },
+        // OTPSTRAP[7]
+        "HCLKHPLL": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[8]
+        "DisDebug": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[9]
+        "TSPRsntSel": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[10]
+        "VGALinearSize[0]": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[11]
+        "VGALinearSize[1]": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[12]
+        "DisSSP": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[13]
+        "DisTSP": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[14]
+        "En_UFS_Secure": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[16]
+        "En_SecBoot": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[17]
+        "DisDebug1": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[18]
+        "Dis_WDTfull": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[19]
+        "Dis_UartDbg": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[20]
+        "UartDbgSel": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[21]
+        "Dis_CptraJTag": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[22]
+        "Dis_hash_verify": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[23]
+        "Dis_ROM": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[24]
+        "eMMC_UFS_Boot": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[25]
+        "SPI_Flash_Wait_Ready": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[26]
+        "SPI_Flash_4_Byte_Mode": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[28:27]
+        // 0: Uart. 1: USB 2: I2C 3: I3C
+        "Recovery_mode_selection": {
+            "value": "0x0",
+            "protect": false
+        },
+        // OTPSTRAP[30:29]
+        // 0/1/2/3: Boot from USB port A/B/C/D
+        "RecUSBSel": {
+            "value": "0x0",
+            "protect": false
+        },
+        // OTPSTRAP[31]
+        "Dis_Cptra": {
+            "value": false,
+            "protect": false
+        }
+    },
+    "strap_ext_region": {
+        // OTPFLASHSTRAP[16]
+        "DisARMICE": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[18]
+        "VGA_CC": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[19]
+        "ufs_clk_sel": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[20]
+        "BooteMMCSpeed": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[21]
+        "Disable_XHCI": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[22]
+        "DisARMICE_TZ": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[25]
+        "Dis_WDTfull": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[27:26]
+        // default: unlimited\nneed to sync CPU-die reg
+        "udbg_to_sel": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[28]
+        "DAC_Src": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[29]
+        "DP_Src": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[30]
+        "Dis_RVAS": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[100]
+        "VRSize": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[103]
+        "En_PCIeVGA0": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[104]
+        "En_PCIeIPMI0": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[105]
+        "En_PCIeEHCI0": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[106]
+        "En_PCIeXHCI0": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[107]
+        "En_PCIeVGA1": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[108]
+        "En_PCIeIPMI1": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[109]
+        "En_PCIeEHCI1": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[110]
+        "En_PCIeXHCI1": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[32]
+        "ABR": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[33]
+        "ROM_Clear_SRAM": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[38:34]
+        // from index 0 to index 23.
+        "TPM_PCR_INDEX": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[40:39]
+        // OTPFLASHSTRAP[43]
+        "En_Cptra_debug": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[44]
+        "En_ROM_WDT": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[47:45]
+        // 7: 512MB. 6: 256MB. 5: 128MB. 4: 64MB. 3: 32MB. 2: 16MB. 1: 8MB. 0: disable
+        "FWSPISize": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[48]
+        "En_FWSPIAux": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[50:49]
+        // \u3000
+        "FWSPI_CRTM": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[56:55]
+        // 2b'00: 12.5MHz (by default)\n2b'01: 25MHz\n2b'10: 40MHz\n2b'11: 50MHz
+        "Boot_SPI_Freq": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[58:57]
+        // 2b'00: SHA256 (by default)\n2b'01: SHA384\n2b'10: SHA512
+        "SPI_TPM_HASH_Algo": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[59]
+        "SPI_TPM_PCR_EXT_EN": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[60]
+        "FMC_ABR_CS_SWAP_DIS": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[61]
+        "FMC_ABR_MODE": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[66:64]
+        "Node0_HostSPISize0": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[67]
+        "Node0_En_HSPIAux": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[69:68]
+        "Node0_HSPI0_CRTM": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[70]
+        "Node0_SIODecSel": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[71]
+        "Node0_Dis_SIODec": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[72]
+        "Node0_En_ACPI": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[73]
+        "Node0_En_LPC": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[74]
+        "Node0_En_eDAF": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[75]
+        "Node0_En_eRTC": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[82:80]
+        "Node1_HostSPISize1": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[83]
+        "Node1_En_HSPIAux": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[85:84]
+        "Node1_HSPI1_CRTM": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPFLASHSTRAP[86]
+        "Node1_SIODecSel": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[87]
+        "Node1_Dis_SIODec": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[88]
+        "Node1_En_ACPI": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[89]
+        "Node1_En_LPC": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[90]
+        "Node1_En_eDAF": {
+            "value": false,
+            "valid": false
+        },
+        // OTPFLASHSTRAP[91]
+        "Node1_En_eRTC": {
+            "value": false,
+            "valid": false
+        }
+    }
+}

@@ -1,0 +1,35 @@
+{
+    "name": "2700A1_ASPEED",
+    "version": "2700A1",
+    "rom_region": {
+        // ROM region are programmed at the bootloader stage.
+    },
+    "config_region": {
+        // OTPCFG2[9:8]
+        "dev_life_cycle_state": "0x1"
+    },
+    "strap_region": {
+        // OTPSTRAP[22]
+        "En_ROM_Intr": {
+            "value": false,
+            "protect": true
+        },
+        // OTPSTRAP[23]
+        "Dis_ROM": {
+            "value": false,
+            "protect": true
+        },
+    },
+    "caliptra_region": {
+        "Manufacture_Key_Hash": "vendor_key_hash.bin"
+        // OTPCAL42
+        // "IDEVID_Cert_attr"
+        // OTPCAL90
+        // "IDEVID_manuf_HSM_identifier"
+        // OTPCAL98
+        // "IDEVID_TBS"
+        // OTPCAL610
+        // "IDEVID_Cert_Signature"
+        // Above these are programmed at the SLT stage.
+    }
+}
