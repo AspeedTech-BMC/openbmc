@@ -124,12 +124,39 @@ do_create_fmc_image() {
 
     export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
 
+    local ecc_key=""
+    local ecc_key_index=""
+    local lms_key=""
+    local lms_key_index=""
+    local sign_args=""
+
+    if [ -f "${FMC_ECC_KEY}" ]; then
+        ecc_key="--ecc-key ${FMC_ECC_KEY}"
+    fi
+
+    if [ -n "${FMC_ECC_KEY_INDEX}" ]; then
+        ecc_key_index="--ecc-key-index ${FMC_ECC_KEY_INDEX}"
+    fi
+
+    if [ -f "${FMC_LMS_KEY}" ]; then
+        lms_key="--lms-key ${FMC_LMS_KEY}"
+    fi
+
+    if [ -n "${FMC_LMS_KEY_INDEX}" ]; then
+        lms_key_index="--lms-key-index ${FMC_LMS_KEY_INDEX}"
+    fi
+
+    if [ "${FMC_SIGN_ENABLE}" = "1" ]; then
+        sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
+    fi
+
     cd ${STAGING_LIBDIR_NATIVE}/${PYTHON_DIR}/fmc-imgtool
     python3 main.py \
         --verbose \
         --version 2 \
         --input ${B}/spl/u-boot-spl.bin \
-        --output ${B}/${BOOTMCU_FW_BINARY}
+        --output ${B}/${BOOTMCU_FW_BINARY} \
+        ${sign_args}
     cd -
 }
 
@@ -148,6 +175,9 @@ do_deploy() {
     else
         install -m 644 ${B}/spl/u-boot-spl.bin ${DEPLOYDIR}
     fi
+
+    # TODO: The FMC tool does not support verification yet.
+    # To reduce the risk of unexpected run-time errors, verification should be added.
 
     # spl binman for AST2700 A0
     # spl fmc since AST2700 A1
