@@ -38,9 +38,6 @@ SPL_MKIMAGE_DTCOPTS ?= ""
 # Arguments passed to mkimage for signing
 SPL_MKIMAGE_SIGN_ARGS ?= ""
 
-IS_AST2700_A0 ?= "${@bb.utils.contains('MACHINE_FEATURES', 'ast2700-a0', 'yes', 'no', d)}"
-
-
 # returns all the elements from the src uri that are .cfg files
 def find_cfgs(d):
     sources=src_patches(d, True)
@@ -117,11 +114,6 @@ addtask add_pubkey_to_spl_dtb before do_deploy do_create_fmc_image after do_comp
 # OpenSSL 3.0 legacy provider failed to load
 # https://github.com/pyca/cryptography/issues/10598
 do_create_fmc_image() {
-    if [ "${IS_AST2700_A0}" = "yes" ]; then
-        echo "AST2700 A0 do not need to create fmc image"
-        return 0
-    fi
-
     export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
 
     local ecc_key=""
@@ -169,17 +161,11 @@ do_deploy() {
     # spl
     install -m 644 ${B}/spl/u-boot-spl.dtb ${DEPLOYDIR}
     install -m 644 ${B}/spl/u-boot-spl-nodtb.bin ${DEPLOYDIR}
-    # boot from uart for AST2700 A0
-    if [ "${IS_AST2700_A0}" = "yes" ]; then
-        install -m 644 ${B}/u-boot-spl.bin ${DEPLOYDIR}
-    else
-        install -m 644 ${B}/spl/u-boot-spl.bin ${DEPLOYDIR}
-    fi
+    install -m 644 ${B}/spl/u-boot-spl.bin ${DEPLOYDIR}
 
     # TODO: The FMC tool does not support verification yet.
     # To reduce the risk of unexpected run-time errors, verification should be added.
 
-    # spl binman for AST2700 A0
     # spl fmc since AST2700 A1
     install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
     install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}/${BOOTMCU_FW_BINARY}-${sub_ver}
