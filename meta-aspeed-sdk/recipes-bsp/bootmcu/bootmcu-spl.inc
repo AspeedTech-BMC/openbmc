@@ -6,8 +6,6 @@ PROVIDES += "virtual/bootmcu"
 DEPENDS = "ast2700-riscv-linux-gnu-native kern-tools-native swig-native ${PYTHON_PN}-setuptools-native fmc-imgtool-native"
 DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native u-boot-tools-native', '', d)}"
 
-do_install[noexec] = "1"
-
 inherit deploy cml1 python3native otptool
 
 RISCV_PREBUILT_TOOLCHAIN = "${STAGING_DIR_NATIVE}${datadir}/ast2700-riscv-linux-gnu/bin/riscv32-unknown-linux-gnu-"
@@ -68,6 +66,13 @@ do_compile() {
 
     oe_runmake -C ${S} O=${B} all
 }
+
+do_install () {
+    install -d ${D}/boot
+    install -m 644 ${B}/spl/u-boot-spl.bin ${D}/boot/u-boot-spl.bin
+}
+
+FILES:${PN} = "/boot ${sysconfdir} ${datadir}"
 
 # Add the public key into the SPL device tree (u-boot-spl.dtb) by signing
 # a dummy FIT image and injecting the key into the /signature node of the DTB.

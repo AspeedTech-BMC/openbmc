@@ -1,13 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI:append:ast-mmc = " file://u-boot-env.txt"
-SRC_URI:append:ast-ufs = " file://u-boot-env-ufs.txt"
-
 # save unsigned binaries
 do_compile:append:ast-secure() {
     install -d ${B}/unsigned-bin
-    install -m 0644 ${B}/u-boot-nodtb.bin ${B}/unsigned-bin
-    install -m 0644 ${B}/u-boot.dtb ${B}/unsigned-bin
+    install -m 0644 ${B}/spl/u-boot-spl-nodtb.bin ${B}/unsigned-bin
+    install -m 0644 ${B}/spl/u-boot-spl.dtb ${B}/unsigned-bin
 }
 
 # install unsigned binaries to SYSROOT_DIRS and allow recipes which depend on u-boot to use its
