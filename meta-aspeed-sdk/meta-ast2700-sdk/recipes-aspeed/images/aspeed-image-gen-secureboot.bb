@@ -16,7 +16,7 @@ DEPENDS = " \
     dtc-native \
     xz-native \
     e2fsprogs-native \
-    gptfdisk-native \
+    parted-native \
     virtual/kernel \
     virtual/bootloader \
     virtual/bootmcu \
@@ -43,8 +43,16 @@ UBOOT_FITIMAGE_ITS_NAME = "u-boot.its"
 SPL_IMAGE_NAME = "u-boot-spl.bin"
 ASPEED_SECURE_BOOT = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'yes', 'no', d)}"
 ASPEED_BOOT_EMMC_UFS = "${@bb.utils.contains_any('MACHINE_FEATURES', ['ast-mmc', 'ast-ufs'], 'yes', 'no', d)}"
+ASPEED_BOOT_UFS = "${@bb.utils.contains_any('MACHINE_FEATURES', 'ast-ufs', 'yes', 'no', d)}"
+
 IMAGE_BASE_NAME = "obmc-phosphor-image"
 INITRAMFS_IMAGE_NAME = "${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES}"
+
+# MMC or UFS
+MMC_UBOOT_OFFSET = "0"
+WIC_IMAGE_NAME = "${IMAGE_BASE_NAME}-${MACHINE}.wic.xz"
+USER_DATA_IMAGE_NAME = "${IMAGE_BASE_NAME}-${MACHINE}.bin"
+USER_DATA_BOOTPART_IMAGE_NAME = "boot-image.ext4"
 
 install_unsigned_image() {
     install -d ${S}/${GEN_IMAGE_MODE}
@@ -185,6 +193,20 @@ make_uboot_kernel_fitimage_and_sign() {
     cd ${S}
 }
 
+make_boot_partition_ext4() {
+    # Generate a compressed ext4 filesystem with the fitImage file in it to be
+    # flashed to the user data area at boot partition of the eMMC
+
+    cd ${S}/${GEN_IMAGE_MODE}
+    install -d boot-image
+    install -m 0644 ${KERNEL_FITIMAGE_NAME} boot-image/fitImage
+
+    mkfs.ext4 -F -i 4096 -d boot-image ${USER_DATA_BOOTPART_IMAGE_NAME}
+    # Error codes 0-3 indicate successfull operation of fsck
+    fsck.ext4 -pvfD ${USER_DATA_BOOTPART_IMAGE_NAME} || [ $? -le 3 ]
+    cd ${S}
+}
+
 deploy_static_image_helper() {
     otptool_config_slug="$(basename ${OTPTOOL_JSON} .json)"
 
@@ -216,6 +238,40 @@ deploy_static_image_helper() {
     install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-aspeed-*.* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
 }
 
+deploy_mmc_image_helper() {
+    otptool_config_slug="$(basename ${OTPTOOL_JSON} .json)"
+
+    install -d ${DEPLOYDIR}
+    install -d ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/${IMAGE_BASE_NAME}-${MACHINE}.ext4 ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/${IMAGE_BASE_NAME}-${MACHINE}.rwfs.ext4 ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE_NAME} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    install -m 0644 ${S}/${GEN_IMAGE_MODE}/*.* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    install -m 0644 ${S}/${GEN_IMAGE_MODE}/fitImage* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    install -m 0644 ${S}/${GEN_IMAGE_MODE}/${otptool_config_slug}/otp-all.image ${DEPLOYDIR}/${GEN_IMAGE_MODE}/${otptool_config_slug}-otp-all.image
+
+    # u-boot-env
+    if [ -f ${DEPLOY_DIR_IMAGE}/u-boot-env.bin ]; then
+        install -m 0644 ${DEPLOY_DIR_IMAGE}/u-boot-env.bin ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    fi
+
+    # trusted-firmware-a
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/bl31.* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+
+    # optee-os
+    if [ -f ${DEPLOY_DIR_IMAGE}/optee/tee-raw.bin ]; then
+        cp --no-preserve=ownership -rf ${DEPLOY_DIR_IMAGE}/optee ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    fi
+
+    # co-processors
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-aspeed-*.* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+
+    # decompress wic image for user data area boot partition update
+    xz -cd ${DEPLOY_DIR_IMAGE}/${WIC_IMAGE_NAME} > ${S}/${GEN_IMAGE_MODE}/${USER_DATA_IMAGE_NAME}
+}
+
+
 def make_empty_image_zeros(img, size_kb):
     size = int(size_kb) * 1024
     with open(img, "wb+") as fp:
@@ -242,6 +298,7 @@ def append_image(inimg, outimg, start_kb, finish_kb):
     import subprocess
     imgsize = os.path.getsize(inimg)
     maxsize = (finish_kb - start_kb) * 1024
+    print(flush=True)
     bb.debug(1, 'Considering file size=' + str(imgsize) + ' name=' + inimg)
     bb.debug(1, 'Spanning start=' + str(start_kb) + 'K end=' + str(finish_kb) + 'K')
     bb.debug(1, 'Compare needed=' + str(imgsize) + ' available=' + str(maxsize) + ' margin=' + str(maxsize - imgsize))
@@ -319,6 +376,91 @@ def deploy_static_image(d):
                  uboot_img,
                  uboot_offset,
                  int(d.getVar('FLASH_UBOOT_ENV_OFFSET', True)))
+
+
+def deploy_mmc_image(d):
+    import subprocess
+
+    gen_img = d.getVar('GEN_IMAGE_MODE', True)
+    user_data_image = os.path.join(d.getVar('S', True), gen_img, d.getVar('USER_DATA_IMAGE_NAME', True))
+    user_data_bootpart_image = os.path.join(d.getVar('S', True), gen_img, d.getVar('USER_DATA_BOOTPART_IMAGE_NAME', True))
+    make_empty_image_zeros(user_data_bootpart_image, d.getVar('MMC_BOOT_PARTITION_SIZE', True))
+    bb.build.exec_func("make_boot_partition_ext4", d)
+    bb.build.exec_func("deploy_mmc_image_helper", d)
+
+    # get partition offset from user data area image
+    # eMMC sector size is 512 bytes
+    # UFS sector size is 4096 bytes
+    aspeed_boot_ufs = d.getVar('ASPEED_BOOT_UFS', True)
+    if aspeed_boot_ufs == "yes":
+        sector_size = 4096
+    else:
+        sector_size = 512
+
+    print("sector_size=%d" % (sector_size))
+
+    # boot-a
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'boot-a'" % (sector_size, user_data_image)
+    print("Get boot-a partition information...")
+    print(cmd)
+    boot_a_out = subprocess.check_output(cmd, shell=True, text=True)
+    print(boot_a_out)
+    boot_a_offset_kb = int(boot_a_out.split()[1].rstrip("B")) // 1024
+    print("boot_a_offset_kb=%d" % (boot_a_offset_kb))
+
+    # boot-b
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'boot-b'" % (sector_size, user_data_image)
+    print("Get boot-b partition information...")
+    print(cmd)
+    boot_b_out = subprocess.check_output(cmd, shell=True, text=True)
+    print(boot_b_out)
+    boot_b_offset_kb = int(boot_b_out.split()[1].rstrip("B")) // 1024
+    print("boot_b_offset_kb=%d" % (boot_b_offset_kb))
+
+    # rofs-a
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'rofs-a'" % (sector_size, user_data_image)
+    print("Get rofs-a partition information...")
+    print(cmd)
+    rofs_a_out = subprocess.check_output(cmd, shell=True, text=True)
+    print(rofs_a_out)
+    rofs_a_offset_kb = int(rofs_a_out.split()[1].rstrip("B")) // 1024
+    print("rofs_a_offset_kb=%d" % (rofs_a_offset_kb))
+
+    # update boot partition in user data area image
+    append_image(user_data_bootpart_image, user_data_image, boot_a_offset_kb, boot_b_offset_kb)
+    append_image(user_data_bootpart_image, user_data_image, boot_b_offset_kb, rofs_a_offset_kb)
+
+    # compress user data image and deploy
+    deploy_wic_image = os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('WIC_IMAGE_NAME', True))
+    cmd = "xz -f -k -c -9 {} --check=crc32 {} > {}".format(d.getVar('XZ_DEFAULTS', True),
+                                                           user_data_image,
+                                                           deploy_wic_image)
+    print(cmd)
+    subprocess.check_call(cmd, shell=True)
+
+    # image-u-boot for Boot Area Partition 1 and 2
+    mmc_boot_img = os.path.join(d.getVar('DEPLOYDIR', True), gen_img, "image-u-boot")
+    make_empty_image(mmc_boot_img, d.getVar('MMC_UBOOT_SIZE', True))
+
+    uboot_offset = int(d.getVar('MMC_UBOOT_OFFSET', True))
+    caliptra_end_offset = uboot_offset + int(d.getVar('FLASH_CALIPTRA_SIZE', True))
+    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
+                 mmc_boot_img,
+                 uboot_offset,
+                 caliptra_end_offset)
+
+    uboot_offset = caliptra_end_offset
+    bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
+    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
+                 mmc_boot_img,
+                 uboot_offset,
+                 bootmcu_end_offset)
+
+    uboot_offset = bootmcu_end_offset
+    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('UBOOT_FITIMAGE_NAME', True)),
+                 mmc_boot_img,
+                 uboot_offset,
+                 int(d.getVar('MMC_UBOOT_SIZE', True)))
 
 
 def verify_uboot_kernel_image_status(d):
@@ -434,7 +576,8 @@ python do_deploy() {
         bb.build.exec_func("fmc_sign_spl_and_verify", d)
 
         if aspeed_boot_emmc_ufs == "yes":
-            print("eMMC or UFS is not supported yet")
+            print("Deploy mmc image...")
+            deploy_mmc_image(d)
         else:
             print("Deploy static image...")
             deploy_static_image(d)
