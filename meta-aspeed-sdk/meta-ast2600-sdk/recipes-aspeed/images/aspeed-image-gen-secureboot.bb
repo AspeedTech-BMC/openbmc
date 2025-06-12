@@ -14,7 +14,7 @@ DEPENDS = " \
     dtc-native \
     xz-native \
     e2fsprogs-native \
-    gptfdisk-native \
+    parted-native \
     virtual/kernel \
     virtual/bootloader \
     "
@@ -175,7 +175,7 @@ make_uboot_kernel_fitimage_and_sign() {
 
     # Assemble the kernel image
     uboot-mkimage -f ${KERNEL_FITIMAGE_ITS_NAME} ${KERNEL_FITIMAGE_NAME}
-    # Sign the Kernel FIT image and add public key to U-boot dtb
+    # Sign the Kernel FIT image and add public key to U-Boot dtb
     uboot-mkimage -F -k ${UBOOT_SIGN_KEYDIR} -K "u-boot.dtb" -r ${KERNEL_FITIMAGE_NAME}
     # Verify kernel fitImage
     uboot-fit_check_sign -f ${KERNEL_FITIMAGE_NAME} -k u-boot.dtb
@@ -305,6 +305,7 @@ def append_image(inimg, outimg, start_kb, finish_kb):
     import subprocess
     imgsize = os.path.getsize(inimg)
     maxsize = (finish_kb - start_kb) * 1024
+    print(flush=True)
     bb.debug(1, 'Considering file size=' + str(imgsize) + ' name=' + inimg)
     bb.debug(1, 'Spanning start=' + str(start_kb) + 'K end=' + str(finish_kb) + 'K')
     bb.debug(1, 'Compare needed=' + str(imgsize) + ' available=' + str(maxsize) + ' margin=' + str(maxsize - imgsize))
@@ -381,37 +382,36 @@ def deploy_mmc_image(d):
     bb.build.exec_func("deploy_mmc_image_helper", d)
 
     # get partition offset from user data area image
-    # sector size is 512 bytes
-    # offset_kb = (start_sector*512)/1024 = start_sector/2
+    # eMMC sector size is 512 bytes
+    sector_size = 512
+    print("sector_size=%d" % (sector_size))
+
     # boot-a
-    cmd = "sgdisk -p  %s | grep 'boot-a'" % user_data_image
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'boot-a'" % (sector_size, user_data_image)
     print("Get boot-a partition information...")
     print(cmd)
-    boot_a_out = subprocess.check_output(cmd, shell=True)
+    boot_a_out = subprocess.check_output(cmd, shell=True, text=True)
     print(boot_a_out)
-    boot_a_start_sector = int(boot_a_out.split()[1])
-    boot_a_offset_kb = int(boot_a_start_sector // 2)
-    print("boot_a_start_sector=%d, boot_a_offset_kb=%d" % (boot_a_start_sector, boot_a_offset_kb))
+    boot_a_offset_kb = int(boot_a_out.split()[1].rstrip("B")) // 1024
+    print("boot_a_offset_kb=%d" % (boot_a_offset_kb))
 
     # boot-b
-    cmd = "sgdisk -p  %s | grep 'boot-b'" % user_data_image
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'boot-b'" % (sector_size, user_data_image)
     print("Get boot-b partition information...")
     print(cmd)
-    boot_b_out = subprocess.check_output(cmd, shell=True)
+    boot_b_out = subprocess.check_output(cmd, shell=True, text=True)
     print(boot_b_out)
-    boot_b_start_sector = int(boot_b_out.split()[1])
-    boot_b_offset_kb = int(boot_b_start_sector // 2)
-    print("boot_b_start_sector=%d, boot_b_offset_kb=%d" % (boot_b_start_sector, boot_b_offset_kb))
+    boot_b_offset_kb = int(boot_b_out.split()[1].rstrip("B")) // 1024
+    print("boot_b_offset_kb=%d" % (boot_b_offset_kb))
 
     # rofs-a
-    cmd = "sgdisk -p  %s | grep 'rofs-a'" % user_data_image
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'rofs-a'" % (sector_size, user_data_image)
     print("Get rofs-a partition information...")
     print(cmd)
-    rofs_a_out = subprocess.check_output(cmd, shell=True)
+    rofs_a_out = subprocess.check_output(cmd, shell=True, text=True)
     print(rofs_a_out)
-    rofs_a_start_sector = int(rofs_a_out.split()[1])
-    rofs_a_offset_kb = int(rofs_a_start_sector // 2)
-    print("rofs_a_start_sector=%d, rofs_a_offset_kb=%d" % (rofs_a_start_sector, rofs_a_offset_kb))
+    rofs_a_offset_kb = int(rofs_a_out.split()[1].rstrip("B")) // 1024
+    print("rofs_a_offset_kb=%d" % (rofs_a_offset_kb))
 
     # update boot partition in user data area image
     append_image(user_data_bootpart_image, user_data_image, boot_a_offset_kb, boot_b_offset_kb)
@@ -454,11 +454,11 @@ def verify_uboot_kernel_image_status(d):
 
     kernel_imagetype = d.getVar('KERNEL_IMAGETYPE', True)
     if "fitImage" not in kernel_imagetype:
-        bb.fatal("Only support Kernel fit image")
+        bb.fatal("Only support Kernel FIT image")
 
     uboot_fitimage_enable = d.getVar('UBOOT_FITIMAGE_ENABLE', True)
     if uboot_fitimage_enable != "1":
-        bb.fatal("Only support Bootloader fit image")
+        bb.fatal("Only support Bootloader FIT image")
 
     spl_sign_enable = d.getVar('SPL_SIGN_ENABLE', True)
     if spl_sign_enable != "1":
@@ -466,7 +466,7 @@ def verify_uboot_kernel_image_status(d):
 
     uboot_sign_enable = d.getVar('UBOOT_SIGN_ENABLE', True)
     if uboot_sign_enable != "1":
-        bb.fatal("Only support UBoot sign enable")
+        bb.fatal("Only support U-Boot sign enable")
 
     socsec_sign_enable = d.getVar('SOCSEC_SIGN_ENABLE', True)
     if socsec_sign_enable != "1":
