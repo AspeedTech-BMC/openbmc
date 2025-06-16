@@ -5,9 +5,9 @@
 # The following variables can be overridden in local.conf
 #
 
-SPL_SIGN_ADD_PUBKEY ?= "0"
 SPL_SIGN_ENABLE ?= "1"
 SPL_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
+SPL_DTB_BINARY = ""
 
 UBOOT_SIGN_ENABLE ?= "1"
 UBOOT_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"

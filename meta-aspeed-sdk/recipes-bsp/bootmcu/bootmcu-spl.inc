@@ -78,14 +78,15 @@ FILES:${PN} = "/boot ${sysconfdir} ${datadir}"
 # a dummy FIT image and injecting the key into the /signature node of the DTB.
 #
 # This function only runs when:
-#   SPL_SIGN_ENABLE = "1"      --> Signing is enabled
-#   SPL_SIGN_ADD_PUBKEY = "0"  --> u-boot recipe does NOT add the public key
+#   SPL_SIGN_ENABLE = "1" --> Signing is enabled
+#   SPL_DTB_BINARY = ""   --> Explicitly indicates that the SPL DTB should not be
+#   generated or signed within the U-Boot build recipe itself.
 #
 # This is typically used in a post-processing step outside the U-Boot recipe,
 # allowing the public key to be managed independently.
 do_add_pubkey_to_spl_dtb() {
     # Proceed only when SPL signing is enabled, and public key needs to be added to the SPL DTB
-    if [ "${SPL_SIGN_ENABLE}" != "1" ] || [ "${SPL_SIGN_ADD_PUBKEY}" != "0" ]; then
+    if [ "${SPL_SIGN_ENABLE}" != "1" ] || [ -n "${SPL_DTB_BINARY}" ]; then
         echo "Skipping SPL DTB public key injection"
         return 0
     fi
