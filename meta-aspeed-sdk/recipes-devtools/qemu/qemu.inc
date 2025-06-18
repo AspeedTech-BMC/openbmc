@@ -35,6 +35,8 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://v6-3-6-hw-arm-aspeed-Add-support-for-loading-vbootrom-image-via--bios.patch \
            file://v8-1-1-pc-bios-Add-AST27x0-vBootrom.patch \
            file://ast27x0_bootrom.bin;subdir=${UNPACKDIR}/${BPN}-${PV}/pc-bios \
+           file://v1-0001-hw-misc-aspeed_sdmc-Skipping-dram_init-in-u-boot-.patch \
+           file://v1-0002-hw-misc-aspeed_scu-Support-the-Frequency-Counter-.patch \
            file://qemu-guest-agent.init \
            file://qemu-guest-agent.udev \
            "
