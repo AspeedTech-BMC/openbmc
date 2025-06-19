@@ -15,3 +15,6 @@ SRC_URI:append = " \
     file://0003-Modify-Content-Security-Policy-CSP-to-adapt-WebAssem.patch \
     file://0004-bmcweb-firmware-update-apply-immediate.patch \
     "
+
+# Use this version to fix watchdog timeout variable
+SRCREV = "38b3b6fc60da301df2e0b3497a251fab352817dc"
