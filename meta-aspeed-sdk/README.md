@@ -50,7 +50,6 @@ ast2600-emmc-tee-515
 ast2700-default
 ast2700-default-ncsi
 ast2700-default-raw
-ast2700-default-secure
 ast2700-emmc
 ast2700-ufs
 ast2700-abr
