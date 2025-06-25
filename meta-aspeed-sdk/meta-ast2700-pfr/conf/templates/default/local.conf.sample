@@ -1,13 +1,11 @@
 MACHINE ??= "ast2700-dcscm"
 #MACHINE ??= "ast2700-dcscm-ast1700-evb"
 #MACHINE ??= "ast2700-dcscm-ast1700-demo"
-#MACHINE ??= "ast2700-a0-dcscm"
-#MACHINE ??= "ast2700-a0-dcscm-ast1700-demo"
 
 DISTRO ?= "openbmc-phosphor"
 PACKAGE_CLASSES ?= "package_ipk"
 SANITY_TESTED_DISTROS:append ?= " *"
-EXTRA_IMAGE_FEATURES ?= "debug-tweaks"
+EXTRA_IMAGE_FEATURES ?= "allow-root-login"
 USER_CLASSES ?= "buildstats"
 PATCHRESOLVE = "noop"
 BB_DISKMON_DIRS ??= "\

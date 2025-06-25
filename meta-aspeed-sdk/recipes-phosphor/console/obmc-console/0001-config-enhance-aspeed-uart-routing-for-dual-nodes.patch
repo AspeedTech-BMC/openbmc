@@ -11,6 +11,9 @@ obmc-console to support AST2750.
 uevent                 unbind
 ```
 
+Upstream-Status: Submitted
+[https://gerrit.openbmc.org/c/openbmc/obmc-console/+/75906]
+
 Change-Id: Ic63a9f68fc59f4a64790236b013538db13f925f0
 Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---

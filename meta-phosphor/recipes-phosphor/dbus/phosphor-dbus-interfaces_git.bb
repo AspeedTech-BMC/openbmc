@@ -7,7 +7,7 @@ DEPENDS += " \
         sdbusplus \
         systemd \
         "
-SRCREV = "6db06f5b8024f6a7cd9b69930c2a02402b501ec9"
+SRCREV = "3686fde8a140618bbd2cd8314d9d7e131f55525c"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
@@ -24,6 +24,10 @@ inherit python3native
 # add them to the 'doc' subpackage.
 FILES:${PN}-doc += "${datadir}/${BPN}"
 
+# Create separate packages for Redfish registry.
+PACKAGES:append = " ${PN}-redfish-registry"
+FILES:${PN}-redfish-registry += "${datadir}/redfish-registry/${BPN}"
+
 # Process OBMC_ORG_YAML_SUBDIRS to create Meson config options.
 # ex. xyz/openbmc_project -> -Ddata_xyz_openbmc_project=true
 def pdi_meson_config(d):
@@ -33,10 +37,14 @@ def pdi_meson_config(d):
         ])
 pdi_meson_config[vardeps] = "OBMC_ORG_YAML_SUBDIRS"
 EXTRA_OEMESON += "${@pdi_meson_config(d)}"
-# Remove all schemas by default regardless of the meson_options.txt config
+# Remove all schemas by default regardless of the meson.options config
 do_write_config:append() {
-    for intf in $(grep "^option('data_" ${S}/meson_options.txt | sed "s,^.*\(data_[^']*\).*$,\1,"); do
+    for intf in $(grep "^option('data_" ${S}/meson.options | sed "s,^.*\(data_[^']*\).*$,\1,"); do
         sed -i "/^\[built-in options\]\$/a$intf = false" ${WORKDIR}/meson.cross
     done
 }
-do_write_config[deptask] += "do_unpack"
+
+# The write-config needs to happen after the unpack and patch steps.
+# Unpack is what creates the original source.  Someone could apply patches to
+# the repository that affects meson.options.
+do_write_config[depends] += "${PN}:do_unpack ${PN}:do_patch"

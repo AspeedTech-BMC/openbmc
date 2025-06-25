@@ -14,7 +14,7 @@ DEPENDS = " \
     dtc-native \
     xz-native \
     e2fsprogs-native \
-    gptfdisk-native \
+    parted-native \
     virtual/kernel \
     virtual/bootloader \
     "
@@ -85,7 +85,11 @@ make_otp_image() {
     otptool_config="$(dirname ${OTPTOOL_CONFIGS})/${OTPTOOL_JSON}"
     otptool_config_slug="$(basename ${otptool_config} .json)"
     otptool_config_outdir="${S}/${GEN_IMAGE_MODE}/${otptool_config_slug}"
-    otptool_user_folder="$([ -n "${OTPTOOL_USER_DIR}" ] && echo --user_data_folder ${OTPTOOL_USER_DIR})"
+    local otptool_user_folder=""
+
+    if [ -n "${OTPTOOL_USER_DIR}" ]; then
+        otptool_user_folder="--user_data_folder ${OTPTOOL_USER_DIR}"
+    fi
 
     echo "otptool_config=${otptool_config}"
     echo "otptool_user_folder=${otptool_user_folder}"
@@ -104,14 +108,18 @@ make_otp_image() {
         bbfatal "Generated OTP image failed."
     fi
 
-    otptool print "${otptool_config_outdir}"/otp-all.image
+    otptool print --soc ${OTPTOOL_SOC} "${otptool_config_outdir}"/otp-all.image
 
     if [ $? -ne 0 ]; then
         bbfatal "Printed OTP image failed."
     fi
 }
 
+# export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
+# OpenSSL 3.0 legacy provider failed to load
+# https://github.com/pyca/cryptography/issues/10598
 socsec_sign_spl_and_verify() {
+    export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
     socsec_sign_key_dir="$(dirname ${SOCSEC_SIGN_KEY})"
     socsec_sign_key="${socsec_sign_key_dir}/${ROT_SIGN_KEY_NAME}"
     signing_extra_default_opts="--stack_intersects_verification_region=false --rsa_key_order=big"
@@ -167,7 +175,7 @@ make_uboot_kernel_fitimage_and_sign() {
 
     # Assemble the kernel image
     uboot-mkimage -f ${KERNEL_FITIMAGE_ITS_NAME} ${KERNEL_FITIMAGE_NAME}
-    # Sign the Kernel FIT image and add public key to U-boot dtb
+    # Sign the Kernel FIT image and add public key to U-Boot dtb
     uboot-mkimage -F -k ${UBOOT_SIGN_KEYDIR} -K "u-boot.dtb" -r ${KERNEL_FITIMAGE_NAME}
     # Verify kernel fitImage
     uboot-fit_check_sign -f ${KERNEL_FITIMAGE_NAME} -k u-boot.dtb
@@ -297,6 +305,7 @@ def append_image(inimg, outimg, start_kb, finish_kb):
     import subprocess
     imgsize = os.path.getsize(inimg)
     maxsize = (finish_kb - start_kb) * 1024
+    print(flush=True)
     bb.debug(1, 'Considering file size=' + str(imgsize) + ' name=' + inimg)
     bb.debug(1, 'Spanning start=' + str(start_kb) + 'K end=' + str(finish_kb) + 'K')
     bb.debug(1, 'Compare needed=' + str(imgsize) + ' available=' + str(maxsize) + ' margin=' + str(maxsize - imgsize))
@@ -373,37 +382,36 @@ def deploy_mmc_image(d):
     bb.build.exec_func("deploy_mmc_image_helper", d)
 
     # get partition offset from user data area image
-    # sector size is 512 bytes
-    # offset_kb = (start_sector*512)/1024 = start_sector/2
+    # eMMC sector size is 512 bytes
+    sector_size = 512
+    print("sector_size=%d" % (sector_size))
+
     # boot-a
-    cmd = "sgdisk -p  %s | grep 'boot-a'" % user_data_image
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'boot-a'" % (sector_size, user_data_image)
     print("Get boot-a partition information...")
     print(cmd)
-    boot_a_out = subprocess.check_output(cmd, shell=True)
+    boot_a_out = subprocess.check_output(cmd, shell=True, text=True)
     print(boot_a_out)
-    boot_a_start_sector = int(boot_a_out.split()[1])
-    boot_a_offset_kb = int(boot_a_start_sector // 2)
-    print("boot_a_start_sector=%d, boot_a_offset_kb=%d" % (boot_a_start_sector, boot_a_offset_kb))
+    boot_a_offset_kb = int(boot_a_out.split()[1].rstrip("B")) // 1024
+    print("boot_a_offset_kb=%d" % (boot_a_offset_kb))
 
     # boot-b
-    cmd = "sgdisk -p  %s | grep 'boot-b'" % user_data_image
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'boot-b'" % (sector_size, user_data_image)
     print("Get boot-b partition information...")
     print(cmd)
-    boot_b_out = subprocess.check_output(cmd, shell=True)
+    boot_b_out = subprocess.check_output(cmd, shell=True, text=True)
     print(boot_b_out)
-    boot_b_start_sector = int(boot_b_out.split()[1])
-    boot_b_offset_kb = int(boot_b_start_sector // 2)
-    print("boot_b_start_sector=%d, boot_b_offset_kb=%d" % (boot_b_start_sector, boot_b_offset_kb))
+    boot_b_offset_kb = int(boot_b_out.split()[1].rstrip("B")) // 1024
+    print("boot_b_offset_kb=%d" % (boot_b_offset_kb))
 
     # rofs-a
-    cmd = "sgdisk -p  %s | grep 'rofs-a'" % user_data_image
+    cmd = "PARTED_SECTOR_SIZE=%d parted -s %s unit B print | grep 'rofs-a'" % (sector_size, user_data_image)
     print("Get rofs-a partition information...")
     print(cmd)
-    rofs_a_out = subprocess.check_output(cmd, shell=True)
+    rofs_a_out = subprocess.check_output(cmd, shell=True, text=True)
     print(rofs_a_out)
-    rofs_a_start_sector = int(rofs_a_out.split()[1])
-    rofs_a_offset_kb = int(rofs_a_start_sector // 2)
-    print("rofs_a_start_sector=%d, rofs_a_offset_kb=%d" % (rofs_a_start_sector, rofs_a_offset_kb))
+    rofs_a_offset_kb = int(rofs_a_out.split()[1].rstrip("B")) // 1024
+    print("rofs_a_offset_kb=%d" % (rofs_a_offset_kb))
 
     # update boot partition in user data area image
     append_image(user_data_bootpart_image, user_data_image, boot_a_offset_kb, boot_b_offset_kb)
@@ -446,11 +454,11 @@ def verify_uboot_kernel_image_status(d):
 
     kernel_imagetype = d.getVar('KERNEL_IMAGETYPE', True)
     if "fitImage" not in kernel_imagetype:
-        bb.fatal("Only support Kernel fit image")
+        bb.fatal("Only support Kernel FIT image")
 
     uboot_fitimage_enable = d.getVar('UBOOT_FITIMAGE_ENABLE', True)
     if uboot_fitimage_enable != "1":
-        bb.fatal("Only support Bootloader fit image")
+        bb.fatal("Only support Bootloader FIT image")
 
     spl_sign_enable = d.getVar('SPL_SIGN_ENABLE', True)
     if spl_sign_enable != "1":
@@ -458,7 +466,7 @@ def verify_uboot_kernel_image_status(d):
 
     uboot_sign_enable = d.getVar('UBOOT_SIGN_ENABLE', True)
     if uboot_sign_enable != "1":
-        bb.fatal("Only support UBoot sign enable")
+        bb.fatal("Only support U-Boot sign enable")
 
     socsec_sign_enable = d.getVar('SOCSEC_SIGN_ENABLE', True)
     if socsec_sign_enable != "1":
@@ -474,8 +482,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_2048_1.pem",
             "rot_aes_key_name" : "",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha256,rsa2048",
-            "cot_kernel_algo": "sha256,rsa2048",
+            "cot_uboot_algo": "rsa2048",
+            "cot_uboot_hash": "sha256",
+            "cot_kernel_algo": "rsa2048",
+            "cot_kernel_hash": "sha256",
             "cot_spl_sign_key_name": "test_bl2_2048",
             "cot_uboot_sign_key_name": "test_bl3_2048"
         },
@@ -486,8 +496,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_2048_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha256,rsa2048",
-            "cot_kernel_algo": "sha256,rsa2048",
+            "cot_uboot_algo": "rsa2048",
+            "cot_uboot_hash": "sha256",
+            "cot_kernel_algo": "rsa2048",
+            "cot_kernel_hash": "sha256",
             "cot_spl_sign_key_name": "test_bl2_2048",
             "cot_uboot_sign_key_name": "test_bl3_2048"
         },
@@ -498,8 +510,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_2048_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "test_soc_private_key_2048.pem",
-            "cot_uboot_algo": "sha256,rsa2048",
-            "cot_kernel_algo": "sha256,rsa2048",
+            "cot_uboot_algo": "rsa2048",
+            "cot_uboot_hash": "sha256",
+            "cot_kernel_algo": "rsa2048",
+            "cot_kernel_hash": "sha256",
             "cot_spl_sign_key_name": "test_bl2_2048",
             "cot_uboot_sign_key_name": "test_bl3_2048"
         },
@@ -510,8 +524,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_3072_1.pem",
             "rot_aes_key_name" : "",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha384,rsa3072",
-            "cot_kernel_algo": "sha384,rsa3072",
+            "cot_uboot_algo": "rsa3072",
+            "cot_uboot_hash": "sha384",
+            "cot_kernel_algo": "rsa3072",
+            "cot_kernel_hash": "sha384",
             "cot_spl_sign_key_name": "test_bl2_3072",
             "cot_uboot_sign_key_name": "test_bl3_3072"
         },
@@ -522,8 +538,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_3072_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha384,rsa3072",
-            "cot_kernel_algo": "sha384,rsa3072",
+            "cot_uboot_algo": "rsa3072",
+            "cot_uboot_hash": "sha384",
+            "cot_kernel_algo": "rsa3072",
+            "cot_kernel_hash": "sha384",
             "cot_spl_sign_key_name": "test_bl2_3072",
             "cot_uboot_sign_key_name": "test_bl3_3072"
         },
@@ -534,8 +552,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_3072_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "test_soc_private_key_3072.pem",
-            "cot_uboot_algo": "sha384,rsa3072",
-            "cot_kernel_algo": "sha384,rsa3072",
+            "cot_uboot_algo": "rsa3072",
+            "cot_uboot_hash": "sha384",
+            "cot_kernel_algo": "rsa3072",
+            "cot_kernel_hash": "sha384",
             "cot_spl_sign_key_name": "test_bl2_3072",
             "cot_uboot_sign_key_name": "test_bl3_3072"
         },
@@ -546,8 +566,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_4096_1.pem",
             "rot_aes_key_name" : "",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha512,rsa4096",
-            "cot_kernel_algo": "sha512,rsa4096",
+            "cot_uboot_algo": "rsa4096",
+            "cot_uboot_hash": "sha512",
+            "cot_kernel_algo": "rsa4096",
+            "cot_kernel_hash": "sha512",
             "cot_spl_sign_key_name": "test_bl2_4096",
             "cot_uboot_sign_key_name": "test_bl3_4096"
         },
@@ -558,8 +580,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_4096_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "",
-            "cot_uboot_algo": "sha512,rsa4096",
-            "cot_kernel_algo": "sha512,rsa4096",
+            "cot_uboot_algo": "rsa4096",
+            "cot_uboot_hash": "sha512",
+            "cot_kernel_algo": "rsa4096",
+            "cot_kernel_hash": "sha512",
             "cot_spl_sign_key_name": "test_bl2_4096",
             "cot_uboot_sign_key_name": "test_bl3_4096"
         },
@@ -570,8 +594,10 @@ python do_deploy() {
             "rot_sign_key_name" : "test_oem_dss_private_key_4096_1.pem",
             "rot_aes_key_name" : "test_aes_key.bin",
             "rot_rsa_aes_key_name" : "test_soc_private_key_4096.pem",
-            "cot_uboot_algo": "sha512,rsa4096",
-            "cot_kernel_algo": "sha512,rsa4096",
+            "cot_uboot_algo": "rsa4096",
+            "cot_uboot_hash": "sha512",
+            "cot_kernel_algo": "rsa4096",
+            "cot_kernel_hash": "sha512",
             "cot_spl_sign_key_name": "test_bl2_4096",
             "cot_uboot_sign_key_name": "test_bl3_4096"
         }
@@ -584,8 +610,10 @@ python do_deploy() {
         print("Disable gen secure image. Do nothing.")
         return
 
-    uboot_default_algo = d.getVar('UBOOT_FIT_HASH_ALG', True) + "," + d.getVar('UBOOT_FIT_SIGN_ALG', True)
-    kernel_default_algo = d.getVar('FIT_HASH_ALG', True) + "," + d.getVar('FIT_SIGN_ALG', True)
+    uboot_default_algo = d.getVar('UBOOT_FIT_SIGN_ALG', True)
+    uboot_default_hash = d.getVar('UBOOT_FIT_HASH_ALG', True)
+    kernel_default_algo = d.getVar('FIT_SIGN_ALG', True)
+    kernel_default_hash = d.getVar('FIT_HASH_ALG', True)
     spl_default_sign_key_name = d.getVar('SPL_SIGN_KEYNAME', True)
     uboot_default_sign_key_name = d.getVar('UBOOT_SIGN_KEYNAME', True)
     gen_secure_image = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE', True)
@@ -609,10 +637,12 @@ python do_deploy() {
         bb.build.exec_func("install_unsigned_image", d)
         kernel_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('KERNEL_FITIMAGE_ITS_NAME', True))
         print("Update kernel its file", kernel_its)
+        update_its_file(kernel_its, kernel_default_hash, sec_img["cot_kernel_hash"])
         update_its_file(kernel_its, kernel_default_algo, sec_img["cot_kernel_algo"])
         update_its_file(kernel_its, uboot_default_sign_key_name, sec_img["cot_uboot_sign_key_name"])
         uboot_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('UBOOT_FITIMAGE_ITS_NAME', True))
         print("Update uboot its file", uboot_its)
+        update_its_file(uboot_its, uboot_default_hash, sec_img["cot_uboot_hash"])
         update_its_file(uboot_its, uboot_default_algo, sec_img["cot_uboot_algo"])
         update_its_file(uboot_its, spl_default_sign_key_name, sec_img["cot_spl_sign_key_name"])
 

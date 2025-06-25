@@ -20,25 +20,13 @@ source /usr/share/network/lib.sh || exit
 echo 'Waiting for network reachability' >&2
 while true; do
   before=$SECONDS
-  addrs="$(ip addr show gbmcbr | grep '^ *inet6' | awk '{print $2}')"
-  for addr in $addrs; do
-    # Remove the prefix length
-    ip="${addr%/*}"
-    ip_to_bytes ip_bytes "$ip" || continue
-    # Ignore ULAs and non-gBMC addresses
-    (( (ip_bytes[0] & 0xfc) == 0xfc || ip_bytes[8] != 0xfd )) && continue
-    # Only allow for the short, well known addresses <pfx>:fd01:: and not
-    # <pfx>:fd00:83c1:292d:feef. Otherwise, powercycle may be unavailable.
-    (( (ip_bytes[9] & 0x0f) == 0 )) && continue
-    for i in {10..15}; do
-      (( ip_bytes[i] != 0 )) && continue 2
-    done
+  if ip="$(cat /var/google/gbmc-br-ip 2>/dev/null)"; then
     echo "Trying reachability from $ip" >&2
     for i in {0..5}; do
       ping -I "$ip" -c 1 -W 1 2001:4860:4860::8888 >/dev/null 2>&1 && break 3
       sleep 1
     done
-  done
+  fi
   # Ensure we only complete the addr lookup loop every 10s
   tosleep=$((before + 10 - SECONDS))
   if (( tosleep > 0 )); then
@@ -55,7 +43,7 @@ sleep $((60 * wait_min))
 get_dhcp_unit_json() {
   busctl -j call \
     org.freedesktop.systemd1 \
-    /org/freedesktop/systemd1/unit/gbmc_2dbr_2ddhcp_2eservice \
+    /org/freedesktop/systemd1/unit/system_2dgbmc_5cx2dbr_5cx2ddhcp_2eslice \
     org.freedesktop.DBus.Properties \
     GetAll s org.freedesktop.systemd1.Unit
 }
@@ -65,7 +53,7 @@ get_dhcp_unit_json() {
 while true; do
   json="$(get_dhcp_unit_json)" || exit
   last_ms="$(echo "$json" | jq -r '.data[0].StateChangeTimestampMonotonic.data')"
-  if pid="$(cat /run/gbmc-br-dhcp.pid 2>/dev/null)"; then
+  if pid="$(cat /run/gbmc-br-dhcp.pid 2>/dev/null)" && [ -n "$pid" ]; then
     # If the DHCP configuration process is running, wait for it to finish
     echo "DHCP still running ($pid), waiting" >&2
     while [[ -e /proc/$pid ]]; do
@@ -103,4 +91,4 @@ while true; do
 done
 
 echo "Stopping DHCP processing" >&2
-systemctl stop --no-block gbmc-br-dhcp
+systemctl stop --no-block gbmc-br-dhcp@'*'

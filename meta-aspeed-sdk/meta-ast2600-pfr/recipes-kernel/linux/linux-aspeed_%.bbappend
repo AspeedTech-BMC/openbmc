@@ -8,8 +8,8 @@ SRC_URI:append:ast2600-dcscm = " \
 do_prepare_dts() {
     for DTB in ${KERNEL_DEVICETREE}; do
         DT=`basename ${DTB} .dtb`
-        if [ -r "${WORKDIR}/${DT}.dts" ]; then
-            cp ${WORKDIR}/${DT}.dts \
+        if [ -r "${UNPACKDIR}/${DT}.dts" ]; then
+            cp ${UNPACKDIR}/${DT}.dts \
                 ${STAGING_KERNEL_DIR}/arch/${ARCH}/boot/dts/aspeed/
         fi
     done

@@ -1,9 +1,12 @@
 #!/bin/bash
 
+# shellcheck source=meta-facebook/meta-yosemite4/recipes-yosemite4/plat-tool/files/yosemite4-common-functions
+source /usr/libexec/yosemite4-common-functions
+
 export STATE_OFF=0
 export STATE_ON=1
 export STATE_UNKNOWN=-1
-export MANAGEMENT_BOARD_IO_EXP_BUS_NUM="13"
+export MANAGEMENT_BOARD_IO_EXP_BUS_NUM="34"
 export SPIDER_BOARD_IO_EXP_BUS_NUM="28"
 export IO_EXP_SLOT_PWR_CTRL_ADDR="21"
 export IO_EXP_SLED_PWR_CTRL_ADDR="21"
@@ -14,3 +17,71 @@ export CHASSIS_INTF_NAME="xyz.openbmc_project.State.Chassis"
 export CHASSIS_PROPERTY_NAME="CurrentPowerState"
 export CHASSIS_ON_PROPERTY="xyz.openbmc_project.State.Chassis.PowerState.On"
 export CHASSIS_OFF_PROPERTY="xyz.openbmc_project.State.Chassis.PowerState.Off"
+export HOST_BUS_NAME="xyz.openbmc_project.State.Host"
+export HOST_OBJ_PATH="/xyz/openbmc_project/state/host"
+export HOST_INTF_NAME="xyz.openbmc_project.State.Host"
+export HOST_PROPERTY_NAME="CurrentHostState"
+export HOST_ON_PROPERTY="xyz.openbmc_project.State.Host.HostState.Running"
+export HOST_OFF_PROPERTY="xyz.openbmc_project.State.Host.HostState.Off"
+
+MANAGEMENT_BOARD_VERSION=$(get_product_version Management_Board)
+if [ "$MANAGEMENT_BOARD_VERSION" = "DVT" ] || [ "$MANAGEMENT_BOARD_VERSION" = "EVT" ]; then
+  MANAGEMENT_BOARD_IO_EXP_BUS_NUM="13"
+fi
+
+gpio_get()
+{
+  RETRY=3
+  while [ $RETRY -gt 0 ]
+  do
+    if gpioget "$1" "$2"
+    then
+      return 0
+    fi
+    RETRY=$((RETRY-1))
+    sleep 0.5
+  done
+  echo "gpioget failed"
+}
+
+gpio_set()
+{
+  RETRY=3
+  while [ $RETRY -gt 0 ]
+  do
+    if gpioset "$1" "$2"
+    then
+      return 0
+    fi
+    RETRY=$((RETRY-1))
+    sleep 0.5
+  done
+  echo "gpioset failed"
+}
+
+add_sel()
+{
+  MESSAGE="$*"
+
+  busctl call \
+    xyz.openbmc_project.Logging /xyz/openbmc_project/logging \
+    xyz.openbmc_project.Logging.Create Create "ssa{ss}" "$MESSAGE" \
+    xyz.openbmc_project.Logging.Entry.Level.Error 0
+}
+
+get_ac_on_status()
+{
+  RETRY=20
+  while [ $RETRY -gt 0 ]
+  do
+    if [ "$(gpio_get "$1" "$2")" == "$STATE_ON" ]
+    then
+      echo "$STATE_ON"
+      return 0
+    fi
+    RETRY=$((RETRY-1))
+    sleep 1
+  done
+  echo "$STATE_OFF"
+}
+

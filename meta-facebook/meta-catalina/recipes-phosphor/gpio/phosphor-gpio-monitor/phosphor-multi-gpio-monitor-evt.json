@@ -1,0 +1,42 @@
+[
+    {
+        "Name": "CPU_BOOT_DONE",
+        "LineName": "CPU_BOOT_DONE",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["assert-cpu-boot-done.service"],
+            "FALLING": ["deassert-cpu-boot-done.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "RUN_POWER_PG",
+        "LineName": "RUN_POWER_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["assert-run-power-pg.service"],
+            "FALLING": ["deassert-run-power-pg.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "ID_RST_BTN_BMC_N",
+        "LineName": "ID_RST_BTN_BMC_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["assert-reset-button.service"],
+            "FALLING": ["deassert-reset-button.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "UART_MUX_SEL",
+        "LineName": "UART_MUX_SEL",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["assert-uart-select-led.service"],
+            "FALLING": ["deassert-uart-select-led.service"]
+        },
+        "Continue": true
+    }
+]

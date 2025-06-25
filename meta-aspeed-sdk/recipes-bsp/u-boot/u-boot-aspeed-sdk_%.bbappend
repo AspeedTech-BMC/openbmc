@@ -1,1 +1,1 @@
-require aspeed-ssp-tsp.inc
+require aspeed-coprocessor.inc

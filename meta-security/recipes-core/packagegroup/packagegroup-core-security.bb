@@ -40,7 +40,7 @@ RDEPENDS:packagegroup-security-utils = "\
     pinentry \
     softhsm \
     sshguard \
-    ${@bb.utils.contains_any("TUNE_FEATURES", "riscv32 ", "", " libseccomp",d)} \
+    ${@bb.utils.contains("DISTRO_FEATURES", "seccomp ", "libseccomp", "",d)} \
     ${@bb.utils.contains("DISTRO_FEATURES", "pam", "google-authenticator-libpam", "",d)} \
     ${@bb.utils.contains("DISTRO_FEATURES", "pax", "pax-utils packctl", "",d)} \
     "
@@ -49,7 +49,7 @@ have_krill =  "${@bb.utils.contains("DISTRO_FEATURES", "pam", "krill", "",d)}"
 RDEPENDS:packagegroup-security-utils:append:x86 = " chipsec ${have_krill}"
 RDEPENDS:packagegroup-security-utils:append:x86-64 = " firejail chipsec ${have_krill}"
 RDEPENDS:packagegroup-security-utils:append:aarch64 = " firejail ${have_krill}"
-RDEPENDS:packagegroup-security-utils:remove:libc-musl = "krill"
+RDEPENDS:packagegroup-security-utils:remove:libc-musl = "krill firejail"
 
 SUMMARY:packagegroup-security-scanners = "Security scanners"
 RDEPENDS:packagegroup-security-scanners = "\

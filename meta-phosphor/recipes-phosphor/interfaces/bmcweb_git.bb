@@ -1,19 +1,20 @@
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=175792518e4ac015ab6696d16c4f607e"
 DEPENDS = " \
-    openssl \
-    zlib \
     boost \
-    libpam \
-    sdbusplus \
+    cli11 \
     gtest \
-    nlohmann-json \
+    libpam \
     libtinyxml2 \
     nghttp2 \
+    nlohmann-json \
+    openssl \
+    sdbusplus \
+    zlib \
     ${@bb.utils.contains('PTEST_ENABLED', '1', 'gtest', '', d)} \
     ${@bb.utils.contains('PTEST_ENABLED', '1', 'gmock', '', d)} \
 "
-SRCREV = "8f5df132a70b47c2f299cb216812ec83d4fc1197"
+SRCREV = "4025211cd2c60a0caa5537171cf4b902f7566835"
 PV = "1.0+git${SRCPV}"
 
 SRC_URI = "git://github.com/openbmc/bmcweb.git;branch=master;protocol=https"
@@ -32,13 +33,13 @@ PACKAGECONFIG ??= "mutual-tls-auth"
 PACKAGECONFIG[insecure-redfish-expand]="-Dinsecure-enable-redfish-query=enabled"
 PACKAGECONFIG[mutual-tls-auth]="-Dmutual-tls-auth=enabled,-Dmutual-tls-auth=disabled"
 
-MUTUAL_TLS_PARSING="username"
+MUTUAL_TLS_PARSING="CommonName"
 
 EXTRA_OEMESON = " \
     --buildtype=minsize \
     -Dtests=${@bb.utils.contains('PTEST_ENABLED', '1', 'enabled', 'disabled', d)} \
     ${@bb.utils.contains('PACKAGECONFIG', 'mutual-tls-auth', \
-        '-Dmutual-tls-common-name-parsing=' + d.getVar('MUTUAL_TLS_PARSING', True), \
+        '-Dmutual-tls-common-name-parsing-default=' + d.getVar('MUTUAL_TLS_PARSING', True), \
         '', d)} \
 "
 

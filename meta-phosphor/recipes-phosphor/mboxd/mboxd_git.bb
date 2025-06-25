@@ -6,7 +6,7 @@ DEPENDS += "autoconf-archive-native"
 DEPENDS += "systemd"
 DEPENDS += "phosphor-logging"
 PROVIDES += "mboxctl"
-SRCREV = "77692f50a316b3fd56ec593c1180e8ac15251770"
+SRCREV = "2be4563d3f2fbfa67d18a070d387e1653f94d42f"
 # Enable virtual-pnor by DISTRO_FEATURE openpower-virtual-pnor.
 PACKAGECONFIG:append:df-openpower-virtual-pnor = " virtual-pnor"
 PACKAGECONFIG[virtual-pnor] = "--enable-virtual-pnor,--disable-virtual-pnor"
@@ -29,7 +29,7 @@ inherit obmc-phosphor-systemd
 
 do_install:append() {
     install -d ${D}/${nonarch_base_libdir}/udev/rules.d
-    install -m 0644 ${WORKDIR}/99-aspeed-lpc-ctrl.rules ${D}/${nonarch_base_libdir}/udev/rules.d
+    install -m 0644 ${UNPACKDIR}/99-aspeed-lpc-ctrl.rules ${D}/${nonarch_base_libdir}/udev/rules.d
 }
 
 MBOXD_FLASH_SIZE ??= "32M"

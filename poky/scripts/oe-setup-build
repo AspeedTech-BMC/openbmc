@@ -18,8 +18,7 @@ def makebuildpath(topdir, template):
 
 def discover_templates(layers_file):
     if not os.path.exists(layers_file):
-        print("List of layers {} does not exist; were the layers set up using the setup-layers script?".format(layers_file))
-        return None
+        raise Exception("List of layers {} does not exist; were the layers set up using the setup-layers script or bitbake-setup tool?".format(layers_file))
 
     templates = []
     layers_list = json.load(open(layers_file))["layers"]
@@ -77,8 +76,7 @@ def find_template(template_name, templates):
         for t in templates:
             if t["templatename"] == template_name:
                 return t
-        print("Configuration {} is not one of {}, please try again.".format(tempalte_name, [t["templatename"] for t in templates]))
-        return None
+        raise Exception("Configuration {} is not one of {}, please try again.".format(template_name, [t["templatename"] for t in templates]))
 
 def setup_build_env(args):
     templates = discover_templates(args.layerlist)
@@ -91,11 +89,20 @@ def setup_build_env(args):
     builddir = args.b if args.b else template["buildpath"]
     no_shell = args.no_shell
     coredir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-    cmd = "TEMPLATECONF={} . {} {}".format(template["templatepath"], os.path.join(coredir, 'oe-init-build-env'), builddir)
+    cmd_base = ". {} {}".format(os.path.join(coredir, 'oe-init-build-env'), os.path.abspath(builddir))
+
+    initbuild = os.path.join(builddir, 'init-build-env')
+    if not os.path.exists(initbuild):
+        os.makedirs(builddir, exist_ok=True)
+        with open(initbuild, 'w') as f:
+            f.write(cmd_base)
+    print("\nRun '. {}' to initialize the build in a current shell session.\n".format(initbuild))
+
+    cmd = "TEMPLATECONF={} {}".format(template["templatepath"], cmd_base)
     if not no_shell:
-        cmd = cmd + " && {}".format(os.environ['SHELL'])
+        cmd = cmd + " && {}".format(os.environ.get('SHELL','bash'))
     print("Running:", cmd)
-    subprocess.run(cmd, shell=True, executable=os.environ['SHELL'])
+    subprocess.run(cmd, shell=True, executable=os.environ.get('SHELL','bash'))
 
 parser = argparse.ArgumentParser(description="A script that discovers available build configurations and sets up a build environment based on one of them. Run without arguments to choose one interactively.")
 parser.add_argument("--layerlist", default=defaultlayers(), help='Where to look for available layers (as written out by setup-layers script) (default is {}).'.format(defaultlayers()))

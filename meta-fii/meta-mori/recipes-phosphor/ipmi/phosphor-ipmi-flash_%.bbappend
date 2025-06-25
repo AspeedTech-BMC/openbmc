@@ -9,8 +9,6 @@ SRC_URI:append = " file://config-bmc.json \
                    file://config-mbcpld.json \
                  "
 
-RPROVIDES:${PN}:append = " virtual/bmc-update \
-                         "
 SYSTEMD_SERVICE:${PN}:append = " phosphor-ipmi-flash-bios-update.service \
                                  phosphor-ipmi-flash-bmccpld-update.service \
                                  phosphor-ipmi-flash-mbcpld-update.service \
@@ -20,12 +18,12 @@ inherit obmc-phosphor-systemd
 
 do_install:append() {
     install -d ${D}/${datadir}/phosphor-ipmi-flash
-    install -m 0644 ${WORKDIR}/config-bmc.json \
+    install -m 0644 ${UNPACKDIR}/config-bmc.json \
         ${D}${datadir}/phosphor-ipmi-flash/
-    install -m 0644 ${WORKDIR}/config-bios.json \
+    install -m 0644 ${UNPACKDIR}/config-bios.json \
         ${D}${datadir}/phosphor-ipmi-flash/
-    install -m 0644 ${WORKDIR}/config-bmccpld.json \
+    install -m 0644 ${UNPACKDIR}/config-bmccpld.json \
         ${D}${datadir}/phosphor-ipmi-flash/
-    install -m 0644 ${WORKDIR}/config-mbcpld.json \
+    install -m 0644 ${UNPACKDIR}/config-mbcpld.json \
         ${D}${datadir}/phosphor-ipmi-flash/
 }

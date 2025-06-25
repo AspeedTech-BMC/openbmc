@@ -1,0 +1,90 @@
+From d810df85464c1b8c9dd07a3463df1d7095d0b9b4 Mon Sep 17 00:00:00 2001
+From: Jammy Huang <jammy_huang@aspeedtech.com>
+Date: Thu, 12 Jun 2025 10:13:41 +0800
+Subject: [PATCH] Improve video quality
+
+With current default quality, mosquito effect could be observed on
+text. To fix this issue, set default quality to 4
+
+Upstream-Status: Inappropriate [ASPEED specific]
+Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
+---
+ ikvm_server.cpp |  2 +-
+ ikvm_video.cpp  | 11 ++++++++++-
+ ikvm_video.hpp  | 11 +++++++++++
+ 3 files changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/ikvm_server.cpp b/ikvm_server.cpp
+index c8ddcb7..66d05cb 100644
+--- a/ikvm_server.cpp
++++ b/ikvm_server.cpp
+@@ -187,7 +187,7 @@ void Server::sendFrame()
+                 cl->updateBuf[cl->ublen++] = (char)(frameCount >> 8 & 0xff);
+                 cl->updateBuf[cl->ublen++] = (char)(frameCount & 0xff);
+                 cl->updateBuf[cl->ublen++] = (char)(video.getSubsampling());
+-                cl->updateBuf[cl->ublen++] = (char)(0x00); // the value of quality if changed
++                cl->updateBuf[cl->ublen++] = (char)(video.getQuality());
+ 
+                 rfbSendCompressedDataTight(cl, data, video.getFrameSize(i));
+                 if (cl->enableLastRectEncoding)
+diff --git a/ikvm_video.cpp b/ikvm_video.cpp
+index 49e7c00..0c3a12a 100644
+--- a/ikvm_video.cpp
++++ b/ikvm_video.cpp
+@@ -32,7 +32,7 @@ using namespace sdbusplus::xyz::openbmc_project::Common::Device::Error;
+ 
+ Video::Video(const std::string& p, Input& input, int fr, int sub, int fmt) :
+     resizeAfterOpen(false), timingsError(false), fd(-1), frameRate(fr),
+-    height(600), width(800), subSampling(sub), input(input),
++    height(600), width(800), subSampling(sub), quality(4), input(input),
+     path(p), pixelformat(V4L2_PIX_FMT_JPEG), pixelformatflags(0)
+ {
+     switch (fmt)
+@@ -518,6 +518,15 @@ void Video::start()
+                             entry("ERROR=%s", strerror(errno)));
+     }
+ 
++    ctrl.id = V4L2_CID_JPEG_COMPRESSION_QUALITY;
++    ctrl.value = quality;
++    rc = ioctl(fd, VIDIOC_S_CTRL, &ctrl);
++    if (rc < 0)
++    {
++        log<level::WARNING>("Failed to set video jpeg quality",
++                            entry("ERROR=%s", strerror(errno)));
++    }
++
+     ctrl.id = V4L2_CID_JPEG_CHROMA_SUBSAMPLING;
+     ctrl.value = subSampling ? V4L2_JPEG_CHROMA_SUBSAMPLING_420
+                              : V4L2_JPEG_CHROMA_SUBSAMPLING_444;
+diff --git a/ikvm_video.hpp b/ikvm_video.hpp
+index 4255f87..7f2662b 100644
+--- a/ikvm_video.hpp
++++ b/ikvm_video.hpp
+@@ -161,6 +161,15 @@ class Video
+     {
+         subSampling = _sub;
+     }
++    /*
++     * @brief Gets the quality of the jpeg compression result
++     *
++     * @return Value of the jpeg quality
++     */
++    inline int getQuality() const
++    {
++        return quality;
++    }
+ 
+     /*
+      * @brief Gets the bounding-box of the partial-jpeg
+@@ -223,6 +232,8 @@ class Video
+     size_t width;
+     /* @brief jpeg's subsampling, 1:420/0:444 */
+     int subSampling;
++    /* @brief jpeg's quality */
++    int quality;
+     /* @brief Reference to the Input object */
+     Input& input;
+     /* @brief Path to the V4L2 video device */
+-- 
+2.34.1
+

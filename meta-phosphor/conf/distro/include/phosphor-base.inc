@@ -5,8 +5,6 @@ DISTRO_CODENAME ?= "scarthgap"
 
 DISTROOVERRIDES .= ":openbmc-phosphor"
 
-TCLIBCAPPEND = ""
-
 QEMU_TARGETS ?= "arm aarch64 i386 riscv32 riscv64 ppc64le x86_64"
 
 PREMIRRORS ??= "\
@@ -77,9 +75,11 @@ INIT_MANAGER = "systemd"
 # /root, but we should switch it back (and maybe adjust in another commit).
 ROOT_HOME = "/home/root"
 
-# We want to persist /var/log, which is likely to be used for
-# obmc-console and/or journald.
-VOLATILE_LOG_DIR = "no"
+# We generally want to persist /var/log, which is likely to be used for
+# obmc-console and/or journald, unless PHOSPHOR_VOLATILE_VARLOG is set.
+FILESYSTEM_PERMS_TABLES:remove = " \
+        ${@bb.utils.contains("PHOSPHOR_VOLATILE_VARLOG", "1", "", "files/fs-perms-volatile-log.txt", d)} \
+        "
 
 DISTRO_FEATURES_BACKFILL_CONSIDERED = " \
         bluez5 \
@@ -127,6 +127,7 @@ IMAGE_INSTALL:append = " dbus-broker libnss-systemd"
 # make sense on a BMC anyway.
 BAD_RECOMMENDATIONS += "udev-hwdb"
 BAD_RECOMMENDATIONS += "shared-mime-info"
+BAD_RECOMMENDATIONS += "systemd-mime"
 
 # e2fsprogs isn't needed on a BMC without MMC, where it gets explicitly added
 BAD_RECOMMENDATIONS += "e2fsprogs-e2fsck"
@@ -141,7 +142,7 @@ KERNEL_CLASSES:append = " obmc-phosphor-kernel-version"
 # their own organization(s).
 OBMC_ORG_YAML_SUBDIRS += " org/freedesktop xyz/openbmc_project"
 
-PREFERRED_VERSION_libgpiod = "1.6.4"
+PREFERRED_VERSION_libgpiod = "1.6.5"
 
 # Enable SBOM: https://docs.yoctoproject.org/next/dev-manual/sbom.html
 INHERIT += "create-spdx"

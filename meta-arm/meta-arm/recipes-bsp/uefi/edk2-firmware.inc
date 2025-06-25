@@ -3,6 +3,8 @@ DESCRIPTION = "UEFI EDK2 Firmware for Arm reference platforms"
 HOMEPAGE = "https://github.com/tianocore/edk2"
 LICENSE = "BSD-2-Clause-Patent"
 
+CVE_PRODUCT = "tianocore:edk2"
+
 PROVIDES = "virtual/bootloader"
 
 # EDK2
@@ -18,6 +20,7 @@ SRCBRANCH_edk2_platforms = "master"
 SRC_URI = "\
     ${SRC_URI_EDK2};branch=${SRCBRANCH_edk2_platforms};name=edk2;destsuffix=edk2 \
     ${SRC_URI_EDK2_PLATFORMS};branch=${SRCBRANCH_edk2};name=edk2-platforms;destsuffix=edk2/edk2-platforms \
+    file://0001-Platform-StMmRpmb-Fix-build.patch;patchdir=edk2-platforms \
 "
 
 SRCREV_FORMAT         = "edk2_edk2-platforms"

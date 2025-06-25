@@ -6,7 +6,6 @@ SRC_URI += "file://clean-up-filesystem \
             file://clean-up-filesystem.service \
             "
 CPU_CRIT_TGT = ""
-MEM_CRIT_TGT = ""
 STORAGE_CRIT_TGT = "clean-up-filesystem.service"
 
 RDEPENDS:${PN}:append = " bash"
@@ -20,7 +19,7 @@ SYSTEMD_AUTO_ENABLE = "enable"
 
 do_install:append:() {
     install -d ${D}${datadir}/phosphor-health-monitor
-    install -m 0644 ${WORKDIR}/clean-up-filesystem.service ${D}${systemd_system_unitdir}/clean-up-filesystem.service
+    install -m 0644 ${UNPACKDIR}/clean-up-filesystem.service ${D}${systemd_system_unitdir}/clean-up-filesystem.service
     install -d ${D}${libexecdir}/${PN}
-    install -m 0755 ${WORKDIR}/clean-up-filesystem ${D}${libexecdir}/${PN}/
+    install -m 0755 ${UNPACKDIR}/clean-up-filesystem ${D}${libexecdir}/${PN}/
 }

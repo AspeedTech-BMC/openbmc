@@ -10,7 +10,6 @@ network."
 SECTION = "System Environment/Daemons"
 
 SRC_URI = "http://pkgs.fedoraproject.org/repo/pkgs/${BPN}/${BP}.tar.gz/be2a88f8ccddf2a40ac484cb3294fedc/${BP}.tar.gz"
-SRC_URI[md5sum] = "be2a88f8ccddf2a40ac484cb3294fedc"
 SRC_URI[sha256sum] = "4d6145d435a5d8b567b9798620f57f9b0a464078a1deba267958f168fbe776e6"
 
 SRC_URI += "file://0001-rarpd.8-add-man-file.patch \
@@ -36,10 +35,10 @@ do_install() {
     install -m 755 rarpd.init ${D}${sysconfdir}/init.d/rarpd
     install -m 755 rarpd ${D}${sbindir}/rarpd
     install -m 644 rarpd.8 ${D}${mandir}/man8/rarpd.8
-    install -m 644 ${WORKDIR}/ethers.sample ${D}${sysconfdir}/ethers
+    install -m 644 ${UNPACKDIR}/ethers.sample ${D}${sysconfdir}/ethers
 
     install -d ${D}${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/rarpd.service ${D}${systemd_unitdir}/system/
+    install -m 0644 ${UNPACKDIR}/rarpd.service ${D}${systemd_unitdir}/system/
 }
 
 inherit systemd

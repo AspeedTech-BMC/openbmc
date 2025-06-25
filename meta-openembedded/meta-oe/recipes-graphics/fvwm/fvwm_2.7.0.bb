@@ -34,6 +34,9 @@ DEPENDS = " \
 SRC_URI = " \
     git://github.com/fvwmorg/fvwm.git;protocol=https;branch=master \
     file://0001-Fix-compilation-for-disabled-gnome.patch \
+    file://0001-configure-Do-not-require-support-for-implicit-ints.patch \
+    file://0002-acinclude.m4-Add-missing-unistd.h-to-AM_SAFETY_CHECK.patch \
+    file://0003-configure-Further-defang-the-Werror-check.patch \
 "
 
 SRCREV = "7baf540e56fb1a3e91752acba872a88543529d46"
@@ -69,6 +72,8 @@ EXTRA_OECONF = " \
     --without-xpm-library \
     ac_cv_func_mkstemp=no \
     has_safety_mkstemp=yes \
+    ac_cv_path_FVWM_CPP=cpp \
+    ac_cv_path_PERL=perl \
 "
 
 # show the exact commands in the log file
@@ -87,6 +92,7 @@ do_install:append() {
     sed -i -e 's:${STAGING_BINDIR_NATIVE}/perl-native/perl:${USRBINPATH}/env perl:g' ${D}${bindir}/fvwm-*
     sed -i -e 's:${STAGING_BINDIR_NATIVE}/perl-native/perl:${USRBINPATH}/env perl:g' ${D}${libexecdir}/fvwm/*/Fvwm*
     sed -i -e 's:${STAGING_BINDIR_NATIVE}/python3-native/python3:${USRBINPATH}/env python3:g' ${D}${bindir}/fvwm-menu-desktop
+    sed -i -e 's:${WORKDIR}::g' ${D}${bindir}/fvwm-bug
 }
 
 # the only needed packages (note: locale packages are automatically generated

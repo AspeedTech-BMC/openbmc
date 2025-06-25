@@ -1,7 +1,7 @@
-From 3bba45890985b877b823836e78a1c8ac3c878856 Mon Sep 17 00:00:00 2001
+From 53a879b5a285722f0cb0ee42607c1cd1102b79be Mon Sep 17 00:00:00 2001
 From: Hongxu Jia <hongxu.jia@windriver.com>
 Date: Tue, 31 Jul 2018 15:04:29 +0800
-Subject: [PATCH 4/4] tweak MODPROBE_CMD for cross compile
+Subject: [PATCH] tweak MODPROBE_CMD for cross compile
 
 Lvm uses variable MODPROBE_CMD at runtime, so build time detection of modprobe
 is incorrect.
@@ -21,10 +21,10 @@ Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
  1 file changed, 2 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index b43d8b9be..efe3062c1 100644
+index e5e5e71ce..3af73c781 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1646,8 +1646,6 @@ AS_IF([test "$BUILD_DMFILEMAPD" = "yes"], [
+@@ -1742,8 +1742,6 @@ AS_IF([test "$BUILD_DMFILEMAPD" = "yes"], [
  ])
  
  ################################################################################
@@ -33,6 +33,3 @@ index b43d8b9be..efe3062c1 100644
  AS_IF([test -n "$MODPROBE_CMD"], [
  	AC_DEFINE_UNQUOTED([MODPROBE_CMD], ["$MODPROBE_CMD"], [The path to 'modprobe', if available.])
  ])
--- 
-2.7.4
-

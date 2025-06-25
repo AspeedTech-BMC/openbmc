@@ -11,7 +11,8 @@ inherit grub-efi-cfg
 
 require conf/image-uefi.conf
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 GRUB_CFG = "${S}/grub-bootconf"
 LABELS = "boot"
@@ -22,7 +23,7 @@ python do_configure() {
     bb.build.exec_func('build_efi_cfg', d)
 }
 
-do_configure[vardeps] += "APPEND ROOT"
+do_configure[vardeps] += "APPEND ROOT GRUB_TITLE"
 
 do_install() {
 	install -d ${D}${EFI_FILES_PATH}

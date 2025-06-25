@@ -14,6 +14,7 @@ Add LDFLAGS environment variable to make build process find the
 libraries from the Yocto build system in recipe-sysroot-native/usr/lib
 instead of /usr/lib.
 
+Upstream-Status: Pending
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 ---
  Makefile | 13 +++++++------

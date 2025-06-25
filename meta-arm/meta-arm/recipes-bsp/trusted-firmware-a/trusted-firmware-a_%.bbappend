@@ -1,5 +1,4 @@
 COMPATIBLE_MACHINE:qemuarm64-secureboot = "qemuarm64-secureboot"
-COMPATIBLE_MACHINE:qemu-generic-arm64 = "qemu-generic-arm64"
 COMPATIBLE_MACHINE:qemuarm-secureboot = "qemuarm-secureboot"
 
 #FIXME - clang fails to build tfa for qemuarm-secureboot, and possibly other
@@ -10,11 +9,9 @@ TOOLCHAIN:qemuarm-secureboot = "gcc"
 FILESEXTRAPATHS:prepend:qemuarm64-secureboot := "${THISDIR}/files:"
 SRC_URI:append:qemuarm64-secureboot = " \
             file://0001-Add-spmc_manifest-for-qemu.patch \
-            file://0001-bl31_runtime-revert-usage-of-plat_ic_has_interrupt_t.patch \
         "
 
 TFA_PLATFORM:qemuarm64-secureboot = "qemu"
-TFA_PLATFORM:qemu-generic-arm64 = "qemu_sbsa"
 TFA_PLATFORM:qemuarm-secureboot = "qemu"
 
 # Trusted Services secure partitions require arm-ffa machine feature.
@@ -32,7 +29,6 @@ TFA_BUILD_TARGET:aarch64:qemuall = "all fip"
 TFA_BUILD_TARGET:arm:qemuall = "all fip"
 
 TFA_INSTALL_TARGET:qemuarm64-secureboot = "flash.bin"
-TFA_INSTALL_TARGET:qemu-generic-arm64 = "bl1 fip"
 TFA_INSTALL_TARGET:qemuarm-secureboot = "flash.bin"
 
 DEPENDS:append:aarch64:qemuall = " optee-os"

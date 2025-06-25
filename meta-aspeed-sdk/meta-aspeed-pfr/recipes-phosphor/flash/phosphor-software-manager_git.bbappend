@@ -15,5 +15,5 @@ EXTRA_OEMESON:append = " \
 
 do_install:append() {
     install -d ${D}/usr/sbin
-    install -m 0755 ${WORKDIR}/pfr_update.sh ${D}/usr/sbin/pfr_update.sh
+    install -m 0755 ${UNPACKDIR}/pfr_update.sh ${D}/usr/sbin/pfr_update.sh
 }

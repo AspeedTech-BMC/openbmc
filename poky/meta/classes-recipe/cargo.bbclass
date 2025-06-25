@@ -42,7 +42,7 @@ CARGO_BUILD_FLAGS = "-v --frozen --target ${RUST_HOST_SYS} ${BUILD_MODE} --manif
 # This is based on the content of CARGO_BUILD_FLAGS and generally will need to
 # change if CARGO_BUILD_FLAGS changes.
 BUILD_DIR = "${@['release', 'debug'][d.getVar('DEBUG_BUILD') == '1']}"
-CARGO_TARGET_SUBDIR="${RUST_HOST_SYS}/${BUILD_DIR}"
+CARGO_TARGET_SUBDIR = "${RUST_HOST_SYS}/${BUILD_DIR}"
 oe_cargo_build () {
 	export RUSTFLAGS="${RUSTFLAGS}"
 	bbnote "Using rust targets from ${RUST_TARGET_PATH}"
@@ -61,9 +61,11 @@ cargo_do_install () {
 	for tgt in "${B}/target/${CARGO_TARGET_SUBDIR}/"*; do
 		case $tgt in
 		*.so|*.rlib)
-			install -d "${D}${rustlibdir}"
-			install -m755 "$tgt" "${D}${rustlibdir}"
-			have_installed=true
+                        if [ -n "${CARGO_INSTALL_LIBRARIES}" ]; then
+				install -d "${D}${rustlibdir}"
+				install -m755 "$tgt" "${D}${rustlibdir}"
+				have_installed=true
+			fi
 			;;
 		*examples)
 			if [ -d "$tgt" ]; then

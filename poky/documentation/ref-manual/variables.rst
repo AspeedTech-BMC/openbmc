@@ -8,13 +8,13 @@ This chapter lists common variables used in the OpenEmbedded build
 system and gives an overview of their function and contents.
 
 :term:`A <ABIEXTENSION>` :term:`B` :term:`C <CACHE>`
-:term:`D` :term:`E <EFI_PROVIDER>` :term:`F <FEATURE_PACKAGES>`
-:term:`G <GCCPIE>` :term:`H <HOMEPAGE>` :term:`I <ICECC_DISABLED>`
+:term:`D` :term:`E <EFI_PROVIDER>` :term:`F <FAKEROOT>`
+:term:`G <GCCPIE>` :term:`H <HGDIR>` :term:`I <ICECC_CLASS_DISABLE>`
 :term:`K <KARCH>` :term:`L <LABELS>` :term:`M <MACHINE>`
 :term:`N <NATIVELSBSTRING>` :term:`O <OBJCOPY>` :term:`P`
-:term:`R <RANLIB>` :term:`S` :term:`T`
-:term:`U <UBOOT_CONFIG>` :term:`V <VOLATILE_LOG_DIR>`
-:term:`W <WARN_QA>` :term:`X <XSERVER>`
+:term:`Q <QA_EMPTY_DIRS>` :term:`R <RANLIB>` :term:`S` :term:`T`
+:term:`U <UBOOT_BINARY>` :term:`V <VIRTUAL-RUNTIME>`
+:term:`W <WARN_QA>` :term:`X <XSERVER>` :term:`Z <ZSTD_THREADS>`
 
 .. glossary::
    :sorted:
@@ -209,12 +209,11 @@ system and gives an overview of their function and contents.
          SRCREV = "${AUTOREV}"
 
       If you use the previous statement to retrieve the latest version of
-      software, you need to be sure :term:`PV` contains
-      ``${``\ :term:`SRCPV`\ ``}``. For example, suppose you have a kernel
-      recipe that inherits the :ref:`ref-classes-kernel` class and you
-      use the previous statement. In this example, ``${SRCPV}`` does not
-      automatically get into :term:`PV`. Consequently, you need to change
-      :term:`PV` in your recipe so that it does contain ``${SRCPV}``.
+      software, you need to make sure :term:`PV` contains the ``+`` sign so
+      :term:`bitbake` includes source control information to :term:`PKGV` when
+      packaging the recipe. For example::
+
+         PV = "6.10.y+git"
 
       For more information see the
       ":ref:`dev-manual/packages:automatically incrementing a package version number`"
@@ -294,6 +293,35 @@ system and gives an overview of their function and contents.
       :term:`PACKAGE_EXCLUDE` variables for related
       information.
 
+   :term:`BAREBOX_BINARY`
+      When using the :ref:`ref-classes-barebox` class, this variable allows you
+      to specify a particular binary that should be deployed and installed.
+
+      The barebox build system can build multiple barebox binaries at once.
+      By default, all built binaries will be deployed and installed under their
+      original name.
+
+      Here is an example usage of this variable::
+
+         BAREBOX_BINARY = "barebox-boundarydevices-imx6dl-nitrogen6x-1g.img"
+
+   :term:`BAREBOX_CONFIG`
+      When using the :ref:`ref-classes-barebox` class, this variable allows you
+      to specify the name of the barebox defconfig to build.
+      The name must be a defconfig file known to the barebox build environment.
+      This variable is mainly useful for generic use cases where a dedicated
+      configuration is not required.
+      The :ref:`ref-classes-barebox` class itself already sets it for some QEMU
+      machines::
+
+         BAREBOX_CONFIG:qemuarm = "multi_v7_defconfig"
+         BAREBOX_CONFIG:qemuarm64 = "multi_v8_defconfig"
+         BAREBOX_CONFIG:qemux86-64 = "efi_defconfig"
+
+      Except for these, the default value of :term:`BAREBOX_CONFIG` is empty.
+      For more information on how to provide a barebox configuration, see the
+      :ref:`ref-classes-barebox` class.
+
    :term:`BASE_LIB`
       The library directory name for the CPU or Application Binary
       Interface (ABI) tune. The :term:`BASE_LIB` applies only in the Multilib
@@ -361,24 +389,6 @@ system and gives an overview of their function and contents.
 
    :term:`BB_CURRENTTASK`
       See :term:`bitbake:BB_CURRENTTASK` in the BitBake manual.
-
-   :term:`BB_DANGLINGAPPENDS_WARNONLY`
-      Defines how BitBake handles situations where an append file
-      (``.bbappend``) has no corresponding recipe file (``.bb``). This
-      condition often occurs when layers get out of sync (e.g. ``oe-core``
-      bumps a recipe version and the old recipe no longer exists and the
-      other layer has not been updated to the new version of the recipe
-      yet).
-
-      The default fatal behavior is safest because it is the sane reaction
-      given something is out of sync. It is important to realize when your
-      changes are no longer being applied.
-
-      You can change the default behavior by setting this variable to "1",
-      "yes", or "true" in your ``local.conf`` file, which is located in the
-      :term:`Build Directory`: Here is an example::
-
-         BB_DANGLINGAPPENDS_WARNONLY = "1"
 
    :term:`BB_DEFAULT_TASK`
       See :term:`bitbake:BB_DEFAULT_TASK` in the BitBake manual.
@@ -1249,6 +1259,15 @@ system and gives an overview of their function and contents.
       :term:`Metadata` so it does not need to be parsed every time
       BitBake is started.
 
+   :term:`CARGO_INSTALL_LIBRARIES`
+      When inheriting the :ref:`ref-classes-cargo` class, the variable
+      :term:`CARGO_INSTALL_LIBRARIES` can be set to a non-empty value by
+      individual recipes to enable the installation of the libraries the
+      recipe has built in ``${B}/target/${CARGO_TARGET_SUBDIR}`` (files ending
+      with ``.so`` or ``.rlib``). By default this variable is not defined and
+      libraries are not installed, to replicate the behavior of the ``cargo
+      install`` command.
+
    :term:`CC`
       The minimal command and arguments used to run the C compiler.
 
@@ -1268,6 +1287,17 @@ system and gives an overview of their function and contents.
 
       -  :term:`BUILDSDK_CFLAGS` when building for
          an SDK (i.e. ``nativesdk-``)
+
+   :term:`CHECKLAYER_REQUIRED_TESTS`
+      The :term:`CHECKLAYER_REQUIRED_TESTS` variable lists the QA tests that are
+      required to be enabled to pass the Yocto Project Compatible status for a
+      layer. It is meant to be a read-only variable and any change to the
+      variable may be done with the approval of the :oe_wiki:`Technical Steering
+      Committee (TSC) </TSC>`.
+
+      For more information on the Yocto Project Compatible status, see
+      the :ref:`dev-manual/layers:Making Sure Your Layer is Compatible With
+      Yocto Project` section of the Yocto Project Development Manual.
 
    :term:`CLASSOVERRIDE`
       An internal variable specifying the special class override that
@@ -1678,8 +1708,26 @@ system and gives an overview of their function and contents.
          variable only in certain contexts (e.g. when building for kernel
          and kernel module recipes).
 
+   :term:`CVE_CHECK_CREATE_MANIFEST`
+      Specifies whether to create a CVE manifest to place in the deploy
+      directory. The default is "1".
+
    :term:`CVE_CHECK_IGNORE`
       This variable is deprecated and should be replaced by :term:`CVE_STATUS`.
+
+   :term:`CVE_CHECK_MANIFEST_JSON`
+      Specifies the path to the CVE manifest in JSON format. See
+      :term:`CVE_CHECK_CREATE_MANIFEST`.
+
+   :term:`CVE_CHECK_MANIFEST_JSON_SUFFIX`
+      Allows to modify the JSON manifest suffix. See
+      :term:`CVE_CHECK_MANIFEST_JSON`.
+
+   :term:`CVE_CHECK_REPORT_PATCHED`
+      Specifies whether or not the :ref:`ref-classes-cve-check`
+      class should report patched or ignored CVEs. The default is "1", but you
+      may wish to set it to "0" if you do not need patched or ignored CVEs in
+      the logs.
 
    :term:`CVE_CHECK_SHOW_WARNINGS`
       Specifies whether or not the :ref:`ref-classes-cve-check`
@@ -1870,6 +1918,13 @@ system and gives an overview of their function and contents.
          The bias provided by :term:`DEFAULT_PREFERENCE` is weak and is overridden
          by :term:`BBFILE_PRIORITY` if that variable is different between two
          layers that contain different versions of the same recipe.
+
+   :term:`DEFAULT_TIMEZONE`
+      Specifies the time zone set in the image.
+
+      This variable causes the ``tzdata`` package to configure
+      ``${sysconfdir}/localtime`` accordingly. Valid values are all files
+      found in ``/usr/share/zoneinfo`` like ``CET`` or ``Asia/Baku``.
 
    :term:`DEFAULTTUNE`
       The default CPU and Application Binary Interface (ABI) tunings (i.e.
@@ -2330,6 +2385,11 @@ system and gives an overview of their function and contents.
       specifies the size of padding appended to the device tree blob, used as
       extra space typically for additional properties during boot.
 
+   :term:`EFI_ARCH`
+      The CPU architecture name within EFI standard. Set in
+      :oe_git:`meta/conf/image-uefi.conf
+      <openembedded-core/tree/meta/conf/image-uefi.conf>`.
+
    :term:`EFI_PROVIDER`
       When building bootable images (i.e. where ``hddimg``, ``iso``, or
       ``wic.vmdk`` is in :term:`IMAGE_FSTYPES`), the
@@ -2501,6 +2561,13 @@ system and gives an overview of their function and contents.
       external tools. See the :ref:`ref-classes-kernel-yocto` class in
       ``meta/classes-recipe`` to see how the variable is used.
 
+   :term:`EXTERNAL_KERNEL_DEVICETREE`
+      When inheriting :ref:`ref-classes-kernel-fitimage` and a
+      :term:`PREFERRED_PROVIDER` for ``virtual/dtb`` set to ``devicetree``, the
+      variable :term:`EXTERNAL_KERNEL_DEVICETREE` can be used to specify a
+      directory containing one or more compiled device tree or device tree
+      overlays to use.
+
    :term:`KERNEL_LOCALVERSION`
       This variable allows to append a string to the version
       of the kernel image. This corresponds to the ``CONFIG_LOCALVERSION``
@@ -2568,10 +2635,14 @@ system and gives an overview of their function and contents.
         - "dbg-pkgs" --- adds -dbg packages for all installed packages including
           symbol information for debugging and profiling.
 
-        - "debug-tweaks" --- makes an image suitable for debugging. For example, allows root logins without passwords and
-          enables post-installation logging. See the 'allow-empty-password' and
-          'post-install-logging' features in the ":ref:`ref-features-image`"
-          section for more information.
+        - "empty-root-password" --- This feature can be used if you want to
+          allow root login with an empty password.
+        - "allow-empty-password" --- Allows Dropbear and OpenSSH to accept
+          logins from accounts having an empty password string.
+        - "allow-root-login" --- Allows Dropbear and OpenSSH to accept root logins.
+        - "post-install-logging" --- Enables logging postinstall script runs to
+          the ``/var/log/postinstall.log`` file on first boot of the image on
+          the target system.
         - "dev-pkgs" --- adds -dev packages for all installed packages. This is
           useful if you want to develop against the libraries in the image.
         - "read-only-rootfs" --- creates an image whose root filesystem is
@@ -2975,26 +3046,42 @@ system and gives an overview of their function and contents.
       :ref:`ref-tasks-patch` task as well.
 
    :term:`FILESYSTEM_PERMS_TABLES`
-      Allows you to define your own file permissions settings table as part
+      Allows you to define your own file permissions settings tables as part
       of your configuration for the packaging process. For example, suppose
       you need a consistent set of custom permissions for a set of groups
       and users across an entire work project. It is best to do this in the
       packages themselves but this is not always possible.
 
       By default, the OpenEmbedded build system uses the ``fs-perms.txt``,
-      which is located in the ``meta/files`` folder in the :term:`Source Directory`.
-      If you create your own file
-      permissions setting table, you should place it in your layer or the
-      distro's layer.
+      ``fs-perms-volatile-log.txt`` and ``fs-perms-volatile-tmp.txt`` which are
+      located in the ``meta/files`` folder in the :term:`Source Directory`. If
+      you create your own permission setting table files, you should place
+      those in your layer.
 
-      You define the :term:`FILESYSTEM_PERMS_TABLES` variable in the
-      ``conf/local.conf`` file, which is found in the :term:`Build Directory`,
-      to point to your custom ``fs-perms.txt``. You can specify more than a
-      single file permissions setting table. The paths you specify to these
-      files must be defined within the :term:`BBPATH` variable.
+      You can override the value of :term:`FILESYSTEM_PERMS_TABLES` variable
+      in your distribution configuration file to point to your custom
+      permission table files. You can specify one or more file permissions
+      setting tables. The paths that you specify to these files must be defined
+      within the :term:`BBPATH` variable.
 
-      For guidance on how to create your own file permissions settings
-      table file, examine the existing ``fs-perms.txt``.
+      In order to disable the volatile log, which is enabled by default, one
+      can remove the ``files/fs-perms-volatile-log.txt`` value from
+      ``FILESYSTEM_PERMS_TABLES``. Similarly, in order to disable the volatile
+      tmp, one can remove the ``files/fs-perms-volatile-tmp.txt`` value.
+
+      For guidance on how to define your own file permissions settings
+      tables, examine the existing ``fs-perms.txt``,
+      ``fs-perms-volatile-log.txt`` and ``fs-perms-volatile-tmp.txt`` files.
+
+   :term:`FIRMWARE_COMPRESSION`
+      The :term:`FIRMWARE_COMPRESSION` allows compressing the firmware provided
+      by the ``linux-firmware`` recipe. The default value of this variable is an
+      empty string (no compression), and the possible values it can take are
+      ``xz`` and ``zst``. This can allow significant disk space savings.
+
+      For this to work, the Linux Kernel requires the
+      ``CONFIG_FW_LOADER_COMPRESS_XZ`` or ``CONFIG_FW_LOADER_COMPRESS_ZSTD``
+      configuration options to be set.
 
    :term:`FIT_ADDRESS_CELLS`
       Specifies the value of the ``#address-cells`` value for the
@@ -3772,6 +3859,25 @@ system and gives an overview of their function and contents.
       clear the value of this variable (set the value to ""). For example,
       this is typically cleared in :term:`Initramfs` image recipes.
 
+   :term:`IMAGE_OUTPUT_MANIFEST`
+      When inheriting the :ref:`ref-classes-image` class directly or through the
+      :ref:`ref-classes-core-image` class, the :term:`IMAGE_OUTPUT_MANIFEST`
+      points to a manifest ``json`` file that lists what images were created by
+      various image creation tasks (as defined by the :term:`IMAGE_FSTYPES`
+      variable). It is set in the :ref:`ref-classes-image` class as follows::
+
+          IMAGE_OUTPUT_MANIFEST = "${IMAGE_OUTPUT_MANIFEST_DIR}/manifest.json"
+
+   :term:`IMAGE_OUTPUT_MANIFEST_DIR`
+      When inheriting the :ref:`ref-classes-image` class directly or through the
+      :ref:`ref-classes-core-image` class, the :term:`IMAGE_OUTPUT_MANIFEST_DIR` points to
+      a directory that stores a manifest ``json`` file that lists what
+      images were created by various image creation tasks (as defined by the
+      :term:`IMAGE_FSTYPES` variable). It is set in the :ref:`ref-classes-image`
+      class as follows::
+
+          IMAGE_OUTPUT_MANIFEST_DIR = "${WORKDIR}/deploy-image-output-manifest"
+
    :term:`IMAGE_OVERHEAD_FACTOR`
       Defines a multiplier that the build system applies to the initial
       image size for cases when the multiplier times the returned disk
@@ -3958,6 +4064,7 @@ system and gives an overview of their function and contents.
       - wic.bz2
       - wic.gz
       - wic.lzma
+      - wic.zst
 
       For more information about these types of images, see
       ``meta/classes-recipe/image_types*.bbclass`` in the :term:`Source Directory`.
@@ -3981,6 +4088,16 @@ system and gives an overview of their function and contents.
       Recipes inheriting the :ref:`ref-classes-image` class should copy
       files to be deployed into :term:`IMGDEPLOYDIR`, and the class will take
       care of copying them into :term:`DEPLOY_DIR_IMAGE` afterwards.
+
+   :term:`IMGMANIFESTDIR`
+      When inheriting the :ref:`ref-classes-image` class directly or through the
+      :ref:`ref-classes-core-image` class, the :term:`IMGMANIFESTDIR` setting
+      points to a temporary area that stores manifest ``json`` files, that list
+      what images were created by various images creation tasks (as defined by
+      the :term:`IMAGE_FSTYPES` variable). It is set in the
+      :ref:`ref-classes-image` class as follows::
+
+          IMGMANIFESTDIR = "${WORKDIR}/image-task-manifest"
 
    :term:`INCOMPATIBLE_LICENSE`
       Specifies a space-separated list of license names (as they would
@@ -4505,6 +4622,19 @@ system and gives an overview of their function and contents.
       FIT image support and resides in ``meta/classes-recipe/kernel-fitimage.bbclass``.
       You can register custom kernel image types with the
       :ref:`ref-classes-kernel` class using this variable.
+
+   :term:`KERNEL_CONSOLE`
+     The :term:`KERNEL_CONSOLE` variable holds the value of the ``console``
+     parameter of the kernel command line and can be used in places such as a
+     ``wks`` description file for :ref:`Wic images <dev-manual/wic:creating
+     partitioned images using wic>`.
+
+     The default value of this variable is extracted from the first console
+     device and setting in :term:`SERIAL_CONSOLES`. If nothing is found in
+     :term:`SERIAL_CONSOLES`, the default value is set to ``ttyS0,115200``.
+
+     For more information, see the `Kernel command-line documentation
+     <https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.html>`__.
 
    :term:`KERNEL_DANGLING_FEATURES_WARN_ONLY`
       When kernel configuration fragments are missing for some
@@ -5084,7 +5214,7 @@ system and gives an overview of their function and contents.
       The :term:`LINUX_VERSION` variable is used to define :term:`PV`
       for the recipe::
 
-         PV = "${LINUX_VERSION}+git${SRCPV}"
+         PV = "${LINUX_VERSION}+git"
 
    :term:`LINUX_VERSION_EXTENSION`
       A string extension compiled into the version string of the Linux
@@ -5585,6 +5715,21 @@ system and gives an overview of their function and contents.
 
          NON_MULTILIB_RECIPES = "grub grub-efi make-mod-scripts ovmf u-boot"
 
+   :term:`NVDCVE_API_KEY`
+      The NVD API key used to retrieve data from the CVE database when
+      using :ref:`ref-classes-cve-check`.
+
+      By default, no API key is used, which results in larger delays between API
+      requests and limits the number of queries to the public rate limits posted
+      at the `NVD developer's page <https://nvd.nist.gov/developers/start-here>`__.
+      
+      NVD API keys can be requested through the
+      `Request an API Key <https://nvd.nist.gov/developers/request-an-api-key>`__
+      page. You can set this variable to the NVD API key in your ``local.conf`` file.
+      Example::
+
+          NVDCVE_API_KEY = "fe753&7a2-1427-347d-23ff-b2e2b7ca5f3"
+
    :term:`OBJCOPY`
       The minimal command and arguments to run ``objcopy``.
 
@@ -5683,6 +5828,13 @@ system and gives an overview of their function and contents.
 
    :term:`OPKG_MAKE_INDEX_EXTRA_PARAMS`
       Specifies extra parameters for the ``opkg-make-index`` command.
+
+   :term:`OPKGBUILDCMD`
+      The variable :term:`OPKGBUILDCMD` specifies the command used to build opkg
+      packages when using the :ref:`ref-classes-package_ipk` class. It is
+      defined in :ref:`ref-classes-package_ipk` as::
+
+          OPKGBUILDCMD ??= 'opkg-build -Z zstd -a "${ZSTD_DEFAULTS}"'
 
    :term:`OVERLAYFS_ETC_DEVICE`
       When the :ref:`ref-classes-overlayfs-etc` class is
@@ -6603,6 +6755,28 @@ system and gives an overview of their function and contents.
    :term:`PREFERRED_PROVIDERS`
       See :term:`bitbake:PREFERRED_PROVIDERS` in the BitBake manual.
 
+   :term:`PREFERRED_RPROVIDER`
+      The :term:`PREFERRED_RPROVIDER` variable works like the
+      :term:`PREFERRED_PROVIDER` variable, but it denotes packages that provide a
+      *runtime* component. Runtime providers are declared in recipes that set
+      the :term:`RPROVIDES` variable for a specific package.
+
+      For example::
+
+         PREFERRED_RPROVIDER_virtual-x-terminal-emulator = "rxvt-unicode"
+
+      This statement sets the runtime provider for the X terminal emulator to
+      ``rxvt-unicode``. The ``rxvt-unicode`` package is a runtime provider of
+      this component because the ``rxvt-unicode`` recipe set the following
+      :term:`RPROVIDES` definition for the ``rxvt-unicode`` (``${PN}``)
+      package::
+
+         RPROVIDES:${PN} = "virtual-x-terminal-emulator"
+
+      For more information on virtual providers, see the
+      ":ref:`dev-manual/new-recipe:using virtual providers`" section in the
+      Yocto Project Development Tasks Manual.
+
    :term:`PREFERRED_VERSION`
       If there are multiple versions of a recipe available, this variable
       determines which version should be given preference. You must always
@@ -6625,22 +6799,14 @@ system and gives an overview of their function and contents.
          string. You cannot use the wildcard character in any other
          location of the string.
 
-      The specified version is matched against :term:`PV`, which
-      does not necessarily match the version part of the recipe's filename.
-      For example, consider two recipes ``foo_1.2.bb`` and ``foo_git.bb``
-      where ``foo_git.bb`` contains the following assignment::
+      The specified version is matched against :term:`PV`, which does not
+      necessarily match the version part of the recipe's filename.
 
-         PV = "1.1+git${SRCPV}"
-
-      In this case, the correct way to select
-      ``foo_git.bb`` is by using an assignment such as the following::
-
-         PREFERRED_VERSION_foo = "1.1+git%"
-
-      Compare that previous example
-      against the following incorrect example, which does not work::
-
-         PREFERRED_VERSION_foo = "git"
+      If you want to select a recipe named ``foo_git.bb`` which has :term:`PV`
+      set to ``1.2.3+git``, you can do so by setting ```PREFERRED_VERSION_foo``
+      to ``1.2.3%`` (i.e. simply setting ``PREFERRED_VERSION_foo`` to ``git``
+      will not work as the name of the recipe isn't used, but rather its
+      :term:`PV` definition).
 
       Sometimes the :term:`PREFERRED_VERSION` variable can be set by
       configuration files in a way that is hard to change. You can use
@@ -6794,6 +6960,11 @@ system and gives an overview of their function and contents.
       service <dev-manual/packages:working with a pr service>`. You can
       set :term:`PRSERV_HOST` to other values to use a remote PR service.
 
+   :term:`PRSERV_UPSTREAM`
+      This variable can be used to specify an upstream PR server for the local
+      PR server to connect to, in the form of ``host:port``.
+
+      This makes it possible to implement local fixes to an upstream package.
 
    :term:`PSEUDO_IGNORE_PATHS`
       A comma-separated (without spaces) list of path prefixes that should be ignored
@@ -6805,7 +6976,7 @@ system and gives an overview of their function and contents.
 
    :term:`PTEST_ENABLED`
       Specifies whether or not :ref:`Package
-      Test <dev-manual/packages:testing packages with ptest>` (ptest)
+      Test <test-manual/ptest:testing packages with ptest>` (ptest)
       functionality is enabled when building a recipe. You should not set
       this variable directly. Enabling and disabling building Package Tests
       at build time should be done by adding "ptest" to (or removing it
@@ -6828,6 +6999,19 @@ system and gives an overview of their function and contents.
       prefix off if present), however for some packages it will need to be set
       explicitly if that will not match the package name (e.g. where the
       package name has a prefix, underscores, uppercase letters etc.)
+
+   :term:`PYPI_PACKAGE_EXT`
+      When inheriting the :ref:`ref-classes-pypi` class, specifies the
+      file extension to use when fetching a package from `PyPI
+      <https://pypi.org/>`__. Default is ``tar.gz``.
+
+   :term:`PYPI_SRC_URI`
+      When inheriting the :ref:`ref-classes-pypi` class, specifies the
+      full `pythonhosted <https://files.pythonhosted.org/>`__ URI for
+      fetching the package to be built. The default value is constructed
+      based upon :term:`PYPI_PACKAGE`, :term:`PYPI_PACKAGE_EXT`, and
+      :term:`PV`. Most recipes will not need to set this variable unless
+      they are building an unstable (i.e. development) version.
 
    :term:`PYTHON_ABI`
       When used by recipes that inherit the :ref:`ref-classes-setuptools3`
@@ -7052,6 +7236,17 @@ system and gives an overview of their function and contents.
       The default value is ``"${WORKDIR}/recipe-sysroot-native"``.
       Do not modify it.
 
+   :term:`RECIPE_UPGRADE_EXTRA_TASKS`
+      When upgrading a recipe with ``devtool upgrade``, the variable
+      :term:`RECIPE_UPGRADE_EXTRA_TASKS` specifies a space-delimited list of
+      tasks to run after the new sources have been unpacked.
+
+      For some recipes, after the new source has been unpacked, additional tasks
+      may need to be run during an upgrade. A good example of this is recipes
+      which inherit :ref:`ref-classes-cargo-update-recipe-crates`, where the
+      `do_update_crates` task needs to be run whenever Cargo.toml/Cargo.lock have
+      changed in the source.
+
    :term:`REPODIR`
       See :term:`bitbake:REPODIR` in the BitBake manual.
 
@@ -7075,6 +7270,41 @@ system and gives an overview of their function and contents.
 
       If both :term:`REQUIRED_VERSION` and :term:`PREFERRED_VERSION` are set
       for the same recipe, the :term:`REQUIRED_VERSION` value applies.
+
+   :term:`RETAIN_DIRS_ALWAYS`
+      When inheriting the :ref:`ref-classes-retain` class, this variable holds
+      space-separated recipe-specific directories to always save in a tarball
+      whether the recipe build has failed or not.
+
+   :term:`RETAIN_DIRS_FAILURE`
+      When inheriting the :ref:`ref-classes-retain` class, this variable holds
+      space-separated recipe-specific directories to save in a tarball on
+      failure of the recipe's build.
+
+   :term:`RETAIN_DIRS_GLOBAL_ALWAYS`
+      When inheriting the :ref:`ref-classes-retain` class, this variable holds
+      space-separated directories that are not specific to a recipe to save in a
+      tarball whether the build has failed or not.
+
+   :term:`RETAIN_DIRS_GLOBAL_FAILURE`
+      When inheriting the :ref:`ref-classes-retain` class, this variable holds
+      space-separated directories that are not specific to a recipe to save in a
+      tarball on build failure.
+
+   :term:`RETAIN_ENABLED`
+      Disables the creation of a tarball of the work directory done by the
+      :ref:`ref-classes-retain` class. Can be set to specific recipes to disable
+      the class when the class was inherited globally with :term:`INHERIT`.
+
+   :term:`RETAIN_OUTDIR`
+      When inheriting the :ref:`ref-classes-retain` class, this variable
+      specifies the directory where to save the tarball of the work directory.
+      The default directory is ``${TMPDIR}/retain``.
+
+   :term:`RETAIN_TARBALL_SUFFIX`
+      When inheriting the :ref:`ref-classes-retain` class, this variable
+      specifies the suffix of the tarball of the work directory. The default
+      suffix is ``${DATETIME}.tar.gz``.
 
    :term:`RM_WORK_EXCLUDE`
       With :ref:`ref-classes-rm-work` enabled, this variable
@@ -7344,6 +7574,8 @@ system and gives an overview of their function and contents.
       Specifies the type of archive to create for the SDK. Valid values:
 
       - ``tar.xz`` (default)
+      - ``tar.zst``
+      - ``7zip``
       - ``zip``
 
       Only one archive type can be specified.
@@ -7668,11 +7900,6 @@ system and gives an overview of their function and contents.
       class, this variable can be used to specify additional arguments to be
       passed to ``setup.py build`` in the ``setuptools3_do_compile()`` task.
 
-   :term:`SETUPTOOLS_INSTALL_ARGS`
-      When used by recipes that inherit the :ref:`ref-classes-setuptools3`
-      class, this variable can be used to specify additional arguments to be
-      passed to ``setup.py install`` in the ``setuptools3_do_install()`` task.
-
    :term:`SETUPTOOLS_SETUP_PATH`
       When used by recipes that inherit the :ref:`ref-classes-setuptools3`
       class, this variable should be used to specify the directory in which
@@ -7724,6 +7951,53 @@ system and gives an overview of their function and contents.
          If you add an inappropriate variable to this list, the software
          might break at runtime if the interface of the recipe was changed
          after the other had been built.
+
+   :term:`SIGGEN_LOCKEDSIGS`
+     The list of locked tasks, with the form::
+
+       SIGGEN_LOCKEDSIGS += "<package>:<task>:<signature>"
+
+     If ``<signature>`` exists for the specified ``<task>`` and ``<package>``
+     in the sstate cache, BitBake will use the cached output instead of
+     rebuilding the ``<task>``. If it does not exist, BitBake will build the
+     ``<task>`` and the sstate cache will be used next time.
+
+     Example::
+
+       SIGGEN_LOCKEDSIGS += "bc:do_compile:09772aa4532512baf96d433484f27234d4b7c11dd9cda0d6f56fa1b7ce6f25f0"
+
+     You can obtain the signature of all the tasks for the recipe ``bc`` using::
+
+       bitbake -S none bc
+
+     Then you can look at files in ``build/tmp/stamps/<arch>/bc`` and look for
+     files like: ``<PV>.do_compile.sigdata.09772aa4532512baf96d433484f27234d4b7c11dd9cda0d6f56fa1b7ce6f25f0``.
+
+     Alternatively, you can also use :doc:`bblock </dev-manual/bblock>` to
+     generate this line for you.
+
+   :term:`SIGGEN_LOCKEDSIGS_TASKSIG_CHECK`
+     Specifies the debug level of task signature check. 3 levels are supported:
+
+     * ``info``: displays a "Note" message to remind the user that a task is locked
+       and the current signature matches the locked one.
+     * ``warn``: displays a "Warning" message if a task is locked and the current
+       signature does not match the locked one.
+     * ``error``: same as warn but displays an "Error" message and aborts.
+
+   :term:`SIGGEN_LOCKEDSIGS_TYPES`
+     Allowed overrides for :term:`SIGGEN_LOCKEDSIGS`. This is mainly used
+     for architecture specific locks. A common value for
+     :term:`SIGGEN_LOCKEDSIGS_TYPES` is ``${PACKAGE_ARCHS}``::
+
+       SIGGEN_LOCKEDSIGS_TYPES += "${PACKAGE_ARCHS}"
+
+       SIGGEN_LOCKEDSIGS_core2-64 += "bc:do_compile:09772aa4532512baf96d433484f27234d4b7c11dd9cda0d6f56fa1b7ce6f25f0"
+       SIGGEN_LOCKEDSIGS_cortexa57 += "bc:do_compile:12178eb6d55ef602a8fe638e49862fd247e07b228f0f08967697b655bfe4bb61"
+
+     Here, the ``do_compile`` task from ``bc`` will be locked only for
+     ``core2-64`` and ``cortexa57`` but not for other architectures such as
+     ``mips32r2``.
 
    :term:`SITEINFO_BITS`
       Specifies the number of bits for the target system CPU. The value
@@ -7834,6 +8108,31 @@ system and gives an overview of their function and contents.
       .. note::
 
          You can specify only a single URL in :term:`SOURCE_MIRROR_URL`.
+
+      .. note::
+
+         If the mirror is protected behind a username and password, the
+         :term:`build host` needs to be configured so the :term:`build system
+         <OpenEmbedded Build System>` is able to fetch from the mirror.
+
+         The recommended way to do that is by setting the following parameters
+         in ``$HOME/.netrc`` (``$HOME`` being the :term:`build host` home
+         directory)::
+
+            machine example.com
+            login <user>
+            password <password>
+
+         This file requires permissions set to ``400`` or ``600`` to prevent
+         other users from reading the file::
+
+            chmod 600 "$HOME/.netrc"
+
+         Another method to configure the username and password is from the URL
+         in :term:`SOURCE_MIRROR_URL` directly, with the ``user`` and ``pswd``
+         parameters::
+
+            SOURCE_MIRROR_URL = "http://example.com/my_source_mirror;user=<user>;pswd=<password>"
 
    :term:`SPDX_ARCHIVE_PACKAGED`
       This option allows to add to :term:`SPDX` output compressed archives
@@ -8115,21 +8414,23 @@ system and gives an overview of their function and contents.
       (SCM).
 
    :term:`SRCPV`
-      Returns the version string of the current package. This string is
-      used to help define the value of :term:`PV`.
+      The variable :term:`SRCPV` is deprecated. It was previously used to
+      include source control information in :term:`PV` for :term:`bitbake` to
+      work correctly but this is no longer a requirement. Source control
+      information will be automatically included by :term:`bitbake` in the
+      variable :term:`PKGV` during packaging if the ``+`` sign is present in
+      :term:`PV`.
 
-      The :term:`SRCPV` variable is defined in the ``meta/conf/bitbake.conf``
-      configuration file in the :term:`Source Directory` as
-      follows::
+      .. note::
 
-         SRCPV = "${@bb.fetch2.get_srcrev(d)}"
+         The :term:`SRCPV` variable used to be defined in the
+         ``meta/conf/bitbake.conf`` configuration file in the :term:`Source
+         Directory` as follows::
 
-      Recipes that need to define :term:`PV` do so with the help of the
-      :term:`SRCPV`. For example, the ``ofono`` recipe (``ofono_git.bb``)
-      located in ``meta/recipes-connectivity`` in the Source Directory
-      defines :term:`PV` as follows::
+            SRCPV = "${@bb.fetch2.get_srcrev(d)}"
 
-         PV = "0.12-git${SRCPV}"
+         The ``get_srcrev`` function can still be used to include source control
+         information in variables manually.
 
    :term:`SRCREV`
       The revision of the source code used to build the package. This
@@ -8239,6 +8540,34 @@ system and gives an overview of their function and contents.
          SSTATE_MIRRORS ?= "\
              file://.* https://someserver.tld/share/sstate/PATH;downloadfilename=PATH \
              file://.* file:///some-local-dir/sstate/PATH"
+
+      .. note::
+
+         If the mirror is protected behind a username and password, the
+         :term:`build host` needs to be configured so the :term:`build system
+         <OpenEmbedded Build System>` is able to download the sstate cache using
+         authentication.
+
+         The recommended way to do that is by setting the following parameters
+         in ``$HOME/.netrc`` (``$HOME`` being the :term:`build host` home
+         directory)::
+
+            machine someserver.tld
+            login <user>
+            password <password>
+
+         This file requires permissions set to ``400`` or ``600`` to prevent
+         other users from reading the file::
+
+            chmod 600 "$HOME/.netrc"
+
+         Another method to configure the username and password is from the
+         URL in :term:`SSTATE_MIRRORS` directly, with the ``user`` and ``pswd``
+         parameters::
+
+            SSTATE_MIRRORS ?= "\
+                file://.* https://someserver.tld/share/sstate/PATH;user=<user>;pswd=<password>;downloadfilename=PATH \
+            "
 
       The Yocto Project actually shares the cache data objects built by its
       autobuilder::
@@ -8536,6 +8865,35 @@ system and gives an overview of their function and contents.
              /sysroot-only \
              "
 
+      Consider the following example in which you need to manipulate this variable.
+      Assume you have a recipe ``A`` that provides a shared library ``.so.*`` that is
+      installed into a custom folder other than "``${libdir}``"
+      or "``${base_libdir}``", let's say "``/opt/lib``".
+
+      .. note::
+
+         This is not a recommended way to deal with shared libraries, but this
+         is just to show the usefulness of setting :term:`SYSROOT_DIRS`.
+
+      When a recipe ``B`` :term:`DEPENDS` on ``A``, it means what is in
+      :term:`SYSROOT_DIRS` will be copied from :term:`D` of the recipe ``A``
+      into ``B``'s :term:`SYSROOT_DESTDIR` that is "``${WORKDIR}/sysroot-destdir``".
+
+      Now, since ``/opt/lib`` is not in :term:`SYSROOT_DIRS`, it will never be copied to
+      ``A``'s :term:`RECIPE_SYSROOT`, which is "``${WORKDIR}/recipe-sysroot``". So,
+      the linking process will fail.
+
+      To fix this, you need to add ``/opt/lib`` to :term:`SYSROOT_DIRS`::
+
+         SYSROOT_DIRS:append = " /opt/lib"
+
+      .. note::
+         Even after setting ``/opt/lib`` to :term:`SYSROOT_DIRS`, the linking process will still fail
+         because the linker does not know that location, since :term:`TARGET_LDFLAGS`
+         doesn't contain it (if your recipe is for the target). Therefore, so you should add::
+
+            TARGET_LDFLAGS:append = " -L${RECIPE_SYSROOT}/opt/lib"
+
    :term:`SYSROOT_DIRS_IGNORE`
       Directories that are not staged into the sysroot by the
       :ref:`ref-tasks-populate_sysroot` task. You
@@ -8558,35 +8916,6 @@ system and gives an overview of their function and contents.
              ${datadir}/terminfo \
              ${libdir}/${BPN}/ptest \
              "
-
-      Consider the following example in which you need to manipulate this variable.
-      Assume you have a recipe ``A`` that provides a shared library ``.so.*`` that is
-      installed into a custom folder other than "``${libdir}``"
-      or "``${base_libdir}``", let's say "``/opt/lib``".
-
-      .. note::
-
-         This is not a recommended way to deal with shared libraries, but this
-         is just to show the usefulness of setting :term:`SYSROOT_DIRS`.
-
-      When a recipe ``B`` :term:`DEPENDS` on ``A``, it means what is in
-      :term:`SYSROOT_DIRS` will be copied from :term:`D` of the recipe ``B``
-      into ``B``'s :term:`SYSROOT_DESTDIR` that is "``${WORKDIR}/sysroot-destdir``".
-
-      Now, since ``/opt/lib`` is not in :term:`SYSROOT_DIRS`, it will never be copied to
-      ``A``'s :term:`RECIPE_SYSROOT`, which is "``${WORKDIR}/recipe-sysroot``". So,
-      the linking process will fail.
-
-      To fix this, you need to add ``/opt/lib`` to :term:`SYSROOT_DIRS`::
-
-         SYSROOT_DIRS:append = " /opt/lib"
-
-      .. note::
-         Even after setting ``/opt/lib`` to :term:`SYSROOT_DIRS`, the linking process will still fail
-         because the linker does not know that location, since :term:`TARGET_LDFLAGS`
-         doesn't contain it (if your recipe is for the target). Therefore, so you should add::
-
-            TARGET_LDFLAGS:append = " -L${RECIPE_SYSROOT}/opt/lib"
 
    :term:`SYSROOT_DIRS_NATIVE`
       Extra directories staged into the sysroot by the
@@ -8894,19 +9223,6 @@ system and gives an overview of their function and contents.
 
       You can select "glibc", "musl", "newlib", or "baremetal".
 
-   :term:`TCLIBCAPPEND`
-      Specifies a suffix to be appended onto the :term:`TMPDIR` value. The
-      suffix identifies the ``libc`` variant for building. When you are
-      building for multiple variants with the same :term:`Build Directory`,
-      this mechanism ensures that output for different ``libc`` variants is
-      kept separate to avoid potential conflicts.
-
-      In the ``defaultsetup.conf`` file, the default value of
-      :term:`TCLIBCAPPEND` is "-${TCLIBC}". However, distros such as poky,
-      which normally only support one ``libc`` variant, set
-      :term:`TCLIBCAPPEND` to "" in their distro configuration file resulting
-      in no suffix being applied.
-
    :term:`TCMODE`
       Specifies the toolchain selector. :term:`TCMODE` controls the
       characteristics of the generated packages and images by telling the
@@ -9018,8 +9334,8 @@ system and gives an overview of their function and contents.
       file.
 
       For more information on testing images, see the
-      ":ref:`dev-manual/runtime-testing:performing automated runtime testing`"
-      section in the Yocto Project Development Tasks Manual.
+      ":ref:`test-manual/runtime-testing:performing automated runtime testing`"
+      section in the Yocto Project Test Environment Manual.
 
    :term:`TEST_SERIALCONTROL_CMD`
       For automated hardware testing, specifies the command to use to
@@ -9090,8 +9406,8 @@ system and gives an overview of their function and contents.
          TEST_SUITES = "test_A test_B"
 
       For more information on testing images, see the
-      ":ref:`dev-manual/runtime-testing:performing automated runtime testing`"
-      section in the Yocto Project Development Tasks Manual.
+      ":ref:`test-manual/runtime-testing:performing automated runtime testing`"
+      section in the Yocto Project Test Environment Manual.
 
    :term:`TEST_TARGET`
       Specifies the target controller to use when running tests against a
@@ -9109,8 +9425,8 @@ system and gives an overview of their function and contents.
       You can provide the following arguments with :term:`TEST_TARGET`:
 
       -  *"qemu":* Boots a QEMU image and runs the tests. See the
-         ":ref:`dev-manual/runtime-testing:enabling runtime tests on qemu`" section
-         in the Yocto Project Development Tasks Manual for more
+         ":ref:`test-manual/runtime-testing:enabling runtime tests on qemu`" section
+         in the Yocto Project Test Environment Manual for more
          information.
 
       -  *"simpleremote":* Runs the tests on target hardware that is
@@ -9125,8 +9441,8 @@ system and gives an overview of their function and contents.
             ``meta/lib/oeqa/controllers/simpleremote.py``.
 
       For information on running tests on hardware, see the
-      ":ref:`dev-manual/runtime-testing:enabling runtime tests on hardware`"
-      section in the Yocto Project Development Tasks Manual.
+      ":ref:`test-manual/runtime-testing:enabling runtime tests on hardware`"
+      section in the Yocto Project Test Environment Manual.
 
    :term:`TEST_TARGET_IP`
       The IP address of your hardware under test. The :term:`TEST_TARGET_IP`
@@ -9162,9 +9478,14 @@ system and gives an overview of their function and contents.
 
       For more information
       on enabling, running, and writing these tests, see the
-      ":ref:`dev-manual/runtime-testing:performing automated runtime testing`"
-      section in the Yocto Project Development Tasks Manual and the
+      ":ref:`test-manual/runtime-testing:performing automated runtime testing`"
+      section in the Yocto Project Test Environment Manual and the
       ":ref:`ref-classes-testimage`" section.
+
+   :term:`TESTIMAGE_FAILED_QA_ARTIFACTS`
+      When using the :ref:`ref-classes-testimage` class, the variable
+      :term:`TESTIMAGE_FAILED_QA_ARTIFACTS`  lists space-separated paths on the
+      target to retrieve onto the host.
 
    :term:`THISDIR`
       The directory in which the file BitBake is currently parsing is
@@ -9653,6 +9974,43 @@ system and gives an overview of their function and contents.
       passes and uses "all" for the target during the U-Boot building
       process.
 
+   :term:`UKIFY_CMD`
+      When inheriting the :ref:`ref-classes-uki` class,
+      `ukify <https://www.freedesktop.org/software/systemd/man/latest/ukify.html>`__ command to build
+      `Unified Kernel Image (UKI) <https://uapi-group.org/specifications/specs/unified_kernel_image/>`__.
+      Defaults to ``ukify build``.
+
+   :term:`UKI_CMDLINE`
+      When inheriting the :ref:`ref-classes-uki` class, the kernel command line
+      to use when booting the `Unified Kernel Image (UKI)
+      <https://uapi-group.org/specifications/specs/unified_kernel_image/>`__.
+      Defaults to ``rootwait root=LABEL=root console=${KERNEL_CONSOLE}``.
+
+   :term:`UKI_CONFIG_FILE`
+      When inheriting the :ref:`ref-classes-uki` class, an optional config
+      file for the `ukify
+      <https://www.freedesktop.org/software/systemd/man/latest/ukify.html>`__
+      command.
+
+   :term:`UKI_FILENAME`
+      When inheriting the :ref:`ref-classes-uki` class, the output file name
+      for the generated `Unified Kernel Image (UKI)
+      <https://uapi-group.org/specifications/specs/unified_kernel_image/>`__.
+      Defaults to ``uki.efi``.
+
+   :term:`UKI_KERNEL_FILENAME`
+      When inheriting the :ref:`ref-classes-uki` class, the kernel image file
+      name to use as input. Defaults to :term:`KERNEL_IMAGETYPE`.
+
+   :term:`UKI_SB_CERT`
+      When inheriting the :ref:`ref-classes-uki` class, optional UEFI
+      secureboot certificate matching the private key in :term:`UKI_SB_KEY`.
+
+   :term:`UKI_SB_KEY`
+      When inheriting the :ref:`ref-classes-uki` class, optional UEFI
+      secureboot private key to sign the `Unified Kernel Image (UKI)
+      <https://uapi-group.org/specifications/specs/unified_kernel_image/>`__.
+
    :term:`UNKNOWN_CONFIGURE_OPT_IGNORE`
       Specifies a list of options that, if reported by the configure script
       as being invalid, should not generate a warning during the
@@ -9669,6 +10027,11 @@ system and gives an overview of their function and contents.
       :term:`UNKNOWN_CONFIGURE_OPT_IGNORE` is part of the
       :ref:`ref-classes-insane` class and is only enabled if the
       recipe inherits the :ref:`ref-classes-autotools` class.
+
+   :term:`UNPACKDIR`
+      This variable, used by the :ref:`ref-classes-base` class,
+      specifies where fetches sources should be unpacked by the
+      :ref:`ref-tasks-unpack` task.
 
    :term:`UPDATERCPN`
       For recipes inheriting the
@@ -9770,6 +10133,12 @@ system and gives an overview of their function and contents.
       For more information, see
       ``meta-poky/conf/templates/default/local.conf.sample`` in the
       :term:`Source Directory`.
+
+   :term:`USERADD_DEPENDS`
+      Specifies a list of recipes that create users / groups (via
+      :term:`USERADD_PARAM` / :term:`GROUPADD_PARAM`) which a recipe
+      depends upon. This ensures that those users / groups are available
+      when building a recipe.
 
    :term:`USERADD_ERROR_DYNAMIC`
       If set to ``error``, forces the OpenEmbedded build system to produce
@@ -9923,26 +10292,6 @@ system and gives an overview of their function and contents.
 
          PACKAGE_INSTALL = "${INITRAMFS_SCRIPTS} ${VIRTUAL-RUNTIME_base-utils} base-passwd"
 
-   :term:`VOLATILE_LOG_DIR`
-      Specifies the persistence of the target's ``/var/log`` directory,
-      which is used to house postinstall target log files.
-
-      By default, :term:`VOLATILE_LOG_DIR` is set to "yes", which means the
-      file is not persistent. You can override this setting by setting the
-      variable to "no" to make the log directory persistent.
-
-   :term:`VOLATILE_TMP_DIR`
-      Specifies the persistence of the target's ``/tmp`` directory.
-
-      By default, :term:`VOLATILE_TMP_DIR` is set to "yes", in which case
-      ``/tmp`` links to a directory which resides in RAM in a ``tmpfs``
-      filesystem.
-
-      If instead, you want the ``/tmp`` directory to be persistent, set the
-      variable to "no" to make it a regular directory in the root filesystem.
-
-      This supports both sysvinit and systemd based systems.
-
    :term:`WARN_QA`
       Specifies the quality assurance checks whose failures are reported as
       warnings by the OpenEmbedded build system. You set this variable in
@@ -9953,6 +10302,17 @@ system and gives an overview of their function and contents.
    :term:`WATCHDOG_TIMEOUT`
       Specifies the timeout in seconds used by the ``watchdog`` recipe and
       also by ``systemd`` during reboot. The default is 60 seconds.
+
+   :term:`WIC_SECTOR_SIZE`
+      The variable :term:`WIC_SECTOR_SIZE` controls the sector size of Wic
+      images. In the background, this controls the value of the
+      ``PARTED_SECTOR_SIZE`` environment variable passed to the ``parted``
+      command-line utility, used to generated the images. The default value is
+      ``512``.
+
+      For more information on how to create Wic images, see the
+      ":ref:`dev-manual/wic:creating partitioned images using wic`" section in
+      the Yocto Project Development Tasks Manual.
 
    :term:`WIRELESS_DAEMON`
       For ``connman`` and ``packagegroup-base``, specifies the wireless
@@ -10062,6 +10422,11 @@ system and gives an overview of their function and contents.
       of system memory. If unconstrained the xz compressor can use large amounts of
       memory and become problematic with parallelism elsewhere in the build.
       "50%" has been found to be a good value.
+
+   :term:`ZSTD_COMPRESSION_LEVEL`
+      Specifies the compression level to be used with ZStandard compression
+      (from ``1`` to ``19``, set to ``3`` by default, following upstream choice).
+      Higher levels produce smaller files, but take longer to complete.
 
    :term:`ZSTD_THREADS`
       Specifies the number of parallel threads that should be used when

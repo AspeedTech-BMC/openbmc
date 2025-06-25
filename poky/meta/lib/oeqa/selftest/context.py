@@ -114,11 +114,15 @@ class OESelftestTestContext(OETestContext):
                 bblayers_abspath = [os.path.abspath(path) for path in bblayers.split()]
                 with open("%s/conf/bblayers.conf" % newbuilddir, "a") as f:
                     newbblayers = "# new bblayers to be used by selftest in the new build dir '%s'\n" % newbuilddir
+                    newbblayers += 'unset BBLAYERS\n'
                     newbblayers += 'BBLAYERS = "%s"\n' % ' '.join(bblayers_abspath)
                     f.write(newbblayers)
 
+        # Rewrite builddir paths seen in environment variables
         for e in os.environ:
-            if builddir + "/" in os.environ[e]:
+            # Rewrite paths that absolutely point inside builddir
+            # (e.g $builddir/conf/ would be rewritten but not $builddir/../bitbake/)
+            if builddir + "/" in os.environ[e] and builddir + "/" in os.path.abspath(os.environ[e]):
                 os.environ[e] = os.environ[e].replace(builddir + "/", newbuilddir + "/")
             if os.environ[e].endswith(builddir):
                 os.environ[e] = os.environ[e].replace(builddir, newbuilddir)
@@ -194,8 +198,23 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
         parser.add_argument('-R', '--skip-tests', required=False, action='store',
                 nargs='+', dest="skips", default=None,
                 help='Skip the tests specified. Format should be <module>[.<class>[.<test_method>]]')
+
+        def check_parallel_support(parameter):
+            if not parameter.isdigit():
+                import argparse
+                raise argparse.ArgumentTypeError("argument -j/--num-processes: invalid int value: '%s' " % str(parameter))
+
+            processes = int(parameter)
+            if processes:
+                try:
+                    import testtools, subunit
+                except ImportError:
+                    print("Failed to import testtools or subunit, the testcases will run serially")
+                    processes = None
+            return processes
+
         parser.add_argument('-j', '--num-processes', dest='processes', action='store',
-                type=int, help="number of processes to execute in parallel with")
+                type=check_parallel_support, help="number of processes to execute in parallel with")
 
         parser.add_argument('-t', '--select-tag', dest="select_tags",
                 action='append', default=None,

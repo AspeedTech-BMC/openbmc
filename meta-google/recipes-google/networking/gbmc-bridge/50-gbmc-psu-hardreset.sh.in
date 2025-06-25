@@ -1,0 +1,52 @@
+#!/bin/bash
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[ -n "${gbmc_psu_hardreset-}" ] && return
+
+gbmc_psu_hardreset_needed=
+
+UPGRADE_REBOOT=@UPGRADE_REBOOT@
+COORDINATED_POWERCYCLE=@COORDINATED_POWERCYCLE@
+
+gbmc_psu_hardreset_hook() {
+  update_netboot_status "pwr_check" "Power cycle / reboot netboot hook starting" "START"
+  if [ -n "${gbmc_reboot_needed-}" ] && [ -n "${UPGRADE_REBOOT}" ]; then
+    update_netboot_status "pwr_check" "upgrade bmc reboot into powercycle" "ONGOING"
+    gbmc_psu_hardreset_needed=1
+  fi
+  # We don't always need a powercycle, allow skipping
+  if [ -z "${gbmc_psu_hardreset_needed-}" ]; then
+    update_netboot_status "pwr_check" "No power cycle needed, terminating hook." "SUCCESS"
+    return 0
+  fi
+  update_netboot_status "pwr_check" "Power cycle needed" "SUCCESS"
+
+  update_netboot_status "pwr_req" "Starting power cycle request" "START"
+  if [[ "${COORDINATED_POWERCYCLE}" == "true" ]]; then
+    update_netboot_status "pwr_req" "Requesting powercycle" "SUCCESS"
+    update-dhcp-status 'POWERCYCLE' "netboot powercycle" || return
+  else
+    update_netboot_status "pwr_req" "Powercycling" "SUCCESS"
+    systemctl start gbmc-psu-hardreset.target || return
+  fi
+
+  # Ensure that we don't continue the DHCP process while waiting for the
+  # powercycle.
+  exit 0
+}
+
+GBMC_BR_DHCP_HOOKS+=(gbmc_psu_hardreset_hook)
+
+gbmc_psu_hardreset=1

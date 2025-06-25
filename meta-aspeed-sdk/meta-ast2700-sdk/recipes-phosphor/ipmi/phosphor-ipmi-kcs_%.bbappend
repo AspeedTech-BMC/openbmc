@@ -17,13 +17,6 @@ KCS_DEVICE = " \
     ipmi-kcs15 \
 "
 
-KCS_DEVICE:remove:ast2700-a0 = " \
-    ipmi-kcs12 \
-    ipmi-kcs13 \
-    ipmi-kcs14 \
-    ipmi-kcs15 \
-"
-
 SYSTEMD_SERVICE:${PN} = " \
     ${PN}@ipmi-kcs0.service \
     ${PN}@ipmi-kcs1.service \
@@ -38,11 +31,3 @@ SYSTEMD_SERVICE:${PN} = " \
     ${PN}@ipmi-kcs14.service \
     ${PN}@ipmi-kcs15.service \
 "
-
-SYSTEMD_SERVICE:${PN}:remove:ast2700-a0 = " \
-    ${PN}@ipmi-kcs12.service \
-    ${PN}@ipmi-kcs13.service \
-    ${PN}@ipmi-kcs14.service \
-    ${PN}@ipmi-kcs15.service \
-"
-

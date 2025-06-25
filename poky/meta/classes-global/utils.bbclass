@@ -15,7 +15,7 @@ oe_soinstall() {
 	        ;;
 	esac
 	install -m 755 $1 $2/$libname
-	sonamelink=`${READELF} -d $1 |grep 'Library soname:' |sed -e 's/.*\[\(.*\)\].*/\1/'`
+	sonamelink=`${OBJDUMP} -p $1 | grep SONAME | awk '{print $2}'`
 	if [ -z $sonamelink ]; then
 		bbfatal "oe_soinstall: $libname is missing ELF tag 'SONAME'."
 	fi
@@ -147,7 +147,7 @@ oe_libinstall() {
 		# special case hack for non-libtool .so.#.#.# links
 		baselibfile=`basename "$libfile"`
 		if (echo $baselibfile | grep -qE '^lib.*\.so\.[0-9.]*$'); then
-			sonamelink=`${READELF} -d $libfile |grep 'Library soname:' |sed -e 's/.*\[\(.*\)\].*/\1/'`
+			sonamelink=`${OBJDUMP} -p $libfile | grep SONAME | awk '{print $2}'`
 			solink=`echo $baselibfile | sed -e 's/\.so\..*/.so/'`
 			if [ -n "$sonamelink" -a x"$baselibfile" != x"$sonamelink" ]; then
 				__runcmd ln -sf $baselibfile $destpath/$sonamelink
@@ -366,4 +366,14 @@ check_git_config() {
 	if ! git config user.name > /dev/null ; then
 		git config --local user.name "${PATCH_GIT_USER_NAME}"
 	fi
+}
+
+# Sets fixed git committer and author for reproducible commits
+reproducible_git_committer_author() {
+	export GIT_COMMITTER_NAME="${PATCH_GIT_USER_NAME}"
+	export GIT_COMMITTER_EMAIL="${PATCH_GIT_USER_EMAIL}"
+	export GIT_COMMITTER_DATE="$(date -d @${SOURCE_DATE_EPOCH})"
+	export GIT_AUTHOR_NAME="${PATCH_GIT_USER_NAME}"
+	export GIT_AUTHOR_EMAIL="${PATCH_GIT_USER_EMAIL}"
+	export GIT_AUTHOR_DATE="$(date -d @${SOURCE_DATE_EPOCH})"
 }

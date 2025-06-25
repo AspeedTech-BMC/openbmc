@@ -5,6 +5,11 @@ OBMC_IMAGE_EXTRA_INSTALL:append = " \
     phosphor-gpio-monitor \
 "
 
+# Monitor gpio presence status
+OBMC_IMAGE_EXTRA_INSTALL:append = " \
+    phosphor-gpio-monitor-presence \
+"
+
 # Temporarily add plat-svc for gpio initialization
 OBMC_IMAGE_EXTRA_INSTALL:append = " \
     plat-svc \
@@ -40,4 +45,9 @@ OBMC_IMAGE_EXTRA_INSTALL:append = " \
 # Monitor the chassis power status
 OBMC_IMAGE_EXTRA_INSTALL:append = " \
     phosphor-power-control \
+"
+
+# Enable mbpoll for communication with the smart valve by modbus command
+OBMC_IMAGE_EXTRA_INSTALL:append = " \
+    mbpoll \
 "

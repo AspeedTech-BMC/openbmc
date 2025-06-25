@@ -15,12 +15,24 @@
 [ -n "${gbmc_ncsi_br_deprecated_ips_lib-}" ] && return
 
 source /usr/share/network/lib.sh || exit
+source /usr/share/gbmc-net-lib.sh || exit
 
 gbmc_ncsi_br_deprecated_ips_init=
 gbmc_ncsi_br_deprecated_ips_confip=
 gbmc_ncsi_br_deprecated_ips_lastip=
 gbmc_ncsi_br_deprecated_ips_lastncsi=
 gbmc_ncsi_br_deprecated_ips_confncsi=
+gbmc_ncsi_br_depracated_ips_savedconf=()
+GBMC_NCSI_ROUTE_TABLE=900
+
+gbmc_ncsi_br_deprecated_ips_add_neighs() {
+  local st=0
+  sysctl net.ipv6.conf.@NCSI_IF@.proxy_ndp=1 >/dev/null || st=$?
+  for ip in "${gbmc_ncsi_br_depracated_ips_savedconf[@]}"; do
+    ip -6 neigh replace proxy $ip dev @NCSI_IF@ || st=$?
+  done
+  return $st
+}
 
 gbmc_ncsi_br_deprecated_ips_update() {
   [ -n "$gbmc_ncsi_br_deprecated_ips_init" ] || return
@@ -62,6 +74,14 @@ IPv6ProxyNDPAddress=$pfx
 IPv6ProxyNDPAddress=$stateless_pfx
 ${host_pfx:+IPv6ProxyNDPAddress=}$host_pfx
 ${stateless_ip:+IPv6ProxyNDPAddress=}$stateless_ip
+[RoutingPolicyRule]
+To=$pfx/76
+Table=main
+Priority=$(( GBMC_NCSI_ROUTE_TABLE - 1 ))
+[RoutingPolicyRule]
+From=$pfx/76
+Table=$GBMC_NCSI_ROUTE_TABLE
+Priority=$GBMC_NCSI_ROUTE_TABLE
 EOF
     read -r -d '' nfcontents <<EOF
 table inet filter {
@@ -86,13 +106,31 @@ EOF
     fi
   done
 
-  # Ensure that systemd-networkd performs a reconfiguration as it doesn't
-  # currently check the mtime of drop-in files.
-  touch -c /etc/systemd/network/*-bmc-@NCSI_IF@.network
+  # Remove all old ncsi neighbor proxied entries, since we solely
+  # manage all of these entries and we don't want any that are stale
+  local entry
+  while read -r entry; do
+    ip -6 neigh del proxy ${entry%% *} dev @NCSI_IF@ || true
+  done < <(ip -6 neigh show proxy dev @NCSI_IF@)
+  ip -6 rule del pref $(( GBMC_NCSI_ROUTE_TABLE - 1 )) table main 2>dev/null || true
+  ip -6 rule del pref $GBMC_NCSI_ROUTE_TABLE 2>/dev/null || true
+  ip -6 rule add from all to "$pfx/76" pref 499 table main proto static || st=$?
+  ip -6 rule add pref $GBMC_NCSI_ROUTE_TABLE from $pfx/76 \
+      lookup $GBMC_NCSI_ROUTE_TABLE || st=$?
 
-  if [ "$(systemctl is-active systemd-networkd)" != 'inactive' ]; then
-    networkctl reload && networkctl reconfigure @NCSI_IF@
+  if [ -n "$gbmc_ncsi_br_deprecated_ips_lastip" ]; then
+    # Clear saved configuration
+    gbmc_ncsi_br_depracated_ips_savedconf=()
+    gbmc_ncsi_br_depracated_ips_savedconf+=("$pfx")
+    gbmc_ncsi_br_depracated_ips_savedconf+=("$stateless_pfx")
+    if [ -n "$host_pfx" ]; then
+      gbmc_ncsi_br_depracated_ips_savedconf+=("$host_pfx")
+    fi
+    if [ -n "$stateless_ip" ]; then
+      gbmc_ncsi_br_depracated_ips_savedconf+=("$stateless_ip")
+    fi
   fi
+  gbmc_ncsi_br_deprecated_ips_add_neighs || gbmc_net_networkd_reload @NCSI_IF@
 
   local rfile=/run/nftables/40-gbmc-ncsi-br.rules
   mkdir -p -m 755 "$(dirname "$rfile")"
@@ -143,6 +181,9 @@ gbmc_ncsi_br_deprecated_ips_hook() {
     else
       gbmc_ncsi_br_deprecated_ips_lastncsi=
       gbmc_ip_monitor_defer
+    fi
+    if [[ "$carrier" == 'UP' ]]; then
+      gbmc_ncsi_br_deprecated_ips_add_neighs
     fi
   fi
 }

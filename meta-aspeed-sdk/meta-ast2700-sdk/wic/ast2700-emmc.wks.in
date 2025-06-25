@@ -9,12 +9,23 @@
 #       |
 #       0x5000
 #
-# Primary GPT size (Beginning of image):
-# 512B (Protective MBR) + 512B (Primary Header) + 16KB (Primary Table)
-# First partition (u-boot-env) is 4K-aligned, which puts it at offset 0x5000
+# GPT Partition Layout Reference (See: https://en.wikipedia.org/wiki/GUID_Partition_Table)
 #
-# Secondary GPT size (End of image):
-# 16KB (Secondary Table) + 512B (Secondary Header)
+# Primary GPT (at the beginning of the image):
+# LBA  0    - Protective MBR                       =  512 bytes
+# LBA  1    - Primary GPT Header                   =  512 bytes
+# LBA  2-33 - Primary Partition Table (32 entries) = 32 * 512 bytes = 16 KB
+# ---------------------------------------------------------------
+# Total primary GPT region size: 34 LBAs = 34 * 512 bytes = 17,408 bytes (0x4400)
+#
+# First partition (e.g., u-boot-env) is 4 KB aligned:
+# Start offset = 0x5000 (20,480 bytes) to ensure proper 4 KB alignment
+#
+# Secondary GPT (at the end of the image):
+# LBA -33 to -2 - Secondary Partition Table        = 32 * 512 bytes = 16 KB
+# LBA -1        - Secondary GPT Header             = 512 bytes
+# ------------------------------------------------------------------------
+# Total secondary GPT region size: 33 LBAs = 33 * 512 bytes = 16,896 bytes (0x4200)
 
 bootloader --ptable gpt
 

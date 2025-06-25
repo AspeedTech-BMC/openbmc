@@ -35,6 +35,7 @@ Test step:
 5. Message "PFR EID is registered by bus owner" should be shown on
    ast1060 console
 
+Upstream-Status: Pending
 Signed-off-by: Steven Lee <steven_lee@aspeedtech.com>
 ---
  src/mctp-control-spec.h      |   3 +

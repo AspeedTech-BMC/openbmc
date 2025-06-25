@@ -6,6 +6,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit obmc-phosphor-systemd
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 DEPENDS += "systemd"
 RDEPENDS:${PN} += " bash phosphor-gpio-monitor-presence"
 
@@ -17,12 +20,12 @@ SRC_URI = " file://detect-sled-present \
 
 do_install() {
     install -d ${D}${bindir}
-    install -m 0755 ${WORKDIR}/detect-sled-present ${D}${bindir}/
+    install -m 0755 ${UNPACKDIR}/detect-sled-present ${D}${bindir}/
 
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/detect-sled-present@.service ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/bletchley-sled-insertion@.target ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/bletchley-sled-removal@.target ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/detect-sled-present@.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/bletchley-sled-insertion@.target ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/bletchley-sled-removal@.target ${D}${systemd_system_unitdir}
 }
 
 TGT = "${SYSTEMD_DEFAULT_TARGET}"

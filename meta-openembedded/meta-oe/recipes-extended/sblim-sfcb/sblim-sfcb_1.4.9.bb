@@ -31,7 +31,6 @@ SRC_URI = "http://downloads.sourceforge.net/sblim/${BP}.tar.bz2 \
            file://0001-include-missing-system-headers.patch \
 "
 
-SRC_URI[md5sum] = "28021cdabc73690a94f4f9d57254ce30"
 SRC_URI[sha256sum] = "634a67b2f7ac3b386a79160eb44413d618e33e4e7fc74ae68b0240484af149dd"
 
 CVE_STATUS[CVE-2012-3381] = "fixed-version: The CPE in the NVD database doesn't reflect correctly the vulnerable versions."
@@ -64,7 +63,7 @@ do_install() {
     oe_runmake DESTDIR=${D} install
 
     install -d ${D}${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/sfcb.service ${D}${systemd_unitdir}/system/sblim-sfcb.service
+    install -m 0644 ${UNPACKDIR}/sfcb.service ${D}${systemd_unitdir}/system/sblim-sfcb.service
 
     install -d ${D}${sysconfdir}/init.d
     mv ${D}${sysconfdir}/init.d/sfcb ${D}${sysconfdir}/init.d/sblim-sfcb
@@ -86,3 +85,8 @@ FILES:${PN} += "${libdir}/sfcb ${datadir}/sfcb"
 FILES:${PN}-dbg += "${libdir}/sfcb/.debug"
 
 RDEPENDS:${PN} = "perl bash"
+
+# This one is reproducible only on 32bit MACHINEs
+# http://errors.yoctoproject.org/Errors/Details/766970/
+# sblim-sfcb-1.4.9/trace.c:214:18: error: passing argument 1 of 'gmtime_r' from incompatible pointer type [-Wincompatible-pointer-types]
+CFLAGS += "-Wno-error=incompatible-pointer-types"

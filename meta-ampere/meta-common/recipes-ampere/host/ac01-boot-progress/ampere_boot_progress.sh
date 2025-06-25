@@ -6,10 +6,19 @@ uefi_code=00000000
 
 function set_postcode()
 {
+	local bg=$1
+	local boot_list=()
+	bg=${bg:2}
+	while [[ -n "$bg" ]]; do
+		boot_stage=${bg:0:2}
+		boot_list+=($((16#$boot_stage)))
+		bg=${bg:2}
+	done
 	# shellcheck disable=SC2086
 	busctl set-property xyz.openbmc_project.State.Boot.Raw \
 		/xyz/openbmc_project/state/boot/raw0 \
-		xyz.openbmc_project.State.Boot.Raw Value \(tay\) "$1" 0
+		xyz.openbmc_project.State.Boot.Raw Value \(ayay\) \
+		"${#boot_list[@]}" "${boot_list[@]}" 0
 }
 
 function update_boot_progress_last_state_time()
@@ -122,11 +131,11 @@ function set_boot_progress()
 
 function log_redfish_biosboot_ok_event()
 {
-	logger-systemd --journald << EOF
+	logger --journald << EOF
 MESSAGE=
 PRIORITY=2
 SEVERITY=
-REDFISH_MESSAGE_ID=OpenBMC.0.1.BIOSBoot.OK
+REDFISH_MESSAGE_ID=OpenBMC.0.1.BIOSBoot
 REDFISH_MESSAGE_ARGS="UEFI firmware booting done"
 EOF
 }
@@ -135,11 +144,11 @@ function log_redfish_bios_panic_event()
 {
 	boot_state_str=$(get_boot_stage_string "$1" "$2")
 
-	logger-systemd --journald << EOF
+	logger --journald << EOF
 MESSAGE=
 PRIORITY=2
 SEVERITY=
-REDFISH_MESSAGE_ID=OpenBMC.0.1.BIOSFirmwarePanicReason.Warning
+REDFISH_MESSAGE_ID=OpenBMC.0.1.BIOSFirmwarePanicReason
 REDFISH_MESSAGE_ARGS=${boot_state_str}
 EOF
 }

@@ -24,11 +24,15 @@ IMAGE_INSTALL:append = " \
 # uninstall packagegroup-oss-extra by default.
 # IMAGE_INSTALL:append = " packagegroup-oss-extra "
 
-# remove from AST25xx series rofs as the free space of AST25xx rofs is not enough.
+# Remove from AST25xx series rofs as the free space of AST25xx rofs is not enough.
 IMAGE_INSTALL:remove:aspeed-g5 = " \
         packagegroup-aspeed-ktools \
         packagegroup-oss-extra \
+        packagegroup-oss-intel-pmci \
+        entity-manager \
         "
+IMAGE_FEATURES:remove:aspeed-g5 = " obmc-telemetry"
+
 
 # packagegroup for ast2600
 IMAGE_INSTALL:append:aspeed-g6 = " \
@@ -50,9 +54,3 @@ EXTRA_IMAGE_FEATURES:append = " \
 #OVERLAY_MKFS_OPTS:spi-nor-ecc = " -c 16 -e 262144 --pad=${RWFS_SIZE} "
 
 IMAGE_CLASSES:append:aspeed-g7 = " image_types_phosphor_aspeed_g7"
-
-# We use direct-with-blksz.py to create WIC file for UFS.
-# Do not generate scripts/lib/wic/plugins/imager/__pycache__/
-IMAGE_CMD:wic:prepend:ast-ufs () {
-        export PYTHONDONTWRITEBYTECODE="1"
-}

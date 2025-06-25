@@ -6,9 +6,9 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=d50b901333b4eedfee074ebcd6a6d611"
 
 SRC_URI = "git://github.com/AspeedTech-BMC/socsec.git;protocol=https;branch=master"
 
-PV = "v02.00.08+git"
-# Tag for v02.00.08
-SRCREV = "1f88b7c97a3d35b103b919b60d75618275ba3b10"
+PV = "v02.00.09+git"
+# Tag for v02.00.09
+SRCREV = "d049f71f32165c0a9fea45903cf83de3b05ae915"
 
 S = "${WORKDIR}/git"
 
@@ -19,6 +19,7 @@ DEPENDS += "python3-jsonschema"
 DEPENDS += "python3-jstyleson"
 DEPENDS += "python3-pycryptodome"
 DEPENDS += "python3-ecdsa"
+DEPENDS += "python3-cryptography"
 
 RDEPENDS:${PN} += "python3-bitarray"
 RDEPENDS:${PN} += "python3-core"
@@ -26,5 +27,6 @@ RDEPENDS:${PN} += "python3-jsonschema"
 RDEPENDS:${PN} += "python3-jstyleson"
 RDEPENDS:${PN} += "python3-pycryptodome"
 RDEPENDS:${PN} += "python3-ecdsa"
+RDEPENDS:${PN} += "python3-cryptography"
 
 BBCLASSEXTEND = "native nativesdk"

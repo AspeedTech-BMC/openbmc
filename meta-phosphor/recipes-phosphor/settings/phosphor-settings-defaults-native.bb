@@ -8,7 +8,8 @@ SRC_URI += "file://defaults.yaml"
 SRC_URI += "file://host-template.yaml"
 
 SETTINGS_HOST_TEMPLATES:append = " host-template.yaml"
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 inherit phosphor-settings-manager
 inherit native
@@ -23,5 +24,9 @@ do_install() {
             do
                 sed "s/{}/${i}/g" ${f} >> ${DEST}/defaults.yaml
             done
+        done
+        for f in ${SETTINGS_BMC_TEMPLATES};
+        do
+            cat $f >> ${DEST}/defaults.yaml
         done
 }

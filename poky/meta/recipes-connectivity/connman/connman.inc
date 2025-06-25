@@ -86,7 +86,7 @@ ALTERNATIVE_LINK_NAME[resolv-conf] = "${@bb.utils.contains('DISTRO_FEATURES','sy
 do_install:append() {
 	if ${@bb.utils.contains('DISTRO_FEATURES','sysvinit','true','false',d)}; then
 		install -d ${D}${sysconfdir}/init.d
-		install -m 0755 ${WORKDIR}/connman ${D}${sysconfdir}/init.d/connman
+		install -m 0755 ${UNPACKDIR}/connman ${D}${sysconfdir}/init.d/connman
 		sed -i s%@DATADIR@%${datadir}% ${D}${sysconfdir}/init.d/connman
 	fi
 
@@ -155,12 +155,12 @@ python populate_packages:prepend() {
 PACKAGES =+ "${PN}-tools ${PN}-tests ${PN}-client"
 
 FILES:${PN}-tools = "${bindir}/wispr"
-RDEPENDS:${PN}-tools ="${PN}"
+RDEPENDS:${PN}-tools = "${PN}"
 
 FILES:${PN}-tests = "${bindir}/*-test"
 
 FILES:${PN}-client = "${bindir}/connmanctl"
-RDEPENDS:${PN}-client ="${PN}"
+RDEPENDS:${PN}-client = "${PN}"
 
 FILES:${PN} = "${bindir}/* ${sbindir}/* ${libexecdir}/* ${libdir}/lib*.so.* \
             ${libdir}/connman/plugins \

@@ -34,6 +34,8 @@ SRC_URI[sha256sum] = "8b4de01391e74e3c7014beb43961a2d6d6fa03acc34280b9585f493074
 UPSTREAM_CHECK_URI = "https://sourceforge.net/projects/net-snmp/files/net-snmp/"
 UPSTREAM_CHECK_REGEX = "/net-snmp/(?P<pver>\d+(\.\d+)+)/"
 
+CVE_PRODUCT = "net-snmp:net-snmp"
+
 inherit autotools-brokensep update-rc.d siteinfo systemd pkgconfig perlnative ptest multilib_script multilib_header
 
 EXTRA_OEMAKE = "INSTALL_PREFIX=${D} OTHERLDFLAGS='${LDFLAGS}' HOST_CPPFLAGS='${BUILD_CPPFLAGS}'"
@@ -73,6 +75,7 @@ CACHED_CONFIGUREVARS = " \
     lt_cv_shlibpath_overrides_runpath=yes \
     ac_cv_path_UNAMEPROG=${base_bindir}/uname \
     ac_cv_path_PSPROG=${base_bindir}/ps \
+    ac_cv_ps_flags="-e" \
     ac_cv_file__etc_printcap=no \
     NETSNMP_CONFIGURE_OPTIONS= \
 "
@@ -116,12 +119,12 @@ do_configure:append() {
 do_install:append() {
     install -d ${D}${sysconfdir}/snmp
     install -d ${D}${sysconfdir}/init.d
-    install -m 755 ${WORKDIR}/init ${D}${sysconfdir}/init.d/snmpd
-    install -m 644 ${WORKDIR}/snmpd.conf ${D}${sysconfdir}/snmp/
-    install -m 644 ${WORKDIR}/snmptrapd.conf ${D}${sysconfdir}/snmp/
+    install -m 755 ${UNPACKDIR}/init ${D}${sysconfdir}/init.d/snmpd
+    install -m 644 ${UNPACKDIR}/snmpd.conf ${D}${sysconfdir}/snmp/
+    install -m 644 ${UNPACKDIR}/snmptrapd.conf ${D}${sysconfdir}/snmp/
     install -d ${D}${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/snmpd.service ${D}${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/snmptrapd.service ${D}${systemd_unitdir}/system
+    install -m 0644 ${UNPACKDIR}/snmpd.service ${D}${systemd_unitdir}/system
+    install -m 0644 ${UNPACKDIR}/snmptrapd.service ${D}${systemd_unitdir}/system
     sed -e "s@^NSC_SRCDIR=.*@NSC_SRCDIR=.@g" \
         -i ${D}${bindir}/net-snmp-create-v3-user
     sed -e 's@^NSC_SRCDIR=.*@NSC_SRCDIR=.@g' \
@@ -265,12 +268,12 @@ RDEPENDS:${PN}-server-snmpd += "net-snmp-mibs"
 RDEPENDS:${PN}-server-snmptrapd += "net-snmp-server-snmpd ${PN}-lib-trapd"
 RDEPENDS:${PN}-server += "net-snmp-server-snmpd net-snmp-server-snmptrapd"
 RDEPENDS:${PN}-client += "net-snmp-mibs net-snmp-libs"
-RDEPENDS:${PN}-libs += "libpci \
-                        ${PN}-lib-netsnmp \
+RDEPENDS:${PN}-libs += "${PN}-lib-netsnmp \
                         ${PN}-lib-agent \
                         ${PN}-lib-helpers \
                         ${PN}-lib-mibs \
 "
+RDEPENDS:append:${PN}-libs:class-target = " libpci"
 RDEPENDS:${PN}-ptest += "perl \
                          perl-module-test \
                          perl-module-file-basename \

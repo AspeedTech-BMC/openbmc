@@ -16,7 +16,7 @@ function log_ampere_oem_redfish_event()
 	msgArgs1=$5
 	msgArgs2=$6
 
-logger-systemd --journald << EOF
+logger --journald << EOF
 MESSAGE=${msg}
 PRIORITY=${priority}
 SEVERITY=${severity}
@@ -111,7 +111,7 @@ log_err_to_redfish_err() {
 
 	#smg=$("DDR training: MCU rank $rank: $fType: $redfisMsg")
 	log_ampere_oem_redfish_event \
-		"" 2 "" "OpenBMC.0.1.AmpereCritical.Critical" \
+		"" 2 "" "OpenBMC.0.1.AmpereCritical" \
 		$redfisComp "Slot $channel MCU rank $rank: $fType: $redfisMsg"
 }
 

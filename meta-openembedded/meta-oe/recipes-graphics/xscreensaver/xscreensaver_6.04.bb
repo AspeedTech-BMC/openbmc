@@ -13,6 +13,8 @@ MIRRORS += "https://www.jwz.org/${BPN} https://ftp.osuosl.org/pub/blfs/conglomer
 
 SRC_URI[sha256sum] = "787014b29f0c5793ecc2d93e1109a049ff48ab0c29b851dab34f683ceef6b152"
 
+UPSTREAM_CHECK_URI = "https://www.jwz.org/xscreensaver/download.html"
+
 DEPENDS = "intltool-native libx11 libxext libxt libxft libxi glib-2.0-native bc-native libpam jpeg"
 # These are only needed as part of the stopgap screensaver implementation:
 RDEPENDS:${PN} = " \
@@ -34,11 +36,11 @@ PACKAGECONFIG = "png ${@bb.utils.contains('DISTRO_FEATURES','systemd','systemd',
 PACKAGECONFIG[systemd] = "--with-systemd=yes,--with-systemd=no,systemd"
 PACKAGECONFIG[png] = "--with-png=yes,--with-png=no,libpng"
 
-CONFIGUREOPTS:remove = "--disable-silent-rules --disable-dependency-tracking ${@append_libtool_sysroot(d)}"
+CONFIGUREOPTS:remove = "--disable-silent-rules --disable-dependency-tracking"
 EXTRA_OECONF:remove = "--disable-static"
 
 do_install:append() {
-    install -D ${WORKDIR}/xscreensaver.service ${D}${systemd_unitdir}/system/xscreensaver.service
+    install -D ${UNPACKDIR}/xscreensaver.service ${D}${systemd_unitdir}/system/xscreensaver.service
     for f in xscreensaver-getimage-file xscreensaver-getimage-video webcollage xscreensaver-text vidwhacker
     do
         sed -i -e "s|${STAGING_BINDIR_NATIVE}/perl-native/perl|/usr/bin/perl|g" ${D}/${libexecdir}/${PN}/$f

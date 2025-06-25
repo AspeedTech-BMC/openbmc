@@ -24,6 +24,7 @@ import io
 import bb.event
 import bb.cooker
 import bb.remotedata
+import bb.parse
 
 class DataStoreConnectionHandle(object):
     def __init__(self, dsindex=0):
@@ -108,7 +109,7 @@ class Command:
 
     def runAsyncCommand(self, _, process_server, halt):
         try:
-            if self.cooker.state in (bb.cooker.state.error, bb.cooker.state.shutdown, bb.cooker.state.forceshutdown):
+            if self.cooker.state in (bb.cooker.State.ERROR, bb.cooker.State.SHUTDOWN, bb.cooker.State.FORCE_SHUTDOWN):
                 # updateCache will trigger a shutdown of the parser
                 # and then raise BBHandledException triggering an exit
                 self.cooker.updateCache()
@@ -118,7 +119,7 @@ class Command:
                 (command, options) = cmd
                 commandmethod = getattr(CommandsAsync, command)
                 needcache = getattr( commandmethod, "needcache" )
-                if needcache and self.cooker.state != bb.cooker.state.running:
+                if needcache and self.cooker.state != bb.cooker.State.RUNNING:
                     self.cooker.updateCache()
                     return True
                 else:
@@ -310,7 +311,7 @@ class CommandsSync:
     def revalidateCaches(self, command, params):
         """Called by UI clients when metadata may have changed"""
         command.cooker.revalidateCaches()
-    parseConfiguration.needconfig = False
+    revalidateCaches.needconfig = False
 
     def getRecipes(self, command, params):
         try:
@@ -420,15 +421,30 @@ class CommandsSync:
         return command.cooker.recipecaches[mc].pkg_dp
     getDefaultPreference.readonly = True
 
+
     def getSkippedRecipes(self, command, params):
+        """
+        Get the map of skipped recipes for the specified multiconfig/mc name (`params[0]`).
+
+        Invoked by `bb.tinfoil.Tinfoil.get_skipped_recipes`
+
+        :param command: Internally used parameter.
+        :param params: Parameter array. params[0] is multiconfig/mc name. If not given, then default mc '' is assumed.
+        :return: Dict whose keys are virtualfns and values are `bb.cooker.SkippedPackage`
+        """
+        try:
+            mc = params[0]
+        except IndexError:
+            mc = ''
+
         # Return list sorted by reverse priority order
         import bb.cache
         def sortkey(x):
             vfn, _ = x
-            realfn, _, mc = bb.cache.virtualfn2realfn(vfn)
-            return (-command.cooker.collections[mc].calc_bbfile_priority(realfn)[0], vfn)
+            realfn, _, item_mc = bb.cache.virtualfn2realfn(vfn)
+            return -command.cooker.collections[item_mc].calc_bbfile_priority(realfn)[0], vfn
 
-        skipdict = OrderedDict(sorted(command.cooker.skiplist.items(), key=sortkey))
+        skipdict = OrderedDict(sorted(command.cooker.skiplist_by_mc[mc].items(), key=sortkey))
         return list(skipdict.items())
     getSkippedRecipes.readonly = True
 
@@ -581,6 +597,13 @@ class CommandsSync:
         idx = command.remotedatastores.store(envdata)
         return DataStoreConnectionHandle(idx)
     parseRecipeFile.readonly = True
+
+    def finalizeData(self, command, params):
+        newdata = command.cooker.data.createCopy()
+        bb.data.expandKeys(newdata)
+        bb.parse.ast.runAnonFuncs(newdata)
+        idx = command.remotedatastores.store(newdata)
+        return DataStoreConnectionHandle(idx)
 
 class CommandsAsync:
     """

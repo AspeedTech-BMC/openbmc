@@ -21,6 +21,8 @@ https://github.com/Intel-BMC/intel-pfr-signing-utility/blob/master/blocksign.c#L
 [ERR]   *** Block 0 SHA256 does not match calculated value ***
 
 Change to verify PAD_HASH for block0/PC-Sha256 item if block1/b0_sig/hashalg set to sha384.
+
+Upstream-Status: Pending
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 ---
  blocksign.c | 69 +++++++++++++++++++++++++++++++++++++----------------

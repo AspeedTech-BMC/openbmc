@@ -13,6 +13,9 @@ SRC_URI = "git://github.com/teg/firmwared.git;branch=master;protocol=https \
 PV = "0+git"
 SRCREV = "2e6b5db43d63a5c0283a4cae9a6a20b7ad107a04"
 
+# Upstream repo does not tag
+UPSTREAM_CHECK_COMMITS = "1"
+
 S = "${WORKDIR}/git"
 
 DEPENDS = "glib-2.0 systemd"
@@ -29,6 +32,6 @@ do_configure:prepend() {
 
 do_install:append() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/firmwared.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/firmwared.service ${D}${systemd_system_unitdir}
     sed -i -e 's,@BINDIR@,${bindir},g' ${D}${systemd_system_unitdir}/firmwared.service
 }

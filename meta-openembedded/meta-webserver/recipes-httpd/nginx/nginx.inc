@@ -38,7 +38,7 @@ NGINX_USER   ?= "www"
 EXTRA_OECONF = ""
 DISABLE_STATIC = ""
 
-PACKAGECONFIG ??= "ssl ${@bb.utils.filter('DISTRO_FEATURES', 'ipv6', d)}"
+PACKAGECONFIG ??= "ssl fastcgi scgi uwsgi ${@bb.utils.filter('DISTRO_FEATURES', 'ipv6', d)}"
 
 PACKAGECONFIG[gunzip] = "--with-http_gunzip_module,,"
 PACKAGECONFIG[http2] = "--with-http_v2_module,,"
@@ -48,7 +48,9 @@ PACKAGECONFIG[ipv6] = "--with-ipv6,,"
 PACKAGECONFIG[webdav] = "--with-http_dav_module,,"
 PACKAGECONFIG[stream] = "--with-stream,,"
 PACKAGECONFIG[http-sub-module] = "--with-http_sub_module,,"
-
+PACKAGECONFIG[fastcgi] = ",--without-http_fastcgi_module,"
+PACKAGECONFIG[scgi] = ",--without-http_scgi_module,"
+PACKAGECONFIG[uwsgi] = ",--without-http_uwsgi_module,"
 PACKAGECONFIG[xslt] = "--with-http_xslt_module,,libxslt"
 
 do_configure () {
@@ -81,9 +83,9 @@ do_configure () {
     --error-log-path=${localstatedir}/log/nginx/error.log \
     --http-client-body-temp-path=/run/nginx/client_body_temp \
     --http-proxy-temp-path=/run/nginx/proxy_temp \
-    --http-fastcgi-temp-path=/run/nginx/fastcgi_temp \
-    --http-uwsgi-temp-path=/run/nginx/uwsgi_temp \
-    --http-scgi-temp-path=/run/nginx/scgi_temp \
+    ${@bb.utils.contains('PACKAGECONFIG', 'fastcgi', '--http-fastcgi-temp-path=/run/nginx/fastcgi_temp', '', d)} \
+    ${@bb.utils.contains('PACKAGECONFIG', 'scgi', '--http-scgi-temp-path=/run/nginx/scgi_temp', '', d)} \
+    ${@bb.utils.contains('PACKAGECONFIG', 'uwsgi', '--http-uwsgi-temp-path=/run/nginx/uwsgi_temp', '', d)} \
     --pid-path=/run/nginx/nginx.pid \
     --prefix=${prefix} \
     --with-threads \
@@ -108,29 +110,41 @@ do_install () {
     chown ${NGINX_USER}:www-data -R ${D}${NGINX_WWWDIR}
 
     install -d ${D}${sysconfdir}/init.d
-    install -m 0755 ${WORKDIR}/nginx.init ${D}${sysconfdir}/init.d/nginx
+    install -m 0755 ${UNPACKDIR}/nginx.init ${D}${sysconfdir}/init.d/nginx
     sed -i 's,/usr/sbin/,${sbindir}/,g' ${D}${sysconfdir}/init.d/nginx
     sed -i 's,/etc/,${sysconfdir}/,g'  ${D}${sysconfdir}/init.d/nginx
 
     install -d ${D}${sysconfdir}/nginx
-    install -m 0644 ${WORKDIR}/nginx.conf ${D}${sysconfdir}/nginx/nginx.conf
+    install -m 0644 ${UNPACKDIR}/nginx.conf ${D}${sysconfdir}/nginx/nginx.conf
     sed -i 's,/etc/,${sysconfdir}/,g' ${D}${sysconfdir}/nginx/nginx.conf
     sed -i 's,/var/,${localstatedir}/,g' ${D}${sysconfdir}/nginx/nginx.conf
     sed -i 's/^user.*/user ${NGINX_USER};/g' ${D}${sysconfdir}/nginx/nginx.conf
-    install -Dm 0644 ${WORKDIR}/default_server.site ${D}${sysconfdir}/nginx/sites-available/default_server
+    install -Dm 0644 ${UNPACKDIR}/default_server.site ${D}${sysconfdir}/nginx/sites-available/default_server
     sed -i 's,/var/,${localstatedir}/,g' ${D}${sysconfdir}/nginx/sites-available/default_server
     install -d ${D}${sysconfdir}/nginx/sites-enabled
     ln -s ../sites-available/default_server ${D}${sysconfdir}/nginx/sites-enabled/
 
-    install -m 0644 ${WORKDIR}/proxy_params ${D}${sysconfdir}/nginx/proxy_params
+    install -m 0644 ${UNPACKDIR}/proxy_params ${D}${sysconfdir}/nginx/proxy_params
 
     install -d ${D}${sysconfdir}/default/volatiles
-    install -m 0644 ${WORKDIR}/nginx-volatile.conf ${D}${sysconfdir}/default/volatiles/99_nginx
+    install -m 0644 ${UNPACKDIR}/nginx-volatile.conf ${D}${sysconfdir}/default/volatiles/99_nginx
     sed -i 's,/var/,${localstatedir}/,g' ${D}${sysconfdir}/default/volatiles/99_nginx
     sed -i 's,@NGINX_USER@,${NGINX_USER},g' ${D}${sysconfdir}/default/volatiles/99_nginx
 
     # cleanup configuration folder
     rm ${D}${sysconfdir}/nginx/*.default
+
+    # remove config files based on packageconfig
+    if ! [ "${@bb.utils.filter('PACKAGECONFIG', 'fastcgi', d)}" ]; then
+        rm -f ${D}${sysconfdir}/nginx/fastcgi.conf
+        rm -f ${D}${sysconfdir}/nginx/fastcgi_params
+    fi
+    if ! [ "${@bb.utils.filter('PACKAGECONFIG', 'scgi', d)}" ]; then
+        rm -f ${D}${sysconfdir}/nginx/scgi_params
+    fi
+    if ! [ "${@bb.utils.filter('PACKAGECONFIG', 'uwsgi', d)}" ]; then
+        rm -f ${D}${sysconfdir}/nginx/uwsgi_params
+    fi
 
     # add additional configuration folders
     install -d ${D}${sysconfdir}/nginx/modules-available
@@ -140,7 +154,7 @@ do_install () {
 
     if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)};then
         install -d ${D}${systemd_unitdir}/system
-        install -m 0644 ${WORKDIR}/nginx.service ${D}${systemd_unitdir}/system/
+        install -m 0644 ${UNPACKDIR}/nginx.service ${D}${systemd_unitdir}/system/
         sed -i -e 's,@SYSCONFDIR@,${sysconfdir},g' \
             -e 's,@LOCALSTATEDIR@,${localstatedir},g' \
             -e 's,@SBINDIR@,${sbindir},g' \

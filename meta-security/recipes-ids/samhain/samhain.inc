@@ -26,7 +26,7 @@ SRC_URI[sha256sum] = "ae6ee8eff3cb111b7fc14a57bcc258443dd0bcf1bfacfdf229935ed053
 UPSTREAM_CHECK_URI = "https://www.la-samhna.de/samhain/archive.html"
 UPSTREAM_CHECK_REGEX = "samhain_signed-(?P<pver>(\d+(\.\d+)+))\.tar"
 
-S = "${WORKDIR}/samhain-${PV}"
+S = "${UNPACKDIR}/samhain-${PV}"
 
 inherit autotools-brokensep update-rc.d pkgconfig systemd
 
@@ -64,8 +64,8 @@ EXTRA_OEMAKE:append:aarch64 = " CPPFLAGS+=-DCONFIG_ARCH_AARCH64=1"
 EXTRA_OEMAKE:append:mips64 = " CPPFLAGS+=-DCONFIG_ARCH_MIPS64=1"
 
 do_unpack_samhain() {
-    cd ${WORKDIR}
-    tar -xzvf samhain-${PV}.tar.gz
+    cd ${UNPACKDIR}
+    tar -xzvf samhain-${PV}.tar.gz -C ${UNPACKDIR}
 }
 
 python do_unpack:append() {
@@ -129,19 +129,19 @@ do_compile:prepend:libc-musl () {
 do_install:append () {
 	oe_runmake install DESTDIR='${D}' INSTALL=install-boot
 
-	install -D -m 755 ${WORKDIR}/${INITSCRIPT_NAME}.init \
+	install -D -m 755 ${UNPACKDIR}/${INITSCRIPT_NAME}.init \
 		${D}${sysconfdir}/init.d/${INITSCRIPT_NAME}
 
-	install -D -m 755 ${WORKDIR}/${INITSCRIPT_NAME}.default \
+	install -D -m 755 ${UNPACKDIR}/${INITSCRIPT_NAME}.default \
 		${D}${sysconfdir}/default/${INITSCRIPT_NAME}
 
 	if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
 		if [ "${SAMHAIN_MODE}" = "no" ]; then
-		    install -D -m 0644 ${WORKDIR}/samhain.service ${D}/${systemd_system_unitdir}/samhain.service
+		    install -D -m 0644 ${UNPACKDIR}/samhain.service ${D}/${systemd_system_unitdir}/samhain.service
 		else
-		    install -D -m 0644 ${WORKDIR}/samhain.service ${D}/${systemd_system_unitdir}/${BPN}.service
+		    install -D -m 0644 ${UNPACKDIR}/samhain.service ${D}/${systemd_system_unitdir}/${BPN}.service
 		fi
-		install -D -m 0755 ${WORKDIR}/${BPN}.init ${D}/${libexecdir}/${BPN}
+		install -D -m 0755 ${UNPACKDIR}/${BPN}.init ${D}/${libexecdir}/${BPN}
 		sed -i -e 's,@LIBDIR@,${libexecdir},' \
 		       -e 's,@SAMHAIN_HELPER@,${BPN},' \
 		       -e 's,@MODE_NAME@,${MODE_NAME},' \

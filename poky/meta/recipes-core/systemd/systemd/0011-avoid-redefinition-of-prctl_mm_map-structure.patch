@@ -1,7 +1,7 @@
-From 49c446cfb78cf74a909bed8c3798b77a5469866a Mon Sep 17 00:00:00 2001
+From 43b0269e850a2fbcb6ca615258aa8f8a9b4f6a9d Mon Sep 17 00:00:00 2001
 From: Chen Qi <Qi.Chen@windriver.com>
 Date: Mon, 25 Feb 2019 15:44:54 +0800
-Subject: [PATCH 11/22] avoid redefinition of prctl_mm_map structure
+Subject: [PATCH 11/26] avoid redefinition of prctl_mm_map structure
 
 Fix the following compile failure:
 error: redefinition of 'struct prctl_mm_map'
@@ -14,7 +14,7 @@ Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/src/basic/missing_prctl.h b/src/basic/missing_prctl.h
-index 7d9e395c92..88c2d7dfac 100644
+index 2c9f9f6c50..65a984b564 100644
 --- a/src/basic/missing_prctl.h
 +++ b/src/basic/missing_prctl.h
 @@ -1,7 +1,9 @@
@@ -25,8 +25,8 @@ index 7d9e395c92..88c2d7dfac 100644
  #include <linux/prctl.h>
 +#endif
  
- /* 58319057b7847667f0c9585b9de0e8932b0fdb08 (4.3) */
- #ifndef PR_CAP_AMBIENT
+ #include "macro.h"
+ 
 -- 
 2.34.1
 

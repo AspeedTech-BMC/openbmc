@@ -2,13 +2,14 @@ SUMMARY = "A C implementation of the Constrained Application Protocol"
 DESCRIPTION = "libcoap implements a lightweight application-protocol for \
 devices that are constrained their resources such as computing power, \
 RF range, memory, bandwith, or network packet sizes."
-HOMEPAGE ="https://libcoap.net/"
+HOMEPAGE = "https://libcoap.net/"
 
 LICENSE = "BSD-2-Clause & BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=1978dbc41673ab1c20e64b287c8317bc"
 
 SRC_URI = "git://github.com/obgm/libcoap.git;branch=main;protocol=https \
            file://run-ptest \
+           file://CVE-2024-0962.patch \
            "
 SRCREV = "5fd2f89ef068214130e5d60b7087ef48711fa615"
 
@@ -50,7 +51,7 @@ do_compile:prepend() {
 
 do_install_ptest () {
 	install -d ${D}${PTEST_PATH}
-	install -m 0755 ${WORKDIR}/run-ptest ${D}${PTEST_PATH}/run-ptest
+	install -m 0755 ${UNPACKDIR}/run-ptest ${D}${PTEST_PATH}/run-ptest
 	install -m 0755 ${B}/tests/testdriver ${D}${PTEST_PATH}/testdriver
 }
 

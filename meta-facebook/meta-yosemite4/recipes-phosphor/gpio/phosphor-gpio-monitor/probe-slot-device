@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck source=meta-facebook/meta-yosemite4/recipes-yosemite4/plat-tool/files/yosemite4-common-functions
+source /usr/libexec/yosemite4-common-functions
 
 HOST_BUS=$(($1 - 1))
 HOST_VIRTUAL_BUS=$(($1 + 15))
@@ -12,3 +14,7 @@ echo $HOST_VIRTUAL_BUS-0049 > /sys/bus/i2c/drivers/pca953x/bind
 echo $HOST_VIRTUAL_BUS-0050 > /sys/bus/i2c/drivers/at24/bind
 echo $HOST_VIRTUAL_BUS-0051 > /sys/bus/i2c/drivers/at24/bind
 echo $HOST_VIRTUAL_BUS-0054 > /sys/bus/i2c/drivers/at24/bind
+
+# Set interface of SD BIC to I3C
+GPIOCHIP=$(basename /sys/bus/i2c/devices/$HOST_BUS-0023/*gpiochip*)
+gpioset "$GPIOCHIP" 24=1

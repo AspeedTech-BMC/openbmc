@@ -11,6 +11,9 @@ PROVIDES += "virtual/ssp"
 RPROVIDES:${PN} += "virtual-ssp"
 PR = "r0"
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 SSP_FIRMWARE ?= "ast2700-ssp.bin"
 SSP_FIRMWARE:aspeed-g6 ?= "ast2600_ssp.bin"
 

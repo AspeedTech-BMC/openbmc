@@ -1,7 +1,7 @@
-From fcf65b9c7d94774fd2fca084fdd7e163e526b505 Mon Sep 17 00:00:00 2001
+From f2b9062e086deec9b51704ba3c4d8a82e8e6f501 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Thu, 13 Jun 2024 10:44:20 +0800
-Subject: [PATCH 4/4] bmcweb: support ast2750 dual nodes.
+Subject: [PATCH] bmcweb: support ast2750 dual nodes.
 
 Supoort AST2750 dual nodes
 KVM:
@@ -18,39 +18,35 @@ VM:
     BMCWEB_ROUTE(app, "/vm/1/0")
     Use media=8
 
+Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
- include/kvm_websocket.hpp |  36 ++-
- include/vm1_websocket.hpp | 620 ++++++++++++++++++++++++++++++++++++++
+ include/kvm_websocket.hpp |  35 ++-
+ include/vm1_websocket.hpp | 635 ++++++++++++++++++++++++++++++++++++++
  src/webserver_run.cpp     |   2 +
- 3 files changed, 654 insertions(+), 4 deletions(-)
+ 3 files changed, 668 insertions(+), 4 deletions(-)
  create mode 100644 include/vm1_websocket.hpp
 
 diff --git a/include/kvm_websocket.hpp b/include/kvm_websocket.hpp
-index df13a674..b42f8024 100644
+index adf4c5e02d..15a7224f25 100644
 --- a/include/kvm_websocket.hpp
 +++ b/include/kvm_websocket.hpp
-@@ -1,3 +1,4 @@
-+
- #pragma once
- #include "app.hpp"
- #include "async_resp.hpp"
-@@ -17,11 +18,11 @@ static constexpr const uint maxSessions = 4;
+@@ -29,11 +29,11 @@ static constexpr const uint maxSessions = 4;
  class KvmSession : public std::enable_shared_from_this<KvmSession>
  {
    public:
 -    explicit KvmSession(crow::websocket::Connection& connIn) :
--        conn(connIn), hostSocket(conn.getIoContext())
+-        conn(connIn), hostSocket(getIoContext())
 +    explicit KvmSession(crow::websocket::Connection& connIn, const std::uint16_t portIn) :
-+        conn(connIn), port(portIn), hostSocket(conn.getIoContext())
++        conn(connIn), port(portIn), hostSocket(getIoContext())
      {
          boost::asio::ip::tcp::endpoint endpoint(
 -            boost::asio::ip::make_address("127.0.0.1"), 5900);
 +            boost::asio::ip::make_address("127.0.0.1"), port);
          hostSocket.async_connect(
              endpoint, [this, &connIn](const boost::system::error_code& ec) {
-             if (ec)
-@@ -156,6 +157,7 @@ class KvmSession : public std::enable_shared_from_this<KvmSession>
+                 if (ec)
+@@ -168,6 +168,7 @@ class KvmSession : public std::enable_shared_from_this<KvmSession>
      }
  
      crow::websocket::Connection& conn;
@@ -58,67 +54,86 @@ index df13a674..b42f8024 100644
      boost::asio::ip::tcp::socket hostSocket;
      boost::beast::flat_static_buffer<1024UL * 50UL> outputBuffer;
      boost::beast::flat_static_buffer<1024UL> inputBuffer;
-@@ -183,7 +185,33 @@ inline void requestRoutes(App& app)
-             return;
-         }
+@@ -195,7 +196,33 @@ inline void requestRoutes(App& app)
+                 return;
+             }
  
--        sessions[&conn] = std::make_shared<KvmSession>(conn);
-+        const std::uint16_t port = 5900;
-+        sessions[&conn] = std::make_shared<KvmSession>(conn, port);
-+    })
+-            sessions[&conn] = std::make_shared<KvmSession>(conn);
++            const std::uint16_t port = 5900;
++            sessions[&conn] = std::make_shared<KvmSession>(conn, port);
++        })
 +        .onclose([](crow::websocket::Connection& conn, const std::string&) {
-+        sessions.erase(&conn);
-+    })
++            sessions.erase(&conn);
++        })
 +        .onmessage([](crow::websocket::Connection& conn,
 +                      const std::string& data, bool) {
-+        if (sessions[&conn])
-+        {
-+            sessions[&conn]->onMessage(data);
-+        }
-+    });
++            if (sessions[&conn])
++            {
++                sessions[&conn]->onMessage(data);
++            }
++        });
 +    BMCWEB_ROUTE(app, "/kvm/1")
 +        .privileges({{"ConfigureComponents", "ConfigureManager"}})
 +        .websocket()
 +        .onopen([](crow::websocket::Connection& conn) {
-+        BMCWEB_LOG_DEBUG("Connection {} opened", logPtr(&conn));
++            BMCWEB_LOG_DEBUG("Connection {} opened", logPtr(&conn));
 +
-+        if (sessions.size() == maxSessions)
-+        {
-+            conn.close("Max sessions are already connected");
-+            return;
-+        }
++            if (sessions.size() == maxSessions)
++            {
++                conn.close("Max sessions are already connected");
++                return;
++            }
 +
-+        const std::uint16_t port = 5901;
-+        sessions[&conn] = std::make_shared<KvmSession>(conn, port);
-     })
++            const std::uint16_t port = 5901;
++            sessions[&conn] = std::make_shared<KvmSession>(conn, port);
+         })
          .onclose([](crow::websocket::Connection& conn, const std::string&) {
-         sessions.erase(&conn);
+             sessions.erase(&conn);
 diff --git a/include/vm1_websocket.hpp b/include/vm1_websocket.hpp
 new file mode 100644
-index 00000000..1d3d4c27
+index 0000000000..874f0e7300
 --- /dev/null
 +++ b/include/vm1_websocket.hpp
-@@ -0,0 +1,620 @@
+@@ -0,0 +1,635 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
 +#pragma once
 +
++#include "bmcweb_config.h"
++
 +#include "app.hpp"
++#include "dbus_singleton.hpp"
 +#include "dbus_utility.hpp"
-+#include "privileges.hpp"
++#include "io_context_singleton.hpp"
++#include "logging.hpp"
 +#include "websocket.hpp"
 +
++#include <boost/asio/buffer.hpp>
++#include <boost/asio/error.hpp>
++#include <boost/asio/io_context.hpp>
 +#include <boost/asio/local/stream_protocol.hpp>
 +#include <boost/asio/readable_pipe.hpp>
 +#include <boost/asio/writable_pipe.hpp>
-+#include <boost/asio/write.hpp>
 +#include <boost/beast/core/buffers_to_string.hpp>
++#include <boost/beast/core/error.hpp>
 +#include <boost/beast/core/flat_static_buffer.hpp>
 +#include <boost/container/flat_map.hpp>
 +#include <boost/process/v2/process.hpp>
 +#include <boost/process/v2/stdio.hpp>
-+#include <sdbusplus/asio/property.hpp>
++#include <sdbusplus/message/native_types.hpp>
++#include <sdbusplus/unpack_properties.hpp>
 +
++#include <cerrno>
 +#include <csignal>
++#include <cstddef>
++#include <filesystem>
++#include <format>
++#include <functional>
++#include <memory>
++#include <string>
 +#include <string_view>
++#include <system_error>
++#include <utility>
 +
 +namespace crow
 +{
@@ -141,9 +156,7 @@ index 00000000..1d3d4c27
 +        pipeOut(ios), pipeIn(ios),
 +        proxy(ios, "/usr/bin/nbd-proxy", {media},
 +              boost::process::v2::process_stdio{
-+                  .in = pipeIn, .out = pipeOut, .err = nullptr}),
-+        outputBuffer(new boost::beast::flat_static_buffer<nbdBufferSize>),
-+        inputBuffer(new boost::beast::flat_static_buffer<nbdBufferSize>)
++                  .in = pipeIn, .out = pipeOut, .err = nullptr})
 +    {}
 +
 +    ~Handler() = default;
@@ -157,6 +170,7 @@ index 00000000..1d3d4c27
 +    {
 +        // boost::process::child::terminate uses SIGKILL, need to send SIGTERM
 +        // to allow the proxy to stop nbd-client and the USB device gadget.
++        // NOLINTNEXTLINE(misc-include-cleaner)
 +        int rc = kill(proxy.id(), SIGTERM);
 +        if (rc != 0)
 +        {
@@ -199,7 +213,7 @@ index 00000000..1d3d4c27
 +            return;
 +        }
 +
-+        if (inputBuffer->size() == 0)
++        if (inputBuffer.size() == 0)
 +        {
 +            BMCWEB_LOG_DEBUG("inputBuffer empty.  Bailing out");
 +            return;
@@ -207,64 +221,64 @@ index 00000000..1d3d4c27
 +
 +        doingWrite = true;
 +        pipeIn.async_write_some(
-+            inputBuffer->data(),
++            inputBuffer.data(),
 +            [this, self(shared_from_this())](const boost::beast::error_code& ec,
 +                                             std::size_t bytesWritten) {
-+            BMCWEB_LOG_DEBUG("Wrote {}bytes", bytesWritten);
-+            doingWrite = false;
-+            inputBuffer->consume(bytesWritten);
++                BMCWEB_LOG_DEBUG("Wrote {}bytes", bytesWritten);
++                doingWrite = false;
++                inputBuffer.consume(bytesWritten);
 +
-+            if (session == nullptr)
-+            {
-+                return;
-+            }
-+            if (ec == boost::asio::error::eof)
-+            {
-+                session->close("VM socket port closed");
-+                return;
-+            }
-+            if (ec)
-+            {
-+                session->close("Error in writing to proxy port");
-+                BMCWEB_LOG_ERROR("Error in VM socket write {}", ec);
-+                return;
-+            }
-+            doWrite();
-+        });
++                if (session == nullptr)
++                {
++                    return;
++                }
++                if (ec == boost::asio::error::eof)
++                {
++                    session->close("VM socket port closed");
++                    return;
++                }
++                if (ec)
++                {
++                    session->close("Error in writing to proxy port");
++                    BMCWEB_LOG_ERROR("Error in VM socket write {}", ec);
++                    return;
++                }
++                doWrite();
++            });
 +    }
 +
 +    void doRead()
 +    {
-+        std::size_t bytes = outputBuffer->capacity() - outputBuffer->size();
++        std::size_t bytes = outputBuffer.capacity() - outputBuffer.size();
 +
 +        pipeOut.async_read_some(
-+            outputBuffer->prepare(bytes),
++            outputBuffer.prepare(bytes),
 +            [this, self(shared_from_this())](
 +                const boost::system::error_code& ec, std::size_t bytesRead) {
-+            BMCWEB_LOG_DEBUG("Read done.  Read {} bytes", bytesRead);
-+            if (ec)
-+            {
-+                BMCWEB_LOG_ERROR("Couldn't read from VM port: {}", ec);
-+                if (session != nullptr)
++                BMCWEB_LOG_DEBUG("Read done.  Read {} bytes", bytesRead);
++                if (ec)
 +                {
-+                    session->close("Error in connecting to VM port");
++                    BMCWEB_LOG_ERROR("Couldn't read from VM port: {}", ec);
++                    if (session != nullptr)
++                    {
++                        session->close("Error in connecting to VM port");
++                    }
++                    return;
 +                }
-+                return;
-+            }
-+            if (session == nullptr)
-+            {
-+                return;
-+            }
++                if (session == nullptr)
++                {
++                    return;
++                }
 +
-+            outputBuffer->commit(bytesRead);
-+            std::string_view payload(
-+                static_cast<const char*>(outputBuffer->data().data()),
-+                bytesRead);
-+            session->sendBinary(payload);
-+            outputBuffer->consume(bytesRead);
++                outputBuffer.commit(bytesRead);
++                std::string_view payload(
++                    static_cast<const char*>(outputBuffer.data().data()),
++                    bytesRead);
++                session->sendBinary(payload);
++                outputBuffer.consume(bytesRead);
 +
-+            doRead();
-+        });
++                doRead();
++            });
 +    }
 +
 +    boost::asio::readable_pipe pipeOut;
@@ -272,10 +286,8 @@ index 00000000..1d3d4c27
 +    boost::process::v2::process proxy;
 +    bool doingWrite{false};
 +
-+    std::unique_ptr<boost::beast::flat_static_buffer<nbdBufferSize>>
-+        outputBuffer;
-+    std::unique_ptr<boost::beast::flat_static_buffer<nbdBufferSize>>
-+        inputBuffer;
++    boost::beast::flat_static_buffer<nbdBufferSize> outputBuffer;
++    boost::beast::flat_static_buffer<nbdBufferSize> inputBuffer;
 +};
 +
 +// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
@@ -297,11 +309,10 @@ index 00000000..1d3d4c27
 +    NbdProxyServer(crow::websocket::Connection& connIn,
 +                   const std::string& socketIdIn,
 +                   const std::string& endpointIdIn, const std::string& pathIn) :
-+        socketId(socketIdIn),
-+        endpointId(endpointIdIn), path(pathIn),
++        socketId(socketIdIn), endpointId(endpointIdIn), path(pathIn),
 +
-+        peerSocket(connIn.getIoContext()),
-+        acceptor(connIn.getIoContext(), stream_protocol::endpoint(socketId)),
++        peerSocket(getIoContext()),
++        acceptor(getIoContext(), stream_protocol::endpoint(socketId)),
 +        connection(connIn)
 +    {}
 +
@@ -387,8 +398,8 @@ index 00000000..1d3d4c27
 +        crow::connections::systemBus->async_method_call(
 +            [weak{weak_from_this()}](const boost::system::error_code& ec,
 +                                     bool isBinary) {
-+            afterMount(weak, ec, isBinary);
-+        },
++                afterMount(weak, ec, isBinary);
++            },
 +            "xyz.openbmc_project.VirtualMedia", path,
 +            "xyz.openbmc_project.VirtualMedia.Proxy", "Mount");
 +    }
@@ -413,8 +424,8 @@ index 00000000..1d3d4c27
 +        }
 +    }
 +
-+    inline void afterRead(const std::weak_ptr<NbdProxyServer>& weak,
-+                          const boost::system::error_code& ec, size_t bytesRead)
++    void afterRead(const std::weak_ptr<NbdProxyServer>& weak,
++                   const boost::system::error_code& ec, size_t bytesRead)
 +    {
 +        if (ec)
 +        {
@@ -489,10 +500,10 @@ index 00000000..1d3d4c27
 +        }
 +
 +        uxWriteInProgress = true;
-+        peerSocket.async_write_some(ws2uxBuf.data(),
-+                                    std::bind_front(&NbdProxyServer::afterWrite,
-+                                                    weak_from_this(),
-+                                                    std::move(onDone)));
++        peerSocket.async_write_some(
++            ws2uxBuf.data(),
++            std::bind_front(&NbdProxyServer::afterWrite, weak_from_this(),
++                            std::move(onDone)));
 +    }
 +
 +    // Keeps UNIX socket endpoint file path
@@ -522,11 +533,11 @@ index 00000000..1d3d4c27
 +// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 +static SessionMap sessions;
 +
-+inline void
-+    afterGetSocket(crow::websocket::Connection& conn,
-+                   const sdbusplus::message::object_path& path,
-+                   const boost::system::error_code& ec,
-+                   const dbus::utility::DBusPropertiesMap& propertiesList)
++inline void afterGetSocket(
++    crow::websocket::Connection& conn,
++    const sdbusplus::message::object_path& path,
++    const boost::system::error_code& ec,
++    const dbus::utility::DBusPropertiesMap& propertiesList)
 +{
 +    if (ec)
 +    {
@@ -564,8 +575,8 @@ index 00000000..1d3d4c27
 +    std::filesystem::remove(socket.c_str(), ec2);
 +    // Ignore failures.  File might not exist.
 +
-+    sessions[&conn] = std::make_shared<NbdProxyServer>(conn, socket, endpointId,
-+                                                       path);
++    sessions[&conn] =
++        std::make_shared<NbdProxyServer>(conn, socket, endpointId, path);
 +    sessions[&conn]->run();
 +}
 +
@@ -584,13 +595,13 @@ index 00000000..1d3d4c27
 +    std::string path =
 +        std::format("/xyz/openbmc_project/VirtualMedia/Proxy/Slot_{}", index);
 +
-+    sdbusplus::asio::getAllProperties(
-+        *crow::connections::systemBus, "xyz.openbmc_project.VirtualMedia", path,
++    dbus::utility::getAllProperties(
++        "xyz.openbmc_project.VirtualMedia", path,
 +        "xyz.openbmc_project.VirtualMedia.MountPoint",
 +        [&conn, path](const boost::system::error_code& ec,
 +                      const dbus::utility::DBusPropertiesMap& propertiesList) {
-+        afterGetSocket(conn, path, ec, propertiesList);
-+    });
++            afterGetSocket(conn, path, ec, propertiesList);
++        });
 +
 +    // We need to wait for dbus and the websockets to hook up before data is
 +    // sent/received.  Tell the core to hold off messages until the sockets are
@@ -648,7 +659,7 @@ index 00000000..1d3d4c27
 +            .onclose(nbd_proxy::onClose)
 +            .onmessageex(nbd_proxy::onMessage);
 +
-+        BMCWEB_ROUTE(app, "/vm/0/0")
++        BMCWEB_ROUTE(app, "/vm/1/0")
 +            .privileges({{"ConfigureComponents", "ConfigureManager"}})
 +            .websocket()
 +            .onopen(nbd_proxy::onOpen)
@@ -661,58 +672,58 @@ index 00000000..1d3d4c27
 +            .privileges({{"ConfigureComponents", "ConfigureManager"}})
 +            .websocket()
 +            .onopen([](crow::websocket::Connection& conn) {
-+            BMCWEB_LOG_DEBUG("Connection {} opened", logPtr(&conn));
++                BMCWEB_LOG_DEBUG("Connection {} opened", logPtr(&conn));
 +
-+            if (session != nullptr)
-+            {
-+                conn.close("Session already connected");
-+                return;
-+            }
++                if (session != nullptr)
++                {
++                    conn.close("Session already connected");
++                    return;
++                }
 +
-+            if (handler != nullptr)
-+            {
-+                conn.close("Handler already running");
-+                return;
-+            }
++                if (handler != nullptr)
++                {
++                    conn.close("Handler already running");
++                    return;
++                }
 +
-+            session = &conn;
++                session = &conn;
 +
-+            // media is the last digit of the endpoint /vm/0/0. A future
-+            // enhancement can include supporting different endpoint values.
-+            const char* media = "8";
-+            handler = std::make_shared<Handler>(media, conn.getIoContext());
-+            handler->connect();
-+        })
++                // media is the last digit of the endpoint /vm/0/0. A future
++                // enhancement can include supporting different endpoint values.
++                const char* media = "8";
++                handler = std::make_shared<Handler>(media, getIoContext());
++                handler->connect();
++            })
 +            .onclose([](crow::websocket::Connection& conn,
 +                        const std::string& /*reason*/) {
-+            if (&conn != session)
-+            {
-+                return;
-+            }
++                if (&conn != session)
++                {
++                    return;
++                }
 +
-+            session = nullptr;
-+            handler->doClose();
-+            handler->inputBuffer->clear();
-+            handler->outputBuffer->clear();
-+            handler.reset();
-+        })
++                session = nullptr;
++                handler->doClose();
++                handler->inputBuffer.clear();
++                handler->outputBuffer.clear();
++                handler.reset();
++            })
 +            .onmessage([](crow::websocket::Connection& conn,
 +                          const std::string& data, bool) {
-+            if (data.length() >
-+                handler->inputBuffer->capacity() - handler->inputBuffer->size())
-+            {
-+                BMCWEB_LOG_ERROR("Buffer overrun when writing {} bytes",
-+                                 data.length());
-+                conn.close("Buffer overrun");
-+                return;
-+            }
++                if (data.length() > handler->inputBuffer.capacity() -
++                                        handler->inputBuffer.size())
++                {
++                    BMCWEB_LOG_ERROR("Buffer overrun when writing {} bytes",
++                                     data.length());
++                    conn.close("Buffer overrun");
++                    return;
++                }
 +
-+            size_t copied = boost::asio::buffer_copy(
-+                handler->inputBuffer->prepare(data.size()),
-+                boost::asio::buffer(data));
-+            handler->inputBuffer->commit(copied);
-+            handler->doWrite();
-+        });
++                size_t copied = boost::asio::buffer_copy(
++                    handler->inputBuffer.prepare(data.size()),
++                    boost::asio::buffer(data));
++                handler->inputBuffer.commit(copied);
++                handler->doWrite();
++            });
 +    }
 +}
 +
@@ -720,18 +731,18 @@ index 00000000..1d3d4c27
 +
 +} // namespace crow
 diff --git a/src/webserver_run.cpp b/src/webserver_run.cpp
-index 80885962..c331d964 100644
+index 12c82fe4e2..8975d3c375 100644
 --- a/src/webserver_run.cpp
 +++ b/src/webserver_run.cpp
-@@ -19,6 +19,7 @@
+@@ -22,6 +22,7 @@
  #include "redfish_aggregator.hpp"
  #include "user_monitor.hpp"
  #include "vm_websocket.hpp"
 +#include "vm1_websocket.hpp"
+ #include "watchdog.hpp"
  #include "webassets.hpp"
  
- #include <boost/asio/io_context.hpp>
-@@ -74,6 +75,7 @@ int run()
+@@ -106,6 +107,7 @@ int run()
      }
  
      crow::obmc_vm::requestRoutes(app);
@@ -740,5 +751,5 @@ index 80885962..c331d964 100644
      if constexpr (BMCWEB_IBM_MANAGEMENT_CONSOLE)
      {
 -- 
-2.25.1
+2.43.0
 

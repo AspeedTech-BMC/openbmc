@@ -3,6 +3,8 @@ From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Wed, 27 Jul 2022 13:26:59 +0800
 Subject: [PATCH] Add function to change the file name of mctp device.
 
+Upstream-Status: Pending
+
 Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
 
 %% original patch: 0003-Add-function-to-change-the-file-name-of-mctp-device-.patch

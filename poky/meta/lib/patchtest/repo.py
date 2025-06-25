@@ -8,13 +8,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
+import git
 import os
-import utils
-import logging
-from patch import PatchTestPatch
-
-logger = logging.getLogger('patchtest')
-info=logger.info
+import mbox
 
 class PatchTestRepo(object):
 
@@ -22,23 +18,17 @@ class PatchTestRepo(object):
     prefix = 'patchtest'
 
     def __init__(self, patch, repodir, commit=None, branch=None):
-        self._repodir = repodir
-        self._patch = PatchTestPatch(patch)
-        self._current_branch = self._get_current_branch()
+        self.repodir = repodir
+        self.repo = git.Repo.init(repodir)
+        self.patch = mbox.PatchSeries(patch)
+        self.current_branch = self.repo.active_branch.name
 
         # targeted branch defined on the patch may be invalid, so make sure there
         # is a corresponding remote branch
         valid_patch_branch = None
-        if self._patch.branch in self.upstream_branches():
-            valid_patch_branch = self._patch.branch
+        if self.patch.branch in self.repo.branches:
+            valid_patch_branch = self.patch.branch
             
-        # Target Branch
-        # Priority (top has highest priority):
-        #    1. branch given at cmd line
-        #    2. branch given at the patch
-        #    3. current branch
-        self._branch = branch or valid_patch_branch or self._current_branch
-
         # Target Commit
         # Priority (top has highest priority):
         #    1. commit given at cmd line
@@ -52,85 +42,25 @@ class PatchTestRepo(object):
 
         self._workingbranch = "%s_%s" % (PatchTestRepo.prefix, os.getpid())
 
-        # create working branch
-        self._exec({'cmd': ['git', 'checkout', '-b', self._workingbranch, self._commit]})
+        # create working branch. Use the '-B' flag so that we just
+        # check out the existing one if it's there
+        self.repo.git.execute(['git', 'checkout', '-B', self._workingbranch, self._commit])
 
         self._patchmerged = False
 
         # Check if patch can be merged using git-am
         self._patchcanbemerged = True
         try:
-            self._exec({'cmd': ['git', 'am', '--keep-cr'], 'input': self._patch.contents})
-        except utils.CmdException as ce:
-            self._exec({'cmd': ['git', 'am', '--abort']})
+            # Make sure to get the absolute path of the file
+            self.repo.git.execute(['git', 'apply', '--check', os.path.abspath(self.patch.path)], with_exceptions=True)
+        except git.exc.GitCommandError as ce:
             self._patchcanbemerged = False
-        finally:
-            # if patch was applied, remove it
-            if self._patchcanbemerged:
-                self._exec({'cmd':['git', 'reset', '--hard', self._commit]})
 
-        # for debugging purposes, print all repo parameters
-        logger.debug("Parameters")
-        logger.debug("\tRepository     : %s" % self._repodir)
-        logger.debug("\tTarget Commit    : %s" % self._commit)
-        logger.debug("\tTarget Branch    : %s" % self._branch)
-        logger.debug("\tWorking branch : %s" % self._workingbranch)
-        logger.debug("\tPatch          : %s" % self._patch)
-
-    @property
-    def patch(self):
-        return self._patch.path
-
-    @property
-    def branch(self):
-        return self._branch
-
-    @property
-    def commit(self):
-        return self._commit
-
-    @property
     def ismerged(self):
         return self._patchmerged
 
-    @property
     def canbemerged(self):
         return self._patchcanbemerged
-
-    def _exec(self, cmds):
-        _cmds = []
-        if isinstance(cmds, dict):
-            _cmds.append(cmds)
-        elif isinstance(cmds, list):
-            _cmds = cmds
-        else:
-            raise utils.CmdException({'cmd':str(cmds)})
-
-        results = []
-        cmdfailure = False
-        try:
-            results = utils.exec_cmds(_cmds, self._repodir)
-        except utils.CmdException as ce:
-            cmdfailure = True
-            raise ce
-        finally:
-            if cmdfailure:
-                for cmd in _cmds:
-                    logger.debug("CMD: %s" % ' '.join(cmd['cmd']))
-            else:
-                for result in results:
-                    cmd, rc, stdout, stderr = ' '.join(result['cmd']), result['returncode'], result['stdout'], result['stderr']
-                    logger.debug("CMD: %s RCODE: %s STDOUT: %s STDERR: %s" % (cmd, rc, stdout, stderr))
-
-        return results
-
-    def _get_current_branch(self, commit='HEAD'):
-        cmd = {'cmd':['git', 'rev-parse', '--abbrev-ref', commit]}
-        cb = self._exec(cmd)[0]['stdout']
-        if cb == commit:
-            logger.warning('You may be detached so patchtest will checkout to master after execution')
-            cb = 'master'
-        return cb
 
     def _get_commitid(self, commit):
 
@@ -138,37 +68,18 @@ class PatchTestRepo(object):
             return None
 
         try:
-            cmd = {'cmd':['git', 'rev-parse', '--short', commit]}
-            return self._exec(cmd)[0]['stdout']
-        except utils.CmdException as ce:
-            # try getting the commit under any remotes
-            cmd = {'cmd':['git', 'remote']}
-            remotes = self._exec(cmd)[0]['stdout']
-            for remote in remotes.splitlines():
-                cmd = {'cmd':['git', 'rev-parse', '--short', '%s/%s' % (remote, commit)]}
-                try:
-                    return self._exec(cmd)[0]['stdout']
-                except utils.CmdException:
-                    pass
+            return self.repo.rev_parse(commit).hexsha
+        except Exception as e:
+            print(f"Couldn't find commit {commit} in repo")
 
         return None
 
-    def upstream_branches(self):
-        cmd = {'cmd':['git', 'branch', '--remotes']}
-        remote_branches = self._exec(cmd)[0]['stdout']
-
-        # just get the names, without the remote name
-        branches = set(branch.split('/')[-1] for branch in remote_branches.splitlines())
-        return branches
-
     def merge(self):
         if self._patchcanbemerged:
-            self._exec({'cmd': ['git', 'am', '--keep-cr'],
-                        'input': self._patch.contents,
-                        'updateenv': {'PTRESOURCE':self._patch.path}})
+            self.repo.git.execute(['git', 'am', '--keep-cr', os.path.abspath(self.patch.path)])
             self._patchmerged = True
 
     def clean(self):
-        self._exec({'cmd':['git', 'checkout', '%s' % self._current_branch]})
-        self._exec({'cmd':['git', 'branch', '-D', self._workingbranch]})
+        self.repo.git.execute(['git', 'checkout', self.current_branch])
+        self.repo.git.execute(['git', 'branch', '-D', self._workingbranch])
         self._patchmerged = False

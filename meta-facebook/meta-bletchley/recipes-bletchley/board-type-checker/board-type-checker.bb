@@ -6,6 +6,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit allarch systemd obmc-phosphor-systemd
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 RDEPENDS:${PN} += " bash i2c-tools"
 
 SRC_URI = " file://board-type-checker-fpb \
@@ -17,5 +20,5 @@ SYSTEMD_SERVICE:${PN}:append = " board-type-checker-fpb.service"
 
 do_install() {
     install -d ${D}${libexecdir}
-    install -m 0755 ${WORKDIR}/board-type-checker-fpb ${D}${libexecdir}/
+    install -m 0755 ${UNPACKDIR}/board-type-checker-fpb ${D}${libexecdir}/
 }

@@ -16,7 +16,6 @@ SRC_URI = "https://collectd.org/files/collectd-${PV}.tar.bz2 \
            file://0006-libcollectdclient-Fix-string-overflow-errors.patch \
            file://0001-Remove-including-sys-sysctl.h-on-glibc-based-systems.patch \
            "
-SRC_URI[md5sum] = "2b23a65960bc323d065234776a542e04"
 SRC_URI[sha256sum] = "5bae043042c19c31f77eb8464e56a01a5454e0b39fa07cf7ad0f1bfc9c3a09d6"
 
 inherit autotools python3native update-rc.d pkgconfig systemd
@@ -53,6 +52,7 @@ PACKAGECONFIG[ldap] = "--enable-openldap --with-libldap,--disable-openldap --wit
 PACKAGECONFIG[rrdtool] = "--enable-rrdtool,--disable-rrdtool,rrdtool"
 PACKAGECONFIG[rrdcached] = "--enable-rrdcached,--disable-rrdcached,rrdtool"
 PACKAGECONFIG[python] = "--enable-python,--disable-python"
+PACKAGECONFIG[dpdk] = "--with-libdpdk,--without-libdpdk,dpdk"
 
 EXTRA_OECONF = " \
                 ${FPLAYOUT} \
@@ -63,7 +63,7 @@ EXTRA_OECONF = " \
 
 do_install:append() {
     install -d ${D}${sysconfdir}/init.d
-    install -m 0755 ${WORKDIR}/collectd.init ${D}${sysconfdir}/init.d/collectd
+    install -m 0755 ${UNPACKDIR}/collectd.init ${D}${sysconfdir}/init.d/collectd
     sed -i 's!/usr/sbin/!${sbindir}/!g' ${D}${sysconfdir}/init.d/collectd
     sed -i 's!/etc/!${sysconfdir}/!g' ${D}${sysconfdir}/init.d/collectd
     sed -i 's!/var/!${localstatedir}/!g' ${D}${sysconfdir}/init.d/collectd
@@ -77,7 +77,7 @@ do_install:append() {
 
     # Install systemd unit files
     install -d ${D}${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/collectd.service ${D}${systemd_unitdir}/system
+    install -m 0644 ${UNPACKDIR}/collectd.service ${D}${systemd_unitdir}/system
     sed -i -e 's,@SBINDIR@,${sbindir},g' \
         ${D}${systemd_unitdir}/system/collectd.service
 }

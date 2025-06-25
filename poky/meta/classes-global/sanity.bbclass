@@ -475,6 +475,31 @@ def check_wsl(d):
             bb.warn("You are running bitbake under WSLv2, this works properly but you should optimize your VHDX file eventually to avoid running out of storage space")
     return None
 
+def check_userns():
+    """
+    Check that user namespaces are functional, as they're used for network isolation.
+    """
+
+    # There is a known failure case with AppAmrmor where the unshare() call
+    # succeeds (at which point the uid is nobody) but writing to the uid_map
+    # fails (so the uid isn't reset back to the user's uid). We can detect this.
+    parentuid = os.getuid()
+    if not bb.utils.is_local_uid(parentuid):
+        return None
+    pid = os.fork()
+    if not pid:
+        try:
+            bb.utils.disable_network()
+        except:
+            pass
+        os._exit(parentuid != os.getuid())
+
+    ret = os.waitpid(pid, 0)[1]
+    if ret:
+        bb.fatal("User namespaces are not usable by BitBake, possibly due to AppArmor.\n"
+                 "See https://discourse.ubuntu.com/t/ubuntu-24-04-lts-noble-numbat-release-notes/39890#unprivileged-user-namespace-restrictions for more information.")
+
+
 # Require at least gcc version 8.0
 #
 # This can be fixed on CentOS-7 with devtoolset-6+
@@ -495,12 +520,15 @@ def check_gcc_version(sanity_data):
 # Tar version 1.24 and onwards handle overwriting symlinks correctly
 # but earlier versions do not; this needs to work properly for sstate
 # Version 1.28 is needed so opkg-build works correctly when reproducible builds are enabled
+# Gtar is assumed at to be used as tar in poky
 def check_tar_version(sanity_data):
     import subprocess
     try:
         result = subprocess.check_output(["tar", "--version"], stderr=subprocess.STDOUT).decode('utf-8')
     except subprocess.CalledProcessError as e:
         return "Unable to execute tar --version, exit code %d\n%s\n" % (e.returncode, e.output)
+    if not "GNU" in result:
+        return "Your version of tar is not gtar. Please install gtar (you could use the project's buildtools-tarball from our last release or use scripts/install-buildtools).\n"
     version = result.split()[3]
     if bb.utils.vercmp_string_op(version, "1.28", "<"):
         return "Your version of tar is older than 1.28 and does not have the support needed to enable reproducible builds. Please install a newer version of tar (you could use the project's buildtools-tarball from our last release or use scripts/install-buildtools).\n"
@@ -574,6 +602,28 @@ def drop_v14_cross_builds(d):
                 bb.utils.remove(stamp + "*")
                 bb.utils.remove(workdir, recurse = True)
 
+def check_cpp_toolchain(d):
+    """
+    it checks if the c++ compiling and linking to libstdc++ works properly in the native system
+    """
+    import shlex
+    import subprocess
+
+    cpp_code = """
+    #include <iostream>
+    int main() {
+        std::cout << "Hello, World!" << std::endl;
+        return 0;
+    }
+    """
+
+    cmd = shlex.split(d.getVar("BUILD_CXX")) + ["-x", "c++","-", "-o", "/dev/null", "-lstdc++"]
+    try:
+        subprocess.run(cmd, input=cpp_code, capture_output=True, text=True, check=True)
+        return None
+    except subprocess.CalledProcessError as e:
+        return f"An unexpected issue occurred during the C++ toolchain check: {str(e)}"
+
 def sanity_handle_abichanges(status, d):
     #
     # Check the 'ABI' of TMPDIR
@@ -638,6 +688,7 @@ def check_sanity_version_change(status, d):
     status.addresult(check_git_version(d))
     status.addresult(check_perl_modules(d))
     status.addresult(check_wsl(d))
+    status.addresult(check_userns())
 
     missing = ""
 
@@ -731,8 +782,8 @@ def check_sanity_version_change(status, d):
     if not oes_bb_conf:
         status.addresult('You are not using the OpenEmbedded version of conf/bitbake.conf. This means your environment is misconfigured, in particular check BBPATH.\n')
 
-    # The length of TMPDIR can't be longer than 410
-    status.addresult(check_path_length(tmpdir, "TMPDIR", 410))
+    # The length of TMPDIR can't be longer than 400
+    status.addresult(check_path_length(tmpdir, "TMPDIR", 400))
 
     # Check that TMPDIR isn't located on nfs
     status.addresult(check_not_nfs(tmpdir, "TMPDIR"))
@@ -740,6 +791,9 @@ def check_sanity_version_change(status, d):
     # Check for case-insensitive file systems (such as Linux in Docker on
     # macOS with default HFS+ file system)
     status.addresult(check_case_sensitive(tmpdir, "TMPDIR"))
+
+    # Check if linking with lstdc++ is failing
+    status.addresult(check_cpp_toolchain(d))
 
 def sanity_check_locale(d):
     """

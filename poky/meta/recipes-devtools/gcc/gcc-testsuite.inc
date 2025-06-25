@@ -53,8 +53,8 @@ python check_prepare() {
         #   - valid for x86*, powerpc, arm, arm64
         if qemu_binary.endswith(("x86_64", "i386", "arm", "aarch64")):
             args += ["-cpu", "max"]
-        elif qemu_binary.endswith(("ppc", "mips", "mips64")):
-            extra = d.getVar("QEMU_EXTRAOPTIONS_%s" % d.getVar('PACKAGE_ARCH'))
+        else:
+            extra = d.getVar("QEMU_EXTRAOPTIONS:tune-%s" % d.getVar('TUNE_PKGARCH'))
             if extra:
                 args += extra.split()
         # For mips64 we could set a maximal CPU (e.g. Loongson-3A4000) however they either have MSA
@@ -101,7 +101,7 @@ python check_prepare() {
         f.write(generate_qemu_linux_user_config(d))
 
     # write out target ssh board config
-    with open(os.path.join(dejagnudir, "ssh.exp"), "w") as f:
+    with open(os.path.join(dejagnudir, "linux-ssh.exp"), "w") as f:
         f.write(generate_remote_ssh_linux_config(d))
 
     # generate site.exp to provide boards

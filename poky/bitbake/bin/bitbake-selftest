@@ -15,6 +15,7 @@ import unittest
 try:
     import bb
     import hashserv
+    import prserv
     import layerindexlib
 except RuntimeError as exc:
     sys.exit(str(exc))
@@ -27,12 +28,12 @@ tests = ["bb.tests.codeparser",
          "bb.tests.event",
          "bb.tests.fetch",
          "bb.tests.parse",
-         "bb.tests.persist_data",
          "bb.tests.runqueue",
          "bb.tests.siggen",
          "bb.tests.utils",
          "bb.tests.compression",
          "hashserv.tests",
+         "prserv.tests",
          "layerindexlib.tests.layerindexobj",
          "layerindexlib.tests.restapi",
          "layerindexlib.tests.cooker"]

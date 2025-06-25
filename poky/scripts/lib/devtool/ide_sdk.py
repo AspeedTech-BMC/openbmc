@@ -167,7 +167,7 @@ class RecipeImage:
             self.__rootfs_dbg = os.path.join(workdir, 'rootfs-dbg')
 
         self.gdbserver_missing = 'gdbserver' not in image_d.getVar(
-            'IMAGE_INSTALL')
+            'IMAGE_INSTALL') and 'tools-debug' not in image_d.getVar('IMAGE_FEATURES')
 
     @property
     def debug_support(self):
@@ -288,6 +288,7 @@ class RecipeModified:
         self.bblayers = None
         self.bpn = None
         self.d = None
+        self.debug_build = None
         self.fakerootcmd = None
         self.fakerootenv = None
         self.libdir = None
@@ -348,6 +349,7 @@ class RecipeModified:
         self.bpn = recipe_d.getVar('BPN')
         self.cxx = recipe_d.getVar('CXX')
         self.d = recipe_d.getVar('D')
+        self.debug_build = recipe_d.getVar('DEBUG_BUILD')
         self.fakerootcmd = recipe_d.getVar('FAKEROOTCMD')
         self.fakerootenv = recipe_d.getVar('FAKEROOTENV')
         self.libdir = recipe_d.getVar('libdir')
@@ -389,17 +391,6 @@ class RecipeModified:
         self.recipe_id = self.bpn + "-" + self.package_arch
         self.recipe_id_pretty = self.bpn + ": " + self.package_arch
 
-    def append_to_bbappend(self, append_text):
-        with open(self.bbappend, 'a') as bbap:
-            bbap.write(append_text)
-
-    def remove_from_bbappend(self, append_text):
-        with open(self.bbappend, 'r') as bbap:
-            text = bbap.read()
-        new_text = text.replace(append_text, '')
-        with open(self.bbappend, 'w') as bbap:
-            bbap.write(new_text)
-
     @staticmethod
     def is_valid_shell_variable(var):
         """Skip strange shell variables like systemd
@@ -411,34 +402,6 @@ class RecipeModified:
             bb.debug(1, "ignoring variable: %s" % var)
             return True
         return False
-
-    def debug_build_config(self, args):
-        """Explicitely set for example CMAKE_BUILD_TYPE to Debug if not defined otherwise"""
-        if self.build_tool is BuildTool.CMAKE:
-            append_text = os.linesep + \
-                'OECMAKE_ARGS:append = " -DCMAKE_BUILD_TYPE:STRING=Debug"' + os.linesep
-            if args.debug_build_config and not 'CMAKE_BUILD_TYPE' in self.cmake_cache_vars:
-                self.cmake_cache_vars['CMAKE_BUILD_TYPE'] = {
-                    "type": "STRING",
-                    "value": "Debug",
-                }
-                self.append_to_bbappend(append_text)
-            elif 'CMAKE_BUILD_TYPE' in self.cmake_cache_vars:
-                del self.cmake_cache_vars['CMAKE_BUILD_TYPE']
-                self.remove_from_bbappend(append_text)
-        elif self.build_tool is BuildTool.MESON:
-            append_text = os.linesep + 'MESON_BUILDTYPE = "debug"' + os.linesep
-            if args.debug_build_config and self.meson_buildtype != "debug":
-                self.mesonopts.replace(
-                    '--buildtype ' + self.meson_buildtype, '--buildtype debug')
-                self.append_to_bbappend(append_text)
-            elif self.meson_buildtype == "debug":
-                self.mesonopts.replace(
-                    '--buildtype debug', '--buildtype plain')
-                self.remove_from_bbappend(append_text)
-        elif args.debug_build_config:
-            logger.warn(
-                "--debug-build-config is not implemented for this build tool yet.")
 
     def solib_search_path(self, image):
         """Search for debug symbols in the rootfs and rootfs-dbg
@@ -493,7 +456,7 @@ class RecipeModified:
 
         vars = (key for key in d.keys() if not key.startswith(
             "__") and not d.getVarFlag(key, "func", False))
-        for var in vars:
+        for var in sorted(vars):
             func = d.getVarFlag(var, "func", False)
             if d.getVarFlag(var, 'python', False) and func:
                 continue
@@ -545,7 +508,7 @@ class RecipeModified:
         cache_vars = {}
         oecmake_args = d.getVar('OECMAKE_ARGS').split()
         extra_oecmake = d.getVar('EXTRA_OECMAKE').split()
-        for param in oecmake_args + extra_oecmake:
+        for param in sorted(oecmake_args + extra_oecmake):
             d_pref = "-D"
             if param.startswith(d_pref):
                 param = param[len(d_pref):]
@@ -712,42 +675,6 @@ class RecipeModified:
                     binaries.append(abs_name[d_len:])
         return sorted(binaries)
 
-    def gen_delete_package_dirs(self):
-        """delete folders of package tasks
-
-        This is a workaround for and issue with recipes having their sources
-        downloaded as file://
-        This likely breaks pseudo like:
-        path mismatch [3 links]: ino 79147802 db
-        .../build/tmp/.../cmake-example/1.0/package/usr/src/debug/
-                             cmake-example/1.0-r0/oe-local-files/cpp-example-lib.cpp
-        .../build/workspace/sources/cmake-example/oe-local-files/cpp-example-lib.cpp
-        Since the files are anyway outdated lets deleted them (also from pseudo's db) to workaround this issue.
-        """
-        cmd_lines = ['#!/bin/sh']
-
-        # Set up the appropriate environment
-        newenv = dict(os.environ)
-        for varvalue in self.fakerootenv.split():
-            if '=' in varvalue:
-                splitval = varvalue.split('=', 1)
-                newenv[splitval[0]] = splitval[1]
-
-        # Replicate the environment variables from bitbake
-        for var, val in newenv.items():
-            if not RecipeModified.is_valid_shell_variable(var):
-                continue
-            cmd_lines.append('%s="%s"' % (var, val))
-            cmd_lines.append('export %s' % var)
-
-        # Delete the folders
-        pkg_dirs = ' '.join([os.path.join(self.workdir, d) for d in [
-            "package", "packages-split", "pkgdata", "sstate-install-package", "debugsources.list", "*.spec"]])
-        cmd = "%s rm -rf %s" % (self.fakerootcmd, pkg_dirs)
-        cmd_lines.append('%s || { "%s failed"; exit 1; }' % (cmd, cmd))
-
-        return self.write_script(cmd_lines, 'delete_package_dirs')
-
     def gen_deploy_target_script(self, args):
         """Generate a script which does what devtool deploy-target does
 
@@ -784,8 +711,6 @@ class RecipeModified:
     def gen_install_deploy_script(self, args):
         """Generate a script which does install and deploy"""
         cmd_lines = ['#!/bin/bash']
-
-        cmd_lines.append(self.gen_delete_package_dirs())
 
         # . oe-init-build-env $BUILDDIR
         # Note: Sourcing scripts with arguments requires bash
@@ -988,12 +913,28 @@ def ide_setup(args, config, basepath, workspace):
                 recipe_modified.gen_meson_wrapper()
             ide.setup_modified_recipe(
                 args, recipe_image, recipe_modified)
+
+            if recipe_modified.debug_build != '1':
+                logger.warn(
+                    'Recipe %s is compiled with release build configuration. '
+                    'You might want to add DEBUG_BUILD = "1" to %s. '
+                    'Note that devtool modify --debug-build can do this automatically.',
+                    recipe_modified.name, recipe_modified.bbappend)
     else:
         raise DevtoolError("Must not end up here.")
 
 
 def register_commands(subparsers, context):
     """Register devtool subcommands from this plugin"""
+
+    # The ide-sdk command bootstraps the SDK from the bitbake environment before the IDE
+    # configuration is generated. In the case of the eSDK, the bootstrapping is performed
+    # during the installation of the eSDK installer. Running the ide-sdk plugin from an
+    # eSDK installer-based setup would require skipping the bootstrapping and probably
+    # taking some other differences into account when generating the IDE configurations.
+    # This would be possible. But it is not implemented.
+    if context.fixed_setup:
+        return
 
     global ide_plugins
 
@@ -1015,7 +956,7 @@ def register_commands(subparsers, context):
                                            help='Setup the SDK and configure the IDE')
     parser_ide_sdk.add_argument(
         'recipenames', nargs='+', help='Generate an IDE configuration suitable to work on the given recipes.\n'
-        'Depending on the --mode paramter different types of SDKs and IDE configurations are generated.')
+        'Depending on the --mode parameter different types of SDKs and IDE configurations are generated.')
     parser_ide_sdk.add_argument(
         '-m', '--mode', type=DevtoolIdeMode, default=DevtoolIdeMode.modified,
         help='Different SDK types are supported:\n'
@@ -1052,7 +993,7 @@ def register_commands(subparsers, context):
     parser_ide_sdk.add_argument(
         '-I', '--key', help='Specify ssh private key for connection to the target')
     parser_ide_sdk.add_argument(
-        '--skip-bitbake', help='Generate IDE configuration but skip calling bibtake to update the SDK.', action='store_true')
+        '--skip-bitbake', help='Generate IDE configuration but skip calling bitbake to update the SDK', action='store_true')
     parser_ide_sdk.add_argument(
         '-k', '--bitbake-k', help='Pass -k parameter to bitbake', action='store_true')
     parser_ide_sdk.add_argument(
@@ -1065,6 +1006,4 @@ def register_commands(subparsers, context):
         '-p', '--no-preserve', help='Do not preserve existing files', action='store_true')
     parser_ide_sdk.add_argument(
         '--no-check-space', help='Do not check for available space before deploying', action='store_true')
-    parser_ide_sdk.add_argument(
-        '--debug-build-config', help='Use debug build flags, for example set CMAKE_BUILD_TYPE=Debug', action='store_true')
     parser_ide_sdk.set_defaults(func=ide_setup)

@@ -7,7 +7,6 @@ power_on_led_init() {
 }
 
 # set initial value for GPIO output pins
-set_gpio PWREN_MTIA_BLADE0_EN_N 0
 set_gpio PWREN_MTIA_BLADE1_EN_N 0
 set_gpio PWREN_MTIA_BLADE2_EN_N 0
 set_gpio PWREN_MTIA_BLADE3_EN_N 0
@@ -23,15 +22,15 @@ set_gpio PWREN_MTIA_BLADE12_EN_N 0
 set_gpio PWREN_MTIA_BLADE13_EN_N 0
 set_gpio PWREN_MTIA_BLADE14_EN_N 0
 set_gpio PWREN_MTIA_BLADE15_EN_N 0
+set_gpio PWREN_MTIA_BLADE16_EN_N 0
 
-set_gpio PWREN_NW_BLADE0_EN_N 0
 set_gpio PWREN_NW_BLADE1_EN_N 0
 set_gpio PWREN_NW_BLADE2_EN_N 0
 set_gpio PWREN_NW_BLADE3_EN_N 0
 set_gpio PWREN_NW_BLADE4_EN_N 0
 set_gpio PWREN_NW_BLADE5_EN_N 0
+set_gpio PWREN_NW_BLADE6_EN_N 0
 
-set_gpio PWREN_MTIA_BLADE0_HSC_EN_N 0
 set_gpio PWREN_MTIA_BLADE1_HSC_EN_N 0
 set_gpio PWREN_MTIA_BLADE2_HSC_EN_N 0
 set_gpio PWREN_MTIA_BLADE3_HSC_EN_N 0
@@ -47,54 +46,42 @@ set_gpio PWREN_MTIA_BLADE12_HSC_EN_N 0
 set_gpio PWREN_MTIA_BLADE13_HSC_EN_N 0
 set_gpio PWREN_MTIA_BLADE14_HSC_EN_N 0
 set_gpio PWREN_MTIA_BLADE15_HSC_EN_N 0
+set_gpio PWREN_MTIA_BLADE16_HSC_EN_N 0
 
-set_gpio PWREN_NW_BLADE0_HSC_EN_N 0
 set_gpio PWREN_NW_BLADE1_HSC_EN_N 0
 set_gpio PWREN_NW_BLADE2_HSC_EN_N 0
 set_gpio PWREN_NW_BLADE3_HSC_EN_N 0
 set_gpio PWREN_NW_BLADE4_HSC_EN_N 0
 set_gpio PWREN_NW_BLADE5_HSC_EN_N 0
+set_gpio PWREN_NW_BLADE6_HSC_EN_N 0
 
-set_gpio PWREN_FCB_TOP_L_EN_N 0
-set_gpio PWREN_FCB_TOP_R_EN_N 0
-set_gpio PWREN_FCB_MIDDLE_L_EN_N 0
-set_gpio PWREN_FCB_MIDDLE_R_EN_N 0
-set_gpio PWREN_FCB_BOTTOM_L_EN_N 0
-set_gpio PWREN_FCB_BOTTOM_R_EN_N 0
+set_gpio PWREN_SGPIO_FCB_1_EN_N 0
+set_gpio PWREN_SGPIO_FCB_2_EN_N 0
+set_gpio PWREN_SGPIO_FCB_3_EN_N 0
+set_gpio PWREN_SGPIO_FCB_4_EN_N 0
+set_gpio PWREN_SGPIO_FCB_5_EN_N 0
+set_gpio PWREN_SGPIO_FCB_6_EN_N 0
 
-set_gpio FM_CMM_AC_CYCLE_N 1
+set_gpio FM_BMC_RST_RTCRST_R 0
+set_gpio ERR_INJECT_CMM_PWR_FAIL_N 1
 
-# if MGMT_SFP_PRSNT_N = 0 -> MGMT_SFP_TX_DIS = 0
-# if MGMT_SFP_PRSNT_N = 1 -> MGMT_SFP_TX_DIS = 1
-MGMT_SFP_PRSNT_N_VALUE=$(get_gpio MGMT_SFP_PRSNT_N)
-if [ "$MGMT_SFP_PRSNT_N_VALUE" = "0" ]; then
-    set_gpio MGMT_SFP_TX_DIS 0
-else
-    set_gpio MGMT_SFP_TX_DIS 1
-fi
+set_gpio RST_I2CRST_FCB_1_N 1
+set_gpio RST_I2CRST_FCB_2_N 1
+set_gpio RST_I2CRST_FCB_3_N 1
+set_gpio RST_I2CRST_FCB_4_N 1
+set_gpio RST_I2CRST_FCB_5_N 1
+set_gpio RST_I2CRST_FCB_6_N 1
 
-set_gpio RST_I2CRST_MTIA_BLADE0_1_N 1
-set_gpio RST_I2CRST_MTIA_BLADE2_3_N 1
-set_gpio RST_I2CRST_MTIA_BLADE4_5_N 1
-set_gpio RST_I2CRST_MTIA_BLADE6_7_N 1
-set_gpio RST_I2CRST_MTIA_BLADE8_9_N 1
-set_gpio RST_I2CRST_MTIA_BLADE10_11_N 1
-set_gpio RST_I2CRST_MTIA_BLADE12_13_N 1
-set_gpio RST_I2CRST_MTIA_BLADE14_15_N 1
-set_gpio RST_I2CRST_NW_BLADE0_1_2_N 1
-set_gpio RST_I2CRST_NW_BLADE3_4_5_N 1
-
-set_gpio RST_I2CRST_FCB_N 1
-set_gpio RST_I2CRST_FCB_B_L_N 1
-set_gpio RST_I2CRST_FCB_B_R_N 1
-set_gpio RST_I2CRST_FCB_M_L_N 1
-set_gpio RST_I2CRST_FCB_M_R_N 1
-set_gpio RST_I2CRST_FCB_T_L_N 1
-set_gpio RST_I2CRST_FCB_T_R_N 1
-
-set_gpio wFM_88E6393X_BIN_UPDATE_EN_N 1
+set_gpio FM_MDIO_SW_SEL 0
+set_gpio FM_88E6393X_BIN_UPDATE_EN_N 1
+# 0: open the valve, 1: close the valve
 set_gpio WATER_VALVE_CLOSED_N 0
-set_gpio BMC_READY 1
+
+# The workaround is to disable GPIO passthrough,
+# which is enabled by a hardware strap pin that is active high.
+# This design is intended for a debug presence pin,
+# so the default value is pulled high.
+devmem 0x1e6e251c 32 0
 
 power_on_led_init
 

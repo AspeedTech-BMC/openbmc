@@ -47,10 +47,10 @@ Debian policy closely.
 
 When a recipe references a git revision that does not correspond to a released
 version of software (e.g. is not a tagged version), the :term:`PV` variable
-should include the Git revision using the following to make the
-version clear::
+should include the sign ``+``, so :term:`bitbake` automatically includes package
+version information during the packaging phase::
 
-    PV = "<version>+git${SRCPV}"
+    PV = "<version>+git"
 
 In this case, ``<version>`` should be the most recently released version of the
 software from the current source revision (``git describe`` can be useful for
@@ -395,7 +395,7 @@ one CVE is fixed, separate them using spaces.
 CVE Examples
 ------------
 
-This should be the header of patch that fixes :cve:`2015-8370` in GRUB2::
+This should be the header of patch that fixes :cve_nist:`2015-8370` in GRUB2::
 
    grub2: Fix CVE-2015-8370
 
@@ -409,3 +409,15 @@ This should be the header of patch that fixes :cve:`2015-8370` in GRUB2::
    Upstream-Status: Backport [http://git.savannah.gnu.org/cgit/grub.git/commit/?id=451d80e52d851432e109771bb8febafca7a5f1f2]
    CVE: CVE-2015-8370
    Signed-off-by: Joe Developer <joe.developer@example.com>
+
+Patch format
+============
+
+By default, patches created with ``git format-patch`` have a `Git` version signature at the end.
+To avoid having a `Git` signature at the end of generated or updated patches,
+you can use `Git` configuration settings::
+
+   git config --global format.signature ""
+
+.. note::
+   Patches generated or updated by ``devtool`` are created with no signature.

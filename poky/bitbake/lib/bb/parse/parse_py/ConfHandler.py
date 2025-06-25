@@ -21,7 +21,7 @@ __config_regexp__  = re.compile( r"""
     ^
     (?P<exp>export\s+)?
     (?P<var>[a-zA-Z0-9\-_+.${}/~:]+?)
-    (\[(?P<flag>[a-zA-Z0-9\-_+.][a-zA-Z0-9\-_+.@]*)\])?
+    (\[(?P<flag>[a-zA-Z0-9\-_+.][a-zA-Z0-9\-_+.@/]*)\])?
 
     \s* (
         (?P<colon>:=) |
@@ -43,10 +43,12 @@ __config_regexp__  = re.compile( r"""
     """, re.X)
 __include_regexp__ = re.compile( r"include\s+(.+)" )
 __require_regexp__ = re.compile( r"require\s+(.+)" )
+__includeall_regexp__ = re.compile( r"include_all\s+(.+)" )
 __export_regexp__ = re.compile( r"export\s+([a-zA-Z0-9\-_+.${}/~]+)$" )
 __unset_regexp__ = re.compile( r"unset\s+([a-zA-Z0-9\-_+.${}/~]+)$" )
 __unset_flag_regexp__ = re.compile( r"unset\s+([a-zA-Z0-9\-_+.${}/~]+)\[([a-zA-Z0-9\-_+.][a-zA-Z0-9\-_+.@]+)\]$" )
 __addpylib_regexp__      = re.compile(r"addpylib\s+(.+)\s+(.+)" )
+__addfragments_regexp__  = re.compile(r"addfragments\s+(.+)\s+(.+)\s+(.+)" )
 
 def init(data):
     return
@@ -177,6 +179,11 @@ def feeder(lineno, s, fn, statements, baseconfig=False, conffile=True):
         ast.handleInclude(statements, fn, lineno, m, True)
         return
 
+    m = __includeall_regexp__.match(s)
+    if m:
+        ast.handleIncludeAll(statements, fn, lineno, m)
+        return
+
     m = __export_regexp__.match(s)
     if m:
         ast.handleExport(statements, fn, lineno, m)
@@ -195,6 +202,11 @@ def feeder(lineno, s, fn, statements, baseconfig=False, conffile=True):
     m = __addpylib_regexp__.match(s)
     if baseconfig and conffile and m:
         ast.handlePyLib(statements, fn, lineno, m)
+        return
+
+    m = __addfragments_regexp__.match(s)
+    if m:
+        ast.handleAddFragments(statements, fn, lineno, m)
         return
 
     raise ParseError("unparsed line: '%s'" % s, fn, lineno);
