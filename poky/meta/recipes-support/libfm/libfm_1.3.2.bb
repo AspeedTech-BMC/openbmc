@@ -13,14 +13,15 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=4641e94ec96f98fabc56ff9cc48be14b \
 SECTION = "x11/libs"
 DEPENDS = "glib-2.0 glib-2.0-native pango gtk+3 menu-cache intltool-native libexif libfm-extra"
 
-SRC_URI = "${SOURCEFORGE_MIRROR}/pcmanfm/libfm-${PV}.tar.xz \
+SOURCEFORGE_PROJECT = "pcmanfm"
+SRC_URI = "${SOURCEFORGE_MIRROR}/${SOURCEFORGE_PROJECT}/libfm-${PV}.tar.xz \
            file://0001-Correctly-check-the-stamp-file-that-indicates-if-we-.patch \
            file://0001-Do-not-add-library-path-to-avoid-host-contamination.patch \
            "
 
 SRC_URI[sha256sum] = "a5042630304cf8e5d8cff9d565c6bd546f228b48c960153ed366a34e87cad1e5"
 
-inherit autotools pkgconfig gtk-doc gettext features_check mime mime-xdg
+inherit autotools pkgconfig gtk-doc gettext features_check mime mime-xdg sourceforge-releases
 ANY_OF_DISTRO_FEATURES = "${GTK3DISTROFEATURES}"
 
 EXTRA_OECONF = "--with-gtk=3"
@@ -53,3 +54,7 @@ do_install:append () {
     rm -f ${D}${libdir}/libfm-extra.a
     rm -f ${D}${libdir}/libfm-extra.la
 }
+
+# http://errors.yoctoproject.org/Errors/Details/766924/
+# libfm-1.3.2/src/actions/action.c:2050:25: error: assignment to 'gchar **' {aka 'char **'} from incompatible pointer type 'const gchar * const*' {aka 'const char * const*'} [-Wincompatible-pointer-types]
+CFLAGS += "-Wno-error=incompatible-pointer-types"

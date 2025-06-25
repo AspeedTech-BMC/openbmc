@@ -4,18 +4,18 @@
 			"group": "bmc_booted",
 			"members": [
 				{
-					"Name": "bmc_ready",
+					"Name": "led_bmc_ready",
 					"Action": "On",
 					"DutyOn": 50,
 					"Period": 0,
 					"Priority": "On"
 				},
 				{
-					"Name": "sw_heartbeat",
+					"Name": "led_sw_heartbeat",
 					"Action": "Blink",
 					"DutyOn": 50,
 					"Period": 2000,
-					"Priority": "On"
+					"Priority": "Blink"
 				}
 			]
 		},
@@ -25,25 +25,14 @@
 			]
 		},
 		{
-			"group": "systemFault",
-			"members": [
-				{
-					"Name": "fault",
-					"Action": "On",
-					"DutyOn": 50,
-					"Period": 0,
-					"Priority": "Blink"
-				}
-			]
-		},
-		{
 			"group": "enclosure_identify",
 			"members": [
 				{
-					"Name": "identify",
+					"Name": "led_identify",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		},
@@ -51,10 +40,11 @@
 			"group": "enclosure_identify_blink",
 			"members": [
 				{
-					"Name": "identify",
+					"Name": "led_identify",
 					"Action": "Blink",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		},
@@ -62,16 +52,18 @@
 			"group": "fan0_fault",
 			"members": [
 				{
-					"Name": "fan_fault",
+					"Name": "led_fan_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				},
 				{
-					"Name": "fault",
+					"Name": "led_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		},
@@ -79,16 +71,18 @@
 			"group": "fan1_fault",
 			"members": [
 				{
-					"Name": "fan_fault",
+					"Name": "led_fan_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				},
 				{
-					"Name": "fault",
+					"Name": "led_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		},
@@ -96,16 +90,18 @@
 			"group": "fan2_fault",
 			"members": [
 				{
-					"Name": "fan_fault",
+					"Name": "led_fan_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				},
 				{
-					"Name": "fault",
+					"Name": "led_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		},
@@ -113,16 +109,18 @@
 			"group": "fan3_fault",
 			"members": [
 				{
-					"Name": "fan_fault",
+					"Name": "led_fan_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				},
 				{
-					"Name": "fault",
+					"Name": "led_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		},
@@ -130,16 +128,18 @@
 			"group": "fan4_fault",
 			"members": [
 				{
-					"Name": "fan_fault",
+					"Name": "led_fan_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				},
 				{
-					"Name": "fault",
+					"Name": "led_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		},
@@ -147,16 +147,49 @@
 			"group": "fan5_fault",
 			"members": [
 				{
-					"Name": "fan_fault",
+					"Name": "led_fan_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
 				},
 				{
-					"Name": "fault",
+					"Name": "led_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
+				}
+			]
+		},
+		{
+			"group": "psu_fault",
+			"members": [
+				{
+					"Name": "led_psu_fault",
+					"Action": "On",
+					"DutyOn": 50,
+					"Period": 1000,
+					"Priority": "On"
+				},
+				{
+					"Name": "led_fault",
+					"Action": "On",
+					"DutyOn": 50,
+					"Period": 1000,
+					"Priority": "On"
+				}
+			]
+		},
+		{
+			"group": "ras_ue_fault",
+			"members": [
+				{
+					"Name": "led_fault",
+					"Action": "On",
+					"DutyOn": 50,
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		},
@@ -164,10 +197,23 @@
 			"group": "overtemp_fault",
 			"members": [
 				{
-					"Name": "fault",
+					"Name": "led_fault",
 					"Action": "On",
 					"DutyOn": 50,
-					"Period": 1000
+					"Period": 1000,
+					"Priority": "On"
+				}
+			]
+		},
+		{
+			"group": "gpio_fault",
+			"members": [
+				{
+					"Name": "led_fault",
+					"Action": "On",
+					"DutyOn": 50,
+					"Period": 1000,
+					"Priority": "On"
 				}
 			]
 		}

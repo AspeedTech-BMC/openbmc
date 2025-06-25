@@ -128,9 +128,16 @@ class pfr_bmc_image(object):
         self.pfm_spi_regions = []
         self.pfm_bytes = PFM_DEF_SIZE # PFM definition bytes (SPI regions + SMBUS)
 
-        # hash, erase and compression bit maps for 128MB
-        self.pbc_erase_bitmap = bytearray(4096)
-        self.pbc_comp_bitmap = bytearray(4096)
+        # hash, erase and compression bit maps for 128MB or 256 MB
+        max_offset = max(int(p["offset"], 16) + int(p["size"], 16) for p in self.manifest["image-parts"])
+        if max_offset > 0x8000000:
+            self.pbc_erase_bitmap = bytearray(8192)
+            self.pbc_comp_bitmap = bytearray(8192)
+            self.bitmap_size = 0x10000
+        else:
+            self.pbc_erase_bitmap = bytearray(4096)
+            self.pbc_comp_bitmap = bytearray(4096)
+            self.bitmap_size = 0x8000
 
         self.pbc_comp_payload = 0
         #self.sec_rev = 1
@@ -317,7 +324,7 @@ class pfr_bmc_image(object):
             'page_sz': struct.pack('<i',0x00001000),
             'pattern_sz': struct.pack('<i',0x00000001),
             'pattern': struct.pack('<i',0x000000FF),
-            'bitmap_sz': struct.pack('<i',0x00008000),
+            'bitmap_sz': struct.pack('<i',self.bitmap_size),
             'payload_size': struct.pack('<i',self.pbc_comp_payload),
             'resvd0' : b'\x00'*100,
             'erase_bitmap': bytes(self.pbc_erase_bitmap),

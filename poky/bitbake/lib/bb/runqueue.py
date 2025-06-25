@@ -14,6 +14,7 @@ import os
 import sys
 import stat
 import errno
+import itertools
 import logging
 import re
 import bb
@@ -128,6 +129,7 @@ class RunQueueStats:
 # runQueue state machine
 runQueuePrepare = 2
 runQueueSceneInit = 3
+runQueueDumpSigs = 4
 runQueueRunning = 6
 runQueueFailed = 7
 runQueueCleanUp = 8
@@ -1273,26 +1275,40 @@ class RunQueueData:
 
         bb.parse.siggen.set_setscene_tasks(self.runq_setscene_tids)
 
+        starttime = time.time()
+        lasttime = starttime
+
         # Iterate over the task list and call into the siggen code
         dealtwith = set()
         todeal = set(self.runtaskentries)
         while todeal:
+            ready = set()
             for tid in todeal.copy():
                 if not (self.runtaskentries[tid].depends - dealtwith):
-                    dealtwith.add(tid)
-                    todeal.remove(tid)
-                    self.prepare_task_hash(tid)
-                bb.event.check_for_interrupts(self.cooker.data)
+                    self.runtaskentries[tid].taskhash_deps = bb.parse.siggen.prep_taskhash(tid, self.runtaskentries[tid].depends, self.dataCaches)
+                    # get_taskhash for a given tid *must* be called before get_unihash* below
+                    self.runtaskentries[tid].hash = bb.parse.siggen.get_taskhash(tid, self.runtaskentries[tid].depends, self.dataCaches)
+                    ready.add(tid)
+            unihashes = bb.parse.siggen.get_unihashes(ready)
+            for tid in ready:
+                dealtwith.add(tid)
+                todeal.remove(tid)
+                self.runtaskentries[tid].unihash = unihashes[tid]
+
+            bb.event.check_for_interrupts(self.cooker.data)
+
+            if time.time() > (lasttime + 30):
+                lasttime = time.time()
+                hashequiv_logger.verbose("Initial setup loop progress: %s of %s in %s" % (len(todeal), len(self.runtaskentries), lasttime - starttime))
+
+        endtime = time.time()
+        if (endtime-starttime > 60):
+            hashequiv_logger.verbose("Initial setup loop took: %s" % (endtime-starttime))
 
         bb.parse.siggen.writeout_file_checksum_cache()
 
         #self.dump_data()
         return len(self.runtaskentries)
-
-    def prepare_task_hash(self, tid):
-        bb.parse.siggen.prep_taskhash(tid, self.runtaskentries[tid].depends, self.dataCaches)
-        self.runtaskentries[tid].hash = bb.parse.siggen.get_taskhash(tid, self.runtaskentries[tid].depends, self.dataCaches)
-        self.runtaskentries[tid].unihash = bb.parse.siggen.get_unihash(tid)
 
     def dump_data(self):
         """
@@ -1574,14 +1590,19 @@ class RunQueue:
             self.rqdata.init_progress_reporter.next_stage()
             self.rqexe = RunQueueExecute(self)
 
-            dump = self.cooker.configuration.dump_signatures
-            if dump:
+            dumpsigs = self.cooker.configuration.dump_signatures
+            if dumpsigs:
                 self.rqdata.init_progress_reporter.finish()
-                if 'printdiff' in dump:
-                    invalidtasks = self.print_diffscenetasks()
-                self.dump_signatures(dump)
-                if 'printdiff' in dump:
-                    self.write_diffscenetasks(invalidtasks)
+                if 'printdiff' in dumpsigs:
+                    self.invalidtasks_dump = self.print_diffscenetasks()
+                self.state = runQueueDumpSigs
+
+        if self.state is runQueueDumpSigs:
+            dumpsigs = self.cooker.configuration.dump_signatures
+            retval = self.dump_signatures(dumpsigs)
+            if retval is False:
+                if 'printdiff' in dumpsigs:
+                    self.write_diffscenetasks(self.invalidtasks_dump)
                 self.state = runQueueComplete
 
         if self.state is runQueueSceneInit:
@@ -1672,33 +1693,42 @@ class RunQueue:
             bb.parse.siggen.dump_sigtask(taskfn, taskname, dataCaches[mc].stamp[taskfn], True)
 
     def dump_signatures(self, options):
-        if bb.cooker.CookerFeatures.RECIPE_SIGGEN_INFO not in self.cooker.featureset:
-            bb.fatal("The dump signatures functionality needs the RECIPE_SIGGEN_INFO feature enabled")
+        if not hasattr(self, "dumpsigs_launched"):
+            if bb.cooker.CookerFeatures.RECIPE_SIGGEN_INFO not in self.cooker.featureset:
+                bb.fatal("The dump signatures functionality needs the RECIPE_SIGGEN_INFO feature enabled")
 
-        bb.note("Writing task signature files")
+            bb.note("Writing task signature files")
 
-        max_process = int(self.cfgData.getVar("BB_NUMBER_PARSE_THREADS") or os.cpu_count() or 1)
-        def chunkify(l, n):
-            return [l[i::n] for i in range(n)]
-        tids = chunkify(list(self.rqdata.runtaskentries), max_process)
-        # We cannot use the real multiprocessing.Pool easily due to some local data
-        # that can't be pickled. This is a cheap multi-process solution.
-        launched = []
-        while tids:
-            if len(launched) < max_process:
-                p = Process(target=self._rq_dump_sigtid, args=(tids.pop(), ))
+            max_process = int(self.cfgData.getVar("BB_NUMBER_PARSE_THREADS") or os.cpu_count() or 1)
+            def chunkify(l, n):
+                return [l[i::n] for i in range(n)]
+            dumpsigs_tids = chunkify(list(self.rqdata.runtaskentries), max_process)
+
+            # We cannot use the real multiprocessing.Pool easily due to some local data
+            # that can't be pickled. This is a cheap multi-process solution.
+            self.dumpsigs_launched = []
+
+            for tids in dumpsigs_tids:
+                p = Process(target=self._rq_dump_sigtid, args=(tids, ))
                 p.start()
-                launched.append(p)
-            for q in launched:
-                # The finished processes are joined when calling is_alive()
-                if not q.is_alive():
-                    launched.remove(q)
-        for p in launched:
+                self.dumpsigs_launched.append(p)
+
+            return 1.0
+
+        for q in self.dumpsigs_launched:
+            # The finished processes are joined when calling is_alive()
+            if not q.is_alive():
+                self.dumpsigs_launched.remove(q)
+
+        if self.dumpsigs_launched:
+            return 1.0
+
+        for p in self.dumpsigs_launched:
                 p.join()
 
         bb.parse.siggen.dump_sigs(self.rqdata.dataCaches, options)
 
-        return
+        return False
 
     def print_diffscenetasks(self):
         def get_root_invalid_tasks(task, taskdepends, valid, noexec, visited_invalid):
@@ -2175,12 +2205,20 @@ class RunQueueExecute:
         if not hasattr(self, "sorted_setscene_tids"):
             # Don't want to sort this set every execution
             self.sorted_setscene_tids = sorted(self.rqdata.runq_setscene_tids)
+            # Resume looping where we left off when we returned to feed the mainloop
+            self.setscene_tids_generator = itertools.cycle(self.rqdata.runq_setscene_tids)
 
         task = None
         if not self.sqdone and self.can_start_task():
-            # Find the next setscene to run
-            for nexttask in self.sorted_setscene_tids:
+            loopcount = 0
+            # Find the next setscene to run, exit the loop when we've processed all tids or found something to execute
+            while loopcount < len(self.rqdata.runq_setscene_tids):
+                loopcount += 1
+                nexttask = next(self.setscene_tids_generator)
                 if nexttask in self.sq_buildable and nexttask not in self.sq_running and self.sqdata.stamps[nexttask] not in self.build_stamps.values() and nexttask not in self.sq_harddep_deferred:
+                    if nexttask in self.sq_deferred and self.sq_deferred[nexttask] not in self.runq_complete:
+                        # Skip deferred tasks quickly before the 'expensive' tests below - this is key to performant multiconfig builds
+                        continue
                     if nexttask not in self.sqdata.unskippable and self.sqdata.sq_revdeps[nexttask] and \
                             nexttask not in self.sq_needed_harddeps and \
                             self.sqdata.sq_revdeps[nexttask].issubset(self.scenequeue_covered) and \
@@ -2210,8 +2248,7 @@ class RunQueueExecute:
                         if t in self.runq_running and t not in self.runq_complete:
                             continue
                     if nexttask in self.sq_deferred:
-                        if self.sq_deferred[nexttask] not in self.runq_complete:
-                            continue
+                        # Deferred tasks that were still deferred were skipped above so we now need to process
                         logger.debug("Task %s no longer deferred" % nexttask)
                         del self.sq_deferred[nexttask]
                         valid = self.rq.validate_hashes(set([nexttask]), self.cooker.data, 0, False, summary=False)
@@ -2438,14 +2475,17 @@ class RunQueueExecute:
         taskdepdata_cache = {}
         for task in self.rqdata.runtaskentries:
             (mc, fn, taskname, taskfn) = split_tid_mcfn(task)
-            pn = self.rqdata.dataCaches[mc].pkg_fn[taskfn]
-            deps = self.rqdata.runtaskentries[task].depends
-            provides = self.rqdata.dataCaches[mc].fn_provides[taskfn]
-            taskhash = self.rqdata.runtaskentries[task].hash
-            unihash = self.rqdata.runtaskentries[task].unihash
-            deps = self.filtermcdeps(task, mc, deps)
-            hashfn = self.rqdata.dataCaches[mc].hashfn[taskfn]
-            taskdepdata_cache[task] = [pn, taskname, fn, deps, provides, taskhash, unihash, hashfn]
+            taskdepdata_cache[task] = bb.TaskData(
+                pn = self.rqdata.dataCaches[mc].pkg_fn[taskfn],
+                taskname = taskname,
+                fn = fn,
+                deps = self.filtermcdeps(task, mc, self.rqdata.runtaskentries[task].depends),
+                provides = self.rqdata.dataCaches[mc].fn_provides[taskfn],
+                taskhash = self.rqdata.runtaskentries[task].hash,
+                unihash = self.rqdata.runtaskentries[task].unihash,
+                hashfn = self.rqdata.dataCaches[mc].hashfn[taskfn],
+                taskhash_deps = self.rqdata.runtaskentries[task].taskhash_deps,
+            )
 
         self.taskdepdata_cache = taskdepdata_cache
 
@@ -2460,9 +2500,11 @@ class RunQueueExecute:
         while next:
             additional = []
             for revdep in next:
-                self.taskdepdata_cache[revdep][6] = self.rqdata.runtaskentries[revdep].unihash
+                self.taskdepdata_cache[revdep] = self.taskdepdata_cache[revdep]._replace(
+                    unihash=self.rqdata.runtaskentries[revdep].unihash
+                )
                 taskdepdata[revdep] = self.taskdepdata_cache[revdep]
-                for revdep2 in self.taskdepdata_cache[revdep][3]:
+                for revdep2 in self.taskdepdata_cache[revdep].deps:
                     if revdep2 not in taskdepdata:
                         additional.append(revdep2)
             next = additional
@@ -2531,9 +2573,6 @@ class RunQueueExecute:
                     self.rqdata.runtaskentries[hashtid].unihash = unihash
                     bb.parse.siggen.set_unihash(hashtid, unihash)
                     toprocess.add(hashtid)
-                if torehash:
-                    # Need to save after set_unihash above
-                    bb.parse.siggen.save_unitaskhashes()
 
         # Work out all tasks which depend upon these
         total = set()
@@ -2556,17 +2595,28 @@ class RunQueueExecute:
             elif self.rqdata.runtaskentries[p].depends.isdisjoint(total):
                 next.add(p)
 
+        starttime = time.time()
+        lasttime = starttime
+
         # When an item doesn't have dependencies in total, we can process it. Drop items from total when handled
         while next:
             current = next.copy()
             next = set()
+            ready = {}
             for tid in current:
                 if self.rqdata.runtaskentries[p].depends and not self.rqdata.runtaskentries[tid].depends.isdisjoint(total):
                     continue
+                # get_taskhash for a given tid *must* be called before get_unihash* below
+                ready[tid] = bb.parse.siggen.get_taskhash(tid, self.rqdata.runtaskentries[tid].depends, self.rqdata.dataCaches)
+
+            unihashes = bb.parse.siggen.get_unihashes(ready.keys())
+
+            for tid in ready:
                 orighash = self.rqdata.runtaskentries[tid].hash
-                newhash = bb.parse.siggen.get_taskhash(tid, self.rqdata.runtaskentries[tid].depends, self.rqdata.dataCaches)
+                newhash = ready[tid]
                 origuni = self.rqdata.runtaskentries[tid].unihash
-                newuni = bb.parse.siggen.get_unihash(tid)
+                newuni = unihashes[tid]
+
                 # FIXME, need to check it can come from sstate at all for determinism?
                 remapped = False
                 if newuni == origuni:
@@ -2587,6 +2637,15 @@ class RunQueueExecute:
                 next |= self.rqdata.runtaskentries[tid].revdeps
                 total.remove(tid)
                 next.intersection_update(total)
+                bb.event.check_for_interrupts(self.cooker.data)
+
+                if time.time() > (lasttime + 30):
+                    lasttime = time.time()
+                    hashequiv_logger.verbose("Rehash loop slow progress: %s in %s" % (len(total), lasttime - starttime))
+
+        endtime = time.time()
+        if (endtime-starttime > 60):
+            hashequiv_logger.verbose("Rehash loop took more than 60s: %s" % (endtime-starttime))
 
         if changed:
             for mc in self.rq.worker:
@@ -2712,8 +2771,12 @@ class RunQueueExecute:
                 logger.debug2("%s was unavailable and is a hard dependency of %s so skipping" % (task, dep))
                 self.sq_task_failoutright(dep)
                 continue
+
+        # For performance, only compute allcovered once if needed
+        if self.sqdata.sq_deps[task]:
+            allcovered = self.scenequeue_covered | self.scenequeue_notcovered
         for dep in sorted(self.sqdata.sq_deps[task]):
-            if self.sqdata.sq_revdeps[dep].issubset(self.scenequeue_covered | self.scenequeue_notcovered):
+            if self.sqdata.sq_revdeps[dep].issubset(allcovered):
                 if dep not in self.sq_buildable:
                     self.sq_buildable.add(dep)
 
@@ -2806,13 +2869,19 @@ class RunQueueExecute:
             additional = []
             for revdep in next:
                 (mc, fn, taskname, taskfn) = split_tid_mcfn(revdep)
-                pn = self.rqdata.dataCaches[mc].pkg_fn[taskfn]
                 deps = getsetscenedeps(revdep)
-                provides = self.rqdata.dataCaches[mc].fn_provides[taskfn]
-                taskhash = self.rqdata.runtaskentries[revdep].hash
-                unihash = self.rqdata.runtaskentries[revdep].unihash
-                hashfn = self.rqdata.dataCaches[mc].hashfn[taskfn]
-                taskdepdata[revdep] = [pn, taskname, fn, deps, provides, taskhash, unihash, hashfn]
+
+                taskdepdata[revdep] = bb.TaskData(
+                    pn = self.rqdata.dataCaches[mc].pkg_fn[taskfn],
+                    taskname = taskname,
+                    fn = fn,
+                    deps = deps,
+                    provides = self.rqdata.dataCaches[mc].fn_provides[taskfn],
+                    taskhash = self.rqdata.runtaskentries[revdep].hash,
+                    unihash = self.rqdata.runtaskentries[revdep].unihash,
+                    hashfn = self.rqdata.dataCaches[mc].hashfn[taskfn],
+                    taskhash_deps = self.rqdata.runtaskentries[revdep].taskhash_deps,
+                )
                 for revdep2 in deps:
                     if revdep2 not in taskdepdata:
                         additional.append(revdep2)
@@ -3261,7 +3330,7 @@ class runQueuePipe():
 
         start = len(self.queue)
         try:
-            self.queue.extend(self.input.read(102400) or b"")
+            self.queue.extend(self.input.read(512 * 1024) or b"")
         except (OSError, IOError) as e:
             if e.errno != errno.EAGAIN:
                 raise

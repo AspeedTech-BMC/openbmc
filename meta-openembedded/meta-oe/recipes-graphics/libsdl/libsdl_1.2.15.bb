@@ -15,6 +15,7 @@ SRC_URI = "http://www.libsdl.org/release/SDL-${PV}.tar.gz \
            file://libsdl-1.2.15-xdata32.patch \
            file://pkgconfig.patch \
            file://0001-build-Pass-tag-CC-explictly-when-using-libtool.patch \
+           file://0001-stdlib-Make-iconv-use-portable-across-glibc-musl.patch \
            file://CVE-2019-7577.patch \
            file://CVE-2019-7574.patch \
            file://CVE-2019-7572.patch \
@@ -32,7 +33,6 @@ UPSTREAM_CHECK_REGEX = "SDL-(?P<pver>\d+(\.\d+)+)\.tar"
 
 S = "${WORKDIR}/SDL-${PV}"
 
-SRC_URI[md5sum] = "9d96df8417572a2afb781a7c4c811a85"
 SRC_URI[sha256sum] = "d6d316a793e5e348155f0dd93b979798933fb98aa1edebcc108829d6474aad00"
 
 BINCONFIG = "${bindir}/sdl-config"

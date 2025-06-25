@@ -3,6 +3,8 @@ From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Wed, 14 Jun 2023 16:46:00 +0800
 Subject: [PATCH] Support mctp i3c slave mqueue with asti3c binding
 
+Upstream-Status: Pending
+
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---
  asti3c.c         | 45 ++++++++++++++++++++++++++++++++++++++++++---

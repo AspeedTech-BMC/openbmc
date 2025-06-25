@@ -36,6 +36,11 @@ RDEPENDS:${PN} += "\
     xfsprogs \
     acl \
     gawk \
+    util-linux-mkfs \
+    util-linux-mount \
+    util-linux-findmnt \
+    inetutils-hostname \
+    grep \
 "
 
 USERADD_PACKAGES = "${PN}"
@@ -58,10 +63,16 @@ do_install() {
 
     unionmount_target_dir=${D}${prefix}/xfstests/unionmount-testsuite
     install -d $unionmount_target_dir/tests
-    install ${WORKDIR}/unionmount-testsuite/tests/* -t $unionmount_target_dir/tests
-    install ${WORKDIR}/unionmount-testsuite/*.py -t $unionmount_target_dir
-    install ${WORKDIR}/unionmount-testsuite/run -t $unionmount_target_dir
-    install ${WORKDIR}/unionmount-testsuite/README -t $unionmount_target_dir
+    install ${UNPACKDIR}/unionmount-testsuite/tests/* -t $unionmount_target_dir/tests
+    install ${UNPACKDIR}/unionmount-testsuite/*.py -t $unionmount_target_dir
+    install ${UNPACKDIR}/unionmount-testsuite/run -t $unionmount_target_dir
+    install ${UNPACKDIR}/unionmount-testsuite/README -t $unionmount_target_dir
 }
 
 FILES:${PN} += "${prefix}/xfstests"
+
+# This one is reproducible only on 32bit MACHINEs
+# http://errors.yoctoproject.org/Errors/Details/766963/
+# lstat64.c:65:14: error: passing argument 1 of 'time' from incompatible pointer type [-Wincompatible-pointer-types]
+# bstat.c:18:19: error: passing argument 1 of 'ctime' from incompatible pointer type [-Wincompatible-pointer-types]
+CFLAGS += "-Wno-error=incompatible-pointer-types"

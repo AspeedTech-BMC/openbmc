@@ -48,13 +48,13 @@ def get_base_dep(d):
         return ""
     return "${BASE_DEFAULT_DEPS}"
 
-BASE_DEFAULT_DEPS = "virtual/${HOST_PREFIX}gcc virtual/${HOST_PREFIX}compilerlibs virtual/libc"
+BASE_DEFAULT_DEPS = "virtual/cross-cc virtual/compilerlibs virtual/libc"
 
 BASEDEPENDS = ""
 BASEDEPENDS:class-target = "${@get_base_dep(d)}"
 BASEDEPENDS:class-nativesdk = "${@get_base_dep(d)}"
 
-DEPENDS:prepend="${BASEDEPENDS} "
+DEPENDS:prepend = "${BASEDEPENDS} "
 
 FILESPATH = "${@base_set_filespath(["${FILE_DIRNAME}/${BP}", "${FILE_DIRNAME}/${BPN}", "${FILE_DIRNAME}/files"], d)}"
 # THISDIR only works properly with imediate expansion as it has to run
@@ -153,20 +153,38 @@ python base_do_fetch() {
 }
 
 addtask unpack after do_fetch
-do_unpack[dirs] = "${WORKDIR}"
-
-do_unpack[cleandirs] = "${@d.getVar('S') if os.path.normpath(d.getVar('S')) != os.path.normpath(d.getVar('WORKDIR')) else os.path.join('${S}', 'patches')}"
+do_unpack[cleandirs] = "${UNPACKDIR}"
 
 python base_do_unpack() {
+    import shutil
+
+    sourcedir = d.getVar('S')
+    # Intentionally keep SOURCE_BASEDIR internal to the task just for SDE
+    d.setVar("SOURCE_BASEDIR", sourcedir)
+
     src_uri = (d.getVar('SRC_URI') or "").split()
     if not src_uri:
         return
 
+    basedir = None
+    unpackdir = d.getVar('UNPACKDIR')
+    workdir = d.getVar('WORKDIR')
+    if sourcedir.startswith(workdir) and not sourcedir.startswith(unpackdir):
+        basedir = sourcedir.replace(workdir, '').strip("/").split('/')[0]
+        if basedir:
+            bb.utils.remove(workdir + '/' + basedir, True)
+            d.setVar("SOURCE_BASEDIR", workdir + '/' + basedir)
+
     try:
         fetcher = bb.fetch2.Fetch(src_uri, d)
-        fetcher.unpack(d.getVar('WORKDIR'))
+        fetcher.unpack(d.getVar('UNPACKDIR'))
     except bb.fetch2.BBFetchException as e:
         bb.fatal("Bitbake Fetcher Error: " + repr(e))
+
+    if basedir and os.path.exists(unpackdir + '/' + basedir):
+        # Compatibility magic to ensure ${WORKDIR}/git and ${WORKDIR}/${BP}
+        # as often used in S work as expected.
+        shutil.move(unpackdir + '/' + basedir, workdir + '/' + basedir)
 }
 
 SSTATETASKS += "do_deploy_source_date_epoch"
@@ -199,8 +217,8 @@ addtask do_deploy_source_date_epoch_setscene
 addtask do_deploy_source_date_epoch before do_configure after do_patch
 
 python create_source_date_epoch_stamp() {
-    # Version: 1
-    source_date_epoch = oe.reproducible.get_source_date_epoch(d, d.getVar('S'))
+    # Version: 2
+    source_date_epoch = oe.reproducible.get_source_date_epoch(d, d.getVar('SOURCE_BASEDIR') or d.getVar('S'))
     oe.reproducible.epochfile_write(source_date_epoch, d.getVar('SDE_FILE'), d)
 }
 do_unpack[postfuncs] += "create_source_date_epoch_stamp"
@@ -294,16 +312,6 @@ python base_eventhandler() {
         if statusheader:
             bb.plain('\n%s\n%s\n' % (statusheader, '\n'.join(statuslines)))
 
-    # This code is to silence warnings where the SDK variables overwrite the 
-    # target ones and we'd see duplicate key names overwriting each other
-    # for various PREFERRED_PROVIDERS
-    if isinstance(e, bb.event.RecipePreFinalise):
-        if d.getVar("TARGET_PREFIX") == d.getVar("SDK_PREFIX"):
-            d.delVar("PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}binutils")
-            d.delVar("PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}gcc")
-            d.delVar("PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}g++")
-            d.delVar("PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}compilerlibs")
-
     if isinstance(e, bb.event.RecipeParsed):
         #
         # If we have multiple providers of virtual/X and a PREFERRED_PROVIDER_virtual/X is set
@@ -312,7 +320,7 @@ python base_eventhandler() {
         # particular.
         #
         pn = d.getVar('PN')
-        source_mirror_fetch = d.getVar('SOURCE_MIRROR_FETCH', False)
+        source_mirror_fetch = bb.utils.to_boolean(d.getVar('SOURCE_MIRROR_FETCH', False))
         if not source_mirror_fetch:
             provs = (d.getVar("PROVIDES") or "").split()
             multiprovidersallowed = (d.getVar("BB_MULTI_PROVIDER_ALLOWED") or "").split()
@@ -410,16 +418,6 @@ python () {
     oe.utils.features_backfill("DISTRO_FEATURES", d)
     oe.utils.features_backfill("MACHINE_FEATURES", d)
 
-    if d.getVar("S")[-1] == '/':
-        bb.warn("Recipe %s sets S variable with trailing slash '%s', remove it" % (d.getVar("PN"), d.getVar("S")))
-    if d.getVar("B")[-1] == '/':
-        bb.warn("Recipe %s sets B variable with trailing slash '%s', remove it" % (d.getVar("PN"), d.getVar("B")))
-
-    if os.path.normpath(d.getVar("WORKDIR")) != os.path.normpath(d.getVar("S")):
-        d.appendVar("PSEUDO_IGNORE_PATHS", ",${S}")
-    if os.path.normpath(d.getVar("WORKDIR")) != os.path.normpath(d.getVar("B")):
-        d.appendVar("PSEUDO_IGNORE_PATHS", ",${B}")
-
     # To add a recipe to the skip list , set:
     #   SKIP_RECIPE[pn] = "message"
     pn = d.getVar('PN')
@@ -463,7 +461,7 @@ python () {
         def appendVar(varname, appends):
             if not appends:
                 return
-            if varname.find("DEPENDS") != -1:
+            if "DEPENDS" in varname or varname.startswith("RRECOMMENDS"):
                 if bb.data.inherits_class('nativesdk', d) or bb.data.inherits_class('cross-canadian', d) :
                     appends = expandFilter(appends, "", "nativesdk-")
                 elif bb.data.inherits_class('native', d):
@@ -520,8 +518,8 @@ python () {
         bb.fatal('This recipe does not have the LICENSE field set (%s)' % pn)
 
     if bb.data.inherits_class('license', d):
-        check_license_format(d)
-        unmatched_license_flags = check_license_flags(d)
+        oe.license.check_license_format(d)
+        unmatched_license_flags = oe.license.check_license_flags(d)
         if unmatched_license_flags:
             for unmatched in unmatched_license_flags:
                 message = "Has a restricted license '%s' which is not listed in your LICENSE_FLAGS_ACCEPTED." % unmatched
@@ -545,7 +543,7 @@ python () {
         d.appendVarFlag('do_devshell', 'depends', ' virtual/fakeroot-native:do_populate_sysroot')
 
     need_machine = d.getVar('COMPATIBLE_MACHINE')
-    if need_machine and not d.getVar('PARSE_ALL_RECIPES', False):
+    if need_machine and not bb.utils.to_boolean(d.getVar('PARSE_ALL_RECIPES', False)):
         import re
         compat_machines = (d.getVar('MACHINEOVERRIDES') or "").split(":")
         for m in compat_machines:
@@ -554,7 +552,8 @@ python () {
         else:
             raise bb.parse.SkipRecipe("incompatible with machine %s (not in COMPATIBLE_MACHINE)" % d.getVar('MACHINE'))
 
-    source_mirror_fetch = d.getVar('SOURCE_MIRROR_FETCH', False) or d.getVar('PARSE_ALL_RECIPES', False)
+    source_mirror_fetch = bb.utils.to_boolean(d.getVar('SOURCE_MIRROR_FETCH', False)) or \
+            bb.utils.to_boolean(d.getVar('PARSE_ALL_RECIPES', False))
     if not source_mirror_fetch:
         need_host = d.getVar('COMPATIBLE_HOST')
         if need_host:
@@ -565,46 +564,18 @@ python () {
 
         bad_licenses = (d.getVar('INCOMPATIBLE_LICENSE') or "").split()
 
-        check_license = False if pn.startswith("nativesdk-") else True
-        for t in ["-native", "-cross-${TARGET_ARCH}", "-cross-initial-${TARGET_ARCH}",
-              "-crosssdk-${SDK_SYS}", "-crosssdk-initial-${SDK_SYS}",
-              "-cross-canadian-${TRANSLATED_TARGET_ARCH}"]:
-            if pn.endswith(d.expand(t)):
-                check_license = False
-        if pn.startswith("gcc-source-"):
-            check_license = False
-
-        if check_license and bad_licenses:
-            bad_licenses = expand_wildcard_licenses(d, bad_licenses)
-
-            exceptions = (d.getVar("INCOMPATIBLE_LICENSE_EXCEPTIONS") or "").split()
-
-            for lic_exception in exceptions:
-                if ":" in lic_exception:
-                    lic_exception = lic_exception.split(":")[1]
-                if lic_exception in oe.license.obsolete_license_list():
-                    bb.fatal("Obsolete license %s used in INCOMPATIBLE_LICENSE_EXCEPTIONS" % lic_exception)
-
-            pkgs = d.getVar('PACKAGES').split()
-            skipped_pkgs = {}
-            unskipped_pkgs = []
-            for pkg in pkgs:
-                remaining_bad_licenses = oe.license.apply_pkg_license_exception(pkg, bad_licenses, exceptions)
-
-                incompatible_lic = incompatible_license(d, remaining_bad_licenses, pkg)
-                if incompatible_lic:
-                    skipped_pkgs[pkg] = incompatible_lic
-                else:
-                    unskipped_pkgs.append(pkg)
+        pkgs = d.getVar('PACKAGES').split()
+        if pkgs:
+            skipped_pkgs = oe.license.skip_incompatible_package_licenses(d, pkgs)
+            unskipped_pkgs = [p for p in pkgs if p not in skipped_pkgs]
 
             if unskipped_pkgs:
                 for pkg in skipped_pkgs:
                     bb.debug(1, "Skipping the package %s at do_rootfs because of incompatible license(s): %s" % (pkg, ' '.join(skipped_pkgs[pkg])))
-                    d.setVar('_exclude_incompatible-' + pkg, ' '.join(skipped_pkgs[pkg]))
                 for pkg in unskipped_pkgs:
                     bb.debug(1, "Including the package %s" % pkg)
             else:
-                incompatible_lic = incompatible_license(d, bad_licenses)
+                incompatible_lic = oe.license.incompatible_license(d, bad_licenses)
                 for pkg in skipped_pkgs:
                     incompatible_lic += skipped_pkgs[pkg]
                 incompatible_lic = sorted(list(set(incompatible_lic)))

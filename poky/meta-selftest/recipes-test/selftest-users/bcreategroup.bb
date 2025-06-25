@@ -7,9 +7,10 @@ LICENSE = "MIT"
 
 USERADD_DEPENDS = "acreategroup ccreategroup"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
-EXCLUDE_FROM_WORLD="1"
+EXCLUDE_FROM_WORLD = "1"
 
 inherit useradd allarch
 

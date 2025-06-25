@@ -9,7 +9,7 @@ SRC_URI = "git://luajit.org/git/luajit-2.0.git;protocol=http;branch=v2.1 \
            "
 
 PV = "2.1"
-SRCREV = "c525bcb9024510cad9e170e12b6209aedb330f83"
+SRCREV = "19878ec05c239ccaf5f3d17af27670a963e25b8b"
 
 S = "${WORKDIR}/git"
 
@@ -21,7 +21,7 @@ BBCLASSEXTEND = "native"
 # Host luajit needs to be compiled with the same pointer size
 # If you want to cross-compile to any 32 bit target on an x64 OS,
 # you need to install the multilib development package (e.g.
-# libc6-dev-i386 on Debian/Ubuntu) and build a 32 bit host part
+# libc6-dev:i386 on Debian/Ubuntu) and build a 32 bit host part
 # (HOST_CC="gcc -m32").
 BUILD_CC_ARCH:append = " ${@['-m32',''][d.getVar('SITEINFO_BITS') != '32']}"
 

@@ -1,6 +1,0 @@
-#!/bin/bash
-
-# Set Host Power On
-obmcutil poweron
-
-exit 0

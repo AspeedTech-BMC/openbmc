@@ -17,16 +17,24 @@ LIC_FILES_CHKSUM = " \
 BASEVER = "4.4.0"
 PV = "${BASEVER}+git"
 SRC_URI = "git://sourceware.org/git/newlib-cygwin.git;protocol=https;branch=main"
-SRCREV="ad11e2587f83d61357a32c61c36d72ea4f39315e"
+SRCREV = "ad11e2587f83d61357a32c61c36d72ea4f39315e"
 
 INHIBIT_DEFAULT_DEPS = "1"
-DEPENDS = "virtual/${TARGET_PREFIX}gcc"
+DEPENDS = "virtual/cross-cc"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 ## disable stdlib
 TARGET_CC_ARCH:append = " -nostdlib"
+
+# Both the C library and the application should share the same mcmodel.
+# Use the medium-any code model for the RISC-V 64 bit implementation,
+# since medlow can only access addresses below 0x80000000 and RAM
+# starts at 0x80000000 on RISC-V 64
+# Keep RISC-V 32 using -mcmodel=medlow (symbols lie between -2GB:2GB)
+TARGET_CFLAGS:append:qemuriscv64 = " -mcmodel=medany"
+
 
 EXTRA_OECONF = " \
                 --build=${BUILD_SYS}  \

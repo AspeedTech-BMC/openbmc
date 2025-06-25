@@ -1,0 +1,30 @@
+From 9a77855acf90207afee01363ad38f4ddf758ced6 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Wed, 30 Apr 2025 15:52:36 +0800
+Subject: [PATCH] bmcweb: firmware update apply immediate
+
+Change update service defaults applyTime to immediate.
+BMC will rebooting immediately after a firmware update via the WebUI.
+
+Upstream-Status: Pending
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ redfish-core/lib/update_service.hpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/redfish-core/lib/update_service.hpp b/redfish-core/lib/update_service.hpp
+index 44c8777d2e..95cb96a8f8 100644
+--- a/redfish-core/lib/update_service.hpp
++++ b/redfish-core/lib/update_service.hpp
+@@ -986,7 +986,7 @@ inline void updateMultipartContext(
+     }
+     if (!multipart->applyTime)
+     {
+-        multipart->applyTime = "OnReset";
++        multipart->applyTime = "Immediate";
+     }
+ 
+     if constexpr (BMCWEB_REDFISH_UPDATESERVICE_USE_DBUS)
+-- 
+2.43.0
+

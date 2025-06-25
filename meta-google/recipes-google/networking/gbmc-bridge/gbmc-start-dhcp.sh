@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-systemctl stop gbmc-br-dhcp
+systemctl stop gbmc-br-dhcp@'*'
 
-# in some cases dhcp-done might be run already, in this case we want
-# a powercycle for a clean install
-systemctl is-active -q dhcp-done@* && exit 1
+systemctl restart dhcp-done
 
 # stop dhcp term service to prevent race condition
 systemctl is-active --quiet gbmc-br-dhcp-term && systemctl stop gbmc-br-dhcp-term
 
 # start the dhcp service
-systemctl start gbmc-br-dhcp
+for intf in gbmcbr $(cat /run/gbmc-br-dhcp-intfs 2>/dev/null); do
+  systemctl start gbmc-br-dhcp@"$intf"
+done

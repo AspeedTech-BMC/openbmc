@@ -1,13 +1,28 @@
 [
     {
-        "Name": "reset-button",
+        "Name": "reset-cause-platrst",
         "ChipId": "0",
-        "GpioNum": 122,
+        "GpioNum": 16,
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-gpio-log@reset-button.service","deassert-reset-button.service"],
-            "FALLING": ["assert-gpio-log@reset-button.service","assert-reset-button.service"]
-
+            "RISING": ["deassert-gpio-log@0_reset-cause-platrst.service"],
+            "FALLING": ["assert-gpio-log@0_reset-cause-platrst.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "power-hsc-good",
+        "ChipId": "0",
+        "GpioNum": 21,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "auto-poweron@0_auto-poweron.service",
+                "device-reinitial@0_auto-poweron.service"
+            ],
+            "FALLING": [
+                "auto-poweroff@0_auto-poweroff.service"
+            ]
         },
         "Continue": true
     },
@@ -17,19 +32,29 @@
         "GpioNum": 120,
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-gpio-log@power-button.service"],
-            "FALLING": ["assert-gpio-log@power-button.service"]
+            "RISING": ["deassert-gpio-log@0_power-button.service"],
+            "FALLING": ["assert-gpio-log@0_power-button.service"]
         },
         "Continue": true
     },
     {
-        "Name": "presence-post-card",
+        "Name": "reset-button",
         "ChipId": "0",
-        "GpioNum": 206,
+        "GpioNum": 122,
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-gpio-log@presence-post-card.service"],
-            "FALLING": ["assert-gpio-log@presence-post-card.service"]
+            "RISING": ["deassert-gpio-log@0_reset-button.service","deassert-reset-button.service"],
+            "FALLING": ["assert-gpio-log@0_reset-button.service","assert-reset-button.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "uart-switch-button",
+        "ChipId": "0",
+        "GpioNum": 135,
+        "EventMon": "RISING",
+        "Targets": {
+            "RISING": ["deassert-uart-switch-button.service"]
         },
         "Continue": true
     },
@@ -39,70 +64,25 @@
         "GpioNum": 0,
         "EventMon": "FALLING",
         "Targets": {
-            "FALLING": ["assert-gpio-log@ac-power-button.service"]
+            "FALLING": ["assert-gpio-log@1_ac-power-button.service"]
         },
         "Continue": true
     },
     {
-        "Name": "irq-uv-detect-alert",
+        "Name": "auto-power-on",
         "ChipId": "2",
-        "GpioNum": 174,
-        "EventMon": "FALLING",
-        "Targets": {
-            "FALLING": ["assert-gpio-log@irq-uv-detect-alert.service"]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "irq-hsc-alert",
-        "ChipId": "2",
-        "GpioNum": 176,
+        "GpioNum": 22,
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-gpio-log@irq-hsc-alert.service"],
-            "FALLING": ["assert-gpio-log@irq-hsc-alert.service"]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "cpu0-prochot-alert",
-        "ChipId": "2",
-        "GpioNum": 178,
-        "EventMon": "BOTH",
-        "Targets": {
-            "RISING": ["deassert-gpio-log@cpu0-prochot-alert.service"],
-            "FALLING": ["assert-gpio-log@cpu0-prochot-alert.service"]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "cpu0-thermtrip-alert",
-        "ChipId": "2",
-        "GpioNum": 180,
-        "EventMon": "FALLING",
-        "Targets": {
-            "FALLING": ["assert-gpio-log@cpu0-thermtrip-alert.service"]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "cpu0-err-alert",
-        "ChipId": "0",
-        "GpioNum": 21,
-        "EventMon": "FALLING",
-        "Targets": {
-            "FALLING": ["assert-gpio-log@cpu0-err-alert.service"]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "reset-cause-platrst",
-        "ChipId": "0",
-        "GpioNum": 16,
-        "EventMon": "BOTH",
-        "Targets": {
-            "RISING": ["deassert-gpio-log@reset-cause-platrst.service"],
-            "FALLING": ["assert-gpio-log@reset-cause-platrst.service"]
+            "RISING": [
+                "deassert-gpio-log@2_power-hsc-good.service",
+                "auto-poweron@2_auto-poweron.service",
+                "device-reinitial@2_auto-poweron.service"
+            ],
+            "FALLING": [
+                "assert-gpio-log@2_power-hsc-good.service",
+                "auto-poweroff@2_auto-poweroff.service"
+            ]
         },
         "Continue": true
     },
@@ -112,31 +92,9 @@
         "GpioNum": 60,
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-power-good.service", "deassert-gpio-log@power-host-good.service"],
-            "FALLING": ["assert-power-good.service", "assert-gpio-log@power-host-good.service"]
+            "RISING": ["deassert-power-good.service", "deassert-gpio-log@2_power-host-good.service"],
+            "FALLING": ["assert-power-good.service", "assert-gpio-log@2_power-host-good.service"]
 
-        },
-        "Continue": true
-    },
-    {
-        "Name": "reset-cause-pcie",
-        "ChipId": "2",
-        "GpioNum": 182,
-        "EventMon": "BOTH",
-        "Targets": {
-            "RISING": ["deassert-gpio-log@reset-cause-pcie.service"],
-            "FALLING": ["assert-gpio-log@reset-cause-pcie.service"]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "pvdd11-ocp-alert",
-        "ChipId": "2",
-        "GpioNum": 184,
-        "EventMon": "BOTH",
-        "Targets": {
-            "RISING": ["deassert-gpio-log@pvdd11-ocp-alert.service"],
-            "FALLING": ["assert-gpio-log@pvdd11-ocp-alert.service"]
         },
         "Continue": true
     },
@@ -158,18 +116,95 @@
         "GpioNum": 92,
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-gpio-log@leakage-detect-alert.service"],
-            "FALLING": ["assert-gpio-log@leakage-detect-alert.service"]
+            "RISING": ["deassert-gpio-log@0_leakage-detect-alert.service"],
+            "FALLING": ["assert-gpio-log@0_leakage-detect-alert.service"]
         },
         "Continue": true
     },
     {
-        "Name": "power-hsc-good",
+        "Name": "irq-uv-detect-alert",
         "ChipId": "2",
-        "GpioNum": 10,
-        "EventMon": "RISING",
+        "GpioNum": 174,
+        "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-power-hsc-good.service"]
+            "RISING": ["deassert-gpio-log@2_irq-uv-detect-alert.service"],
+            "FALLING": ["assert-gpio-log@2_irq-uv-detect-alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "irq-hsc-alert",
+        "ChipId": "2",
+        "GpioNum": 176,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["deassert-gpio-log@2_irq-hsc-alert.service"],
+            "FALLING": ["assert-gpio-log@2_irq-hsc-alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "irq-cpu-hsc-oc-n",
+        "ChipId": "2",
+        "GpioNum": 178,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["deassert-gpio-log@2_irq-cpu-hsc-oc-n.service"],
+            "FALLING": ["assert-gpio-log@2_irq-cpu-hsc-oc-n.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "cpu0-thermtrip-alert",
+        "ChipId": "2",
+        "GpioNum": 180,
+        "EventMon": "FALLING",
+        "Targets": {
+            "FALLING": ["assert-gpio-log@2_cpu0-thermtrip-alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "reset-cause-pcie",
+        "ChipId": "2",
+        "GpioNum": 182,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["deassert-gpio-log@2_reset-cause-pcie.service"],
+            "FALLING": ["assert-gpio-log@2_reset-cause-pcie.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "pvdd11-ocp-alert",
+        "ChipId": "2",
+        "GpioNum": 184,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["deassert-gpio-log@2_pvdd11-ocp-alert.service"],
+            "FALLING": ["assert-gpio-log@2_pvdd11-ocp-alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "fcb1-activate",
+        "ChipId": "3",
+        "GpioNum": 13,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["deassert-gpio-log@3_fcb1-activate.service"],
+            "FALLING": ["assert-gpio-log@3_fcb1-activate.service", "fan-reload.service" ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "fcb0-activate",
+        "ChipId": "4",
+        "GpioNum": 13,
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["deassert-gpio-log@4_fcb0-activate.service"],
+            "FALLING": ["assert-gpio-log@4_fcb0-activate.service", "fan-reload.service"]
         },
         "Continue": true
     }

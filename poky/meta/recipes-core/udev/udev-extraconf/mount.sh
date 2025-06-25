@@ -83,11 +83,11 @@ automount_systemd() {
 
     MOUNT="$MOUNT -o silent"
 
-    # If filesystemtype is vfat, change the ownership group to 'disk', and
+    # If filesystemtype is vfat, change the ownership group to mount group, and
     # grant it with  w/r/x permissions.
     case $ID_FS_TYPE in
     vfat|fat)
-        MOUNT="$MOUNT -o umask=007,gid=`awk -F':' '/^disk/{print $3}' /etc/group`"
+        MOUNT="$MOUNT -o umask=007,gid=`awk -F':' '/^@MOUNT_GROUP@:/{print $3}' /etc/group`"
         ;;
     swap)
         return ;;
@@ -98,7 +98,7 @@ automount_systemd() {
         ;;
     esac
 
-    if ! $MOUNT --no-block -t auto $DEVNAME "$MOUNT_BASE/$name"
+    if ! $MOUNT --collect --no-block -t auto $DEVNAME "$MOUNT_BASE/$name"
     then
         #logger "mount.sh/automount" "$MOUNT -t auto $DEVNAME \"$MOUNT_BASE/$name\" failed!"
         rm_dir "$MOUNT_BASE/$name"
@@ -138,11 +138,11 @@ automount() {
 		MOUNT="$MOUNT -o silent"
 	fi
 
-	# If filesystem type is vfat, change the ownership group to 'disk', and
+	# If filesystem type is vfat, change the ownership group to mount group, and
 	# grant it with  w/r/x permissions.
 	case $ID_FS_TYPE in
 	vfat|fat)
-		MOUNT="$MOUNT -o umask=007,gid=`awk -F':' '/^disk/{print $3}' /etc/group`"
+		MOUNT="$MOUNT -o umask=007,gid=`awk -F':' '/^@MOUNT_GROUP@:/{print $3}' /etc/group`"
 		;;
 	swap)
 		return ;;

@@ -35,3 +35,21 @@ SDKIMAGE_FEATURES += "staticdev-pkgs"
 VIRTUAL-RUNTIME_obmc-fan-control = "phosphor-pid-control"
 VIRTUAL-RUNTIME_obmc-fan-presence = "phosphor-pid-control"
 VIRTUAL-RUNTIME_obmc-sensors-hwmon = "dbus-sensors"
+
+# OpenBMC phosphor-defaults.inc sets this to phosphor-ipmi-fru.
+# Remove it to use the phosphor-host-ipmid dbus-sdr FRU write command.
+VIRTUAL-RUNTIME_phosphor-ipmi-providers=""
+
+# runqemu support
+QEMUVERSION ?= "10.0%"
+EXTRA_IMAGEDEPENDS += "qemu-helper-native"
+IMAGE_CLASSES += "qemuboot"
+QB_ROOTFS_OPT = "-drive file=@ROOTFS@,if=mtd,format=raw"
+QB_DEFAULT_FSTYPE = "static.mtd"
+# Disable virtio-pci device
+QB_RNG = ""
+# Specify netdev to align with default QB_SLIRP_OPT
+QB_NETWORK_DEVICE = "-net nic,netdev=net0"
+# Boot from drive
+QB_DEFAULT_KERNEL = "none"
+

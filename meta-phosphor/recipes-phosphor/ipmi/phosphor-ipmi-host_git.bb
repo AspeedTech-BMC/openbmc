@@ -14,6 +14,9 @@ inherit obmc-phosphor-systemd
 inherit phosphor-ipmi-host
 inherit python3native
 
+ERROR_QA:remove = "buildpaths"
+WARNING_QA:append = "buildpaths"
+
 def ipmi_whitelists(d):
     whitelists = d.getVar(
         'VIRTUAL-RUNTIME_phosphor-ipmi-providers', True) or ''
@@ -21,19 +24,28 @@ def ipmi_whitelists(d):
     whitelists = [ '{}-whitelist-native'.format(x) for x in whitelists ]
     return ' '.join(whitelists)
 
-PACKAGECONFIG ??= "allowlist i2c-allowlist boot-flag-safe-mode softoff libuserlayer entity-manager-decorators"
-PACKAGECONFIG[dynamic-sensors] = "-Ddynamic-sensors=enabled,-Ddynamic-sensors=disabled"
-PACKAGECONFIG[hybrid-sensors] = "-Dhybrid-sensors=enabled,-Dhybrid-sensors=disabled"
+PACKAGECONFIG ??= " \
+    allowlist \
+    boot-flag-safe-mode \
+    entity-manager-decorators \
+    i2c-allowlist \
+    libuserlayer \
+    softoff \
+    ${@bb.utils.contains('OBMC_ORG_YAML_SUBDIRS', 'org/open_power', 'open-power', '', d)} \
+    "
 PACKAGECONFIG[allowlist] = "-Dipmi-whitelist=enabled,-Dipmi-whitelist=disabled"
-PACKAGECONFIG[i2c-allowlist] = "-Di2c-whitelist-check=enabled,-Di2c-whitelist-check=disabled"
-PACKAGECONFIG[transport-oem] = "-Dtransport-oem=enabled,-Dtransport-oem=disabled"
 PACKAGECONFIG[boot-flag-safe-mode] = "-Dboot-flag-safe-mode-support=enabled,-Dboot-flag-safe-mode-support=disabled"
-PACKAGECONFIG[softoff] = "-Dsoftoff=enabled,-Dsoftoff=disabled"
-PACKAGECONFIG[update-functional-on-fail] = "-Dupdate-functional-on-fail=enabled,-Dupdate-functional-on-fail=disabled"
-PACKAGECONFIG[libuserlayer] = "-Dlibuserlayer=enabled,-Dlibuserlayer=disabled"
-PACKAGECONFIG[sensors-cache] = "-Dsensors-cache=enabled,-Dsensors-cache=disabled"
-PACKAGECONFIG[entity-manager-decorators] = "-Dentity-manager-decorators=enabled,-Dentity-manager-decorators=disabled"
+PACKAGECONFIG[dynamic-sensors] = "-Ddynamic-sensors=enabled,-Ddynamic-sensors=disabled"
 PACKAGECONFIG[dynamic-storages-only] = "-Ddynamic-storages-only=enabled,-Ddynamic-storages-only=disabled"
+PACKAGECONFIG[entity-manager-decorators] = "-Dentity-manager-decorators=enabled,-Dentity-manager-decorators=disabled"
+PACKAGECONFIG[hybrid-sensors] = "-Dhybrid-sensors=enabled,-Dhybrid-sensors=disabled"
+PACKAGECONFIG[i2c-allowlist] = "-Di2c-whitelist-check=enabled,-Di2c-whitelist-check=disabled"
+PACKAGECONFIG[libuserlayer] = "-Dlibuserlayer=enabled,-Dlibuserlayer=disabled"
+PACKAGECONFIG[open-power] = "-Dopen-power=enabled,-Dopen-power=disabled"
+PACKAGECONFIG[sensors-cache] = "-Dsensors-cache=enabled,-Dsensors-cache=disabled"
+PACKAGECONFIG[softoff] = "-Dsoftoff=enabled,-Dsoftoff=disabled"
+PACKAGECONFIG[transport-oem] = "-Dtransport-oem=enabled,-Dtransport-oem=disabled"
+PACKAGECONFIG[update-functional-on-fail] = "-Dupdate-functional-on-fail=enabled,-Dupdate-functional-on-fail=disabled"
 
 DEPENDS += "nlohmann-json"
 DEPENDS += "openssl"
@@ -93,7 +105,6 @@ EXTRA_OEMESON:append = " \
 EXTRA_OEMESON:append = " -Dtests=disabled"
 
 S = "${WORKDIR}/git"
-
 SRC_URI += "file://merge_yamls.py "
 
 HOSTIPMI_PROVIDER_LIBRARY += "libipmi20.so"
@@ -123,7 +134,7 @@ python do_merge_sensors () {
     import subprocess
 
     # TODO: Perform the merge in a temporary directory?
-    workdir = d.getVar('WORKDIR', True)
+    workdir = d.getVar('UNPACKDIR', True)
     nativedir = d.getVar('STAGING_DIR_NATIVE', True)
     sensorsdir = d.getVar('sensor_datadir', True)
     sensorsdir = sensorsdir[1:]

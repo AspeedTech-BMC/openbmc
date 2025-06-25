@@ -1,19 +1,20 @@
-From 9f93caec3a142297b75d0d87d683fc569d89274a Mon Sep 17 00:00:00 2001
+From 85e9c424705752ecf4c94a60c4716d7166ef5571 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Mon, 16 Jan 2023 14:03:36 +0800
 Subject: [PATCH] Enabling MCTP over Kernel Socket
 
+Upstream-Status: Pending
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
-
 ---
  spdm_emu/spdm_emu_common/command.c            | 140 ++++++------------
+ spdm_emu/spdm_emu_common/spdm_emu.h           |   2 +-
  spdm_emu/spdm_requester_emu/CMakeLists.txt    |   1 +
  spdm_emu/spdm_responder_emu/CMakeLists.txt    |   1 +
  .../spdm_responder_emu/spdm_responder_emu.c   |  39 ++---
- 4 files changed, 54 insertions(+), 127 deletions(-)
+ 5 files changed, 55 insertions(+), 128 deletions(-)
 
 diff --git a/spdm_emu/spdm_emu_common/command.c b/spdm_emu/spdm_emu_common/command.c
-index 49028ae..00850c5 100644
+index 49028ae..6c1434b 100644
 --- a/spdm_emu/spdm_emu_common/command.c
 +++ b/spdm_emu/spdm_emu_common/command.c
 @@ -8,8 +8,9 @@
@@ -49,9 +50,9 @@ index 49028ae..00850c5 100644
 +    addrlen = sizeof(my_address);
 +    result = recvfrom(socket, (char *)(buffer),
 +            number_of_bytes, MSG_TRUNC,
-+            &my_address, &addrlen);
++            (struct sockaddr *)&my_address, &addrlen);
 +    *recv_bytes = result;
-+    printf("message (%zd bytes) from remote EID 0x%02x\n", result, my_address.smctp_addr);
++    printf("message (%zd bytes) from remote EID 0x%02x\n", result, my_address.smctp_addr.s_addr);
 +    if (result == -1) {
 +        printf("Receive error - 0x%x\n",
  #ifdef _MSC_VER
@@ -237,6 +238,19 @@ index 49028ae..00850c5 100644
      result = write_multiple_bytes(socket, send_buffer,
                                    (uint32_t)bytes_to_send);
      if (!result) {
+diff --git a/spdm_emu/spdm_emu_common/spdm_emu.h b/spdm_emu/spdm_emu_common/spdm_emu.h
+index 08fbef9..55afdd6 100644
+--- a/spdm_emu/spdm_emu_common/spdm_emu.h
++++ b/spdm_emu/spdm_emu_common/spdm_emu.h
+@@ -6,7 +6,7 @@
+ 
+ #ifndef __SPDM_TEST_H__
+ #define __SPDM_TEST_H__
+-
++#include <stdio.h>
+ #include "hal/base.h"
+ #include "hal/library/memlib.h"
+ #include "library/spdm_common_lib.h"
 diff --git a/spdm_emu/spdm_requester_emu/CMakeLists.txt b/spdm_emu/spdm_requester_emu/CMakeLists.txt
 index b8340e3..033b239 100644
 --- a/spdm_emu/spdm_requester_emu/CMakeLists.txt
@@ -346,3 +360,6 @@ index 649b0a1..ddb0f16 100644
          if (m_server_socket == INVALID_SOCKET) {
              printf("Accept error.  Error is 0x%x\n",
  #ifdef _MSC_VER
+-- 
+2.25.1
+

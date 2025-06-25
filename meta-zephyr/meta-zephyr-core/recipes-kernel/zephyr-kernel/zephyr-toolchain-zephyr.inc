@@ -17,3 +17,6 @@ EXTRA_OECMAKE:append = " -DUSER_CACHE_DIR=${ZEPHYR_USER_CACHE_DIR}"
 # Inhibit packaging steps that require the Yocto toolchain
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"
+
+# Set Zephyr work directory to describe toolchain accurately
+MULTIMACH_TARGET_SYS = "${ZEPHYR_BOARD}-zephyr"

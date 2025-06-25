@@ -25,6 +25,10 @@ New Features / Enhancements in 5.0
 
    -  :term:`TARGET_DBGSRC_DIR`: specifies the target path to debug source files
 
+   -  :term:`USERADD_DEPENDS`: provides a way to declare dependencies on the users
+      and/or groups created by other recipes, resolving a long-standing build
+      ordering issue
+
 -  Architecture-specific enhancements:
 
    -  ``genericarm64``: a new :term:`MACHINE` to represent a 64-bit General Arm
@@ -83,6 +87,9 @@ New Features / Enhancements in 5.0
    -  `python3-sphinxcontrib-jquery <https://pypi.org/project/sphinxcontrib-jquery/>`__:
       a Sphinx extension to include jQuery on newer Sphinx releases. Recent
       versions of ``python3-sphinx-rtd-theme`` depend on it.
+
+   -  `python3-websockets <https://pypi.org/project/websockets/>`__: a
+      library for building WebSocket servers and clients in Python.
 
    -  `python3-yamllint <https://github.com/adrienverge/yamllint>`__: a linter
       for YAML files. In U-Boot, the ``binman`` tool uses this linter to verify the
@@ -155,6 +162,12 @@ New Features / Enhancements in 5.0
 
 -  Testing:
 
+   -  Move `patchtest` to the core (as ``scripts/patchtest``, test cases under
+      ``meta/lib/patchtest/tests``) and make a number of improvements to enable
+      it to validate patches submitted on the mailing list again. Additionally,
+      make it work with the original upstream version of
+      `Patchwork <http://jk.ozlabs.org/projects/patchwork/>`__.
+
    -  Add an optional ``unimplemented-ptest`` QA warning to detect upstream
       packages with tests, that do not use ptest.
 
@@ -162,6 +175,9 @@ New Features / Enhancements in 5.0
       upon ptest failure.
 
    -  ``oeqa``, ``oe-selftest``: add test cases for Maturin (SDK and runtime).
+
+   -  Proof-of-concept of screenshot-based runtime UI test
+      (``meta/lib/oeqa/runtime/cases/login.py``)
 
    -  Enable ptests for ``python3-attrs``, ``python3-pyyaml``, ``xz``
 
@@ -191,8 +207,6 @@ New Features / Enhancements in 5.0
       extra tasks if the system load is too high, especially in distributions
       where ``/proc/pressure`` is disabled.
 
-   -  Add garbage collection to remove unused unihashes from the database.
-
    -  ``taskexp_ncurses``: add ncurses version of ``taskexp``, the dependency
       explorer originally implemented with GTK.
 
@@ -203,10 +217,21 @@ New Features / Enhancements in 5.0
       state directory (i.e., ``/run``).
 
    -  Allow to disable colored text output through the
-      `NO_OUTPUT <https://no-color.org/>`__ environment variable.
+      `NO_COLOR <https://no-color.org/>`__ environment variable.
 
    -  ``git-make-shallow`` script: add support for Git's ``safe.bareRepository=explicit``
       configuration setting.
+
+   -  Hash equivalence gained a number of scalability improvements including:
+
+      -  Support for a wide range of database backends through `SQLAlchemy`
+
+      -  Support for hash equivalence server and client to communicate over websockets
+
+      -  Support for per-user permissions in the hashserver, and on the client side
+         specifying credentials via the environment or ``.netrc``
+
+      -  Add garbage collection to remove unused unihashes from the database.
 
 -  devtool improvements:
 
@@ -254,6 +279,12 @@ New Features / Enhancements in 5.0
       removed, configuration is kept up-to-date. The age threshold for
       incremental update can be configured with :term:`CVE_DB_INCR_UPDATE_AGE_THRES`
       variable.
+
+-  Toaster Web UI improvements:
+
+   - Numerous bugfixes, and additional input validation
+
+   - Add `pytest` support and add/update test cases
 
 -  Prominent documentation updates:
 
@@ -318,6 +349,7 @@ The following corrections have been made to the :term:`LICENSE` values set by re
 
 -  ``elfutils``: split license for libraries & backend and utilities.
 -  ``ghostscript``: correct :term:`LICENSE` to ``AGPL-3.0-or-later``.
+-  ``kbd``: update license for consolefont and keymaps.
 -  ``libsystemd``: set its own :term:`LICENSE` value (``LGPL-2.1-or-later``) to add more granularity.
 -  ``libtest-warnings-perl``: update :term:`LICENSE` ``Artistic-1.0`` to ``Artistic-1.0-Perl``.
 -  ``linux-firmware``: set package :term:`LICENSE` appropriately for ``carl9170``, ``rockchip`` and ``powerpr``.
@@ -330,39 +362,39 @@ The following corrections have been made to the :term:`LICENSE` values set by re
 Security Fixes in 5.0
 ~~~~~~~~~~~~~~~~~~~~~
 
--  avahi: :cve:`2023-1981`, :cve:`2023-38469`, :cve:`2023-38470`, :cve:`2023-38471`, :cve:`2023-38469`, :cve:`2023-38470`, :cve:`2023-38471`, :cve:`2023-38472`, :cve:`2023-38473`
--  bind: :cve:`2023-4408`, :cve:`2023-5517`, :cve:`2023-5679`, :cve:`2023-50387`
--  bluez5: :cve:`2023-45866`
--  coreutils: :cve:`2024-0684`
--  cups: :cve:`2023-4504`
--  curl: :cve:`2023-46218`
--  expat: :cve:`2024-28757`
--  gcc: :cve:`2023-4039`
--  glibc: :cve:`2023-5156`, :cve:`2023-0687`
--  gnutls: :cve:`2024-0553`, :cve:`2024-0567`, :cve:`2024-28834`, :cve:`2024-28835`
--  go: :cve:`2023-45288`
--  grub: :cve:`2023-4692`, :cve:`2023-4693`
--  grub2: :cve:`2023-4001` (ignored), :cve:`2024-1048` (ignored)
--  libgit2: :cve:`2024-24575`, :cve:`2024-24577`
--  libsndfile1: :cve:`2022-33065`
--  libssh2: :cve:`2023-48795`
--  libuv: :cve:`2024-24806`
--  libxml2: :cve:`2023-45322` (ignored)
--  linux-yocto/6.6: :cve:`2020-16119`
--  openssh: :cve:`2023-48795`, :cve:`2023-51384`, :cve:`2023-51385`
--  openssl: :cve:`2023-5363`, :cve:`2023-5678`, :cve:`2023-6129`, :cve_mitre:`2023-6237`, :cve:`2024-0727`
--  perl: :cve:`2023-47100`
--  pixman: :cve:`2023-37769` (ignored)
--  python3-cryptography{-vectors}: :cve:`2023-49083`, :cve:`2024-26130`
--  python3-urllib3: :cve:`2023-45803`
--  shadow: :cve:`2023-4641`
--  sudo: :cve:`2023-42456`
--  tiff: :cve:`2023-6228`, :cve:`2023-6277`, :cve:`2023-52355`, :cve:`2023-52356`
--  vim: :cve:`2023-46246`, :cve:`2023-48231`, :cve:`2023-48232`, :cve:`2023-48233`, :cve:`2023-48234`, :cve:`2023-48235`, :cve:`2023-48236`, :cve:`2023-48237`, :cve:`2024-22667`
--  wpa-supplicant: :cve:`2023-52160`
--  xserver-xorg: :cve:`2023-5574`, :cve:`2023-6816`, :cve:`2024-0229`, :cve:`2024-0408`, :cve:`2024-0409`, :cve:`2024-21885`, :cve:`2024-21886`
--  xwayland: :cve:`2023-5367`, :cve:`2024-0408`, :cve:`2024-0409`, :cve:`2023-6816`, :cve:`2024-0229`, :cve:`2024-21885`, :cve:`2024-21886`
--  zlib: :cve:`2023-45853` (ignored), :cve:`2023-6992` (ignored)
+-  avahi: :cve_nist:`2023-1981`, :cve_nist:`2023-38469`, :cve_nist:`2023-38470`, :cve_nist:`2023-38471`, :cve_nist:`2023-38469`, :cve_nist:`2023-38470`, :cve_nist:`2023-38471`, :cve_nist:`2023-38472`, :cve_nist:`2023-38473`
+-  bind: :cve_nist:`2023-4408`, :cve_nist:`2023-5517`, :cve_nist:`2023-5679`, :cve_nist:`2023-50387`
+-  bluez5: :cve_nist:`2023-45866`
+-  coreutils: :cve_nist:`2024-0684`
+-  cups: :cve_nist:`2023-4504`
+-  curl: :cve_nist:`2023-46218`
+-  expat: :cve_nist:`2024-28757`
+-  gcc: :cve_nist:`2023-4039`
+-  glibc: :cve_nist:`2023-5156`, :cve_nist:`2023-0687`
+-  gnutls: :cve_nist:`2024-0553`, :cve_nist:`2024-0567`, :cve_nist:`2024-28834`, :cve_nist:`2024-28835`
+-  go: :cve_nist:`2023-45288`
+-  grub: :cve_nist:`2023-4692`, :cve_nist:`2023-4693`
+-  grub2: :cve_nist:`2023-4001` (ignored), :cve_nist:`2024-1048` (ignored)
+-  libgit2: :cve_nist:`2024-24575`, :cve_nist:`2024-24577`
+-  libsndfile1: :cve_nist:`2022-33065`
+-  libssh2: :cve_nist:`2023-48795`
+-  libuv: :cve_nist:`2024-24806`
+-  libxml2: :cve_nist:`2023-45322` (ignored)
+-  linux-yocto/6.6: :cve_nist:`2020-16119`
+-  openssh: :cve_nist:`2023-48795`, :cve_nist:`2023-51384`, :cve_nist:`2023-51385`
+-  openssl: :cve_nist:`2023-5363`, :cve_nist:`2023-5678`, :cve_nist:`2023-6129`, :cve_mitre:`2023-6237`, :cve_nist:`2024-0727`, :cve_nist:`2024-2511`
+-  perl: :cve_nist:`2023-47100`
+-  pixman: :cve_nist:`2023-37769` (ignored)
+-  python3-cryptography{-vectors}: :cve_nist:`2023-49083`, :cve_nist:`2024-26130`
+-  python3-urllib3: :cve_nist:`2023-45803`
+-  shadow: :cve_nist:`2023-4641`
+-  sudo: :cve_nist:`2023-42456`
+-  tiff: :cve_nist:`2023-6228`, :cve_nist:`2023-6277`, :cve_nist:`2023-52355`, :cve_nist:`2023-52356`
+-  vim: :cve_nist:`2023-46246`, :cve_nist:`2023-48231`, :cve_nist:`2023-48232`, :cve_nist:`2023-48233`, :cve_nist:`2023-48234`, :cve_nist:`2023-48235`, :cve_nist:`2023-48236`, :cve_nist:`2023-48237`, :cve_nist:`2024-22667`
+-  wpa-supplicant: :cve_nist:`2023-52160`
+-  xserver-xorg: :cve_nist:`2023-5574`, :cve_nist:`2023-6816`, :cve_nist:`2024-0229`, :cve_nist:`2024-0408`, :cve_nist:`2024-0409`, :cve_nist:`2024-21885`, :cve_nist:`2024-21886`
+-  xwayland: :cve_nist:`2023-5367`, :cve_nist:`2024-0408`, :cve_nist:`2024-0409`, :cve_nist:`2023-6816`, :cve_nist:`2024-0229`, :cve_nist:`2024-21885`, :cve_nist:`2024-21886`
+-  zlib: :cve_nist:`2023-45853` (ignored), :cve_nist:`2023-6992` (ignored)
 
 
 Recipe Upgrades in 5.0
@@ -526,7 +558,7 @@ Recipe Upgrades in 5.0
 -  linux-yocto-dev 6.6+git -> 6.9+git
 -  linux-yocto-rt 6.1.78+git, 6.5.13+git -> 6.6.23+git
 -  linux-yocto-tiny 6.1.78+git, 6.5.13+git -> 6.6.23+git
--  llvm 17.0.3 -> 18.1.2
+-  llvm 17.0.3 -> 18.1.3
 -  lsof 4.98.0 -> 4.99.3
 -  ltp 20230516 -> 20240129
 -  lttng-modules 2.13.10 -> 2.13.12
@@ -562,7 +594,7 @@ Recipe Upgrades in 5.0
 -  ptest-runner 2.4.2+git -> 2.4.3+git
 -  pulseaudio 16.1 -> 17.0
 -  puzzles 0.0+git (2d9e414ee316…) -> 0.0+git (80aac3104096…)
--  python3 3.11.5 -> 3.12.2
+-  python3 3.11.5 -> 3.12.3
 -  python3-alabaster 0.7.13 -> 0.7.16
 -  python3-attrs 23.1.0 -> 23.2.0
 -  python3-babel 2.12.1 -> 2.14.0
@@ -903,4 +935,59 @@ Thanks to the following people who contributed to this release:
 
 Repositories / Downloads for Yocto-5.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+poky
+
+-  Repository Location: :yocto_git:`/poky`
+-  Branch: :yocto_git:`scarthgap </poky/log/?h=scarthgap>`
+-  Tag:  :yocto_git:`yocto-5.0 </poky/log/?h=yocto-5.0>`
+-  Git Revision: :yocto_git:`fb91a49387cfb0c8d48303bb3354325ba2a05587 </poky/commit/?id=fb91a49387cfb0c8d48303bb3354325ba2a05587>`
+-  Release Artefact: poky-fb91a49387cfb0c8d48303bb3354325ba2a05587
+-  sha: 8a0dff4b677b9414ab814ed35d1880196123732ea16ab2fafa388bcc509b32ab
+-  Download Locations:
+   http://downloads.yoctoproject.org/releases/yocto/yocto-5.0/poky-fb91a49387cfb0c8d48303bb3354325ba2a05587.tar.bz2
+   http://mirrors.kernel.org/yocto/yocto/yocto-5.0/poky-fb91a49387cfb0c8d48303bb3354325ba2a05587.tar.bz2
+
+openembedded-core
+
+-  Repository Location: :oe_git:`/openembedded-core`
+-  Branch: :oe_git:`scarthgap </openembedded-core/log/?h=scarthgap>`
+-  Tag:  :oe_git:`yocto-5.0 </openembedded-core/log/?h=yocto-5.0>`
+-  Git Revision: :oe_git:`b65b4e5a8e4473d8ca43835ba17bc8bd4bdca277 </openembedded-core/commit/?id=b65b4e5a8e4473d8ca43835ba17bc8bd4bdca277>`
+-  Release Artefact: oecore-b65b4e5a8e4473d8ca43835ba17bc8bd4bdca277
+-  sha: c7fd05d1a00c70acba2540e60dce01a1bdc4701ebff9a808784960240c69261d
+-  Download Locations:
+   http://downloads.yoctoproject.org/releases/yocto/yocto-5.0/oecore-b65b4e5a8e4473d8ca43835ba17bc8bd4bdca277.tar.bz2
+   http://mirrors.kernel.org/yocto/yocto/yocto-5.0/oecore-b65b4e5a8e4473d8ca43835ba17bc8bd4bdca277.tar.bz2
+
+meta-mingw
+
+-  Repository Location: :yocto_git:`/meta-mingw`
+-  Branch: :yocto_git:`scarthgap </meta-mingw/log/?h=scarthgap>`
+-  Tag:  :yocto_git:`yocto-5.0 </meta-mingw/log/?h=yocto-5.0>`
+-  Git Revision: :yocto_git:`acbba477893ef87388effc4679b7f40ee49fc852 </meta-mingw/commit/?id=acbba477893ef87388effc4679b7f40ee49fc852>`
+-  Release Artefact: meta-mingw-acbba477893ef87388effc4679b7f40ee49fc852
+-  sha: 3b7c2f475dad5130bace652b150367f587d44b391218b1364a8bbc430b48c54c
+-  Download Locations:
+   http://downloads.yoctoproject.org/releases/yocto/yocto-5.0/meta-mingw-acbba477893ef87388effc4679b7f40ee49fc852.tar.bz2
+   http://mirrors.kernel.org/yocto/yocto/yocto-5.0/meta-mingw-acbba477893ef87388effc4679b7f40ee49fc852.tar.bz2
+
+bitbake
+
+-  Repository Location: :oe_git:`/bitbake`
+-  Branch: :oe_git:`2.8 </bitbake/log/?h=2.8>`
+-  Tag:  :oe_git:`yocto-5.0 </bitbake/log/?h=yocto-5.0>`
+-  Git Revision: :oe_git:`c86466d51e8ff14e57a734c1eec5bb651fdc73ef </bitbake/commit/?id=c86466d51e8ff14e57a734c1eec5bb651fdc73ef>`
+-  Release Artefact: bitbake-c86466d51e8ff14e57a734c1eec5bb651fdc73ef
+-  sha: 45c91294c1fa5a0044f1bb72a9bb69456bb458747114115af85c7664bf672d48
+-  Download Locations:
+   http://downloads.yoctoproject.org/releases/yocto/yocto-5.0/bitbake-c86466d51e8ff14e57a734c1eec5bb651fdc73ef.tar.bz2
+   http://mirrors.kernel.org/yocto/yocto/yocto-5.0/bitbake-c86466d51e8ff14e57a734c1eec5bb651fdc73ef.tar.bz2
+
+yocto-docs
+
+-  Repository Location: :yocto_git:`/yocto-docs`
+-  Branch: :yocto_git:`scarthgap </yocto-docs/log/?h=scarthgap>`
+-  Tag: :yocto_git:`yocto-5.0 </yocto-docs/log/?h=yocto-5.0>`
+-  Git Revision: :yocto_git:`0cdc0afd3332459d30cfc8f4c2e62bdcc23f5ed5 </yocto-docs/commit/?id=0cdc0afd3332459d30cfc8f4c2e62bdcc23f5ed5>`
 

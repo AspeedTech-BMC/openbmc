@@ -9,7 +9,7 @@ DEPENDS += "phosphor-dbus-interfaces"
 DEPENDS += "boost"
 DEPENDS += "nss-pam-ldapd"
 DEPENDS += "systemd"
-SRCREV = "af1594c90627b78d1a92bb16a0d826b12a0d182c"
+SRCREV = "0e427be810a3233f23186cce599e8bf680ae3f62"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
@@ -30,7 +30,7 @@ PACKAGECONFIG[root-user-mgmt] = "-Droot_user_mgmt=enabled, -Droot_user_mgmt=disa
 
 do_install:append() {
   install -d ${D}${libexecdir}
-  install -m 0755 ${WORKDIR}/upgrade_hostconsole_group.sh ${D}${libexecdir}/upgrade_hostconsole_group.sh
+  install -m 0755 ${UNPACKDIR}/upgrade_hostconsole_group.sh ${D}${libexecdir}/upgrade_hostconsole_group.sh
 }
 
 FILES:phosphor-ldap += " \
@@ -43,6 +43,7 @@ FILES:${PN} += " \
 "
 
 USERADD_PACKAGES = "${PN} phosphor-ldap"
+RDEPENDS:${PN}:append:df-google-authenticator-libpam = " pam-google-authenticator google-authenticator-libpam"
 
 PACKAGE_BEFORE_PN = "phosphor-ldap"
 DBUS_PACKAGES = "${USERADD_PACKAGES}"

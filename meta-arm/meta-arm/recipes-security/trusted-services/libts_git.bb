@@ -6,12 +6,12 @@ TS_ENV = "arm-linux"
 require trusted-services.inc
 
 SRC_URI += "file://tee-udev.rules \
+            file://0001-Remove-TEE-driver-external-component.patch \
            "
 
 OECMAKE_SOURCEPATH="${S}/deployments/libts/${TS_ENV}"
 
-DEPENDS           += "arm-ffa-tee arm-ffa-user"
-RRECOMMENDS:${PN} += "arm-ffa-tee"
+DEPENDS           += "arm-ffa-user"
 
 # Unix group name for dev/tee* ownership.
 TEE_GROUP_NAME ?= "teeclnt"
@@ -19,7 +19,7 @@ TEE_GROUP_NAME ?= "teeclnt"
 do_install:append () {
     if ${@oe.utils.conditional('VIRTUAL-RUNTIME_dev_manager', 'busybox-mdev', 'false', 'true', d)}; then
         install -d ${D}${nonarch_base_libdir}/udev/rules.d/
-        install -m 755 ${WORKDIR}/tee-udev.rules ${D}${nonarch_base_libdir}/udev/rules.d/
+        install -m 755 ${UNPACKDIR}/tee-udev.rules ${D}${nonarch_base_libdir}/udev/rules.d/
         sed -i -e "s/teeclnt/${TEE_GROUP_NAME}/" ${D}${nonarch_base_libdir}/udev/rules.d/tee-udev.rules
     fi
 

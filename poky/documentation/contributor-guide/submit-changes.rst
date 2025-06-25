@@ -65,6 +65,13 @@ use to identify your commits::
    git config --global user.name "Ada Lovelace"
    git config --global user.email "ada.lovelace@gmail.com"
 
+By default, Git adds a signature line at the end of patches containing the Git
+version. We suggest to remove it as it doesn't add useful information.
+
+Remove it with the following command::
+
+   git config --global format.signature ""
+
 Clone the Git repository for the component to modify
 ----------------------------------------------------
 
@@ -483,7 +490,7 @@ typical usage of ``git send-email``::
    git send-email --to <mailing-list-address> *.patch
 
 Then, review each subject line and list of recipients carefully, and then
-and then allow the command to send each message.
+allow the command to send each message.
 
 You will see that ``git send-email`` will automatically copy the people listed
 in any commit tags such as ``Signed-off-by`` or ``Reported-by``.

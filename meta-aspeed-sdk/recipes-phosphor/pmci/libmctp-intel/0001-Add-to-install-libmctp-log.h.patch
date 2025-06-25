@@ -3,6 +3,8 @@ From: Jamin Lin <jamin_lin@aspeedtech.com>
 Date: Mon, 11 Jul 2022 14:18:31 +0800
 Subject: [PATCH] Add to install libmctp-log.h
 
+Upstream-Status: Pending
+
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 ---
  CMakeLists.txt | 2 +-

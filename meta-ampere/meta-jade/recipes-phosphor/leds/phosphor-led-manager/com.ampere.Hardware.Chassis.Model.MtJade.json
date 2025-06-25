@@ -11,11 +11,24 @@
 			]
 		},
 		{
+			"group": "gpio_fault",
+			"members": [
+				{
+					"Name": "fault",
+					"Action": "On",
+					"DutyOn": 50,
+					"Period": 0,
+					"Priority": "On"
+				}
+			]
+		},
+		{
 			"group": "enclosure_identify",
 			"members": [
 				{
 					"Name": "identify",
 					"Action": "On",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}
@@ -27,6 +40,7 @@
 				{
 					"Name": "identify",
 					"Action": "Blink",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}
@@ -38,6 +52,7 @@
 				{
 					"Name": "fault",
 					"Action": "On",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}
@@ -49,6 +64,7 @@
 				{
 					"Name": "fault",
 					"Action": "On",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}
@@ -60,6 +76,7 @@
 				{
 					"Name": "fault",
 					"Action": "On",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}
@@ -71,6 +88,7 @@
 				{
 					"Name": "fault",
 					"Action": "On",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}
@@ -82,6 +100,7 @@
 				{
 					"Name": "fault",
 					"Action": "On",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}
@@ -93,6 +112,31 @@
 				{
 					"Name": "fault",
 					"Action": "On",
+					"Priority": "On",
+					"DutyOn": 50,
+					"Period": 1000
+				}
+			]
+		},
+		{
+			"group": "psu_fault",
+			"members": [
+				{
+					"Name": "fault",
+					"Action": "On",
+					"Priority": "On",
+					"DutyOn": 50,
+					"Period": 1000
+				}
+			]
+		},
+		{
+			"group": "ras_ue_fault",
+			"members": [
+				{
+					"Name": "fault",
+					"Action": "On",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}
@@ -104,6 +148,7 @@
 				{
 					"Name": "fault",
 					"Action": "On",
+					"Priority": "On",
 					"DutyOn": 50,
 					"Period": 1000
 				}

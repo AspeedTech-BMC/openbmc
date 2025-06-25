@@ -12,5 +12,5 @@ SYSTEMD_OVERRIDE:${PN} += "mctp-init.conf:mctpd.service.d/mctp-init.conf"
 
 do_install:append () {
 	install -d ${D}${bindir}
-	install -m 0755 ${WORKDIR}/mctp-init.sh ${D}${bindir}
+	install -m 0755 ${UNPACKDIR}/mctp-init.sh ${D}${bindir}
 }

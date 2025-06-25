@@ -72,6 +72,259 @@ class CVECheck(OESelftestTestCase):
         self.assertEqual(convert_cve_version("6.2_rc8"), "6.2-rc8")
         self.assertEqual(convert_cve_version("6.2_rc31"), "6.2-rc31")
 
+    def test_product_match(self):
+        from oe.cve_check import has_cve_product_match
+
+        status = {}
+        status["detail"] = "ignored"
+        status["vendor"] = "*"
+        status["product"] = "*"
+        status["description"] = ""
+        status["mapping"] = ""
+
+        self.assertEqual(has_cve_product_match(status, "some_vendor:some_product"), True)
+        self.assertEqual(has_cve_product_match(status, "*:*"), True)
+        self.assertEqual(has_cve_product_match(status, "some_product"), True)
+        self.assertEqual(has_cve_product_match(status, "glibc"), True)
+        self.assertEqual(has_cve_product_match(status, "glibca"), True)
+        self.assertEqual(has_cve_product_match(status, "aglibc"), True)
+        self.assertEqual(has_cve_product_match(status, "*"), True)
+        self.assertEqual(has_cve_product_match(status, "aglibc glibc test:test"), True)
+
+        status["product"] = "glibc"
+        self.assertEqual(has_cve_product_match(status, "some_vendor:some_product"), False)
+        # The CPE in the recipe must be defined, no * accepted
+        self.assertEqual(has_cve_product_match(status, "*:*"), False)
+        self.assertEqual(has_cve_product_match(status, "*"), False)
+        self.assertEqual(has_cve_product_match(status, "some_product"), False)
+        self.assertEqual(has_cve_product_match(status, "glibc"), True)
+        self.assertEqual(has_cve_product_match(status, "glibca"), False)
+        self.assertEqual(has_cve_product_match(status, "aglibc"), False)
+        self.assertEqual(has_cve_product_match(status, "some_vendor:glibc"), True)
+        self.assertEqual(has_cve_product_match(status, "some_vendor:glibc test"), True)
+        self.assertEqual(has_cve_product_match(status, "test some_vendor:glibc"), True)
+
+        status["vendor"] = "glibca"
+        status["product"] = "glibc"
+        self.assertEqual(has_cve_product_match(status, "some_vendor:some_product"), False)
+        # The CPE in the recipe must be defined, no * accepted
+        self.assertEqual(has_cve_product_match(status, "*:*"), False)
+        self.assertEqual(has_cve_product_match(status, "*"), False)
+        self.assertEqual(has_cve_product_match(status, "some_product"), False)
+        self.assertEqual(has_cve_product_match(status, "glibc"), False)
+        self.assertEqual(has_cve_product_match(status, "glibca"), False)
+        self.assertEqual(has_cve_product_match(status, "aglibc"), False)
+        self.assertEqual(has_cve_product_match(status, "some_vendor:glibc"), False)
+        self.assertEqual(has_cve_product_match(status, "glibca:glibc"), True)
+        self.assertEqual(has_cve_product_match(status, "test:test glibca:glibc"), True)
+        self.assertEqual(has_cve_product_match(status, "test glibca:glibc"), True)
+        self.assertEqual(has_cve_product_match(status, "glibca:glibc test"), True)
+
+    def test_parse_cve_from_patch_filename(self):
+        from oe.cve_check import parse_cve_from_filename
+
+        # Patch filename without CVE ID
+        self.assertEqual(parse_cve_from_filename("0001-test.patch"), "")
+
+        # Patch with single CVE ID
+        self.assertEqual(
+            parse_cve_from_filename("CVE-2022-12345.patch"), "CVE-2022-12345"
+        )
+
+        # Patch with multiple CVE IDs
+        self.assertEqual(
+            parse_cve_from_filename("CVE-2022-41741-CVE-2022-41742.patch"),
+            "CVE-2022-41742",
+        )
+
+        # Patches with CVE ID and appended text
+        self.assertEqual(
+            parse_cve_from_filename("CVE-2023-3019-0001.patch"), "CVE-2023-3019"
+        )
+        self.assertEqual(
+            parse_cve_from_filename("CVE-2024-21886-1.patch"), "CVE-2024-21886"
+        )
+
+        # Patch with CVE ID and prepended text
+        self.assertEqual(
+            parse_cve_from_filename("grep-CVE-2012-5667.patch"), "CVE-2012-5667"
+        )
+        self.assertEqual(
+            parse_cve_from_filename("0001-CVE-2012-5667.patch"), "CVE-2012-5667"
+        )
+
+        # Patch with CVE ID and both prepended and appended text
+        self.assertEqual(
+            parse_cve_from_filename(
+                "0001-tpm2_import-fix-fixed-AES-key-CVE-2021-3565-0001.patch"
+            ),
+            "CVE-2021-3565",
+        )
+
+        # Only grab the last CVE ID in the filename
+        self.assertEqual(
+            parse_cve_from_filename("CVE-2012-5667-CVE-2012-5668.patch"),
+            "CVE-2012-5668",
+        )
+
+        # Test invalid CVE ID with incorrect length (must be at least 4 digits)
+        self.assertEqual(
+            parse_cve_from_filename("CVE-2024-001.patch"),
+            "",
+        )
+
+        # Test valid CVE ID with very long length
+        self.assertEqual(
+            parse_cve_from_filename("CVE-2024-0000000000000000000000001.patch"),
+            "CVE-2024-0000000000000000000000001",
+        )
+
+    def test_parse_cve_from_patch_contents(self):
+        import textwrap
+        from oe.cve_check import parse_cves_from_patch_contents
+
+        # Standard patch file excerpt without any patches
+        self.assertEqual(
+            parse_cves_from_patch_contents(
+                textwrap.dedent("""\
+            remove "*" for root since we don't have a /etc/shadow so far.
+
+            Upstream-Status: Inappropriate [configuration]
+
+            Signed-off-by: Scott Garman <scott.a.garman@intel.com>
+
+            --- base-passwd/passwd.master~nobash
+            +++ base-passwd/passwd.master
+            @@ -1,4 +1,4 @@
+            -root:*:0:0:root:/root:/bin/sh
+            +root::0:0:root:/root:/bin/sh
+            daemon:*:1:1:daemon:/usr/sbin:/bin/sh
+            bin:*:2:2:bin:/bin:/bin/sh
+            sys:*:3:3:sys:/dev:/bin/sh
+            """)
+            ),
+            set(),
+        )
+
+        # Patch file with multiple CVE IDs (space-separated)
+        self.assertEqual(
+            parse_cves_from_patch_contents(
+                textwrap.dedent("""\
+                There is an assertion in function _cairo_arc_in_direction().
+
+                CVE: CVE-2019-6461 CVE-2019-6462
+                Upstream-Status: Pending
+                Signed-off-by: Ross Burton <ross.burton@intel.com>
+
+                diff --git a/src/cairo-arc.c b/src/cairo-arc.c
+                index 390397bae..1bde774a4 100644
+                --- a/src/cairo-arc.c
+                +++ b/src/cairo-arc.c
+                @@ -186,7 +186,8 @@ _cairo_arc_in_direction (cairo_t          *cr,
+                    if (cairo_status (cr))
+                        return;
+
+                -    assert (angle_max >= angle_min);
+                +    if (angle_max < angle_min)
+                +       return;
+
+                    if (angle_max - angle_min > 2 * M_PI * MAX_FULL_CIRCLES) {
+                    angle_max = fmod (angle_max - angle_min, 2 * M_PI);
+            """),
+            ),
+            {"CVE-2019-6461", "CVE-2019-6462"},
+        )
+
+        # Patch file with multiple CVE IDs (comma-separated w/ both space and no space)
+        self.assertEqual(
+            parse_cves_from_patch_contents(
+                textwrap.dedent("""\
+                There is an assertion in function _cairo_arc_in_direction().
+
+                CVE: CVE-2019-6461,CVE-2019-6462, CVE-2019-6463
+                Upstream-Status: Pending
+                Signed-off-by: Ross Burton <ross.burton@intel.com>
+
+                diff --git a/src/cairo-arc.c b/src/cairo-arc.c
+                index 390397bae..1bde774a4 100644
+                --- a/src/cairo-arc.c
+                +++ b/src/cairo-arc.c
+                @@ -186,7 +186,8 @@ _cairo_arc_in_direction (cairo_t          *cr,
+                    if (cairo_status (cr))
+                        return;
+
+                -    assert (angle_max >= angle_min);
+                +    if (angle_max < angle_min)
+                +       return;
+
+                    if (angle_max - angle_min > 2 * M_PI * MAX_FULL_CIRCLES) {
+                    angle_max = fmod (angle_max - angle_min, 2 * M_PI);
+
+            """),
+            ),
+            {"CVE-2019-6461", "CVE-2019-6462", "CVE-2019-6463"},
+        )
+
+        # Patch file with multiple CVE IDs (&-separated)
+        self.assertEqual(
+            parse_cves_from_patch_contents(
+                textwrap.dedent("""\
+                There is an assertion in function _cairo_arc_in_direction().
+
+                CVE: CVE-2019-6461 & CVE-2019-6462
+                Upstream-Status: Pending
+                Signed-off-by: Ross Burton <ross.burton@intel.com>
+
+                diff --git a/src/cairo-arc.c b/src/cairo-arc.c
+                index 390397bae..1bde774a4 100644
+                --- a/src/cairo-arc.c
+                +++ b/src/cairo-arc.c
+                @@ -186,7 +186,8 @@ _cairo_arc_in_direction (cairo_t          *cr,
+                    if (cairo_status (cr))
+                        return;
+
+                -    assert (angle_max >= angle_min);
+                +    if (angle_max < angle_min)
+                +       return;
+
+                    if (angle_max - angle_min > 2 * M_PI * MAX_FULL_CIRCLES) {
+                    angle_max = fmod (angle_max - angle_min, 2 * M_PI);
+            """),
+            ),
+            {"CVE-2019-6461", "CVE-2019-6462"},
+        )
+
+        # Patch file with multiple lines with CVE IDs
+        self.assertEqual(
+            parse_cves_from_patch_contents(
+                textwrap.dedent("""\
+                There is an assertion in function _cairo_arc_in_direction().
+
+                CVE: CVE-2019-6461 & CVE-2019-6462
+
+                CVE: CVE-2019-6463 & CVE-2019-6464
+                Upstream-Status: Pending
+                Signed-off-by: Ross Burton <ross.burton@intel.com>
+
+                diff --git a/src/cairo-arc.c b/src/cairo-arc.c
+                index 390397bae..1bde774a4 100644
+                --- a/src/cairo-arc.c
+                +++ b/src/cairo-arc.c
+                @@ -186,7 +186,8 @@ _cairo_arc_in_direction (cairo_t          *cr,
+                    if (cairo_status (cr))
+                        return;
+
+                -    assert (angle_max >= angle_min);
+                +    if (angle_max < angle_min)
+                +       return;
+
+                    if (angle_max - angle_min > 2 * M_PI * MAX_FULL_CIRCLES) {
+                    angle_max = fmod (angle_max - angle_min, 2 * M_PI);
+
+            """),
+            ),
+            {"CVE-2019-6461", "CVE-2019-6462", "CVE-2019-6463", "CVE-2019-6464"},
+        )
 
     def test_recipe_report_json(self):
         config = """
@@ -217,9 +470,10 @@ CVE_CHECK_REPORT_PATCHED = "1"
             # m4 CVE should not be in logrotate
             self.assertNotIn("CVE-2008-1687", found_cves)
             # logrotate has both Patched and Ignored CVEs
+            detail = "version-not-in-range"
             self.assertIn("CVE-2011-1098", found_cves)
             self.assertEqual(found_cves["CVE-2011-1098"]["status"], "Patched")
-            self.assertEqual(len(found_cves["CVE-2011-1098"]["detail"]), 0)
+            self.assertEqual(found_cves["CVE-2011-1098"]["detail"], detail)
             self.assertEqual(len(found_cves["CVE-2011-1098"]["description"]), 0)
             detail = "not-applicable-platform"
             description = "CVE is debian, gentoo or SUSE specific on the way logrotate was installed/used"

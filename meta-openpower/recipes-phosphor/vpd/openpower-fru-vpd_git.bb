@@ -21,20 +21,19 @@ DEPENDS += " \
         ${PYTHON_PN}-mako-native \
         ${PYTHON_PN}-pyyaml-native \
         autoconf-archive-native \
+        libgpiod \
         "
 
 SYSTEMD_SERVICE:${PN} += "op-vpd-parser.service"
+SYSTEMD_SERVICE:${PN} += "vpd-manager.service"
 
 S = "${WORKDIR}/git"
 
 PACKAGECONFIG ??= ""
-PACKAGECONFIG[ibm-parser] = "-Dibm-parser=enabled, -Dibm-parser=disabled, libgpiod nlohmann-json cli11"
-PACKAGECONFIG[vpd-manager] = "-Dvpd-manager=enabled, -Dvpd-manager=disabled"
+PACKAGECONFIG[ibm_system] = "-Dibm_system=enabled, -Dibm_system=disabled, libgpiod nlohmann-json cli11"
 
 EXTRA_OEMESON = " \
              -Dtests=disabled \
-             -DFRU_YAML=${STAGING_DIR_NATIVE}${vpdlayout_datadir}/layout.yaml \
-             -DPROP_YAML=${STAGING_DIR_NATIVE}${properties_datadir}/out.yaml \
              "
 
 do_install:append() {
@@ -44,5 +43,5 @@ do_install:append() {
         install ${SRC}/inventory ${DEST}
 
         install -d ${D}/${nonarch_base_libdir}/udev/rules.d/
-        install -m0644 ${WORKDIR}/70-op-vpd.rules ${D}/${nonarch_base_libdir}/udev/rules.d/
+        install -m0644 ${UNPACKDIR}/70-op-vpd.rules ${D}/${nonarch_base_libdir}/udev/rules.d/
 }

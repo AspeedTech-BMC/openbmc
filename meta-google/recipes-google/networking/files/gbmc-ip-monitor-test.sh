@@ -171,6 +171,7 @@ testParseLinkAdd() {
   expect_streq "$action" 'add'
   expect_streq "$intf" 'eno2'
   expect_streq "$mac" 'aa:aa:aa:aa:aa:aa'
+  expect_streq "$carrier" 'UP'
 }
 
 testParseLinkDel() {
@@ -180,6 +181,17 @@ testParseLinkDel() {
   expect_streq "$action" 'del'
   expect_streq "$intf" 'eno2'
   expect_streq "$mac" 'aa:aa:aa:aa:aa:aa'
+  expect_streq "$carrier" 'UP'
+}
+
+testParseLinkUsb() {
+  expect_err 0 gbmc_ip_monitor_parse_line "[LINK]20: gusbem0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 master gbmcbr state UP" \
+    < <(echo 'link/ether aa:aa:aa:aa:aa:aa brd ff:ff:ff:ff:ff:ff')
+  expect_streq "$change" 'link'
+  expect_streq "$action" 'add'
+  expect_streq "$intf" 'gusbem0'
+  expect_streq "$mac" 'aa:aa:aa:aa:aa:aa'
+  expect_streq "$carrier" 'UP'
 }
 
 main

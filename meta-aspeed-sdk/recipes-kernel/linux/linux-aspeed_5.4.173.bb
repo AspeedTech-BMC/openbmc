@@ -1,8 +1,8 @@
 KBRANCH = "aspeed-master-v5.4"
 LINUX_VERSION ?= "5.4.173"
 
-# Tag for v00.04.22
-SRCREV = "02d21111713f52dba1b8582f3d99341b9df53170"
+# Tag for v00.04.23
+SRCREV = "658024fe3242d4923896a1c6828a050a55bca534"
 
 require linux-aspeed.inc
 
@@ -13,4 +13,3 @@ DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secur
 
 SRC_URI:append = " file://ipmi_ssif.cfg "
 SRC_URI:append = " file://mtd_test.cfg "
-SRC_URI:append = " file://init_disassemble_info-signature-changes-causes-compile-failures.patch "

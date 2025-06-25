@@ -1,0 +1,215 @@
+{
+    "name": "2700A1_ECDSA384_LMS",
+    "version": "2700A1",
+    "config_region": {
+        // unmark this for mass production
+        // OTPCFG0[9]
+        // "enable_secure_boot": true,
+        // OTPCFG2[10]
+        "en_lms_verify": true
+    },
+    "secure_region": {
+        "keys": [
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_0.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0xa0",
+                "number_id": 0
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_1.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0xd0",
+                "number_id": 1
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_2.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x100",
+                "number_id": 2
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_3.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x130",
+                "number_id": 3
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_4.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x160",
+                "number_id": 4
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_5.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x190",
+                "number_id": 5
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_6.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x1c0",
+                "number_id": 6
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_7.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x1f0",
+                "number_id": 7
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_8.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x220",
+                "number_id": 8
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_9.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x250",
+                "number_id": 9
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_10.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x280",
+                "number_id": 10
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_11.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x2b0",
+                "number_id": 11
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_12.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x2e0",
+                "number_id": 12
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_13.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x310",
+                "number_id": 13
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_14.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x340",
+                "number_id": 14
+            },
+            {
+                "key_file": "test_oem_dss_public_key_ecdsa384_15.pem",
+                "type": "soc_ecdsa_pub",
+                "w_offset": "0x370",
+                "number_id": 15
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_0.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x3a0",
+                "number_id": 0
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_1.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x3b8",
+                "number_id": 1
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_2.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x3d0",
+                "number_id": 2
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_3.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x3e8",
+                "number_id": 3
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_4.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x400",
+                "number_id": 4
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_5.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x418",
+                "number_id": 5
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_6.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x430",
+                "number_id": 6
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_7.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x448",
+                "number_id": 7
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_8.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x460",
+                "number_id": 8
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_9.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x478",
+                "number_id": 9
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_10.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x490",
+                "number_id": 10
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_11.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x4a8",
+                "number_id": 11
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_12.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x4c0",
+                "number_id": 12
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_13.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x4d8",
+                "number_id": 13
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_14.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x4f0",
+                "number_id": 14
+            },
+            {
+                "key_file": "test_oem_dss_lms_key_15.pub",
+                "type": "soc_lms_pub",
+                "w_offset": "0x508",
+                "number_id": 15
+            }
+        ]
+    },
+    // unmark this for mass production
+    // "strap_region": {
+    //     // OTPSTRAP[16]
+    //     "En_SecBoot": {
+    //         "value": true,
+    //         "protect": false
+    //     }
+    // }
+}

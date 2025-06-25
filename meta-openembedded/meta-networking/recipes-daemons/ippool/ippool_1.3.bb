@@ -42,7 +42,7 @@ inherit systemd
 DEPENDS = "readline ppp ncurses gzip-native rpcsvc-proto-native libtirpc"
 RDEPENDS:${PN} = "rpcbind"
 
-EXTRA_OEMAKE = "CC='${CC}' AS='${AS}' LD='${LD}' AR='${AR}' NM='${NM}' STRIP='${STRIP}'"
+EXTRA_OEMAKE = "CC='${CC} ${CFLAGS}' AS='${AS}' LD='${LD} ${LDFLAGS}' AR='${AR}' NM='${NM}' STRIP='${STRIP}'"
 EXTRA_OEMAKE += "PPPD_VERSION=${PPPD_VERSION} SYS_LIBDIR=${libdir}"
 # enable self tests
 EXTRA_OEMAKE += "IPPOOL_TEST=y"
@@ -52,12 +52,7 @@ CPPFLAGS += "${SELECTED_OPTIMIZATION} -I${STAGING_INCDIR}/tirpc"
 SYSTEMD_SERVICE:${PN} = "ippool.service"
 
 do_compile:prepend() {
-    # fix the CFLAGS= and CPPFLAGS= in main Makefile, to have the extra CFLAGS in env
-    sed -i -e "s/^CFLAGS=/CFLAGS+=/" ${S}/Makefile
-    sed -i -e "s/^CPPFLAGS=/CPPFLAGS+=/" ${S}/Makefile
-
     sed -i -e "s:-I/usr/include/pppd:-I=/usr/include/pppd:" ${S}/pppd/Makefile
-
 }
 
 
@@ -65,14 +60,14 @@ do_install() {
     oe_runmake DESTDIR=${D} install
 
     install -D -m 0755 ${S}/debian/init.d ${D}${sysconfdir}/init.d/ippoold
-    install -D -m 0644 ${WORKDIR}/ippool.service ${D}${systemd_system_unitdir}/ippool.service
+    install -D -m 0644 ${UNPACKDIR}/ippool.service ${D}${systemd_system_unitdir}/ippool.service
     sed -i -e 's:@SBINDIR@:${sbindir}:g' ${D}${systemd_system_unitdir}/ippool.service
 
     # install self test
     install -d ${D}/opt/${BPN}
     install ${S}/test/all.tcl  ${S}/test/ippool.test \
         ${S}/test/test_procs.tcl ${D}/opt/${BPN}
-    install ${WORKDIR}/runtest.sh ${D}/opt/${BPN}
+    install ${UNPACKDIR}/runtest.sh ${D}/opt/${BPN}
     # fix the ../ippoolconfig in test_procs.tcl
     sed -i -e "s:../ippoolconfig:ippoolconfig:" \
         ${D}/opt/${BPN}/test_procs.tcl

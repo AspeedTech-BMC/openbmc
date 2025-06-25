@@ -11,13 +11,14 @@ SRC_URI = "file://stack_chk.c"
 
 INHIBIT_DEFAULT_DEPS = "1"
 
-DEPENDS = "virtual/${TARGET_PREFIX}binutils \
-           virtual/${TARGET_PREFIX}gcc \
+DEPENDS = "virtual/cross-binutils \
+           virtual/cross-cc \
 "
 
 do_configure[noexec] = "1"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_compile() {
 	${CC} ${CPPFLAGS} ${CFLAGS} -fPIE -c stack_chk.c -o stack_chk.o

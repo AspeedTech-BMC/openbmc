@@ -1,33 +1,33 @@
-From c3a068cf24a22bea7349849ec111ae8d91a54db4 Mon Sep 17 00:00:00 2001
+From 19a8777c81bc451d65a4071528e4715e19941e0a Mon Sep 17 00:00:00 2001
 From: Jeff Dike <jdike@x86_64.user-mode-linux.org>
 Date: Wed, 14 Jul 2010 14:35:52 -0400
 Subject: [PATCH] sysvinit - Remove sulogin dependency on /usr/lib*/libcrypt.a
 
+The src Makefile was checking for libcrypt.a on the host, not in the
+build environment.  This patch checks for $LCRYPT in the environment
+and uses it if it's there.
+jdike@linux.intel.com
+
 Upstream-Status: Inappropriate [configuration]
-
-# The src Makefile was checking for libcrypt.a on the host, not in the
-# build environment.  This patch checks for $LCRYPT in the environment
-# and uses it if it's there.
-# - jdike@linux.intel.com
-
 ---
- src/Makefile | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ src/Makefile | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
 diff --git a/src/Makefile b/src/Makefile
-index 5b1a5a2..b686394 100644
+index 4ce4889..1611c1c 100644
 --- a/src/Makefile
 +++ b/src/Makefile
-@@ -97,15 +97,8 @@ else
+@@ -97,16 +97,8 @@ else
+   SULOGINLIBS	=
  endif
  
- # Additional libs for GNU libc.
--ifneq ($(wildcard $(ROOT)/usr/lib*/libcrypt.*),)
+-# Additional libs for GNU libc.
+-ifneq ($(wildcard $(ROOT)/$(usrdir)/lib*/libcrypt.*),)
 -  SULOGINLIBS	+= -lcrypt
 -endif
 -
 -# Additional libs for GNU libc / multiarch on Debian based systems.
--ifneq ($(wildcard $(ROOT)/usr/lib/*/libcrypt.*),)
+-ifneq ($(wildcard $(ROOT)/$(usrdir)/lib/*/libcrypt.*),)
 -ifneq ($(findstring -lcrypt, $(SULOGINLIBS)), -lcrypt)
 -  SULOGINLIBS	+= -lcrypt
 -endif

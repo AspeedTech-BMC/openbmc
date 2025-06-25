@@ -4,24 +4,24 @@
 require musl.inc
 inherit linuxloader
 
-SRCREV = "79bdacff83a6bd5b70ff5ae5eb8b6de82c2f7c30"
+SRCREV = "61399d4bd02ae1ec03068445aa7ffe9174466bfd"
 
-BASEVER = "1.2.4"
+BASEVER = "1.2.5"
 
 PV = "${BASEVER}+git"
 
-SRC_URI = "git://git.etalabs.net/git/musl;branch=master;protocol=https \
+SRC_URI = "git://git.musl-libc.org/musl;branch=master \
            file://0001-Make-dynamic-linker-a-relative-symlink-to-libc.patch \
            file://0002-ldso-Use-syslibdir-and-libdir-as-default-pathes-to-l.patch \
-           file://0003-elf.h-add-typedefs-for-Elf64_Relr-and-Elf32_Relr.patch \
+           file://0001-Update-syscalls-for-r32-rv64-from-kernel-6.4-through.patch \
           "
 
 S = "${WORKDIR}/git"
 
 PROVIDES += "virtual/libc virtual/libiconv virtual/libintl virtual/crypt"
 
-DEPENDS = "virtual/${TARGET_PREFIX}binutils \
-           virtual/${TARGET_PREFIX}gcc \
+DEPENDS = "virtual/cross-binutils \
+           virtual/cross-cc \
            libgcc-initial \
            linux-libc-headers \
            bsd-headers \
@@ -30,7 +30,7 @@ DEPENDS = "virtual/${TARGET_PREFIX}binutils \
 GLIBC_LDSO = "${@get_glibc_loader(d)}"
 MUSL_LDSO_ARCH = "${@get_musl_loader_arch(d)}"
 
-export CROSS_COMPILE="${TARGET_PREFIX}"
+export CROSS_COMPILE = "${TARGET_PREFIX}"
 
 LDFLAGS += "-Wl,-soname,libc.so"
 

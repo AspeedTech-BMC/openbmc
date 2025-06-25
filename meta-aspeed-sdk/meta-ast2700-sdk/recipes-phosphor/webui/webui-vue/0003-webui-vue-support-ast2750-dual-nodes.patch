@@ -1,4 +1,4 @@
-From 08c054845702990a64569ca0eaf745c0f6cc6521 Mon Sep 17 00:00:00 2001
+From 37ec5754136f80d3050abcc6b5d7a3426f1dc33f Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Thu, 7 Dec 2023 13:32:59 +0800
 Subject: [PATCH] webui-vue: support ast2750 dual nodes.
@@ -6,30 +6,31 @@ Subject: [PATCH] webui-vue: support ast2750 dual nodes.
 1. Add KVM1 page.
 2. Add Host1 Virtual Media device.
 
+Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
  src/assets/styles/bmc/custom/_index.scss      |   1 +
  src/assets/styles/bmc/custom/_kvm1.scss       |  12 ++
- src/components/AppHeader/AppHeader.vue        |   5 +-
+ src/components/AppHeader/AppHeader.vue        |   7 +-
  .../AppNavigation/AppNavigationMixin.js       |   5 +
  src/env/components/AppNavigation/intel.js     |   5 +
  src/env/router/intel.js                       |  18 ++
  src/locales/en-US.json                        |  18 +-
  src/router/routes.js                          |  18 ++
- .../Authentication/AuthenticanStore.js        |   4 +
+ .../Authentication/AuthenticanStore.js        |   3 +
  .../modules/Operations/VirtualMediaStore.js   |  21 ++
  src/views/Operations/Kvm1/Kvm1.vue            |  24 +++
- src/views/Operations/Kvm1/Kvm1Console.vue     | 190 ++++++++++++++++++
+ src/views/Operations/Kvm1/Kvm1Console.vue     | 200 ++++++++++++++++++
  src/views/Operations/Kvm1/index.js            |   2 +
- .../Operations/VirtualMedia/VirtualMedia.vue  |  67 ++++++
- 14 files changed, 387 insertions(+), 3 deletions(-)
+ .../Operations/VirtualMedia/VirtualMedia.vue  |  71 +++++++
+ 14 files changed, 402 insertions(+), 3 deletions(-)
  create mode 100644 src/assets/styles/bmc/custom/_kvm1.scss
  create mode 100644 src/views/Operations/Kvm1/Kvm1.vue
  create mode 100644 src/views/Operations/Kvm1/Kvm1Console.vue
  create mode 100644 src/views/Operations/Kvm1/index.js
 
 diff --git a/src/assets/styles/bmc/custom/_index.scss b/src/assets/styles/bmc/custom/_index.scss
-index 74594e3..9b72699 100644
+index 74594e35..9b72699e 100644
 --- a/src/assets/styles/bmc/custom/_index.scss
 +++ b/src/assets/styles/bmc/custom/_index.scss
 @@ -10,6 +10,7 @@
@@ -42,7 +43,7 @@ index 74594e3..9b72699 100644
  @import "./section-divider";
 diff --git a/src/assets/styles/bmc/custom/_kvm1.scss b/src/assets/styles/bmc/custom/_kvm1.scss
 new file mode 100644
-index 0000000..a722384
+index 00000000..a7223844
 --- /dev/null
 +++ b/src/assets/styles/bmc/custom/_kvm1.scss
 @@ -0,0 +1,12 @@
@@ -60,10 +61,10 @@ index 0000000..a722384
 +}
 \ No newline at end of file
 diff --git a/src/components/AppHeader/AppHeader.vue b/src/components/AppHeader/AppHeader.vue
-index 76c96c0..9228454 100644
+index 25c0f2b3..2bd40a34 100644
 --- a/src/components/AppHeader/AppHeader.vue
 +++ b/src/components/AppHeader/AppHeader.vue
-@@ -142,7 +142,7 @@ export default {
+@@ -145,7 +145,7 @@ export default {
      };
    },
    computed: {
@@ -72,50 +73,52 @@ index 76c96c0..9228454 100644
      isNavTagPresent() {
        return this.assetTag || this.modelType || this.serialNumber;
      },
-@@ -200,6 +200,9 @@ export default {
+@@ -203,6 +203,11 @@ export default {
      consoleWindow() {
-       if (this.consoleWindow === false) this.$eventBus.$consoleWindow.close();
+       if (this.consoleWindow === false) this.$eventBus.$consoleWindow?.close();
      },
 +    consoleWindow1() {
-+      if (this.consoleWindow1 === false) this.$eventBus.$consoleWindow1.close();
++      if (this.consoleWindow1 === false) {
++        this.$eventBus.$consoleWindow1?.close();
++      }
 +    },
      isAuthorized(value) {
        if (value === false) {
-         this.errorToast(this.$t('global.toast.unAuthDescription'), {
+         this.errorToast(i18n.global.t('global.toast.unAuthDescription'), {
 diff --git a/src/components/AppNavigation/AppNavigationMixin.js b/src/components/AppNavigation/AppNavigationMixin.js
-index b33b24b..8b28bf0 100644
+index 89c1508b..427786bc 100644
 --- a/src/components/AppNavigation/AppNavigationMixin.js
 +++ b/src/components/AppNavigation/AppNavigationMixin.js
-@@ -82,6 +82,11 @@ const AppNavigationMixin = {
-               label: this.$t('appNavigation.kvm'),
+@@ -88,6 +88,11 @@ const AppNavigationMixin = {
+               label: i18n.global.t('appNavigation.kvm'),
                route: '/operations/kvm',
              },
 +            {
 +              id: 'kvm1',
-+              label: this.$t('appNavigation.kvm1'),
++              label: i18n.global.t('appNavigation.kvm1'),
 +              route: '/operations/kvm1',
 +            },
              {
                id: 'key-clear',
-               label: this.$t('appNavigation.keyClear'),
+               label: i18n.global.t('appNavigation.keyClear'),
 diff --git a/src/env/components/AppNavigation/intel.js b/src/env/components/AppNavigation/intel.js
-index 0688a05..15ac27a 100644
+index e20b0ef4..3480107c 100644
 --- a/src/env/components/AppNavigation/intel.js
 +++ b/src/env/components/AppNavigation/intel.js
-@@ -78,6 +78,11 @@ const AppNavigationMixin = {
-               label: this.$t('appNavigation.kvm'),
+@@ -79,6 +79,11 @@ const AppNavigationMixin = {
+               label: i18n.global.t('appNavigation.kvm'),
                route: '/operations/kvm',
              },
 +            {
 +              id: 'kvm1',
-+              label: this.$t('appNavigation.kvm1'),
++              label: i18n.global.t('appNavigation.kvm1'),
 +              route: '/operations/kvm1',
 +            },
              {
                id: 'firmware',
-               label: this.$t('appNavigation.firmware'),
+               label: i18n.global.t('appNavigation.firmware'),
 diff --git a/src/env/router/intel.js b/src/env/router/intel.js
-index 5f3ee6e..0c9781c 100644
+index 5f3ee6eb..0c9781c7 100644
 --- a/src/env/router/intel.js
 +++ b/src/env/router/intel.js
 @@ -8,6 +8,8 @@ import Firmware from '@/views/Operations/Firmware';
@@ -158,7 +161,7 @@ index 5f3ee6e..0c9781c 100644
          path: '/operations/firmware',
          name: 'firmware',
 diff --git a/src/locales/en-US.json b/src/locales/en-US.json
-index 8ba7ac9..1cdddbc 100644
+index e64287da..09873f0a 100644
 --- a/src/locales/en-US.json
 +++ b/src/locales/en-US.json
 @@ -115,6 +115,7 @@
@@ -192,7 +195,7 @@ index 8ba7ac9..1cdddbc 100644
      "pageLdap": {
          "pageDescription": "Configure LDAP settings and manage role groups",
          "roleGroups": "Role groups",
-@@ -982,7 +992,8 @@
+@@ -999,7 +1009,8 @@
      },
      "pageVirtualMedia": {
          "configureConnection": "Configure Connection",
@@ -202,7 +205,7 @@ index 8ba7ac9..1cdddbc 100644
          "start": "Start",
          "stop": "Stop",
          "virtualMediaSubTitleFirst": "Load image from web browser",
-@@ -1000,7 +1011,10 @@
+@@ -1017,7 +1028,10 @@
              "serverRunning": "Server running",
              "serverConnectionEstablished": "Server connection established",
              "serverClosedSuccessfully": "Server closed successfully",
@@ -215,7 +218,7 @@ index 8ba7ac9..1cdddbc 100644
      },
      "countries": {
 diff --git a/src/router/routes.js b/src/router/routes.js
-index 5424cab..8ed0ec3 100644
+index f821ce1d..f8e460d4 100644
 --- a/src/router/routes.js
 +++ b/src/router/routes.js
 @@ -8,6 +8,8 @@ import Firmware from '@/views/Operations/Firmware';
@@ -227,8 +230,8 @@ index 5424cab..8ed0ec3 100644
  import Sessions from '../views/SecurityAndAccess/Sessions';
  import Ldap from '@/views/SecurityAndAccess/Ldap';
  import UserManagement from '@/views/SecurityAndAccess/UserManagement';
-@@ -86,6 +88,14 @@ const routes = [
-           title: i18n.t('appPageTitle.kvm'),
+@@ -88,6 +90,14 @@ const routes = [
+           title: i18n.global.t('appPageTitle.kvm'),
          },
        },
 +      {
@@ -236,14 +239,14 @@ index 5424cab..8ed0ec3 100644
 +        name: 'kvm1-console',
 +        component: Kvm1Console,
 +        meta: {
-+          title: i18n.t('appPageTitle.kvm1'),
++          title: i18n.global.t('appPageTitle.kvm1'),
 +        },
 +      },
      ],
    },
    {
-@@ -223,6 +233,14 @@ const routes = [
-           title: i18n.t('appPageTitle.kvm'),
+@@ -233,6 +243,14 @@ const routes = [
+           title: i18n.global.t('appPageTitle.kvm'),
          },
        },
 +      {
@@ -251,17 +254,17 @@ index 5424cab..8ed0ec3 100644
 +        name: 'kvm1',
 +        component: Kvm1,
 +        meta: {
-+          title: i18n.t('appPageTitle.kvm1'),
++          title: i18n.global.t('appPageTitle.kvm1'),
 +        },
 +      },
        {
          path: '/operations/firmware',
          name: 'firmware',
 diff --git a/src/store/modules/Authentication/AuthenticanStore.js b/src/store/modules/Authentication/AuthenticanStore.js
-index 2006661..2588bec 100644
+index e876f780..170cb13d 100644
 --- a/src/store/modules/Authentication/AuthenticanStore.js
 +++ b/src/store/modules/Authentication/AuthenticanStore.js
-@@ -7,12 +7,14 @@ const AuthenticationStore = {
+@@ -7,6 +7,7 @@ const AuthenticationStore = {
    namespaced: true,
    state: {
      consoleWindow: null,
@@ -269,31 +272,24 @@ index 2006661..2588bec 100644
      authError: false,
      xsrfCookie: Cookies.get('XSRF-TOKEN'),
      isAuthenticatedCookie: Cookies.get('IsAuthenticated'),
+@@ -15,6 +16,7 @@ const AuthenticationStore = {
    },
    getters: {
      consoleWindow: (state) => state.consoleWindow,
 +    consoleWindow1: (state) => state.consoleWindow1,
      authError: (state) => state.authError,
      isLoggedIn: (state) => {
-       return (
-@@ -37,6 +39,7 @@ const AuthenticationStore = {
-       state.isAuthenticatedCookie = undefined;
+       // We might have gotten XSRF-TOKEN (and HttpOnly SESSION cookie) by Mutual TLS authentication,
+@@ -58,6 +60,7 @@ const AuthenticationStore = {
+       state.sessionURI = null;
+       state.xAuthToken = null;
+       state.consoleWindow = false;
++      state.consoleWindow1 = false;
      },
-     setConsoleWindow: (state, window) => (state.consoleWindow = window),
-+    setConsoleWindow1: (state, window) => (state.consoleWindow1 = window),
    },
    actions: {
-     login({ commit }, { username, password }) {
-@@ -57,6 +60,7 @@ const AuthenticationStore = {
-         .post('/logout', { data: [] })
-         .then(() => {
-           commit('setConsoleWindow', false);
-+          commit('setConsoleWindow1', false);
-           commit('logout');
-         })
-         .then(() => router.push('/login'))
 diff --git a/src/store/modules/Operations/VirtualMediaStore.js b/src/store/modules/Operations/VirtualMediaStore.js
-index 1d27e21..66ee7de 100644
+index 85612757..adbc1697 100644
 --- a/src/store/modules/Operations/VirtualMediaStore.js
 +++ b/src/store/modules/Operations/VirtualMediaStore.js
 @@ -17,16 +17,20 @@ const VirtualMediaStore = {
@@ -322,7 +318,7 @@ index 1d27e21..66ee7de 100644
            isActive: false,
          };
 +        const device1 = {
-+          id: i18n.t('pageVirtualMedia.defaultDeviceName1'),
++          id: i18n.global.t('pageVirtualMedia.defaultDeviceName1'),
 +          websocket: '/vm/1/0',
 +          file: null,
 +          transferProtocolType: transferProtocolType.OEM,
@@ -358,7 +354,7 @@ index 1d27e21..66ee7de 100644
          .catch((error) => {
 diff --git a/src/views/Operations/Kvm1/Kvm1.vue b/src/views/Operations/Kvm1/Kvm1.vue
 new file mode 100644
-index 0000000..1593a51
+index 00000000..1593a51e
 --- /dev/null
 +++ b/src/views/Operations/Kvm1/Kvm1.vue
 @@ -0,0 +1,24 @@
@@ -388,10 +384,10 @@ index 0000000..1593a51
 +</style>
 diff --git a/src/views/Operations/Kvm1/Kvm1Console.vue b/src/views/Operations/Kvm1/Kvm1Console.vue
 new file mode 100644
-index 0000000..768df35
+index 00000000..c3c8b644
 --- /dev/null
 +++ b/src/views/Operations/Kvm1/Kvm1Console.vue
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,200 @@
 +<template>
 +  <div :class="marginClass">
 +    <div ref="toolbar" class="kvm-toolbar">
@@ -440,6 +436,8 @@ index 0000000..768df35
 +import IconLaunch from '@carbon/icons-vue/es/launch/20';
 +import IconArrowDown from '@carbon/icons-vue/es/arrow--down/16';
 +import { throttle } from 'lodash';
++import { useI18n } from 'vue-i18n';
++import i18n from '@/i18n';
 +
 +const Connecting = 0;
 +const Connected = 1;
@@ -456,6 +454,7 @@ index 0000000..768df35
 +  },
 +  data() {
 +    return {
++      $t: useI18n().t,
 +      rfb: null,
 +      isConnected: false,
 +      terminalClass: this.isFullWindow ? 'full-window' : '',
@@ -476,11 +475,11 @@ index 0000000..768df35
 +    },
 +    serverStatus() {
 +      if (this.status === Connected) {
-+        return this.$t('pageKvm1.connected');
++        return i18n.global.t('pageKvm1.connected');
 +      } else if (this.status === Disconnected) {
-+        return this.$t('pageKvm1.disconnected');
++        return i18n.global.t('pageKvm1.disconnected');
 +      }
-+      return this.$t('pageKvm1.connecting');
++      return i18n.global.t('pageKvm1.connecting');
 +    },
 +  },
 +  created() {
@@ -489,7 +488,7 @@ index 0000000..768df35
 +  mounted() {
 +    this.openTerminal();
 +  },
-+  beforeDestroy() {
++  beforeUnmount() {
 +    window.removeEventListener('resize', this.resizeKvmWindow);
 +    this.closeTerminal();
 +  },
@@ -567,7 +566,14 @@ index 0000000..768df35
 +};
 +</script>
 +
-+<style scoped lang="scss">
++<style lang="scss">
++@import '@/assets/styles/bmc/custom/_kvm1.scss';
++</style>
++
++<style lang="scss" scoped>
++@import '@/assets/styles/bmc/helpers/_index.scss';
++@import '@/assets/styles/bootstrap/_helpers.scss';
++
 +.button-ctrl-alt-delete {
 +  float: right;
 +}
@@ -584,14 +590,14 @@ index 0000000..768df35
 +</style>
 diff --git a/src/views/Operations/Kvm1/index.js b/src/views/Operations/Kvm1/index.js
 new file mode 100644
-index 0000000..f309220
+index 00000000..f309220d
 --- /dev/null
 +++ b/src/views/Operations/Kvm1/index.js
 @@ -0,0 +1,2 @@
 +import Kvm1 from './Kvm1.vue';
 +export default Kvm1;
 diff --git a/src/views/Operations/VirtualMedia/VirtualMedia.vue b/src/views/Operations/VirtualMedia/VirtualMedia.vue
-index 9ad1b1e..288ca34 100644
+index e1580597..39dba188 100644
 --- a/src/views/Operations/VirtualMedia/VirtualMedia.vue
 +++ b/src/views/Operations/VirtualMedia/VirtualMedia.vue
 @@ -39,6 +39,39 @@
@@ -634,7 +640,7 @@ index 9ad1b1e..288ca34 100644
          </page-section>
        </b-col>
      </b-row>
-@@ -122,6 +155,9 @@ export default {
+@@ -125,6 +158,9 @@ export default {
      proxyDevices() {
        return this.$store.getters['virtualMedia/proxyDevices'];
      },
@@ -644,7 +650,7 @@ index 9ad1b1e..288ca34 100644
      legacyDevices() {
        return this.$store.getters['virtualMedia/legacyDevices'];
      },
-@@ -166,6 +202,37 @@ export default {
+@@ -173,6 +209,41 @@ export default {
      stopVM(device) {
        device.nbd.stop();
      },
@@ -657,17 +663,21 @@ index 9ad1b1e..288ca34 100644
 +        token,
 +      );
 +      device.nbd.socketStarted = () =>
-+        this.successToast(this.$t('pageVirtualMedia.toast.serverRunning1'));
++        this.successToast(
++          i18n.global.t('pageVirtualMedia.toast.serverRunning1'),
++        );
 +      device.nbd.errorReadingFile = () =>
-+        this.errorToast(this.$t('pageVirtualMedia.toast.errorReadingFile'));
++        this.errorToast(
++          i18n.global.t('pageVirtualMedia.toast.errorReadingFile'),
++        );
 +      device.nbd.socketClosed = (code2) => {
 +        if (code2 === 1000)
 +          this.successToast(
-+            this.$t('pageVirtualMedia.toast.serverClosedSuccessfully1'),
++            i18n.global.t('pageVirtualMedia.toast.serverClosedSuccessfully1'),
 +          );
 +        else
 +          this.errorToast(
-+            this.$t('pageVirtualMedia.toast.serverClosedWithErrors'),
++            i18n.global.t('pageVirtualMedia.toast.serverClosedWithErrors'),
 +          );
 +        device.file = null;
 +        device.isActive = false;
@@ -683,5 +693,5 @@ index 9ad1b1e..288ca34 100644
        var data = {};
        data.Image = connectionData.serverUri;
 -- 
-2.25.1
+2.43.0
 

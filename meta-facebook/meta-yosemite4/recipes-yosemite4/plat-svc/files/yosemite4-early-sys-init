@@ -1,32 +1,62 @@
-#!/bin/bash -e
+#!/bin/bash
 # shellcheck source=meta-facebook/meta-yosemite4/recipes-yosemite4/plat-tool/files/yosemite4-common-functions
 source /usr/libexec/yosemite4-common-functions
 
+is_nuvoton_board="$(check_nuvoton_board)"
 
 enable_all_fan_input()
 {
-    for file in /sys/bus/i2c/devices/*/hwmon/*/fan*_enable
+    # There is no fan_enable for 2nd source Fan IC: NCT7363
+    if find /sys/bus/i2c/devices/*/hwmon/*/fan*_enable -print -quit 2>/dev/null | grep -q .; then
+      for file in /sys/bus/i2c/devices/*/hwmon/*/fan*_enable
+      do
+        echo 1 > "${file}"
+      done
+    fi
+}
+
+set_all_fan_pwm_70_percent() {
+    # 255 * 70% = 178.5
+    pwm_value=178
+
+    for pwm_node in /sys/bus/i2c/devices/*/hwmon/*/pwm*
     do
-      echo 1 > "${file}"
+        if [[ ! "$pwm_node" =~ _enable ]]; then
+            curr_pwm=$(cat "$pwm_node")
+
+            # Set PWM to 70% if current PWM is higher than 70%.
+            if [[ "$curr_pwm" -ge "$pwm_value" ]]; then
+              echo $pwm_value > "$pwm_node"
+            fi
+        fi
     done
 }
 
-# probe devices behind mux for management board cpld
+set_sd_bic_interface_to_i3c()
+{
+    if [ -z "$is_nuvoton_board" ]
+    then
+      # enable hot-join for I3C devices
+      echo "1" > /sys/bus/i3c/devices/i3c-0/hotjoin
+      echo "1" > /sys/bus/i3c/devices/i3c-1/hotjoin
+    fi
 
-rev_id_gpiochip=$(basename "/sys/bus/i2c/devices/13-0020/"*gpiochip*)
-rev_id_bit0=$(gpioget "$rev_id_gpiochip" 0)
-rev_id_bit1=$(gpioget "$rev_id_gpiochip" 1)
-rev_id_bit2=$(gpioget "$rev_id_gpiochip" 2)
-rev_id_bit3=$(gpioget "$rev_id_gpiochip" 3)
+    for host_bus in $(seq 0 7);
+    do
+      GPIOCHIP=$(basename /sys/bus/i2c/devices/"$host_bus"-0023/*gpiochip*)
+      if [ "$GPIOCHIP" != "*gpiochip*" ]; then
+        gpioset "$GPIOCHIP" 24=1
+      fi
+    done
+}
 
-# Default devicetree was set for EVT and later, only POC will do following manual devices' probing
-if [ "$rev_id_bit0" -eq 0 ] && [ "$rev_id_bit1" -eq 0 ] && [ "$rev_id_bit2" -eq 0 ] && [ "$rev_id_bit3" -eq 0 ]
-then
-    echo 24c128 "0x50" > /sys/bus/i2c/devices/i2c-12/new_device
-    echo 24c64 "0x54" > /sys/bus/i2c/devices/i2c-12/new_device
-    echo tmp75 "0x48" > /sys/bus/i2c/devices/i2c-12/new_device
-    echo nct3018y "0x6f" > /sys/bus/i2c/devices/i2c-12/new_device
-fi
+# get present status of slot 1~8 and keep in /tmp/gpio/PRSNT_SB_SLOT{1~8}_N
+mkdir -p /tmp/gpio
+for slot in {1..8}
+do
+  get_gpio PRSNT_SB_SLOT"${slot}"_N
+  echo "$?" > /tmp/gpio/PRSNT_SB_SLOT"${slot}"_N
+done
 
 # set initial value for GPIO output pins
 set_gpio EN_P5V_USB_CPLD_R    1
@@ -39,18 +69,35 @@ set_gpio RST_USB_HUB_R_N      1
 set_gpio FM_BMC_READY_R2      1
 set_gpio SPI_LOCK_REQ_BMC_N   1
 set_gpio EN_P3V_BAT_SCALED_R  0
+set_gpio FM_BMC_SLED_CYCLE_R  0
 
 set_gpio NIC0_MAIN_PWR_EN 1
 set_gpio NIC1_MAIN_PWR_EN 1
 set_gpio NIC2_MAIN_PWR_EN 1
 set_gpio NIC3_MAIN_PWR_EN 1
 
-# short-term set gpio v0~v3 to input pin for slot5~8 reset button
-mknod -m 660 /dev/mem c 1 1
-chown root:kmem /dev/mem
-devmem 0x1e78008c 32 0x19000000
+if [ -z "$is_nuvoton_board" ]
+then
+    # short-term set gpio v0~v3 to input pin for slot5~8 reset button
+    if [ ! -c "/dev/mem" ]; then
+        mknod -m 660 /dev/mem c 1 1
+    fi
+    chown root:kmem /dev/mem
+    devmem 0x1e78008c 32 0x19000000
+
+    # adjust the i2c clock duty cycle for bus 11
+    devmem 0x1E78A604 32 0x00487006
+fi
 
 # Enable all fan input as early as possible
 enable_all_fan_input
+
+# Set all fan PWM to 70%
+set_all_fan_pwm_70_percent
+
+handle_service_window
+
+# Set interface to SD BIC to I3C for BMC
+set_sd_bic_interface_to_i3c
 
 exit 0

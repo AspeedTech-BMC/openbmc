@@ -27,6 +27,7 @@ The one of following error would be shown on console:
  [ERR]   0060:
  [ERR]  - sign operation failed
 
+Upstream-Status: Pending
 Signed-off-by: Steven Lee <steven_lee@aspeedtech.com>
 ---
  sslhelper.c | 47 +++++++++++++++++++++++++----------------------

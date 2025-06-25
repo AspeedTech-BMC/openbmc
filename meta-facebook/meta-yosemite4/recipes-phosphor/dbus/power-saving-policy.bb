@@ -6,6 +6,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 inherit allarch
 inherit phosphor-dbus-monitor
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 
 SRC_URI:append = " \
@@ -16,10 +19,10 @@ SRC_URI:append = " \
 "
 
 do_install() {
-    install -D ${WORKDIR}/nic-1.yaml ${D}${config_dir}/nic-1.yaml
-    install -D ${WORKDIR}/nic-2.yaml ${D}${config_dir}/nic-2.yaml
-    install -D ${WORKDIR}/nic-3.yaml ${D}${config_dir}/nic-3.yaml
-    install -D ${WORKDIR}/nic-4.yaml ${D}${config_dir}/nic-4.yaml
+    install -D ${UNPACKDIR}/nic-1.yaml ${D}${config_dir}/nic-1.yaml
+    install -D ${UNPACKDIR}/nic-2.yaml ${D}${config_dir}/nic-2.yaml
+    install -D ${UNPACKDIR}/nic-3.yaml ${D}${config_dir}/nic-3.yaml
+    install -D ${UNPACKDIR}/nic-4.yaml ${D}${config_dir}/nic-4.yaml
 }
 
 FILES:${PN}:append = " \

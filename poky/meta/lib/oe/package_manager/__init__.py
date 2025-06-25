@@ -365,45 +365,43 @@ class PackageManager(object, metaclass=ABCMeta):
                 for complementary_linguas in (self.d.getVar('IMAGE_LINGUAS_COMPLEMENTARY') or "").split():
                     globs += (" " + complementary_linguas) % lang
 
-        if globs is None:
-            return
+        if globs:
+            # we need to write the list of installed packages to a file because the
+            # oe-pkgdata-util reads it from a file
+            with tempfile.NamedTemporaryFile(mode="w+", prefix="installed-pkgs") as installed_pkgs:
+                pkgs = self.list_installed()
 
-        # we need to write the list of installed packages to a file because the
-        # oe-pkgdata-util reads it from a file
-        with tempfile.NamedTemporaryFile(mode="w+", prefix="installed-pkgs") as installed_pkgs:
-            pkgs = self.list_installed()
+                provided_pkgs = set()
+                for pkg in pkgs.values():
+                    provided_pkgs |= set(pkg.get('provs', []))
 
-            provided_pkgs = set()
-            for pkg in pkgs.values():
-                provided_pkgs |= set(pkg.get('provs', []))
+                output = oe.utils.format_pkg_list(pkgs, "arch")
+                installed_pkgs.write(output)
+                installed_pkgs.flush()
 
-            output = oe.utils.format_pkg_list(pkgs, "arch")
-            installed_pkgs.write(output)
-            installed_pkgs.flush()
-
-            cmd = ["oe-pkgdata-util",
-                   "-p", self.d.getVar('PKGDATA_DIR'), "glob", installed_pkgs.name,
-                   globs]
-            exclude = self.d.getVar('PACKAGE_EXCLUDE_COMPLEMENTARY')
-            if exclude:
-                cmd.extend(['--exclude=' + '|'.join(exclude.split())])
-            try:
-                bb.note('Running %s' % cmd)
-                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stdout, stderr = proc.communicate()
-                if stderr: bb.note(stderr.decode("utf-8"))
-                complementary_pkgs = stdout.decode("utf-8")
-                complementary_pkgs = set(complementary_pkgs.split())
-                skip_pkgs = sorted(complementary_pkgs & provided_pkgs)
-                install_pkgs = sorted(complementary_pkgs - provided_pkgs)
-                bb.note("Installing complementary packages ... %s (skipped already provided packages %s)" % (
-                    ' '.join(install_pkgs),
-                    ' '.join(skip_pkgs)))
-                self.install(install_pkgs, hard_depends_only=True)
-            except subprocess.CalledProcessError as e:
-                bb.fatal("Could not compute complementary packages list. Command "
-                         "'%s' returned %d:\n%s" %
-                         (' '.join(cmd), e.returncode, e.output.decode("utf-8")))
+                cmd = ["oe-pkgdata-util",
+                    "-p", self.d.getVar('PKGDATA_DIR'), "glob", installed_pkgs.name,
+                    globs]
+                exclude = self.d.getVar('PACKAGE_EXCLUDE_COMPLEMENTARY')
+                if exclude:
+                    cmd.extend(['--exclude=' + '|'.join(exclude.split())])
+                try:
+                    bb.note('Running %s' % cmd)
+                    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    stdout, stderr = proc.communicate()
+                    if stderr: bb.note(stderr.decode("utf-8"))
+                    complementary_pkgs = stdout.decode("utf-8")
+                    complementary_pkgs = set(complementary_pkgs.split())
+                    skip_pkgs = sorted(complementary_pkgs & provided_pkgs)
+                    install_pkgs = sorted(complementary_pkgs - provided_pkgs)
+                    bb.note("Installing complementary packages ... %s (skipped already provided packages %s)" % (
+                        ' '.join(install_pkgs),
+                        ' '.join(skip_pkgs)))
+                    self.install(install_pkgs, hard_depends_only=True)
+                except subprocess.CalledProcessError as e:
+                    bb.fatal("Could not compute complementary packages list. Command "
+                            "'%s' returned %d:\n%s" %
+                            (' '.join(cmd), e.returncode, e.output.decode("utf-8")))
 
         if self.d.getVar('IMAGE_LOCALES_ARCHIVE') == '1':
             target_arch = self.d.getVar('TARGET_ARCH')
@@ -449,7 +447,7 @@ class PackageManager(object, metaclass=ABCMeta):
             return res
         return _append(uris, base_paths)
 
-def create_packages_dir(d, subrepo_dir, deploydir, taskname, filterbydependencies):
+def create_packages_dir(d, subrepo_dir, deploydir, taskname, filterbydependencies, include_self=False):
     """
     Go through our do_package_write_X dependencies and hardlink the packages we depend
     upon into the repo directory. This prevents us seeing other packages that may
@@ -486,14 +484,17 @@ def create_packages_dir(d, subrepo_dir, deploydir, taskname, filterbydependencie
         bb.fatal("Couldn't find ourself in BB_TASKDEPDATA?")
     pkgdeps = set()
     start = [start]
-    seen = set(start)
+    if include_self:
+        seen = set()
+    else:
+        seen = set(start)
     # Support direct dependencies (do_rootfs -> do_package_write_X)
     # or indirect dependencies within PN (do_populate_sdk_ext -> do_rootfs -> do_package_write_X)
     while start:
         next = []
         for dep2 in start:
             for dep in taskdepdata[dep2][3]:
-                if taskdepdata[dep][0] != pn:
+                if include_self or taskdepdata[dep][0] != pn:
                     if "do_" + taskname in dep:
                         pkgdeps.add(dep)
                 elif dep not in seen:

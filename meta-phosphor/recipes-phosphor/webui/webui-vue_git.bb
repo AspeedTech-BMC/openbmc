@@ -9,7 +9,7 @@
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=e3fc50a88d0a364313df4b21ef20c29e"
 DEPENDS:prepend = "nodejs-native "
-SRCREV = "620e6466db409f535fc3d4a2ab85dd672e3de6dd"
+SRCREV = "6b1a15736e939b591e787ae293745649dbb504ed"
 PV = "1.0+git${SRCPV}"
 # This recipe requires online access to build, as it uses NPM for dependency
 # management and resolution.
@@ -44,6 +44,8 @@ do_compile () {
     cd ${S}
     rm -rf node_modules
     npm --loglevel info --proxy=${http_proxy} --https-proxy=${https_proxy} install
+    # vue-cli-plugin-i18n isn't needed in build and causes a segv in node 22.12.
+    npm uninstall vue-cli-plugin-i18n
     npm run build ${EXTRA_OENPM}
 }
 do_install () {

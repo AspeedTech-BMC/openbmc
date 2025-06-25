@@ -6,7 +6,7 @@ SECTION = "System Environment/Base"
 
 SRC_URI = "git://git.kernel.org/pub/scm/utils/cpu/mce/mce-inject.git;branch=master"
 
-SRCREV = "4cbe46321b4a81365ff3aafafe63967264dbfec5"
+SRCREV = "ca81c1dbed5c7e30fe79d44953ccfeaab98d2b4f"
 
 UPSTREAM_CHECK_COMMITS = "1"
 

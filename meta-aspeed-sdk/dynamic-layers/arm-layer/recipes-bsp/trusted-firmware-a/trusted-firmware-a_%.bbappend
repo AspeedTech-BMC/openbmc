@@ -1,8 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-# This patch only used for AST2700 A0
-SRC_URI:append:ast2700-a0 = " file://0001-feat-ast2700-add-SLI-calibration.patch "
-
 do_install:append() {
     for atfbin in ${TFA_INSTALL_TARGET}; do
         if [ -f ${BUILD_DIR}/$atfbin/$atfbin.map ]; then

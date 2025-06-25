@@ -7,7 +7,7 @@ LIC_FILES_CHKSUM = " \
     file://${COMMON_LICENSE_DIR}/BSD-2-Clause;md5=cb641bc04cda31daea161b1bc15da69f \
     file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9 \
 "
-DEPENDS = "libbsd libpcre zlib libcap libusb squashfs-tools p7zip libselinux googletest"
+DEPENDS = "libbsd libpcre zlib libcap libusb squashfs-tools 7zip libselinux googletest"
 
 SRCREV_core = "abfd66fafcbb691d7860df059f1df1c9b1ef29da"
 
@@ -52,6 +52,7 @@ SRC_URI += " \
     file://0003-Update-usage-of-usbdevfs_urb-to-match-new-kernel-UAP.patch \
     file://0004-adb-Fix-build-on-big-endian-systems.patch \
     file://0005-adb-Allow-adbd-to-be-run-as-root.patch \
+    file://0001-liblp-fix-building-with-GCC-14.patch \
 "
 
 S = "${WORKDIR}/git"
@@ -67,6 +68,7 @@ COMPATIBLE_HOST:powerpc64le = "(null)"
 
 inherit systemd
 
+SYSTEMD_PACKAGES = "${PN}-adbd"
 SYSTEMD_SERVICE:${PN}-adbd = "android-tools-adbd.service"
 
 # Find libbsd headers during native builds
@@ -138,7 +140,7 @@ do_compile() {
 
 do_install() {
     install -d ${D}${base_sbindir}
-    install -m 0755 ${S}/../remount -D ${D}${base_sbindir}/remount
+    install -m 0755 ${UNPACKDIR}/remount -D ${D}${base_sbindir}/remount
 
     for tool in img2simg simg2img fastboot adbd; do
         if echo ${TOOLS_TO_BUILD} | grep -q "$tool" ; then
@@ -153,7 +155,7 @@ do_install() {
     fi
 
     # Outside the if statement to avoid errors during do_package
-    install -D -p -m0644 ${WORKDIR}/android-tools-adbd.service \
+    install -D -p -m0644 ${UNPACKDIR}/android-tools-adbd.service \
       ${D}${systemd_unitdir}/system/android-tools-adbd.service
 
     install -d  ${D}${libdir}/android/
@@ -166,7 +168,7 @@ do_install() {
 
 PACKAGES =+ "${PN}-fstools ${PN}-adbd"
 
-RDEPENDS:${BPN} = "${BPN}-conf p7zip"
+RDEPENDS:${BPN} = "${BPN}-conf 7zip"
 
 FILES:${PN}-adbd = "\
     ${bindir}/adbd \
@@ -188,7 +190,7 @@ FILES:${PN} += "${libdir}/android ${libdir}/android/*"
 BBCLASSEXTEND = "native"
 
 android_tools_enable_devmode() {
-    touch ${IMAGE_ROOTFS}/var/usb-debugging-enabled
+    touch ${IMAGE_ROOTFS}/etc/usb-debugging-enabled
 }
 
 ROOTFS_POSTPROCESS_COMMAND_${PN}-adbd += "${@bb.utils.contains("USB_DEBUGGING_ENABLED", "1", "android_tools_enable_devmode;", "", d)}"

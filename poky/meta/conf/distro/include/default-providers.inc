@@ -1,6 +1,7 @@
 #
 # Default virtual providers
 #
+BB_RECIPE_VIRTUAL_PROVIDERS = "virtual/cross-cc virtual/cross-c++ virtual/cross-binutils virtual/nativesdk-cross-cc virtual/nativesdk-cross-c++ virtual/nativesdk-cross-binutils"
 PREFERRED_PROVIDER_virtual/xserver ?= "xserver-xorg"
 PREFERRED_PROVIDER_virtual/xserver-xf86 ?= "xserver-xorg"
 PREFERRED_PROVIDER_virtual/egl ?= "mesa"
@@ -29,6 +30,7 @@ VIRTUAL-RUNTIME_getopt ?= "util-linux-getopt"
 VIRTUAL-RUNTIME_base-utils ?= "busybox"
 VIRTUAL-RUNTIME_base-utils-hwclock ?= "busybox-hwclock"
 VIRTUAL-RUNTIME_base-utils-syslog ?= "busybox-syslog"
+VIRTUAL-RUNTIME_keymaps ?= "keymaps"
 
 #
 # Default recipe providers
@@ -59,3 +61,5 @@ PREFERRED_PROVIDER_pkgconfig-native ?= "pkgconfig-native"
 PREFERRED_RPROVIDER_initd-functions ?= "initscripts"
 
 PREFERRED_PROVIDER_nativesdk-mesa ?= "nativesdk-mesa"
+
+PREFERRED_RPROVIDER_virtual-x-terminal-emulator ?= "rxvt-unicode"

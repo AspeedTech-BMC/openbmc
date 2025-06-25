@@ -14,7 +14,7 @@ LIC_FILES_CHKSUM:append = " file://COPYING;md5=130f9d9dddfebd2c6ff59165f066e41c 
 inherit meson
 
 do_configure:prepend() {
-  cp ${WORKDIR}/meson.build ${S}
+  cp ${UNPACKDIR}/meson.build ${S}
   cd ${S}
   ./configure --without-libungif --without-libpng
 }

@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenBMC ipKVM daemon
+ConditionPathIsMountPoint=/sys/kernel/config
+After=obmc-ikvm.service
+
+[Service]
+Restart=always
+ExecStartPre=/usr/bin/create_usbhid.sh disconnect 1
+ExecStart=/usr/bin/obmc-ikvm -v /dev/video1 -k /dev/hidg2 -p /dev/hidg3
+
+[Install]
+WantedBy=multi-user.target

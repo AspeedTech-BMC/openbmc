@@ -6,6 +6,7 @@
                 {
                     "Name" : "bmc_heartbeat_amber",
                     "Action" : "Blink",
+                    "Priority" : "Blink",
                     "DutyOn" : 50,
                     "Period" : 1000
                 }
@@ -18,6 +19,11 @@
                     "Name": "power_blue",
                     "Action": "On",
                     "Priority": "On"
+                },
+                {
+                    "Name": "bmc_ready_noled",
+                    "Action": "On",
+                    "Priority": "On"
                 }
             ]
         },
@@ -27,6 +33,7 @@
                 {
                     "Name": "fp_id_amber",
                     "Action": "Blink",
+                    "Priority" : "Blink",
                     "DutyOn": 50,
                     "Period": 250
                 }
@@ -37,11 +44,13 @@
             "members": [
                 {
                     "Name": "fan_status_led",
-                    "Action": "On"
+                    "Action": "On",
+                    "Priority" : "Blink"
                 },
                 {
                     "Name": "fan_fault_led_n",
-                    "Action": "On"
+                    "Action": "On",
+                    "Priority" : "Blink"
                 }
             ]
         }

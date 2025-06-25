@@ -10,6 +10,8 @@ DEPENDS:append = " ${PYTHON_PN}-pycryptodome-native \
                    cerberus-pfr-signing-utility-native \
                  "
 
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 SRC_URI = " file://key_management_tools;subdir=${S} "
 
 do_patch[noexec] = "1"

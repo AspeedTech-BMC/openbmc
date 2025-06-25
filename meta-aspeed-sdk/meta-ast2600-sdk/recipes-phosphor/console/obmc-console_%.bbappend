@@ -27,13 +27,13 @@ do_install:append() {
     # Remove OpenBMC obmc-console default rules
     rm -rf ${D}${nonarch_base_libdir}/udev/rules.d/80-obmc-console-uart.rules
     # Install the console client configurations
-    install -m 0644 ${WORKDIR}/client.*.conf ${D}${sysconfdir}/${BPN}/
+    install -m 0644 ${UNPACKDIR}/client.*.conf ${D}${sysconfdir}/${BPN}/
 
     # Add obmc-console service override to customize service behavior for each tty.
     for tty in ${OBMC_CONSOLE_TTYS}; do
-        if [ -f ${WORKDIR}/override-${tty}.conf ]; then
+        if [ -f ${UNPACKDIR}/override-${tty}.conf ]; then
             install -d ${D}${systemd_unitdir}/system/obmc-console@${tty}.service.d
-            install -m 0644 ${WORKDIR}/override-${tty}.conf \
+            install -m 0644 ${UNPACKDIR}/override-${tty}.conf \
               ${D}${systemd_unitdir}/system/obmc-console@${tty}.service.d/override.conf
         fi
     done

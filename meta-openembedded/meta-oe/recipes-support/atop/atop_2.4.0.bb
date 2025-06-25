@@ -21,8 +21,10 @@ SRC_URI = "http://www.atoptool.nl/download/${BP}.tar.gz \
            file://sysvinit-implement-status.patch \
            file://0001-atop.daily-atop.init-atop-pm.sh-Avoid-using-bash.patch \
            "
-SRC_URI[md5sum] = "1077da884ed94f2bc3c81ac3ab970436"
 SRC_URI[sha256sum] = "be1c010a77086b7d98376fce96514afcd73c3f20a8d1fe01520899ff69a73d69"
+
+UPSTREAM_CHECK_URI = "https://atoptool.nl/downloadatop.php"
+UPSTREAM_CHECK_REGEX = "(?P<pver>\d+(\.\d+)+).tar"
 
 CVE_STATUS[CVE-2011-3618] = "fixed-version: The CPE in the NVD database doesn't reflect correctly the vulnerable versions."
 
@@ -35,12 +37,12 @@ do_install() {
         make DESTDIR=${D} VERS=${PV} SYSDPATH=${systemd_system_unitdir} \
             PMPATHD=${systemd_unitdir}/system-sleep systemdinstall
         install -d ${D}${sysconfdir}/tmpfiles.d
-        install -m 644 ${WORKDIR}/volatiles.atop.conf ${D}${sysconfdir}/tmpfiles.d/atop.conf
+        install -m 644 ${UNPACKDIR}/volatiles.atop.conf ${D}${sysconfdir}/tmpfiles.d/atop.conf
         rm -f ${D}${systemd_system_unitdir}/atopacct.service
     else
         make DESTDIR=${D} VERS=${PV} sysvinstall
         install -d ${D}${sysconfdir}/default/volatiles
-        install -m 644 ${WORKDIR}/volatiles.99_atop ${D}${sysconfdir}/default/volatiles/99_atop
+        install -m 644 ${UNPACKDIR}/volatiles.99_atop ${D}${sysconfdir}/default/volatiles/99_atop
         rm -f ${D}${sysconfdir}/init.d/atopacct
     fi
 

@@ -12,7 +12,6 @@ DEPENDS += "gettext-native"
 #at least versions 2.69 and prior are moved to the archive folder on the server
 SRC_URI = "http://www.thekelleys.org.uk/dnsmasq/${@['archive/', ''][float(d.getVar('PV').split('.')[1]) > 69]}dnsmasq-${PV}.tar.gz \
            file://init \
-           file://dnsmasq.conf \
            file://dnsmasq-resolvconf.service \
            file://dnsmasq-noresolvconf.service \
            file://dnsmasq-resolved.conf \
@@ -25,8 +24,13 @@ INITSCRIPT_NAME = "dnsmasq"
 INITSCRIPT_PARAMS = "defaults"
 
 # dnsmasq defaults
-PACKAGECONFIG ?= "auth dhcp dhcp6 dumpfile inotify ipset loop script tftp"
+PACKAGECONFIG ?= "\
+    auth dhcp dumpfile inotify ipset loop script tftp \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'ipv6', 'dhcp6', '', d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'rtc', '', 'broken-rtc', d)} \
+"
 
+# see src/config.h
 PACKAGECONFIG[auth] = "-DHAVE_AUTH,-DNO_AUTH"
 PACKAGECONFIG[broken-rtc] = "-DHAVE_BROKEN_RTC,"
 PACKAGECONFIG[conntrack] = "-DHAVE_CONNTRACK,,libnetfilter-conntrack"
@@ -81,20 +85,20 @@ do_install () {
                "MANDIR=${D}${mandir}" \
                install-i18n
     install -d ${D}${sysconfdir}/ ${D}${sysconfdir}/init.d ${D}${sysconfdir}/dnsmasq.d
-    install -m 644 ${WORKDIR}/dnsmasq.conf ${D}${sysconfdir}/
-    install -m 755 ${WORKDIR}/init ${D}${sysconfdir}/init.d/dnsmasq
+    install -m 644 ${S}/dnsmasq.conf.example ${D}${sysconfdir}/dnsmasq.conf
+    install -m 755 ${UNPACKDIR}/init ${D}${sysconfdir}/init.d/dnsmasq
 
     install -d ${D}${systemd_unitdir}/system
 
     if [ "${@bb.utils.filter('PACKAGECONFIG', 'resolvconf', d)}" ]; then
-        install -m 0644 ${WORKDIR}/dnsmasq-resolvconf.service ${D}${systemd_unitdir}/system/dnsmasq.service
+        install -m 0644 ${UNPACKDIR}/dnsmasq-resolvconf.service ${D}${systemd_unitdir}/system/dnsmasq.service
     else
-        install -m 0644 ${WORKDIR}/dnsmasq-noresolvconf.service ${D}${systemd_unitdir}/system/dnsmasq.service
+        install -m 0644 ${UNPACKDIR}/dnsmasq-noresolvconf.service ${D}${systemd_unitdir}/system/dnsmasq.service
     fi
 
     if [ "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}" ]; then
         install -d ${D}${sysconfdir}/systemd/resolved.conf.d/
-        install -m 0644 ${WORKDIR}/dnsmasq-resolved.conf ${D}${sysconfdir}/systemd/resolved.conf.d/
+        install -m 0644 ${UNPACKDIR}/dnsmasq-resolved.conf ${D}${sysconfdir}/systemd/resolved.conf.d/
     fi
 
     if [ "${@bb.utils.filter('PACKAGECONFIG', 'dhcp', d)}" ]; then
@@ -113,11 +117,11 @@ do_install () {
 
     if [ "${@bb.utils.filter('PACKAGECONFIG', 'resolvconf', d)}" ]; then
         install -d ${D}${sysconfdir}/resolvconf/update.d/
-        install -m 0755 ${WORKDIR}/dnsmasq.resolvconf ${D}${sysconfdir}/resolvconf/update.d/dnsmasq
+        install -m 0755 ${UNPACKDIR}/dnsmasq.resolvconf ${D}${sysconfdir}/resolvconf/update.d/dnsmasq
 
         install -d ${D}${sysconfdir}/default/volatiles
-        install -m 0644 ${WORKDIR}/99_dnsmasq ${D}${sysconfdir}/default/volatiles
-        install -m 0755 ${WORKDIR}/dnsmasq-resolvconf-helper ${D}${bindir}
+        install -m 0644 ${UNPACKDIR}/99_dnsmasq ${D}${sysconfdir}/default/volatiles
+        install -m 0755 ${UNPACKDIR}/dnsmasq-resolvconf-helper ${D}${bindir}
     fi
 }
 

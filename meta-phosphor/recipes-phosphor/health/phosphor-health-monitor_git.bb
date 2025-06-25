@@ -8,7 +8,7 @@ DEPENDS += "phosphor-dbus-interfaces"
 DEPENDS += "sdeventplus"
 DEPENDS += "phosphor-logging"
 DEPENDS += "nlohmann-json"
-SRCREV = "a3c17d0fcd101a698e24e20237b59bd84249eb3f"
+SRCREV = "ba29dbdd04a96a46e1972641c20bf5a8e930ed8f"
 PV = "0.1+git${SRCPV}"
 PR = "r1"
 
@@ -21,8 +21,8 @@ inherit meson pkgconfig
 inherit systemd
 
 do_install:append() {
-  if [ -e "${WORKDIR}/bmc_health_config.json" ]; then
+  if [ -e "${UNPACKDIR}/bmc_health_config.json" ]; then
     install -d ${D}${sysconfdir}/healthMon
-    install -m 0644 ${WORKDIR}/bmc_health_config.json ${D}${sysconfdir}/healthMon
+    install -m 0644 ${UNPACKDIR}/bmc_health_config.json ${D}${sysconfdir}/healthMon
   fi
 }

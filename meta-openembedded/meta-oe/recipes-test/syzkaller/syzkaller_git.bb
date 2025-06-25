@@ -9,14 +9,14 @@ GO_IMPORT = "github.com/google/syzkaller"
 SRC_URI = "git://${GO_IMPORT};protocol=https;destsuffix=${BPN}-${PV}/src/${GO_IMPORT};branch=master \
            file://0001-sys-targets-targets.go-allow-users-to-override-hardc.patch;patchdir=src/${GO_IMPORT} \
            file://0001-executor-Include-missing-linux-falloc.h.patch;patchdir=src/${GO_IMPORT} \
+           file://0001-executor-Remove-including-error.h-in-test_linux.h.patch;patchdir=src/${GO_IMPORT} \
            "
 SRCREV = "25905f5d0a2a7883bd33491997556193582c6059"
 
+# Upstream repo does not tag
+UPSTREAM_CHECK_COMMITS = "1"
+
 export GOPROXY = "https://proxy.golang.org,direct"
-# Workaround for network access issue during compile step.
-# This needs to be fixed in the recipes buildsystem so that
-# it can be accomplished during do_fetch task.
-do_compile[network] = "1"
 
 COMPATIBLE_HOST = "(x86_64|i.86|arm|aarch64).*-linux"
 

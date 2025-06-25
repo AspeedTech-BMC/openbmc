@@ -1,6 +1,6 @@
 SUMMARY = "Open implementation of the DVB Common Scrambling Algorithm, encrypt and decrypt "
 SECTION = "libs/multimedia"
-LICENSE = "LGPL-2.1-or-later"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=94d55d512a9ba36caa9b7df079bae19f"
 
 SRCREV = "bc6c0b164a87ce05e9925785cc6fb3f54c02b026"
@@ -15,5 +15,5 @@ inherit autotools lib_package pkgconfig
 
 do_install:append() {
     install -D -m 0644 ${S}/src/dvbcsa/dvbcsa.h ${D}${includedir}/dvbcsa/dvbcsa.h
-    install -D -m 0644 ${WORKDIR}/libdvbcsa.pc ${D}${libdir}/pkgconfig/libdvbcsa.pc
+    install -D -m 0644 ${UNPACKDIR}/libdvbcsa.pc ${D}${libdir}/pkgconfig/libdvbcsa.pc
 }

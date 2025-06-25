@@ -10,7 +10,7 @@ IMAGE_PKGTYPE ?= "rpm"
 
 RPM = "rpm"
 RPMBUILD = "rpmbuild"
-RPMBUILD_COMPMODE ?= "${@'w19T%d.zstdio' % int(d.getVar('ZSTD_THREADS'))}"
+RPMBUILD_COMPMODE ?= "${@'w%dT%d.zstdio' % (int(d.getVar('ZSTD_COMPRESSION_LEVEL')), int(d.getVar('ZSTD_THREADS')))}"
 
 PKGWRITEDIRRPM = "${WORKDIR}/deploy-rpms"
 
@@ -38,6 +38,7 @@ def filter_nativesdk_deps(srcname, var):
 
 # Construct per file dependencies file
 def write_rpm_perfiledata(srcname, d):
+    import oe.package
     workdir = d.getVar('WORKDIR')
     packages = d.getVar('PACKAGES')
     pkgd = d.getVar('PKGD')
@@ -53,12 +54,7 @@ def write_rpm_perfiledata(srcname, d):
                 key = "FILE" + varname + ":" + dfile + ":" + pkg
                 deps = filter_nativesdk_deps(srcname, d.getVar(key) or "")
                 depends_dict = bb.utils.explode_dep_versions(deps)
-                file = dfile.replace("@underscore@", "_")
-                file = file.replace("@closebrace@", "]")
-                file = file.replace("@openbrace@", "[")
-                file = file.replace("@tab@", "\t")
-                file = file.replace("@space@", " ")
-                file = file.replace("@at@", "@")
+                file = oe.package.file_reverse_translate(dfile)
                 outfile.write('"' + pkgd + file + '" : "')
                 for dep in depends_dict:
                     ver = depends_dict[dep]
@@ -108,7 +104,7 @@ python write_specfile () {
     # append information for logs and patches to %prep
     def add_prep(d, spec_files_bottom):
         if d.getVarFlag('ARCHIVER_MODE', 'srpm') == '1' and bb.data.inherits_class('archiver', d):
-            spec_files_bottom.append('%%prep -n %s' % d.getVar('PN'))
+            spec_files_bottom.append('%%prep')
             spec_files_bottom.append('%s' % "echo \"include logs and patches, Please check them in SOURCES\"")
             spec_files_bottom.append('')
 
@@ -191,7 +187,7 @@ python write_specfile () {
                 if not len(depends_dict[dep]):
                     array.append("%s: %s" % (tag, dep))
 
-    def walk_files(walkpath, target, conffiles, dirfiles):
+    def walk_files(walkpath, target, conffiles):
         # We can race against the ipk/deb backends which create CONTROL or DEBIAN directories
         # when packaging. We just ignore these files which are created in
         # packages-split/ and not package/
@@ -205,14 +201,22 @@ python write_specfile () {
                 try:
                     owner = pwd.getpwuid(stat_f.st_uid).pw_name
                 except Exception as e:
-                    bb.error("Content of /etc/passwd in sysroot:\n{}".format(
-                        open(d.getVar("RECIPE_SYSROOT") +"/etc/passwd").read()))
+                    filename = d.getVar('RECIPE_SYSROOT') + '/etc/passwd'
+                    if os.path.exists(filename):
+                        bb.error("Content of /etc/passwd in sysroot:\n{}".format(
+                            open(filename).read()))
+                    else:
+                        bb.error("File {} doesn't exist in sysroot!".format(filename))
                     raise e
                 try:
                     group = grp.getgrgid(stat_f.st_gid).gr_name
                 except Exception as e:
-                    bb.error("Content of /etc/group in sysroot:\n{}".format(
-                        open(d.getVar("RECIPE_SYSROOT") +"/etc/group").read()))
+                    filename = d.getVar("RECIPE_SYSROOT") +"/etc/group"
+                    if os.path.exists(filename):
+                        bb.error("Content of /etc/group in sysroot:\n{}".format(
+                            open(filename).read()))
+                    else:
+                        bb.error("File {} doesn't exists in sysroot!".format(filename))
                     raise e
                 return "%attr({:o},{},{}) ".format(mode, owner, group)
 
@@ -233,22 +237,12 @@ python write_specfile () {
                     return False
             dirs[:] = [dir for dir in dirs if not move_to_files(dir)]
 
-            # Directory handling can happen in two ways, either DIRFILES is not set at all
-            # in which case we fall back to the older behaviour of packages owning all their
-            # directories
-            if dirfiles is None:
-                for dir in dirs:
-                    if dir == "CONTROL" or dir == "DEBIAN":
-                        continue
-                    p = path + '/' + dir
-                    # All packages own the directories their files are in...
-                    target.append(get_attr(dir) + '%dir "' + escape_chars(p) + '"')
-            elif path:
-                # packages own only empty directories or explict directory.
-                # This will prevent the overlapping of security permission.
-                attr = get_attr(path)
-                if (not files and not dirs) or path in dirfiles:
-                    target.append(attr + '%dir "' + escape_chars(path) + '"')
+            for dir in dirs:
+                if dir == "CONTROL" or dir == "DEBIAN":
+                    continue
+                p = path + '/' + dir
+                # All packages own the directories their files are in...
+                target.append(get_attr(dir) + '%dir "' + escape_chars(p) + '"')
 
             for file in files:
                 if file == "CONTROL" or file == "DEBIAN":
@@ -363,9 +357,6 @@ python write_specfile () {
         localdata.setVar('OVERRIDES', d.getVar("OVERRIDES", False) + ":" + pkg)
 
         conffiles = oe.package.get_conffiles(pkg, d)
-        dirfiles = localdata.getVar('DIRFILES')
-        if dirfiles is not None:
-            dirfiles = dirfiles.split()
 
         splitname    = pkgname
 
@@ -430,7 +421,7 @@ python write_specfile () {
             srcrpostrm     = splitrpostrm
 
             file_list = []
-            walk_files(root, file_list, conffiles, dirfiles)
+            walk_files(root, file_list, conffiles)
             if not file_list and localdata.getVar('ALLOW_EMPTY', False) != "1":
                 bb.note("Not creating empty RPM package for %s" % splitname)
             else:
@@ -522,7 +513,7 @@ python write_specfile () {
 
         # Now process files
         file_list = []
-        walk_files(root, file_list, conffiles, dirfiles)
+        walk_files(root, file_list, conffiles)
         if not file_list and localdata.getVar('ALLOW_EMPTY', False) != "1":
             bb.note("Not creating empty RPM package for %s" % splitname)
         else:
@@ -705,9 +696,10 @@ python do_package_rpm () {
     cmd = cmd + " --define '_use_internal_dependency_generator 0'"
     cmd = cmd + " --define '_binaries_in_noarch_packages_terminate_build 0'"
     cmd = cmd + " --define '_build_id_links none'"
+    cmd = cmd + " --define '_smp_ncpus_max 4'"
     cmd = cmd + " --define '_source_payload %s'" % rpmbuild_compmode
     cmd = cmd + " --define '_binary_payload %s'" % rpmbuild_compmode
-    cmd = cmd + " --define 'clamp_mtime_to_source_date_epoch 1'"
+    cmd = cmd + " --define 'build_mtime_policy clamp_to_source_date_epoch'"
     cmd = cmd + " --define 'use_source_date_epoch_as_buildtime 1'"
     cmd = cmd + " --define '_buildhost reproducible'"
     cmd = cmd + " --define '__font_provides %{nil}'"

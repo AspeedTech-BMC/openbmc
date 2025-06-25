@@ -15,10 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-if [ -z "$ZSH_NAME" ] && [ "$(basename -- "$0")" = "setup" ]; then
-    echo The script must be sourced, not executed
-    exit 1
-fi
 
 # Check if 'column' command is present
 COLUMN_CMD=$(which column || true)
@@ -56,6 +52,9 @@ machine() {
         name=${cfg##*/}
         name=${name%.conf}
         tmpl=${cfg%/machine/*.conf}
+        vendor=${cfg%%/*}
+        vendor=${vendor##meta-}
+        vendor=${vendor%%-openbmc}
 
         if [ "$tmpl" = "poky/meta/conf" ]; then
             # This is a QEMU machine, use phosphor defaults.
@@ -77,7 +76,7 @@ machine() {
                 echo "Machine ${target} found in ${tmpl%/conf}"
                 mkdir -p "${build_dir}"
                 TEMPLATECONF="${tmpl}/templates/default" source \
-                        oe-init-build-env "${build_dir}"
+                        ./oe-init-build-env "${build_dir}"
 
                 if [ "$(cat conf/templateconf.cfg)" = "${tmpl}/templates/default" ]; then
                     sed "s/^\(MACHINE\s*[?:]*\s*=\s*\).*$/\1\"${target}\"/" \
@@ -86,22 +85,49 @@ machine() {
                 return
             fi
         else
-            echo "${name}"
+            echo "${vendor}/${name}"
         fi
     done
 
     [ -n "$target" ] && echo "No such machine!" >&2 && return 1
 }
 
+# Determine if we've been sourced or executed; "exit" vs "return" is different.
+if [ -z "$ZSH_NAME" ] && [ "$(basename -- "$0")" = "setup" ]; then
+    EXIT_CMD="exit"
+else
+    EXIT_CMD="return"
+fi
+
 if [ -z "$1" ]; then
     echo Target machine must be specified. Use one of:
     echo
-    machine | sort | sed "s/qemu[^[:space:]]*//" | "${COLUMN[@]}"
-else
-    bld_dir=$2
-    if [ -z "$2" ]; then
-        bld_dir="build/$1"
-    fi
-    machine "$1" "$bld_dir"
+    machine | sed "/qemu[^[:space:]]*/d" | sed "s#.*/##" | sort -h | "${COLUMN[@]}"
+    ${EXIT_CMD} 1
 fi
 
+if [ "machines" = "$1" ]; then
+    vendors=""
+    for m in $(machine | sort -h | sed "/qemu[^[:space:]]*/d"); do
+        vendor=${m%%/*}
+        machine=${m##*/}
+
+        if [[ ! "$vendors" =~ -$vendor- ]]; then
+            vendors="$vendors -$vendor-"
+            echo "* $vendor"
+        fi
+        echo "  * $machine"
+    done
+    ${EXIT_CMD}
+fi
+
+if [ -z "$ZSH_NAME" ] && [ "$(basename -- "$0")" = "setup" ]; then
+    echo The script must be sourced, not executed
+    exit 1
+fi
+
+bld_dir=$2
+if [ -z "$2" ]; then
+    bld_dir="build/$1"
+fi
+machine "$1" "$bld_dir"

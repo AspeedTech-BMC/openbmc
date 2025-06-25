@@ -5,6 +5,7 @@ Subject: [PATCH] to support openssl 3.0 library code
 
 In original hash-sigs code, it uses some deprecated functioins in openssl 1.1.X. To adjust the code for openssl 3.0 library.
 
+Upstream-Status: Pending
 Signed-off-by: Kane-Chen-AS <kane_chen@aspeedtech.com>
 ---
  hash.c   | 75 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++

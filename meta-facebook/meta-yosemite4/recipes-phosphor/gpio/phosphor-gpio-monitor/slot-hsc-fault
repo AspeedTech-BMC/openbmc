@@ -1,0 +1,91 @@
+#!/bin/bash
+
+dec_to_hex() {
+    local decimal=$1
+    local hex=""
+    local digits="0123456789ABCDEF"
+
+    while [ "$decimal" -gt 0 ]; do
+        remainder=$((decimal % 16))
+        hex="${digits:remainder:1}$hex"
+        decimal=$((decimal / 16))
+    done
+
+    # ensure the length of $hex >= 4
+    while [ ${#hex} -lt 4 ]; do
+        hex="0$hex"
+    done
+
+    echo "0x${hex:-0}"
+}
+
+read_mfr_id() {
+    local bus=$1
+    local addr=$2
+    local mfr_id
+    mfr_id=$(i2ctransfer -f -y "$bus" w1@"$addr" 0x99 r4)
+    local vendor="0x41 0x44 0x49"
+    if [[ $mfr_id == *"$vendor"* ]]; then
+        echo "adi"
+    else
+        echo "mps"
+    fi
+}
+
+read_12v_hsc() {
+    local bus=$1
+    local addr=$2
+    local slot_num=$3
+    local module_vendor
+    module_vendor=$(read_mfr_id "$bus" "$addr")
+
+    local status_array=()
+
+    # Read STATUS_VOUT (0x7A) if adi type
+    if [ "$module_vendor" == "adi" ]; then
+        STATUS_VOUT=$(i2ctransfer -f -y "$bus" w1@"$addr" 0x7A r1)
+        status_array+=("${slot_num} (0x7A) STATUS_VOUT" "$STATUS_VOUT")
+    fi
+
+    # Read STATUS_WORD (0x79)
+    read -r LOW_BYTE HIGH_BYTE <<< "$(i2ctransfer -f -y "$bus" w1@"$addr" 0x79 r2)"
+    STATUS_WORD=$((LOW_BYTE | (HIGH_BYTE << 8) ))
+    STATUS_WORD=$(dec_to_hex $STATUS_WORD)
+    status_array+=("${slot_num} (0x79) STATUS_WORD" "$STATUS_WORD")
+
+    # Read other status registers (1 byte each)
+    for reg in 0x78 0x7B 0x7C 0x7D 0x7E 0x80; do
+        STATUS=$(i2ctransfer -f -y "$bus" w1@"$addr" $reg r1)
+        case $reg in
+            0x78) name="STATUS_BYTE";;
+            0x7B) name="STATUS_IOUT";;
+            0x7C) name="STATUS_INPUT";;
+            0x7D) name="STATUS_TEMPERATURE";;
+            0x7E) name="STATUS_CML";;
+            0x80) name="STATUS_MFR_SPECIFIC";;
+        esac
+        status_array+=("${slot_num} ($reg) ${name}" "$STATUS")
+    done
+
+    # Add event log for HSC
+    MESSAGE="${slot_num} HSC Fault"
+
+    local num_status=$((${#status_array[@]} / 2))
+
+    busctl call \
+        xyz.openbmc_project.Logging /xyz/openbmc_project/logging \
+        xyz.openbmc_project.Logging.Create Create "ssa{ss}" "$MESSAGE" \
+        xyz.openbmc_project.Logging.Entry.Level.Error $num_status \
+        "${status_array[@]}"
+}
+
+hsc_fault()
+{
+    local slot_num=$1
+    local bus=$((slot_num - 1))
+
+    # Read HSC module
+    read_12v_hsc $bus 0x40 "SLOT$slot_num"
+}
+
+hsc_fault "$1"

@@ -16,6 +16,7 @@ inherit autotools gettext texinfo
 SRC_URI = "${GNU_MIRROR}/coreutils/${BP}.tar.xz \
            file://remove-usr-local-lib-from-m4.patch \
            file://0001-local.mk-fix-cross-compiling-problem.patch \
+           file://intermittent-testfailure.patch \
            file://run-ptest \
            "
 SRC_URI[sha256sum] = "cd328edeac92f6a665de9f323c93b712af1858bc2e0d88f3f7100469470a1b8a"
@@ -59,7 +60,7 @@ bindir_progs = "arch basename chcon cksum comm csplit cut dir dircolors dirname 
 base_bindir_progs = "cat chgrp chmod chown cp date dd echo false hostname kill ln ls mkdir \
                      mknod mv pwd rm rmdir sleep stty sync touch true uname stat"
 
-sbindir_progs= "chroot"
+sbindir_progs = "chroot"
 
 # Split stdbuf into its own package, so one can include
 # coreutils-stdbuf without getting the rest of coreutils, but make
@@ -75,6 +76,11 @@ RDEPENDS:coreutils:class-target += "${@bb.utils.contains('PACKAGECONFIG', 'singl
 # an RPROVIDE so that rdepending on coreutils-stdbuf will work
 # regardless of whether single-binary is in effect.
 RPROVIDES:coreutils += "${@bb.utils.contains('PACKAGECONFIG', 'single-binary', 'coreutils-stdbuf', '', d)}"
+
+# put getlimits into coreutils-getlimits, because other ptest packages such as
+# findutils-ptest may need this command. Note that getlimits is a noinst_PROGRAM
+PACKAGE_BEFORE_PN:class-target += "${PN}-getlimits"
+FILES:${PN}-getlimits = "${bindir}/getlimits"
 
 # Let aclocal use the relative path for the m4 file rather than the
 # absolute since coreutils has a lot of m4 files, otherwise there might
@@ -109,6 +115,9 @@ do_install:append() {
 	# in update-alternatives to fail, therefore use lbracket - the name used
 	# for the actual source file.
 	mv ${D}${bindir}/[ ${D}${bindir}/lbracket.${BPN}
+
+	# this getlimits noinst_PROGRAM would possibly be needed by other ptest packages
+	install ${B}/src/getlimits ${D}/${bindir}
 }
 
 inherit update-alternatives
@@ -173,7 +182,9 @@ RDEPENDS:${PN}-ptest += "bash findutils gawk make perl perl-modules python3-core
 # may need tweaking if DEPENDS changes
 # Can't use ${PN}-dev here since flags with overrides and key expansion not supported
 RRECOMMENDS:coreutils-dev[nodeprrecs] = "1"
-RRECOMMENDS:${PN}-dev += "acl-dev attr-dev gmp-dev libcap-dev bash-dev findutils-dev gawk-dev shadow-dev"
+DEVDEPS = "acl-dev attr-dev gmp-dev libcap-dev bash-dev findutils-dev gawk-dev shadow-dev"
+DEVDEPS:class-native = ""
+RRECOMMENDS:${PN}-dev += "${DEVDEPS}"
 
 do_install_ptest () {
     install -d ${D}${PTEST_PATH}/tests
@@ -204,7 +215,6 @@ do_install_ptest () {
 
     # Tweak test d_type-check to use python3 instead of python
     sed -i "1s@.*@#!/usr/bin/python3@" ${D}${PTEST_PATH}/tests/d_type-check
-    install ${B}/src/getlimits ${D}/${bindir}
     
     # handle multilib
     sed -i s:@libdir@:${libdir}:g ${D}${PTEST_PATH}/run-ptest
@@ -216,4 +226,4 @@ do_install_ptest:append:libc-musl () {
     sed -i -e '/tests\/dd\/no-allocate.sh/d' ${D}${PTEST_PATH}/Makefile
     sed -i -e '/tests\/split\/line-bytes.sh/d' ${D}${PTEST_PATH}/Makefile
 }
-FILES:${PN}-ptest += "${bindir}/getlimits"
+RDEPENDS:${PN}-ptest += "${PN}-getlimits"

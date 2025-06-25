@@ -1,9 +1,9 @@
-DESCRIPTION="Protocol Buffers with small code size"
-LICENSE="Zlib"
+DESCRIPTION = "Protocol Buffers with small code size"
+LICENSE = "Zlib"
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=9db4b73a55a3994384112efcdb37c01f"
 
-SRC_URI = "git://github.com/nanopb/nanopb.git;branch=master;protocol=https"
-SRCREV = "6cfe48d6f1593f8fa5c0f90437f5e6522587745e"
+SRC_URI = "git://github.com/nanopb/nanopb.git;branch=maintenance_0.4;protocol=https"
+SRCREV = "cad3c18ef15a663e30e3e43e3a752b66378adec1"
 
 S = "${WORKDIR}/git"
 

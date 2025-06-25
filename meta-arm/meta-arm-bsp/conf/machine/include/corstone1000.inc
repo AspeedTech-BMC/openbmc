@@ -3,18 +3,18 @@ require conf/machine/include/arm/armv8a/tune-cortexa35.inc
 MACHINEOVERRIDES =. "corstone1000:"
 
 # TF-M
-PREFERRED_VERSION_trusted-firmware-m ?= "2.0.%"
+PREFERRED_VERSION_trusted-firmware-m ?= "2.1.%"
 
 # TF-A
 TFA_PLATFORM = "corstone1000"
-PREFERRED_VERSION_trusted-firmware-a ?= "2.10.%"
+PREFERRED_VERSION_trusted-firmware-a ?= "2.11.%"
 PREFERRED_VERSION_tf-a-tests ?= "2.10.%"
 
 TFA_BL2_BINARY = "bl2-corstone1000.bin"
 TFA_FIP_BINARY = "fip-corstone1000.bin"
 
 # optee
-PREFERRED_VERSION_optee-os ?= "4.1.%"
+PREFERRED_VERSION_optee-os ?= "4.3.%"
 
 # Trusted Services
 TS_PLATFORM = "arm/corstone1000"
@@ -34,7 +34,7 @@ IMAGE_CMD:wic[vardeps] += "GRUB_LINUX_APPEND"
 
 # Linux kernel
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-yocto"
-PREFERRED_VERSION_linux-yocto ?= "6.6.%"
+PREFERRED_VERSION_linux-yocto ?= "6.12.%"
 KERNEL_IMAGETYPE = "Image"
 KERNEL_IMAGETYPE:firmware = "Image.gz"
 # add FF-A support in the kernel
@@ -55,6 +55,14 @@ WKS_FILE:firmware ?= "corstone1000-flash-firmware.wks.in"
 WKS_FILE_DEPENDS:append = " ${EXTRA_IMAGEDEPENDS}"
 
 # If not building under the firmware multiconf we need to build the actual firmware
-FIRMWARE_DEPLOYEMENT ?= "firmware-deploy-image"
-FIRMWARE_DEPLOYEMENT:firmware ?= ""
-EXTRA_IMAGEDEPENDS += "${FIRMWARE_DEPLOYEMENT}"
+FIRMWARE_DEPLOYMENT ?= "firmware-deploy-image"
+FIRMWARE_DEPLOYMENT:firmware ?= ""
+EXTRA_IMAGEDEPENDS += "${FIRMWARE_DEPLOYMENT}"
+
+ARM_SYSTEMREADY_FIRMWARE = "${FIRMWARE_DEPLOYMENT}:do_deploy \
+                            corstone1000-esp-image:do_image_complete \
+                           "
+ARM_SYSTEMREADY_ACS_CONSOLE ?= "default"
+
+# Workaround IMAGE_ROOTFS_EXTRA_SPACE being ignored when images are repacked
+IMAGE_ROOTFS_EXTRA_ARGS += "--extra-space ${@${IMAGE_ROOTFS_EXTRA_SPACE}}K"

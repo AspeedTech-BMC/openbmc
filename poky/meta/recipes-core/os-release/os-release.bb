@@ -24,7 +24,7 @@ ID = "${DISTRO}"
 NAME = "${DISTRO_NAME}"
 VERSION = "${DISTRO_VERSION}${@' (%s)' % DISTRO_CODENAME if 'DISTRO_CODENAME' in d else ''}"
 VERSION_ID = "${DISTRO_VERSION}"
-VERSION_CODENAME = "${DISTRO_CODENAME}"
+VERSION_CODENAME = "${@d.getVar('DISTRO_CODENAME') or ''}"
 PRETTY_NAME = "${DISTRO_NAME} ${VERSION}"
 
 # The vendor field is hardcoded to "openembedded" deliberately. We'd
@@ -38,7 +38,7 @@ PRETTY_NAME = "${DISTRO_NAME} ${VERSION}"
 # the CPE.
 
 CPE_DISTRO ??= "${DISTRO}"
-CPE_NAME="cpe:/o:openembedded:${CPE_DISTRO}:${VERSION_ID}"
+CPE_NAME = "cpe:/o:openembedded:${CPE_DISTRO}:${VERSION_ID}"
 
 BUILD_ID ?= "${DATETIME}"
 BUILD_ID[vardepsexclude] = "DATETIME"

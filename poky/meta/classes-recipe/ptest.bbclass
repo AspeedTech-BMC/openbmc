@@ -53,8 +53,8 @@ do_install_ptest() {
 }
 
 do_install_ptest_base() {
-    if [ -f ${WORKDIR}/run-ptest ]; then
-        install -D ${WORKDIR}/run-ptest ${D}${PTEST_PATH}/run-ptest
+    if [ -f ${UNPACKDIR}/run-ptest ]; then
+        install -D ${UNPACKDIR}/run-ptest ${D}${PTEST_PATH}/run-ptest
     fi
 
     grep -q install-ptest: Makefile 2>/dev/null && oe_runmake DESTDIR=${D}${PTEST_PATH} install-ptest
@@ -131,7 +131,7 @@ python () {
 }
 
 QARECIPETEST[missing-ptest] = "package_qa_check_missing_ptest"
-def package_qa_check_missing_ptest(pn, d, messages):
+def package_qa_check_missing_ptest(pn, d):
     # This checks that ptest package is actually included
     # in standard oe-core ptest images - only for oe-core recipes
     if not 'meta/recipes' in d.getVar('FILE') or not(d.getVar('PTEST_ENABLED') == "1"):

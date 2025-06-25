@@ -1,18 +1,19 @@
-From b720e4766683f6447ca054e67fd4aebe175e8e5e Mon Sep 17 00:00:00 2001
+From 27e6807c279c1610b00e665f2657cf97bb5e9749 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 14:14:41 +0800
 Subject: [PATCH] bmcweb: fixes virtual media buffer overflow
 
+Upstream-Status: Pending
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---
  include/vm_websocket.hpp | 10 +++++++++-
  1 file changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/include/vm_websocket.hpp b/include/vm_websocket.hpp
-index 284b5d2e..5723164e 100644
+index 95cb982655..0b40a34df3 100644
 --- a/include/vm_websocket.hpp
 +++ b/include/vm_websocket.hpp
-@@ -63,7 +63,15 @@ class Handler : public std::enable_shared_from_this<Handler>
+@@ -81,7 +81,15 @@ class Handler : public std::enable_shared_from_this<Handler>
              return;
          }
  
@@ -29,3 +30,6 @@ index 284b5d2e..5723164e 100644
      }
  
      void connect()
+-- 
+2.43.0
+

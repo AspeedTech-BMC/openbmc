@@ -11,6 +11,8 @@ inherit ptest
 
 SRC_URI[sha256sum] = "90f8d2fa8b5567c6899830ddef2c03f3c27960b11aca222fa17aa7ac613c2890"
 
+UPSTREAM_CHECK_URI = "https://duktape.org/download"
+
 EXTRA_OEMAKE = "INSTALL_PREFIX='${prefix}' DESTDIR='${D}' LIBDIR='/${baselib}'"
 
 do_compile () {
@@ -30,11 +32,11 @@ do_install () {
 }
 
 do_install_ptest() {
-    install -m 0755 "${WORKDIR}/duktape-2.7.0/hello" "${D}${PTEST_PATH}"
-    install -m 0755 "${WORKDIR}/duktape-2.7.0/eval" "${D}${PTEST_PATH}"
-    install -m 0755 "${WORKDIR}/duktape-2.7.0/evloop" "${D}${PTEST_PATH}"
-    install -m 0755 "${WORKDIR}/duktape-2.7.0/examples/eventloop/timer-test.js" "${D}${PTEST_PATH}"
-    install -m 0755 "${WORKDIR}/duktape-2.7.0/examples/eventloop/ecma_eventloop.js" "${D}${PTEST_PATH}"
+    install -m 0755 "${S}/hello" "${D}${PTEST_PATH}"
+    install -m 0755 "${S}/eval" "${D}${PTEST_PATH}"
+    install -m 0755 "${S}/evloop" "${D}${PTEST_PATH}"
+    install -m 0755 "${S}/examples/eventloop/timer-test.js" "${D}${PTEST_PATH}"
+    install -m 0755 "${S}/examples/eventloop/ecma_eventloop.js" "${D}${PTEST_PATH}"
 }
 
 RDEPENDS:${PN}-ptest += "make"

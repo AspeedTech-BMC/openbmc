@@ -16,6 +16,7 @@ in include_directories.
 The YOCTO_STAGING_INCDIR_NATIVE variable is set by recipe and its value is
 STAGING_INCDIR_NATIVE within Yocto build environment.
 
+Upstream-Status: Pending
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 ---
  CMakeLists.txt | 1 +

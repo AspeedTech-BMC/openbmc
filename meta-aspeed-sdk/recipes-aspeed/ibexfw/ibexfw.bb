@@ -9,6 +9,7 @@ PR = "r0"
 
 IBEX_FIRMWARE ?= "ast2700-ibex-fw.bin"
 
+UNPACKDIR = "${S}"
 SRC_URI = "file://${IBEX_FIRMWARE};subdir=${S}"
 
 do_patch[noexec] = "1"

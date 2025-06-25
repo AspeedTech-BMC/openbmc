@@ -8,15 +8,17 @@ Device mappings for UFS storage:
 /dev/mmcblk0boot0 => /dev/sdb
 /dev/mmcblk0boot1 => /dev/sdc
 
+Upstream-Status: Pending
+
 Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  obmc-flash-bmc | 18 +++++++++---------
  1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/obmc-flash-bmc b/obmc-flash-bmc
+diff --git a/bmc/obmc-flash-bmc b/bmc/obmc-flash-bmc
 index 442bb7a..394d5ef 100644
---- a/obmc-flash-bmc
-+++ b/obmc-flash-bmc
+--- a/bmc/obmc-flash-bmc
++++ b/bmc/obmc-flash-bmc
 @@ -563,7 +563,7 @@ function mmc_mount() {
  
  function mmc_update() {
