@@ -1,25 +1,28 @@
-From abd990454c790cb9050ce41b17a84dbae4189891 Mon Sep 17 00:00:00 2001
+From 28edb057c987bbe3dedbb3376ae4c89568626e8c Mon Sep 17 00:00:00 2001
 From: Vince Chang <vince_chang@aspeedtech.com>
-Date: Thu, 12 Sep 2024 16:14:32 +0800
+Date: Fri, 27 Jun 2025 16:19:47 -0600
 Subject: [PATCH] support UFS storage.
 
-Device mappings for UFS storage:
-/dev/mmcblk0      => /dev/sda
-/dev/mmcblk0boot0 => /dev/sdb
-/dev/mmcblk0boot1 => /dev/sdc
+- Map UFS storage devices:
+  /dev/mmcblk0      => /dev/sda
+  /dev/mmcblk0boot0 => /dev/sdb
+  /dev/mmcblk0boot1 => /dev/sdc
+
+- Disable force_ro for UFS updates:
+  Commented out force_ro handling in mmc_update and mmc_mirroruboot.
 
 Upstream-Status: Pending
 
 Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
- obmc-flash-bmc | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ bmc/obmc-flash-bmc | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
 diff --git a/bmc/obmc-flash-bmc b/bmc/obmc-flash-bmc
-index 442bb7a..394d5ef 100644
+index f9cc4e2..2a47c7f 100644
 --- a/bmc/obmc-flash-bmc
 +++ b/bmc/obmc-flash-bmc
-@@ -563,7 +563,7 @@ function mmc_mount() {
+@@ -576,13 +576,13 @@ function mmc_mount() {
  
  function mmc_update() {
      # Update u-boot if needed
@@ -28,7 +31,15 @@ index 442bb7a..394d5ef 100644
      devUBoot="/dev/${bootPartition}"
      imgUBoot="${imgpath}/${version}/image-u-boot"
      if [ "$(cmp_uboot "${devUBoot}" "${imgUBoot}")" != "0" ]; then
-@@ -579,13 +579,13 @@ function mmc_update() {
+-        echo 0 > "/sys/block/${bootPartition}/force_ro"
++        #echo 0 > "/sys/block/${bootPartition}/force_ro"
+         dd if="${imgUBoot}" of="${devUBoot}"
+-        echo 1 > "/sys/block/${bootPartition}/force_ro"
++        #echo 1 > "/sys/block/${bootPartition}/force_ro"
+     fi
+ 
+     # Update the secondary (non-running) boot and rofs partitions.
+@@ -592,13 +592,13 @@ function mmc_update() {
      # by getting the partition number mmcblk0pX from their label.
      zstd -d -c "${imgpath}"/"${version}"/image-kernel | dd of="/dev/disk/by-partlabel/boot-${label}"
      number="$(readlink -f /dev/disk/by-partlabel/boot-"${label}")"
@@ -46,7 +57,7 @@ index 442bb7a..394d5ef 100644
  
      # Run this after sgdisk for labels to take effect.
      partprobe
-@@ -636,11 +636,11 @@ function mmc_mirroruboot() {
+@@ -649,11 +649,11 @@ function mmc_mirroruboot() {
      # Get current boot device; 0-primary_bootdev device; 1 - alt_bootdev
      bootdev=$(cat /sys/kernel/debug/aspeed/sbc/abr_image)
      if [[ "${bootdev}" == "0" ]]; then
@@ -62,3 +73,18 @@ index 442bb7a..394d5ef 100644
      fi
  
      devUBoot="/dev/${bootPartition}"
+@@ -666,9 +666,9 @@ function mmc_mirroruboot() {
+ 
+     if [[ "${checksum_UBoot}" != "${checksum_alt_UBoot}" ]]; then
+         echo "Mirroring U-boot to alt chip"
+-        echo 0 > "/sys/block/${alt_bootPartition}/force_ro"
++        #echo 0 > "/sys/block/${alt_bootPartition}/force_ro"
+         dd if="${devUBoot}" of="${alt_devUBoot}"
+-        echo 1 > "/sys/block/${alt_bootPartition}/force_ro"
++        #echo 1 > "/sys/block/${alt_bootPartition}/force_ro"
+     fi
+ }
+ 
+-- 
+2.43.0
+
