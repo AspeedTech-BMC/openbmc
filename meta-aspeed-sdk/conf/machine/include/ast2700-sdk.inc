@@ -65,7 +65,7 @@ ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"
 
 # zephyr build
 PREFERRED_PROVIDER_virtual/ssp ?= "zephyr-aspeed-ssp"
-ZEPHYR_BOARD_SSP ?= "ast2700_evb/ast2700/ssp"
+ZEPHYR_BOARD_SSP ?= "ast2700_evb/ast2700/ssp_tsp"
 
 PREFERRED_PROVIDER_virtual/tsp ?= "zephyr-aspeed-tsp"
 ZEPHYR_BOARD_TSP ?= "ast2700_evb/ast2700/tsp"
