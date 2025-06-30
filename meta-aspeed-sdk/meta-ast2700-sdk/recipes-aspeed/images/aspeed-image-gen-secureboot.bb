@@ -11,6 +11,7 @@ DEPENDS = " \
     socsec-native \
     aspeed-secure-config-native \
     fmc-imgtool-native \
+    fmc-images \
     u-boot-tools-native \
     dtc-native \
     xz-native \
@@ -139,14 +140,13 @@ fmc_sign_spl_and_verify() {
 
     echo "sign_args=${sign_args}"
 
-    cd ${STAGING_LIBDIR_NATIVE}/${PYTHON_DIR}/fmc-imgtool
-    python3 main.py \
+    fmc-imgtool \
         --verbose \
         --version 2 \
         --input ${S}/${GEN_IMAGE_MODE}/u-boot-spl.bin \
         --output ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY} \
+        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/fmc-images/ \
         ${sign_args}
-    cd -
 
     # TODO: The FMC tool does not support verification yet.
     # To reduce the risk of unexpected run-time errors, verification should be added.

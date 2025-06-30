@@ -3,7 +3,7 @@ DESCRIPTION = "BootMCU is designated to load the first, verified image for the m
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 PROVIDES += "virtual/bootmcu"
-DEPENDS = "ast2700-riscv-linux-gnu-native kern-tools-native swig-native ${PYTHON_PN}-setuptools-native fmc-imgtool-native"
+DEPENDS = "ast2700-riscv-linux-gnu-native kern-tools-native swig-native ${PYTHON_PN}-setuptools-native fmc-imgtool-native fmc-images"
 DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native u-boot-tools-native', '', d)}"
 
 inherit deploy cml1 python3native otptool
@@ -148,14 +148,13 @@ do_create_fmc_image() {
         sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
     fi
 
-    cd ${STAGING_LIBDIR_NATIVE}/${PYTHON_DIR}/fmc-imgtool
-    python3 main.py \
+    fmc-imgtool \
         --verbose \
         --version 2 \
         --input ${B}/spl/u-boot-spl.bin \
         --output ${B}/${BOOTMCU_FW_BINARY} \
+        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/fmc-images/ \
         ${sign_args}
-    cd -
 }
 
 addtask create_fmc_image before do_deploy after do_compile
@@ -178,5 +177,7 @@ do_deploy() {
 }
 
 addtask deploy before do_build after do_compile
+
+do_deploy[depends] += "fmc-images:do_deploy"
 
 ALLOW_EMPTY:${PN} = "1"
