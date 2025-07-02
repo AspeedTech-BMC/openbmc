@@ -35,3 +35,6 @@ TZ = '/etc/localtime'
 # Enable spi-nor-ecc.inc if BMC flash model support ECC mode.
 #require conf/machine/include/spi-nor-ecc.inc
 
+# If your lsusb requires hwdb.bin support, remove the mask setting below
+# to allow udev-hwdb to be included in the image.
+#BAD_RECOMMENDATIONS:remove = "udev-hwdb"
