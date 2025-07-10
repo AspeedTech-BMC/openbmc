@@ -56,7 +56,6 @@ ast2700-ufs
 ast2700-abr
 ast2700-vff
 ast2700-dcscm
-ast2700-dcscm-ast1700-evb
 ```
 
 - Linux kernel version is `6.6` by default. machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
