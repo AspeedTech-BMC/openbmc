@@ -6,7 +6,6 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 # 1 = SHA256
 # 2 = SHA384
 PFR_SHA ?= "1"
-PFR_MANIFEST ?= "pfr_manifest_ast2600_dcscm.json"
 
 S = "${WORKDIR}/sources"
 UNPACKDIR = "${S}"
@@ -34,6 +33,7 @@ SRC_URI = " \
            file://bmc_config_lms384.xml \
            file://pfm_config_lms256.xml \
            file://bmc_config_lms256.xml \
+           file://${PFR_MANIFEST} \
           "
 
 do_install () {
@@ -61,6 +61,7 @@ do_install () {
         install -m 400 ${UNPACKDIR}/bmc_config_lms384.xml ${D}/${datadir}/pfrconfig/bmc_config_lms384.xml
         install -m 400 ${UNPACKDIR}/pfm_config_lms256.xml ${D}/${datadir}/pfrconfig/pfm_config_lms256.xml
         install -m 400 ${UNPACKDIR}/bmc_config_lms256.xml ${D}/${datadir}/pfrconfig/bmc_config_lms256.xml
+        install -m 400 ${UNPACKDIR}/${PFR_MANIFEST} ${D}/${datadir}/pfrconfig
 }
 
 do_install:class-target () {
