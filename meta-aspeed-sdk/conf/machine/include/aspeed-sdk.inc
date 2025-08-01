@@ -38,7 +38,7 @@ VIRTUAL-RUNTIME_obmc-sensors-hwmon = "dbus-sensors"
 
 # OpenBMC phosphor-defaults.inc sets this to phosphor-ipmi-fru.
 # Remove it to use the phosphor-host-ipmid dbus-sdr FRU write command.
-VIRTUAL-RUNTIME_phosphor-ipmi-providers=""
+VIRTUAL-RUNTIME_phosphor-ipmi-providers = ""
 
 # runqemu support
 QEMUVERSION ?= "10.0%"

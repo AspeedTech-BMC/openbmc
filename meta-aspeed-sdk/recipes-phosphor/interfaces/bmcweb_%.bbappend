@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-EXTRA_OEMESON:append= " \
+EXTRA_OEMESON:append = " \
     -Dhttp-body-limit=264 \
     "
 
