@@ -1,4 +1,4 @@
-From b0b56032901c0747ce7ec736d93111ffbf5fde8e Mon Sep 17 00:00:00 2001
+From 2827d50a6943abaa69a9262c93ef8d61e38e3bd4 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Thu, 6 Jun 2024 17:35:26 +0800
 Subject: [PATCH] Use aspeed's novnc fork
@@ -15,7 +15,7 @@ Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
  2 files changed, 13 insertions(+), 1 deletion(-)
 
 diff --git a/package.json b/package.json
-index 0ca43073..3c2a5815 100644
+index 0ca4307..3c2a581 100644
 --- a/package.json
 +++ b/package.json
 @@ -4,6 +4,7 @@
@@ -53,10 +53,10 @@ index 0ca43073..3c2a5815 100644
          "prettier": "3.2.5",
          "sass": "1.75.0",
 diff --git a/vue.config.js b/vue.config.js
-index e33918e4..0467ff52 100644
+index 2fab59f..aae65ff 100644
 --- a/vue.config.js
 +++ b/vue.config.js
-@@ -92,6 +92,10 @@ module.exports = {
+@@ -107,6 +107,10 @@ module.exports = {
            `@/env/components/AppNavigation/${envName}.js`;
        }
      }
@@ -67,7 +67,7 @@ index e33918e4..0467ff52 100644
  
      if (process.env.NODE_ENV === 'production') {
        config.plugins.push(
-@@ -101,6 +105,10 @@ module.exports = {
+@@ -116,6 +120,10 @@ module.exports = {
        );
      }
  

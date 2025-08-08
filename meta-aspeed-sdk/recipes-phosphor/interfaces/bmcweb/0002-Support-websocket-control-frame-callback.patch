@@ -1,4 +1,4 @@
-From 428f7e0c6accf750cb084ecda28468a9d59905dd Mon Sep 17 00:00:00 2001
+From 964e4ca4c2544e467d0e49dff96e8c76772748e5 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 14:27:16 +0800
 Subject: [PATCH] Support websocket control frame callback
@@ -18,7 +18,7 @@ Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
  3 files changed, 61 insertions(+), 4 deletions(-)
 
 diff --git a/http/routing/websocketrule.cpp b/http/routing/websocketrule.cpp
-index 898a1d091c..9db1fb8ccf 100644
+index 898a1d09..9db1fb8c 100644
 --- a/http/routing/websocketrule.cpp
 +++ b/http/routing/websocketrule.cpp
 @@ -26,7 +26,7 @@ void WebSocketRule::handleUpgrade(
@@ -40,7 +40,7 @@ index 898a1d091c..9db1fb8ccf 100644
  }
  } // namespace crow
 diff --git a/http/routing/websocketrule.hpp b/http/routing/websocketrule.hpp
-index 56bc6cafb8..772ae3bd0c 100644
+index 56bc6caf..772ae3bd 100644
 --- a/http/routing/websocketrule.hpp
 +++ b/http/routing/websocketrule.hpp
 @@ -88,6 +88,20 @@ class WebSocketRule : public BaseRule
@@ -73,7 +73,7 @@ index 56bc6cafb8..772ae3bd0c 100644
  };
  } // namespace crow
 diff --git a/http/websocket_impl.hpp b/http/websocket_impl.hpp
-index 1812f0ff43..0ce2c79cc5 100644
+index 3cb5a994..2198b857 100644
 --- a/http/websocket_impl.hpp
 +++ b/http/websocket_impl.hpp
 @@ -58,13 +58,17 @@ class ConnectionImpl : public Connection
@@ -138,7 +138,7 @@ index 1812f0ff43..0ce2c79cc5 100644
      }
  
      void sendBinary(std::string_view msg) override
-@@ -353,6 +392,8 @@ class ConnectionImpl : public Connection
+@@ -357,6 +396,8 @@ class ConnectionImpl : public Connection
          messageExHandler;
      std::function<void(Connection&, const std::string&)> closeHandler;
      std::function<void(Connection&)> errorHandler;
