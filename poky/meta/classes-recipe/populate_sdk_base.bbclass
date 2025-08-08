@@ -52,6 +52,8 @@ SDK_DEPLOY = "${DEPLOY_DIR}/sdk"
 
 SDKDEPLOYDIR = "${WORKDIR}/${SDKMACHINE}-deploy-${PN}-populate-sdk"
 
+PSEUDO_INCLUDE_PATHS .= ",${SDK_DIR}"
+
 B:task-populate-sdk = "${SDK_DIR}"
 
 SDKTARGETSYSROOT = "${SDKPATH}/sysroots/${REAL_MULTIMACH_TARGET_SYS}"
@@ -94,7 +96,7 @@ python () {
        # recommand to cd into input dir first to avoid archive with buildpath
        d.setVar('SDK_ARCHIVE_CMD', 'cd ${SDK_OUTPUT}/${SDKPATH}; zip -r ${SDK_ZIP_OPTIONS} ${SDKDEPLOYDIR}/${TOOLCHAIN_OUTPUTNAME}.${SDK_ARCHIVE_TYPE} .')
     elif d.getVar('SDK_ARCHIVE_TYPE') == '7zip':
-       d.setVar('SDK_ARCHIVE_DEPENDS', 'p7zip-native')
+       d.setVar('SDK_ARCHIVE_DEPENDS', '7zip-native')
        d.setVar('SDK_ARCHIVE_CMD', 'cd ${SDK_OUTPUT}/${SDKPATH}; 7za a -r ${SDK_7ZIP_OPTIONS} ${SDKDEPLOYDIR}/${TOOLCHAIN_OUTPUTNAME}.${SDK_7ZIP_TYPE} .')
     elif d.getVar('SDK_ARCHIVE_TYPE') == 'tar.zst':
        d.setVar('SDK_ARCHIVE_DEPENDS', 'zstd-native')
@@ -109,7 +111,7 @@ python () {
 }
 
 SDK_RDEPENDS = "${TOOLCHAIN_TARGET_TASK} ${TOOLCHAIN_HOST_TASK}"
-SDK_DEPENDS = "virtual/fakeroot-native ${SDK_ARCHIVE_DEPENDS} cross-localedef-native nativesdk-qemuwrapper-cross ${@' '.join(["%s-qemuwrapper-cross" % m for m in d.getVar("MULTILIB_VARIANTS").split()])} qemuwrapper-cross"
+SDK_DEPENDS = "virtual/fakeroot-native ${SDK_ARCHIVE_DEPENDS} cross-localedef-native"
 PATH:prepend = "${WORKDIR}/recipe-sysroot/${SDKPATHNATIVE}${bindir}/crossscripts:${@":".join(all_multilib_tune_values(d, 'STAGING_BINDIR_CROSS').split())}:"
 SDK_DEPENDS += "nativesdk-glibc-locale"
 
@@ -262,8 +264,6 @@ python do_populate_sdk_setscene () {
     sstate_setscene(d)
 }
 addtask do_populate_sdk_setscene
-
-PSEUDO_IGNORE_PATHS .= ",${SDKDEPLOYDIR},${WORKDIR}/oe-sdk-repo,${WORKDIR}/sstate-build-populate_sdk"
 
 fakeroot create_sdk_files() {
 	cp ${COREBASE}/scripts/relocate_sdk.py ${SDK_OUTPUT}/${SDKPATH}/

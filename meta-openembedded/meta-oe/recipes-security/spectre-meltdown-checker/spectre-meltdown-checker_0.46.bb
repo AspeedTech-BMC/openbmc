@@ -26,10 +26,10 @@ RRECOMMENDS:${PN} = "\
 
 INHIBIT_DEFAULT_DEPS = "1"
 
-inherit allarch
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 do_compile[noexec] = "1"
 
 do_install() {
-    install -m 755 -D ${S}/${PN}.sh ${D}${bindir}/${PN}
+    install -m 755 -D ${S}/${BPN}.sh ${D}${bindir}/${BPN}
 }

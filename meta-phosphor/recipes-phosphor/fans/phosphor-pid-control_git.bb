@@ -17,7 +17,7 @@ DEPENDS += "cli11"
 DEPENDS += "boost"
 # We depend on this to be built first so we can build our providers.
 DEPENDS += "phosphor-ipmi-host"
-SRCREV = "fc97b5cdd97cc73c8f98ec3cf194f368dbbe3965"
+SRCREV = "765a6d8024061dd9f7a881bac870120886bee9db"
 PV = "0.1+git${SRCPV}"
 PR = "r1"
 
@@ -31,6 +31,9 @@ SYSTEMD_SERVICE:${PN} = "${SERVICE_FILE}"
 inherit meson pkgconfig
 inherit obmc-phosphor-ipmiprovider-symlink
 inherit systemd
+
+PACKAGECONFIG ??= ""
+PACKAGECONFIG[offline-failsafe] = "-Doffline-failsafe-pwm=true,-Doffline-failsafe-pwm=false"
 
 EXTRA_OEMESON = " \
   -Dtests=disabled \

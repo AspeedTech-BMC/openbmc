@@ -1,0 +1,88 @@
+#!/bin/bash -e
+# shellcheck source=meta-facebook/recipes-fb/obmc_functions/files/fb-common-functions
+source /usr/libexec/fb-common-functions
+
+config_fan_max31790()
+{
+    # Set fan tack sample count for each tach channel to highest value to avoid
+    # wrong fan tach reading.
+    #
+    # FanX_Dynamics
+    # - register offset: 0x08 (tach1) - 0x0d (tach6)
+    # |------------------------ -----------------------------------------------|
+    # | bit[7:5]         | 000b | 001b | 010b | 011b | 110b | 101b, 110b, 111b |
+    # |------------------------------------------------------------------------|
+    # | tach sample count|  1   |  2   |  4   |  8   |  16  |  32              |
+    # |------------------------------------------------------------------------|
+    for addr in "0x20" "0x23" "0x2c" "0x2f"
+    do
+        for offset in $(seq 0x08 0x0d)
+        do
+            fan_dynam_val=$(printf "%d" "$(i2cget -y -f 1 "$addr" "$offset")")
+            fan_dynam_val=$((fan_dynam_val | 0xe0))
+            i2cset -y -f 1 "$addr" "$offset" "$fan_dynam_val"
+        done
+
+        # after manual set FanX_Dynamics, needs to rebind driver to ensure
+        # driver get correct setitngs
+        bus_addr="$(printf "1-%04x" $addr)"
+        echo "$bus_addr" > /sys/bus/i2c/drivers/max31790/unbind
+        echo "$bus_addr" > /sys/bus/i2c/drivers/max31790/bind
+    done
+
+    # set fan enable
+    if find /sys/bus/i2c/devices/*/hwmon/*/fan*_enable -print -quit 2>/dev/null | grep -q .; then
+        for file in /sys/bus/i2c/devices/*/hwmon/*/fan*_enable
+        do
+            echo 1 > "${file}"
+        done
+    fi
+}
+
+config_fan()
+{
+    if [ -d "/sys/bus/i2c/drivers/max31790/1-0020/hwmon" ]; then
+        echo "Configure MAX31790 fan controller"
+        config_fan_max31790
+    fi
+
+    # Set all fan pwm to 80%
+    pwm_value=204
+    for pwm_node in /sys/bus/i2c/devices/*/hwmon/*/pwm*
+    do
+        if [[ ! "$pwm_node" =~ _enable ]]; then
+            if ! echo $pwm_value > "$pwm_node"; then
+                echo "Set $pwm_node: failed"
+            fi
+        fi
+    done
+}
+
+# Enable standby power and bind i2c components
+/usr/libexec/plat-svc/standby-power-enable
+
+# Workaround
+# rebind Interposer i2c mux
+bind_i2c_device pca954x 1-0070
+# rebind HPM Fan IC
+bind_i2c_device max31790 1-0020
+bind_i2c_device max31790 1-0023
+bind_i2c_device max31790 1-002c
+bind_i2c_device max31790 1-002f
+# Interposer FRU
+bind_i2c_device at24 21-0054
+# rebind PDB FRU
+bind_i2c_device at24 1-0050
+# rebind FIO FRU
+bind_i2c_device at24 23-0051
+# rebind Interposer CPLD IOEXP
+bind_i2c_device pca953x 14-0010
+bind_i2c_device pca953x 14-0011
+bind_i2c_device pca953x 14-0012
+bind_i2c_device pca953x 14-0013
+bind_i2c_device pca953x 14-0014
+
+# Set fan target and enable all fan input as early as possible
+config_fan
+
+exit 0

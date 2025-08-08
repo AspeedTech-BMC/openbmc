@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=0d30807bb7a4f16d36e96b78f9ed8fae"
 DEPENDS += "autoconf-archive-native \
             systemd \
            "
-SRCREV = "fa3bc56a7495c827ed0ce337f2a946971d5d3ce6"
+SRCREV = "c2438238b8ae477ce5119e4ebb6fa73af991751e"
 PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)} pcap"
 PACKAGECONFIG[systemd] = "--with-systemdsystemunitdir=${systemd_system_unitdir}, \
                           --without-systemdsystemunitdir,systemd"

@@ -48,6 +48,7 @@ SRC_URI = " \
     file://core/0001-memory.h-Always-define-strlcpy-for-glibc-based-syste.patch;patchdir=system/core \
     file://extras/0001-ext4_utils-remove-selinux-extensions.patch;patchdir=system/extras \
     file://extras/0002-ext4_utils-add-o-argument-to-preserve-ownership.patch;patchdir=system/extras \
+    file://extras/0003-ext4_utils-drop-unused-parameter-from-allocate_inode.patch;patchdir=system/extras \
     file://libselinux/0001-Remove-bionic-specific-calls.patch;patchdir=external/libselinux \
     file://libselinux/0001-libselinux-Do-not-define-gettid-if-glibc-2.30-is-use.patch;patchdir=external/libselinux \
     file://android-tools-adbd.service \
@@ -187,12 +188,6 @@ FILES:${PN}-fstools = "\
 "
 
 BBCLASSEXTEND = "native"
-
-android_tools_enable_devmode() {
-    touch ${IMAGE_ROOTFS}/etc/usb-debugging-enabled
-}
-
-ROOTFS_POSTPROCESS_COMMAND_${PN}-adbd += "${@bb.utils.contains("USB_DEBUGGING_ENABLED", "1", "android_tools_enable_devmode;", "", d)}"
 
 # http://errors.yoctoproject.org/Errors/Details/766881/
 # android-tools/5.1.1.r37/git/system/core/adb/adb_auth_host.c:86:23: error: passing argument 2 of 'RSA_get0_key' from incompatible pointer type [-Wincompatible-pointer-types]

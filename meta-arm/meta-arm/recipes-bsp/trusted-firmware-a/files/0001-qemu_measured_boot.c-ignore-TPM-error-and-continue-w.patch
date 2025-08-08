@@ -10,7 +10,7 @@ Enables testing boot without TPM device to see that
 missing TPM is detected further up the SW stack and correct
 fallback actions are taken.
 
-Upstream-Status: Pending
+Upstream-Status: Submitted [https://review.trustedfirmware.org/c/TF-A/trusted-firmware-a/+/36514]
 
 Signed-off-by: Mikko Rapeli <mikko.rapeli@linaro.org>
 ---

@@ -1,5 +1,8 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
+PACKAGECONFIG:remove = "install-utils"
+PACKAGECONFIG:append = " run-apr-on-watchdog-reset"
+
 HOST_DEFAULT_TARGETS:append = " \
     obmc-host-shutdown@{}.target.wants/host-poweroff@{}.service \
     obmc-host-start@{}.target.wants/host-poweron@{}.service \

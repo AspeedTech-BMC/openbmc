@@ -10,12 +10,19 @@ get_gpio()
         echo "get_gpio: can not find gpio, $NET_NAME" >&2
         return 1
     fi
-    if ! RET_VAL=$(gpioget "${GPIO_INFO[0]}" "${GPIO_INFO[1]%$'\n'}") ; then
-        echo "get_gpio: get ${NET_NAME} failed" >&2
-        return 1
-    fi
-    echo "${RET_VAL}"
-    return 0
+    for _ in {1..10}
+    do
+        if ! RET_VAL=$(gpioget "${GPIO_INFO[0]}" "${GPIO_INFO[1]%$'\n'}") ; then
+            usleep 10000
+            continue
+        else
+            echo "${RET_VAL}"
+            return 0
+        fi
+    done
+
+    echo "get_gpio: get ${NET_NAME} failed" >&2
+    return 1
 }
 
 set_gpio()
@@ -40,12 +47,32 @@ set_gpio()
 
 bind_i2c_device()
 {
-    DRIVER_NAME="$1"
-    DEV_BUS_ADDR="$2"
-    DRIVER_DIR_PATH="/sys/bus/i2c/drivers/${DRIVER_NAME}"
-    DRIVER_BIND_PATH="${DRIVER_DIR_PATH}/bind"
-    if [ ! -L "${DRIVER_DIR_PATH}/${DEV_BUS_ADDR}" ]; then
-        echo "bind_i2c_device: $DRIVER_NAME, $DEV_BUS_ADDR"
-        echo "${DEV_BUS_ADDR}" > "${DRIVER_BIND_PATH}"
+    local DRIVER_NAME="$1"
+    local DEV_BUS_ADDR="$2"
+    local DRIVER_DIR_PATH="/sys/bus/i2c/drivers/${DRIVER_NAME}"
+    local DRIVER_BIND_PATH="${DRIVER_DIR_PATH}/bind"
+    local MAX_RETRIES=1
+    local RETRY=0
+
+    if [ -n "$3" ]; then
+        MAX_RETRIES="$3"
     fi
+
+    if [ -L "${DRIVER_DIR_PATH}/${DEV_BUS_ADDR}" ]; then
+        return 0
+    fi
+
+    while [ "$RETRY" -lt "$MAX_RETRIES" ]
+    do
+        if echo "${DEV_BUS_ADDR}" > "${DRIVER_BIND_PATH}"; then
+            echo "bind_i2c_device: $DRIVER_NAME, $DEV_BUS_ADDR successful"
+            return 0
+        fi
+
+        RETRY=$((RETRY + 1))
+        echo "bind_i2c_device: $DRIVER_NAME, $DEV_BUS_ADDR failed"
+        usleep 50000
+    done
+
+    return 1
 }

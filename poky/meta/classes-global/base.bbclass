@@ -464,7 +464,7 @@ python () {
             if "DEPENDS" in varname or varname.startswith("RRECOMMENDS"):
                 if bb.data.inherits_class('nativesdk', d) or bb.data.inherits_class('cross-canadian', d) :
                     appends = expandFilter(appends, "", "nativesdk-")
-                elif bb.data.inherits_class('native', d):
+                elif bb.data.inherits_class('native', d) or bb.data.inherits_class('cross', d):
                     appends = expandFilter(appends, "-native", "")
                 elif mlprefix:
                     appends = expandFilter(appends, "", mlprefix)
@@ -645,9 +645,9 @@ python () {
         elif path.endswith('.deb'):
             d.appendVarFlag('do_unpack', 'depends', ' xz-native:do_populate_sysroot')
 
-        # *.7z should DEPEND on p7zip-native for unpacking
+        # *.7z should DEPEND on 7zip-native for unpacking
         elif path.endswith('.7z'):
-            d.appendVarFlag('do_unpack', 'depends', ' p7zip-native:do_populate_sysroot')
+            d.appendVarFlag('do_unpack', 'depends', ' 7zip-native:do_populate_sysroot')
 
     set_packagetriplet(d)
 
