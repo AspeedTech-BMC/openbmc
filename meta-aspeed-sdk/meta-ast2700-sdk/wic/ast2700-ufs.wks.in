@@ -6,7 +6,28 @@
 # |GPT| | env | boot-a | boot-b | rofs-a | rofs-b | rwfs |GPT-sec|
 #  --- - ----- -------- -------- -------- -------- ------ -------
 #       ^ 1MB   24MB     24MB     200MB    200MB   16MB
-
+#       |
+#       0x22000
+#
+# GPT Partition Layout Reference (See: https://en.wikipedia.org/wiki/GUID_Partition_Table)
+#
+# UFS logical sector size: 4096 bytes
+#
+# Primary GPT (at the beginning of the image):
+# LBA  0    - Protective MBR                        =  4096 bytes
+# LBA  1    - Primary GPT Header                    =  4096 bytes
+# LBA  2-33 - Primary Partition Table (32 entries)  = 32 * 4096 bytes = 128 KB
+# ------------------------------------------------------------------------
+# Total primary GPT region size: 34 LBAs = 34 * 4096 bytes = 139,264 bytes (0x22000)
+#
+# First partition (e.g., u-boot-env) is 4 KB aligned:
+# Start offset = 0x22000 (139,264 bytes) to maintain 4 KB alignment after GPT area
+#
+# Secondary GPT (at the end of the image):
+# LBA -33 to -2 - Secondary Partition Table         = 32 * 4096 bytes = 128 KB
+# LBA -1        - Secondary GPT Header              = 4096 bytes
+# ------------------------------------------------------------------------
+# Total secondary GPT region size: 33 LBAs = 33 * 4096 bytes = 135,168 bytes (0x21000)
 
 bootloader --ptable gpt
 

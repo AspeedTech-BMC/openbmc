@@ -44,12 +44,13 @@ set_gpio() {
     done
 }
 
-
-# Initial GPIO value.
-postcode=$(busctl get-property xyz.openbmc_project.State.Boot.Raw /xyz/openbmc_project/state/boot/raw0 \
-                  xyz.openbmc_project.State.Boot.Raw Value | awk '{print $2}')
-set_gpio "$postcode"
-
+# Initial GPIO value only power on.
+if [ "$(cat /sys/class/watchdog/watchdog0/bootstatus)" = "0" ]; then
+    postcode=$(busctl get-property xyz.openbmc_project.State.Boot.Raw /xyz/openbmc_project/state/boot/raw0 \
+                xyz.openbmc_project.State.Boot.Raw Value | awk '{print $2}')
+    set_gpio "$postcode"
+    echo "set-post-code-led initial postcode: $postcode"
+fi
 
 # Monitor bios post code to set GPIO value
 dbus-monitor --system type='signal',interface='org.freedesktop.DBus.Properties',\

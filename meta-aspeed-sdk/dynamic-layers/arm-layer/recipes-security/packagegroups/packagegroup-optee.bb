@@ -2,7 +2,7 @@ SUMMARY = "Packagegroup for optee"
 
 PR = "r1"
 
-PACKAGE_ARCH="${TUNE_PKGARCH}"
+PACKAGE_ARCH = "${TUNE_PKGARCH}"
 
 inherit packagegroup
 

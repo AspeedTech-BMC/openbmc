@@ -1,0 +1,10 @@
+[Unit]
+Description=LPC Snoop Daemon
+After=systemd-modules-load.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/snoopd -b 1 -d /dev/aspeed-lpc-snoop2 -n 1 --rate-limit=1000
+
+[Install]
+WantedBy=multi-user.target

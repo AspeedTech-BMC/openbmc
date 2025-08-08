@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-EXTRA_OEMESON:append= " \
+EXTRA_OEMESON:append = " \
     -Dhttp-body-limit=264 \
     "
 
@@ -13,4 +13,8 @@ SRC_URI:append = " \
     file://0001-bmcweb-fixes-virtual-media-buffer-overflow.patch \
     file://0002-Support-websocket-control-frame-callback.patch \
     file://0003-Modify-Content-Security-Policy-CSP-to-adapt-WebAssem.patch \
+    file://0004-bmcweb-firmware-update-apply-immediate.patch \
     "
+
+# Use this version to fix watchdog timeout variable
+SRCREV = "38b3b6fc60da301df2e0b3497a251fab352817dc"

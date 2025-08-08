@@ -1,5 +1,3 @@
 MACHINE_FEATURES:append = " ast-tsp"
 MACHINEOVERRIDES .= ":ast-tsp"
-UBOOT_FIT_USER_IMAGE = "1"
-UBOOT_FIT_TSP = "1"
 UBOOT_FIT_CONF_USER_LOADABLES:append = ' ,\"tspfw\"'

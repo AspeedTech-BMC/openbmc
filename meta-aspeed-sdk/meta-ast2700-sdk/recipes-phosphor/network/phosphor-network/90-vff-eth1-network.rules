@@ -1,0 +1,1 @@
+ACTION=="add", SUBSYSTEM=="net", NAME=="eth1", RUN+="/usr/sbin/ethtool -s eth1 autoneg on speed 100 duplex full"

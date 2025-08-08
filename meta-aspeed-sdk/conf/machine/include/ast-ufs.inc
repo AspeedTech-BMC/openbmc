@@ -23,3 +23,6 @@ IMAGE_FSTYPES += " wic.gz mmc-ext4-tar"
 WIC_SECTOR_SIZE ?= "4096"
 WIC_BLOCK_SIZE ?= "4096"
 WICVARS:append = " WIC_SECTOR_SIZE WIC_BLOCK_SIZE"
+
+# Setting block size for mkfs.ext4
+EXTRA_IMAGECMD:ext4:append = " -b 4096"

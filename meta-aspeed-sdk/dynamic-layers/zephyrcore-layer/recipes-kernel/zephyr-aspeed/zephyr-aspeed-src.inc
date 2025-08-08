@@ -1,6 +1,8 @@
 # Refer to meta-zephyr/meta-zephyr-core/recipes-kernel/zephyr-kernel/zephyr-kernel-src-x.x.x.inc
 # creating this file
 
+ZEPHYR_BRANCH = "aspeed-dev-v3.7.0"
+SRCREV_zephyr = "${AUTOREV}"
 SRCREV_mbedtls = "a78176c6ff0733ba08018cba4447bd3f20de7978"
 SRCREV_cmsis = "4b96cbb174678dcd3ca86e11e1f24bc5f8726da0"
 

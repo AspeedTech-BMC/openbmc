@@ -14,4 +14,8 @@ S = "${WORKDIR}/git"
 DEPENDS += "openssl"
 RDEPENDS:${PN} += "openssl"
 
+EXTRA_OEMESON:append:aspeed-g7 = " \
+    -Dotp-platform='ast2700' \
+"
+
 FILES:${PN}:append = " /usr/share/* "

@@ -1,0 +1,85 @@
+{
+    "Exposes": [
+        {
+            "Address": "0x50",
+            "Bus": 12,
+            "Name": "AST2700 FRU",
+            "Type": "EEPROM"
+        },
+        {
+            "Address": "0x4c",
+            "Bus": 12,
+            "Name": "Ambient_Temp",
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 70
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 55
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 5
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 0
+                }
+            ],
+            "Type": "LM75A"
+        },
+        {
+            "Address": "0x4d",
+            "Bus": 12,
+            "Name": "Ambient_Temp1",
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 70
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 55
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 5
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 0
+                }
+            ],
+            "Type": "LM75A"
+        }
+    ],
+    "xyz.openbmc_project.Inventory.Decorator.FruDevice": {
+        "Address": 80,
+        "Bus": 12
+    },
+    "xyz.openbmc_project.Inventory.Decorator.Ipmi": {
+        "EntityId": 7,
+        "EntityInstance": 0
+    },
+    "Name": "AST2700 EVB",
+    "Probe": "TRUE",
+    "Type": "Board"
+}

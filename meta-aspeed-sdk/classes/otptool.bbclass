@@ -1,4 +1,4 @@
-# ASPEED AST2600 devices can use Aspeed's utility 'otptool'
+# ASPEED AST2600 and AST2700 devices can use Aspeed's utility 'otptool'
 # to create OTP image
 # The variables below carry default values to the create_otp()
 # function below.
@@ -8,12 +8,18 @@ OTPTOOL_USER_DIR ?= ""
 OTPTOOL_EXTRA_OPTS ?= ""
 OTPTOOL_EXTRA_DEPENDS ?= " socsec-native"
 DEPENDS += '${@oe.utils.conditional("SOCSEC_SIGN_ENABLE", "1", "${OTPTOOL_EXTRA_DEPENDS}", "", d)}'
+DEPENDS += '${@oe.utils.conditional("FMC_SIGN_ENABLE", "1", "${OTPTOOL_EXTRA_DEPENDS}", "", d)}'
 
 do_otptool() {
     local otptool_config=$1
     otptool_config_slug="$(basename ${otptool_config} .json)"
     otptool_config_outdir="${B}"/"${CONFIG_B_PATH}"/"${otptool_config_slug}"
-    otptool_user_folder="$([ -n "${OTPTOOL_USER_DIR}" ] && echo --user_data_folder ${OTPTOOL_USER_DIR})"
+    local otptool_user_folder=""
+
+    if [ -n "${OTPTOOL_USER_DIR}" ]; then
+        otptool_user_folder="--user_data_folder ${OTPTOOL_USER_DIR}"
+    fi
+
     mkdir -p "${otptool_config_outdir}"
     otptool make_otp_image \
         --key_folder ${OTPTOOL_KEY_DIR} \
@@ -26,7 +32,7 @@ do_otptool() {
         bbfatal "Generated OTP image failed."
     fi
 
-    otptool print "${otptool_config_outdir}"/otp-all.image
+    otptool print --soc ${OTPTOOL_SOC} "${otptool_config_outdir}"/otp-all.image
 
     if [ $? -ne 0 ]; then
         bbfatal "Printed OTP image failed."
@@ -39,8 +45,8 @@ do_otptool() {
 
 # Creates the OTP image
 create_otp_helper() {
-    if [ "${SOC_FAMILY}" != "aspeed-g6" ] ; then
-        bbwarn "OTP creation is only supported on AST2600 boards"
+    if [ "${SOC_FAMILY}" != "aspeed-g6" ] && [ "${SOC_FAMILY}" != "aspeed-g7" ] ; then
+        bbwarn "OTP creation is only supported on AST2600 or AST2700 boards"
     elif [ -z "${OTPTOOL_CONFIGS}" ] ; then
         bbfatal "OTPTOOL_CONFIGS is empty, no otptool configurations available"
     elif [ ! -d "${OTPTOOL_KEY_DIR}" ] ; then
@@ -72,7 +78,7 @@ create_otp() {
 }
 
 do_deploy:prepend() {
-    if [ "${SOCSEC_SIGN_ENABLE}" = "1" ] ; then
+    if [ "${SOCSEC_SIGN_ENABLE}" = "1" ] || [ "${FMC_SIGN_ENABLE}" = "1" ] ; then
         create_otp
     fi
 }

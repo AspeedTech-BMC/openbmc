@@ -1,15 +1,11 @@
 MACHINE ??= "ast2700-default"
 #MACHINE ??= "ast2700-default-ncsi"
-#MACHINE ??= "ast2700-default-ast1700-evb"
-#MACHINE ??= "ast2700-default-ast1700-evb-cdr"
+#MACHINE ??= "ast2700-default-raw"
+#MACHINE ??= "ast2700-default-cptra-11"
 #MACHINE ??= "ast2700-emmc"
 #MACHINE ??= "ast2700-ufs"
 #MACHINE ??= "ast2700-abr"
-#MACHINE ??= "ast2700-a0-default"
-#MACHINE ??= "ast2700-a0-default-ncsi"
-#MACHINE ??= "ast2700-a0-default-ast1700-evb"
-#MACHINE ??= "ast2700-a0-emmc"
-#MACHINE ??= "ast2700-a0-abr"
+#MACHINE ??= "ast2700-vff"
 
 DISTRO ?= "openbmc-phosphor"
 PACKAGE_CLASSES ?= "package_ipk"
@@ -39,3 +35,6 @@ TZ = '/etc/localtime'
 # Enable spi-nor-ecc.inc if BMC flash model support ECC mode.
 #require conf/machine/include/spi-nor-ecc.inc
 
+# If your lsusb requires hwdb.bin support, remove the mask setting below
+# to allow udev-hwdb to be included in the image.
+#BAD_RECOMMENDATIONS:remove = "udev-hwdb"

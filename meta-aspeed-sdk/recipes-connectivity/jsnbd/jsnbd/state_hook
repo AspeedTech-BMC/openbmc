@@ -17,13 +17,7 @@ if [ -e "/sys/bus/platform/devices/1e6a0000.usb-vhub/" ]; then
     dev_name="1e6a0000.usb-vhub"  # For AST2600
 else
     # For AST2700
-    cpu_rev_id=$(devmem 0x12c02000 32)
-    if [[ $(( (cpu_rev_id >> 24) & 0xFF )) -eq 0x06 && \
-          $(( (cpu_rev_id >> 16) & 0xFF )) -eq 0x00 ]]; then
-        dev_name="12011000.usb-vhub"  # For AST2700 A0
-    else
-        dev_name="12060000.usb-vhub"  # For AST2700 A1
-    fi
+    dev_name="12060000.usb-vhub"  # For AST2700 A1
 fi
 
 case "$config" in
@@ -38,13 +32,7 @@ case "$config" in
     nbd_device=/dev/nbd8
     gadget_name=mass-storage1
     gadget_dir=/sys/kernel/config/usb_gadget/$gadget_name
-    cpu_rev_id=$(devmem 0x12c02000 32)
-    if [[ $(( (cpu_rev_id >> 24) & 0xFF )) -eq 0x06 && \
-          $(( (cpu_rev_id >> 16) & 0xFF )) -eq 0x00 ]]; then
-        dev_name="12021000.usb-vhub"  # For AST2700 A0
-    else
-        dev_name="12021000.usb-vhub"  # For AST2700 A1
-    fi
+    dev_name="12021000.usb-vhub"  # For AST2700 A1
     ;;
 *)
     echo "invalid config $config" >&2

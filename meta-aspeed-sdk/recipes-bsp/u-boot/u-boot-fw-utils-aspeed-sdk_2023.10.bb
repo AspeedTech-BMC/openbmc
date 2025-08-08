@@ -1,4 +1,5 @@
 require u-boot-common-aspeed-sdk_${PV}.inc
+require recipes-bsp/u-boot/u-boot-configure.inc
 
 SUMMARY = "U-Boot bootloader fw_printenv/setenv utilities"
 DEPENDS += "mtd-utils"
@@ -13,7 +14,6 @@ EXTRA_OEMAKE:class-cross = 'HOSTCC="${CC} ${CFLAGS} ${LDFLAGS}" V=1'
 inherit uboot-config
 
 do_compile () {
-	oe_runmake -C ${S} O=${B} ${UBOOT_MACHINE}
 	oe_runmake envtools
 }
 
