@@ -7,6 +7,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 # 2 = SHA384
 PFR_SHA ?= "1"
 
+PFR_MANIFEST ?= "pfr_manifest_ast2600_dcscm.json"
+
 S = "${WORKDIR}/sources"
 UNPACKDIR = "${S}"
 
