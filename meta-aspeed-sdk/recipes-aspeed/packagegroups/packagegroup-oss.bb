@@ -53,6 +53,7 @@ RDEPENDS:${PN}-apps = " \
     picocom \
     usbutils \
     usbutils-python \
+    dbus-tools \
     "
 
 # The size of opkg package manager is 6XX KB.
