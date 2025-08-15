@@ -1,0 +1,9 @@
+table inet filter {
+    chain gbmc_br_dhcp_input {
+        type filter hook input priority 0; policy drop;
+        iifname != gbmcdhcp accept
+        ip6 nexthdr icmpv6 accept
+        icmp type echo-request accept
+        udp dport 547 accept
+    }
+}

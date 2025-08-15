@@ -24,7 +24,7 @@ UPSTREAM_CHECK_REGEX = "(?P<pver>\d+(\.\d+)+)"
 
 S = "${WORKDIR}/firefox-${PV}"
 
-inherit pkgconfig perlnative python3native rust
+inherit pkgconfig perlnative python3native rust cargo
 
 DEPENDS += "zlib cbindgen-native python3 icu"
 DEPENDS:remove:mipsarch = "icu"
@@ -57,6 +57,7 @@ export HOST_CXXFLAGS = "${BUILD_CXXFLAGS}"
 
 export AS = "${CC}"
 
+export MOZBUILD_STATE_PATH = "${WORKDIR}/mozbuild_state"
 export RUSTFLAGS
 
 JIT ?= ""
@@ -82,6 +83,13 @@ do_configure() {
 }
 do_configure[cleandirs] += "${B}"
 
+# The main build system is a Makefile that call cargo downstream.
+# We inherit cargo to get the environnement but need to switch back to
+# base_do_compile to do the Makefile base compilation.
+do_compile() {
+    base_do_compile
+}
+
 do_install() {
     oe_runmake 'DESTDIR=${D}' install
 }
@@ -98,6 +106,7 @@ do_install:append() {
     rm -f ${D}${libdir}/libjs_static.ajs
 }
 
+INSANE_SKIP += "32bit-time"
 PACKAGE_DEBUG_SPLIT_STYLE = "debug-without-src"
 PACKAGES =+ "lib${BPN}"
 FILES:lib${BPN} += "${libdir}/lib*"

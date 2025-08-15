@@ -1,0 +1,173 @@
+#!/bin/bash -e
+# shellcheck source=meta-facebook/recipes-fb/obmc_functions/files/fb-common-functions
+source /usr/libexec/fb-common-functions
+
+config_fan_max31790()
+{
+    # Set fan tack sample count for each tach channel to highest value to avoid
+    # wrong fan tach reading.
+    #
+    # FanX_Dynamics
+    # - register offset: 0x08 (tach1) - 0x0d (tach6)
+    # |------------------------ -----------------------------------------------|
+    # | bit[7:5]         | 000b | 001b | 010b | 011b | 110b | 101b, 110b, 111b |
+    # |------------------------------------------------------------------------|
+    # | tach sample count|  1   |  2   |  4   |  8   |  16  |  32              |
+    # |------------------------------------------------------------------------|
+    for addr in "0x21" "0x27"
+    do
+        for offset in $(seq 0x08 0x0d)
+        do
+            fan_dynam_val=$(printf "%d" "$(i2cget -y -f 18 "$addr" "$offset")")
+            fan_dynam_val=$((fan_dynam_val | 0xe0))
+            i2cset -y -f 18 "$addr" "$offset" "$fan_dynam_val"
+        done
+
+        # after manual set FanX_Dynamics, needs to rebind driver to ensure
+        # driver get correct setitngs
+        bus_addr="$(printf "18-%04x" $addr)"
+        echo "$bus_addr" > /sys/bus/i2c/drivers/max31790/unbind
+        echo "$bus_addr" > /sys/bus/i2c/drivers/max31790/bind
+    done
+
+    # set fan enable
+    if find /sys/bus/i2c/devices/*/hwmon/*/fan*_enable -print -quit 2>/dev/null | grep -q .; then
+        for file in /sys/bus/i2c/devices/*/hwmon/*/fan*_enable
+        do
+            echo 1 > "${file}"
+        done
+    fi
+}
+
+config_fan()
+{
+    if [ -d "/sys/bus/i2c/drivers/max31790/18-0021/hwmon" ]; then
+        echo "Configure MAX31790 fan controller"
+        config_fan_max31790
+    fi
+
+    # Set all fan pwm to 80%
+    pwm_value=204
+    for pwm_node in /sys/bus/i2c/devices/*/hwmon/*/pwm*
+    do
+        if [[ ! "$pwm_node" =~ _enable ]]; then
+            if ! echo $pwm_value > "$pwm_node"; then
+                echo "Set $pwm_node: failed"
+            fi
+        fi
+    done
+}
+
+config_ltc4287_hsc()
+{
+    echo "Configure LTC4287 HSC"
+    # Set ADC samples per average to 4096 in MFR_AVG_SEL (D9h) reg
+    i2cset -y -f 20 0x42 0xd9 0x8b || echo "Failed to set MFR_AVG_SEL to HSC1 (20-0042)"
+    i2cset -y -f 20 0x43 0xd9 0x8b || echo "Failed to set MFR_AVG_SEL to HSC2 (20-0043)"
+}
+
+config_xdp710_hsc()
+{
+    echo "Configure XDP710 HSC"
+    # Set telemetry averaging samples to 128 in TELEMETRY_AVG (E9h) reg
+    i2cset -y -f 20 0x13 0xe9 0x01ff w || echo "Failed to set TELEMETRY_AVG to HSC1 (20-0013)"
+    i2cset -y -f 20 0x1c 0xe9 0x01ff w || echo "Failed to set TELEMETRY_AVG to HSC2 (20-001c)"
+}
+
+pec_enable_check()
+{
+    local driver_name="$1"
+    local dev="$2"
+
+    local driver_dir="/sys/bus/i2c/drivers/$driver_name"
+    local dev_link="$driver_dir/$dev"
+    local pec_file="$dev_link/pec"
+
+    for attempt in {1..10}
+    do
+        echo "$dev: Checking device (Attempt $attempt)"
+        # Bind driver if not already bound
+        if [ ! -L "$dev_link" ]; then
+            echo "$dev" > "$driver_dir"/bind
+        fi
+
+        if [ -f "$pec_file" ]; then
+            echo "$dev: set 1 to pec file (enable pec)"
+            echo 1 > "$pec_file"
+            break;
+        else
+            # pec sysfs attribute file not exist, rebind driver
+            echo "$dev: pec file not found, rebind required"
+            echo "$dev" > "$driver_dir"/unbind
+            echo "$dev" > "$driver_dir"/bind
+            sleep 1
+        fi
+    done
+}
+
+config_hsc()
+{
+    if [ "$(i2cdetect -y -q 20 0x13 0x13 | grep "10:" | awk '{print $2}')" != "--" ]; then
+        config_xdp710_hsc
+        pec_enable_check xdp710 20-0013
+        pec_enable_check xdp710 20-001c
+    else
+        config_ltc4287_hsc
+        pec_enable_check ltc4286 20-0042
+        pec_enable_check ltc4286 20-0043
+    fi
+}
+
+config_vr()
+{
+    BUS=19
+    ADDRESSES=(0x60 0x61 0x62)
+    EXPECTED_OUTPUT="0x01 0xff"
+    MAX_RETRIES=5
+
+    for ADDR in "${ADDRESSES[@]}"; do
+        echo "Configuring device at address $ADDR on bus $BUS..."
+
+        # Send configuration
+        i2ctransfer -f -y "$BUS" w3@"$ADDR" 0x1b 0x7e 0xff
+
+        # Retry read-back check up to MAX_RETRIES times
+        for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
+            OUTPUT=$(i2ctransfer -f -y "$BUS" w3@"$ADDR" 0x1b 0x01 0x7e r2 2>/dev/null | tr -d '[],' | awk '{$1=$1};1')
+
+            if [ "$OUTPUT" == "$EXPECTED_OUTPUT" ]; then
+                echo "Read-back check passed at address $ADDR (attempt $attempt): $OUTPUT"
+                break
+            else
+                echo "Read-back check FAILED at address $ADDR (attempt $attempt): got '$OUTPUT', expected '$EXPECTED_OUTPUT'"
+                sleep 0.2
+            fi
+
+            if [ $attempt -eq $MAX_RETRIES ]; then
+                echo "ERROR: Read-back failed after $MAX_RETRIES attempts at address $ADDR"
+            fi
+        done
+    done
+}
+
+# Enable standby power and bind i2c components
+echo "Attempting to enable standby power..."
+if /usr/libexec/plat-svc/standby-power-enable; then
+    echo "Standby power enable successful."
+else
+    echo "Error: Standby power enable failed."
+fi
+
+# Workaround, rebind PDB i2c mux
+bind_i2c_device pca954x 1-0070 3
+
+# Set fan target and enable all fan input as early as possible
+config_fan
+
+# configure hsc
+config_hsc
+
+# configure vr
+config_vr
+
+exit 0

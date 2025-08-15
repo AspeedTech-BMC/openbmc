@@ -1,4 +1,4 @@
-From 51abc6f5b1242dedf1288127d779d560883f58c5 Mon Sep 17 00:00:00 2001
+From 01a673fdf8943e529712c210dff88947b9c9fab2 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Fri, 21 Jun 2024 16:56:52 +0800
 Subject: [PATCH] revert limit to on chunk
@@ -25,7 +25,7 @@ Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
  1 file changed, 20 deletions(-)
 
 diff --git a/vue.config.js b/vue.config.js
-index 0467ff5..4f6f4a1 100644
+index aae65ff..730d7a0 100644
 --- a/vue.config.js
 +++ b/vue.config.js
 @@ -1,6 +1,4 @@
@@ -34,8 +34,8 @@ index 0467ff5..4f6f4a1 100644
 -const LimitChunkCountPlugin = webpack.optimize.LimitChunkCountPlugin;
  
  module.exports = {
-   devServer: {
-@@ -51,16 +49,6 @@ module.exports = {
+   css: {
+@@ -69,16 +67,6 @@ module.exports = {
      }
    },
    configureWebpack: (config) => {
@@ -49,10 +49,10 @@ index 0467ff5..4f6f4a1 100644
 -        default: false,
 -      },
 -    };
-     if (process.env.NODE_ENV === 'development') {
-       config.devtool = 'source-map';
-     }
-@@ -108,14 +96,6 @@ module.exports = {
+     const crypto = require('crypto');
+     const crypto_orig_createHash = crypto.createHash;
+     crypto.createHash = (algorithm) =>
+@@ -123,14 +111,6 @@ module.exports = {
      config.experiments = {
        asyncWebAssembly: true,
      };
@@ -68,5 +68,5 @@ index 0467ff5..4f6f4a1 100644
    pluginOptions: {
      i18n: {
 -- 
-2.25.1
+2.43.0
 

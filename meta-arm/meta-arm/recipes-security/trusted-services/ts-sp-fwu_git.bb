@@ -11,7 +11,7 @@ inherit deploy
 SP_UUID = "${FWU_UUID}"
 TS_SP_FWU_CONFIG ?= "default"
 
-OECMAKE_SOURCEPATH="${S}/deployments/fwu/config/${TS_SP_FWU_CONFIG}-${TS_ENV}"
+OECMAKE_SOURCEPATH = "${S}/deployments/fwu/config/${TS_SP_FWU_CONFIG}-${TS_ENV}"
 
 # The GPT parser component is needed from TF-A
 SRC_URI += "git://git.trustedfirmware.org/TF-A/trusted-firmware-a.git;name=tfa;protocol=https;branch=master;destsuffix=git/tf-a"

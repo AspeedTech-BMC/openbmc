@@ -39,10 +39,10 @@ HOST_DEFAULT_TARGETS:append = " \
 
 HOST_DEFAULT_TARGETS:remove = " \
     obmc-host-warm-reboot@{}.target.requires/xyz.openbmc_project.Ipmi.Internal.SoftPowerOff.service \
-    obmc-host-warm-reboot@{}.target.wants/pldmSoftPowerOff.service \
     obmc-host-warm-reboot@{}.target.requires/obmc-host-force-warm-reboot@{}.target \
     obmc-host-force-warm-reboot@{}.target.requires/obmc-host-stop@{}.target \
     obmc-host-force-warm-reboot@{}.target.requires/phosphor-reboot-host@{}.service \
+    obmc-host-graceful-quiesce@{}.target.wants/pldmSoftPowerOff.service \
     "
 
 HOST_DEFAULT_TARGETS:append = " \
@@ -116,10 +116,10 @@ SRC_URI:append = " \
 CHASSIS_DEFAULT_TARGETS:remove = " \
     obmc-host-shutdown@{}.target.requires/obmc-chassis-poweroff@{}.target \
     "
-HARD_OFF_TMPL_CTRL=""
-HARD_OFF_TGTFMT_CTRL=""
-HARD_OFF_FMT_CTRL=""
-HARD_OFF_INSTFMT_CTRL=""
+HARD_OFF_TMPL_CTRL = ""
+HARD_OFF_TGTFMT_CTRL = ""
+HARD_OFF_FMT_CTRL = ""
+HARD_OFF_INSTFMT_CTRL = ""
 
 #Remove unexpected ChassisPowerOnStarted log at host first start
 RRECOMMENDS:${PN}-chassis:remove = " ${PN}-chassis-poweron-log"

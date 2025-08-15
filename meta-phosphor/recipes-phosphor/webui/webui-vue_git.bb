@@ -9,7 +9,7 @@
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=e3fc50a88d0a364313df4b21ef20c29e"
 DEPENDS:prepend = "nodejs-native "
-SRCREV = "6b1a15736e939b591e787ae293745649dbb504ed"
+SRCREV = "88f7aed1394615a4daadb7c56a2d7e42e0865921"
 PV = "1.0+git${SRCPV}"
 # This recipe requires online access to build, as it uses NPM for dependency
 # management and resolution.
@@ -29,6 +29,7 @@ inherit python3native
 RDEPENDS:${PN}:append = " bmcweb"
 
 EXTRA_OENPM ?= ""
+NPM_CONFIG_CACHE ?= "${WORKDIR}/npm-cache"
 
 export CXX = "${BUILD_CXX}"
 export CC = "${BUILD_CC}"
@@ -41,6 +42,7 @@ export CXXFLAGS = "${BUILD_CXXFLAGS}"
 # https://git.yoctoproject.org/poky/tree/documentation/migration-guides/migration-3.5.rst#n25
 do_compile[network] = "1"
 do_compile () {
+    export NPM_CONFIG_CACHE="${NPM_CONFIG_CACHE}"
     cd ${S}
     rm -rf node_modules
     npm --loglevel info --proxy=${http_proxy} --https-proxy=${https_proxy} install

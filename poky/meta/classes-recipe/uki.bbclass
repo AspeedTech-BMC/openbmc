@@ -81,7 +81,7 @@ UKIFY_CMD ?= "ukify build"
 UKI_CONFIG_FILE ?= "${UNPACKDIR}/uki.conf"
 UKI_FILENAME ?= "uki.efi"
 UKI_KERNEL_FILENAME ?= "${KERNEL_IMAGETYPE}"
-UKI_CMDLINE ?= "rootwait root=LABEL=root console=${KERNEL_CONSOLE}"
+UKI_CMDLINE ?= "rootwait root=LABEL=root"
 # secure boot keys and cert, needs sbsign-tools-native (meta-secure-core)
 #UKI_SB_KEY ?= ""
 #UKI_SB_CERT ?= ""
@@ -129,8 +129,6 @@ python do_uki() {
     # initrd
     initramfs_image = "%s" % (d.getVar('INITRD_ARCHIVE'))
     ukify_cmd += " --initrd=%s" % (os.path.join(deploy_dir_image, initramfs_image))
-
-    deploy_dir_image = d.getVar('DEPLOY_DIR_IMAGE')
 
     # kernel
     kernel_filename = d.getVar('UKI_KERNEL_FILENAME') or None
@@ -190,6 +188,7 @@ python do_uki() {
 
     # Run the ukify command
     bb.debug(2, "uki: running command: %s" % (ukify_cmd))
-    bb.process.run(ukify_cmd, shell=True)
+    out, err = bb.process.run(ukify_cmd, shell=True)
+    bb.debug(2, "%s\n%s" % (out, err))
 }
 addtask uki after do_rootfs before do_deploy do_image_complete do_image_wic

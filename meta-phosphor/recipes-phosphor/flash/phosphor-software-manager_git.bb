@@ -18,6 +18,10 @@ PACKAGECONFIG[mmc_layout] = "-Dbmc-layout=mmc"
 PACKAGECONFIG[flash_bios] = "-Dhost-bios-upgrade=enabled, -Dhost-bios-upgrade=disabled"
 PACKAGECONFIG[static-dual-image] = "-Dbmc-static-dual-image=enabled, -Dbmc-static-dual-image=disabled"
 PACKAGECONFIG[software-update-dbus-interface] = "-Dsoftware-update-dbus-interface=enabled, -Dsoftware-update-dbus-interface=disabled"
+PACKAGECONFIG[bios-software-update] = "-Dbios-software-update=enabled, -Dbios-software-update=disabled, libgpiod libpldm"
+PACKAGECONFIG[i2cvr-software-update] = "-Di2cvr-software-update=enabled, -Di2cvr-software-update=disabled, libpldm libgpiod i2c-tools"
+PACKAGECONFIG[eepromdevice-software-update] = "-Deepromdevice-software-update=enabled, -Deepromdevice-software-update=disabled, libgpiod libpldm"
+PACKAGECONFIG[cpld-software-update] = "-Dcpld-software-update=enabled, -Dcpld-software-update=disabled, libpldm i2c-tools"
 PACKAGECONFIG ?= "software-update-dbus-interface"
 
 PV = "1.0+git${SRCPV}"
@@ -32,6 +36,10 @@ SOFTWARE_MGR_PACKAGES = " \
     ${PN}-sync \
     ${PN}-usb \
     ${PN}-side-switch \
+    ${PN}-bios-software-update \
+    ${PN}-i2cvr-software-update \
+    ${PN}-eepromdevice-software-update \
+    ${PN}-cpld-software-update \
 "
 # Set SYSTEMD_PACKAGES to empty because we do not want ${PN} and DBUS_PACKAGES
 # handles the rest.
@@ -49,6 +57,10 @@ SYSTEMD_SERVICE:${PN}-side-switch += "${@bb.utils.contains('PACKAGECONFIG', 'sid
 SYSTEMD_SERVICE:${PN}-updater += "${@bb.utils.contains('PACKAGECONFIG', 'static-dual-image', 'obmc-flash-bmc-alt@.service', '', d)}"
 SYSTEMD_SERVICE:${PN}-updater += "${@bb.utils.contains('PACKAGECONFIG', 'static-dual-image', 'obmc-flash-bmc-static-mount-alt.service', '', d)}"
 SYSTEMD_SERVICE:${PN}-updater += "${@bb.utils.contains('PACKAGECONFIG', 'static-dual-image', 'obmc-flash-bmc-prepare-for-sync.service', '', d)}"
+SYSTEMD_SERVICE:${PN}-bios-software-update += "${@bb.utils.contains('PACKAGECONFIG', 'bios-software-update', 'xyz.openbmc_project.Software.BIOS.service', '', d)}"
+SYSTEMD_SERVICE:${PN}-i2cvr-software-update += "${@bb.utils.contains('PACKAGECONFIG', 'i2cvr-software-update', 'xyz.openbmc_project.Software.I2CVR.service', '', d)}"
+SYSTEMD_SERVICE:${PN}-eepromdevice-software-update += "${@bb.utils.contains('PACKAGECONFIG', 'eepromdevice-software-update', 'xyz.openbmc_project.Software.EEPROMDevice.service', '', d)}"
+SYSTEMD_SERVICE:${PN}-cpld-software-update += "${@bb.utils.contains('PACKAGECONFIG', 'cpld-software-update', 'xyz.openbmc_project.Software.CPLD.service', '', d)}"
 S = "${WORKDIR}/git"
 
 inherit meson pkgconfig
@@ -72,27 +84,52 @@ RDEPENDS:${PN}-updater += " \
     ${@bb.utils.contains('PACKAGECONFIG', 'mmc_layout', 'e2fsprogs-e2fsck', '', d)} \
 "
 
+RRECOMMENDS:${PN} += "\
+    ${@bb.utils.contains('PACKAGECONFIG', 'bios-software-update', '${PN}-bios-software-update', '', d)} \
+    ${@bb.utils.contains('PACKAGECONFIG', 'i2cvr-software-update', '${PN}-i2cvr-software-update', '', d)} \
+    ${@bb.utils.contains('PACKAGECONFIG', 'eepromdevice-software-update', '${PN}-eepromdevice-software-update', '', d)} \
+    ${@bb.utils.contains('PACKAGECONFIG', 'cpld-software-update', '${PN}-cpld-software-update', '', d)} \
+"
+
 RPROVIDES:${PN}-version += " \
     virtual-obmc-image-manager \
 "
 
-FILES:${PN}-version += "${bindir}/phosphor-version-software-manager ${exec_prefix}/lib/tmpfiles.d/software.conf ${bindir}/phosphor-software-manager "
-FILES:${PN}-download-mgr += "${bindir}/phosphor-download-manager"
+FILES:${PN}-version += " \
+    ${libexecdir}/phosphor-code-mgmt/phosphor-version-software-manager \
+    ${exec_prefix}/lib/tmpfiles.d/software.conf \
+    ${libexecdir}/phosphor-code-mgmt/phosphor-software-manager \
+    "
+FILES:${PN}-download-mgr += " \
+    ${libexecdir}/phosphor-code-mgmt/phosphor-download-manager \
+    "
 FILES:${PN}-updater += " \
-    ${bindir}/phosphor-image-updater \
+    ${libexecdir}/phosphor-code-mgmt/phosphor-image-updater \
     ${bindir}/obmc-flash-bmc \
     /usr/local \
     "
 FILES:${PN}-sync += " \
-    ${bindir}/phosphor-sync-software-manager \
+    ${libexecdir}/phosphor-code-mgmt/phosphor-sync-software-manager \
     ${sysconfdir}/synclist \
     "
 FILES:${PN}-usb += "\
     ${base_libdir}/udev/rules.d/70-bmc-usb.rules \
-    ${bindir}/phosphor-usb-code-update \
+    ${libexecdir}/phosphor-code-mgmt/phosphor-usb-code-update \
     "
 FILES:${PN}-side-switch += "\
-    ${bindir}/phosphor-bmc-side-switch \
+    ${libexecdir}/phosphor-code-mgmt/phosphor-bmc-side-switch \
+    "
+FILES:${PN}-bios-software-update += "\
+    ${libexecdir}/phosphor-code-mgmt/phosphor-bios-software-update \
+    "
+FILES:${PN}-i2cvr-software-update += "\
+    ${libexecdir}/phosphor-code-mgmt/phosphor-i2cvr-software-update \
+    "
+FILES:${PN}-eepromdevice-software-update += "\
+    ${libexecdir}/phosphor-code-mgmt/phosphor-eepromdevice-software-update \
+    "
+FILES:${PN}-cpld-software-update += "\
+    ${libexecdir}/phosphor-code-mgmt/phosphor-cpld-software-update \
     "
 
 require ${BPN}.inc

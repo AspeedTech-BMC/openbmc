@@ -1,4 +1,4 @@
-From 9a77855acf90207afee01363ad38f4ddf758ced6 Mon Sep 17 00:00:00 2001
+From 061f3aa12237feb5360617522bf82471adcb4209 Mon Sep 17 00:00:00 2001
 From: Vince Chang <vince_chang@aspeedtech.com>
 Date: Wed, 30 Apr 2025 15:52:36 +0800
 Subject: [PATCH] bmcweb: firmware update apply immediate
@@ -13,10 +13,10 @@ Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/redfish-core/lib/update_service.hpp b/redfish-core/lib/update_service.hpp
-index 44c8777d2e..95cb96a8f8 100644
+index 0ac36b5f..a28895a2 100644
 --- a/redfish-core/lib/update_service.hpp
 +++ b/redfish-core/lib/update_service.hpp
-@@ -986,7 +986,7 @@ inline void updateMultipartContext(
+@@ -987,7 +987,7 @@ inline void updateMultipartContext(
      }
      if (!multipart->applyTime)
      {

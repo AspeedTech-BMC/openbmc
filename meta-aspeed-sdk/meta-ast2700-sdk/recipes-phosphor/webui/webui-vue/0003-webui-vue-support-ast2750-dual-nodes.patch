@@ -1,4 +1,4 @@
-From 37ec5754136f80d3050abcc6b5d7a3426f1dc33f Mon Sep 17 00:00:00 2001
+From 741ea72bcd208b72e26cf3f90a6e01daed99d413 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Thu, 7 Dec 2023 13:32:59 +0800
 Subject: [PATCH] webui-vue: support ast2750 dual nodes.
@@ -30,7 +30,7 @@ Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
  create mode 100644 src/views/Operations/Kvm1/index.js
 
 diff --git a/src/assets/styles/bmc/custom/_index.scss b/src/assets/styles/bmc/custom/_index.scss
-index 74594e35..9b72699e 100644
+index 74594e3..9b72699 100644
 --- a/src/assets/styles/bmc/custom/_index.scss
 +++ b/src/assets/styles/bmc/custom/_index.scss
 @@ -10,6 +10,7 @@
@@ -43,7 +43,7 @@ index 74594e35..9b72699e 100644
  @import "./section-divider";
 diff --git a/src/assets/styles/bmc/custom/_kvm1.scss b/src/assets/styles/bmc/custom/_kvm1.scss
 new file mode 100644
-index 00000000..a7223844
+index 0000000..a722384
 --- /dev/null
 +++ b/src/assets/styles/bmc/custom/_kvm1.scss
 @@ -0,0 +1,12 @@
@@ -61,7 +61,7 @@ index 00000000..a7223844
 +}
 \ No newline at end of file
 diff --git a/src/components/AppHeader/AppHeader.vue b/src/components/AppHeader/AppHeader.vue
-index 25c0f2b3..2bd40a34 100644
+index b7c417f..807d4d6 100644
 --- a/src/components/AppHeader/AppHeader.vue
 +++ b/src/components/AppHeader/AppHeader.vue
 @@ -145,7 +145,7 @@ export default {
@@ -86,7 +86,7 @@ index 25c0f2b3..2bd40a34 100644
        if (value === false) {
          this.errorToast(i18n.global.t('global.toast.unAuthDescription'), {
 diff --git a/src/components/AppNavigation/AppNavigationMixin.js b/src/components/AppNavigation/AppNavigationMixin.js
-index 89c1508b..427786bc 100644
+index 89c1508..427786b 100644
 --- a/src/components/AppNavigation/AppNavigationMixin.js
 +++ b/src/components/AppNavigation/AppNavigationMixin.js
 @@ -88,6 +88,11 @@ const AppNavigationMixin = {
@@ -102,7 +102,7 @@ index 89c1508b..427786bc 100644
                id: 'key-clear',
                label: i18n.global.t('appNavigation.keyClear'),
 diff --git a/src/env/components/AppNavigation/intel.js b/src/env/components/AppNavigation/intel.js
-index e20b0ef4..3480107c 100644
+index e20b0ef..3480107 100644
 --- a/src/env/components/AppNavigation/intel.js
 +++ b/src/env/components/AppNavigation/intel.js
 @@ -79,6 +79,11 @@ const AppNavigationMixin = {
@@ -118,7 +118,7 @@ index e20b0ef4..3480107c 100644
                id: 'firmware',
                label: i18n.global.t('appNavigation.firmware'),
 diff --git a/src/env/router/intel.js b/src/env/router/intel.js
-index 5f3ee6eb..0c9781c7 100644
+index 9abdc68..da2f1c6 100644
 --- a/src/env/router/intel.js
 +++ b/src/env/router/intel.js
 @@ -8,6 +8,8 @@ import Firmware from '@/views/Operations/Firmware';
@@ -131,7 +131,7 @@ index 5f3ee6eb..0c9781c7 100644
  import Login from '@/views/Login';
  import LoginLayout from '@/layouts/LoginLayout';
 @@ -81,6 +83,14 @@ const routes = [
-           title: i18n.t('appPageTitle.kvm'),
+           title: i18n.global.t('appPageTitle.kvm'),
          },
        },
 +      {
@@ -146,7 +146,7 @@ index 5f3ee6eb..0c9781c7 100644
    },
    {
 @@ -186,6 +196,14 @@ const routes = [
-           title: i18n.t('appPageTitle.kvm'),
+           title: i18n.global.t('appPageTitle.kvm'),
          },
        },
 +      {
@@ -161,7 +161,7 @@ index 5f3ee6eb..0c9781c7 100644
          path: '/operations/firmware',
          name: 'firmware',
 diff --git a/src/locales/en-US.json b/src/locales/en-US.json
-index e64287da..09873f0a 100644
+index e64287d..09873f0 100644
 --- a/src/locales/en-US.json
 +++ b/src/locales/en-US.json
 @@ -115,6 +115,7 @@
@@ -218,7 +218,7 @@ index e64287da..09873f0a 100644
      },
      "countries": {
 diff --git a/src/router/routes.js b/src/router/routes.js
-index f821ce1d..f8e460d4 100644
+index f821ce1..f8e460d 100644
 --- a/src/router/routes.js
 +++ b/src/router/routes.js
 @@ -8,6 +8,8 @@ import Firmware from '@/views/Operations/Firmware';
@@ -261,7 +261,7 @@ index f821ce1d..f8e460d4 100644
          path: '/operations/firmware',
          name: 'firmware',
 diff --git a/src/store/modules/Authentication/AuthenticanStore.js b/src/store/modules/Authentication/AuthenticanStore.js
-index e876f780..170cb13d 100644
+index e876f78..170cb13 100644
 --- a/src/store/modules/Authentication/AuthenticanStore.js
 +++ b/src/store/modules/Authentication/AuthenticanStore.js
 @@ -7,6 +7,7 @@ const AuthenticationStore = {
@@ -289,7 +289,7 @@ index e876f780..170cb13d 100644
    },
    actions: {
 diff --git a/src/store/modules/Operations/VirtualMediaStore.js b/src/store/modules/Operations/VirtualMediaStore.js
-index 85612757..adbc1697 100644
+index 8561275..adbc169 100644
 --- a/src/store/modules/Operations/VirtualMediaStore.js
 +++ b/src/store/modules/Operations/VirtualMediaStore.js
 @@ -17,16 +17,20 @@ const VirtualMediaStore = {
@@ -354,7 +354,7 @@ index 85612757..adbc1697 100644
          .catch((error) => {
 diff --git a/src/views/Operations/Kvm1/Kvm1.vue b/src/views/Operations/Kvm1/Kvm1.vue
 new file mode 100644
-index 00000000..1593a51e
+index 0000000..1593a51
 --- /dev/null
 +++ b/src/views/Operations/Kvm1/Kvm1.vue
 @@ -0,0 +1,24 @@
@@ -384,7 +384,7 @@ index 00000000..1593a51e
 +</style>
 diff --git a/src/views/Operations/Kvm1/Kvm1Console.vue b/src/views/Operations/Kvm1/Kvm1Console.vue
 new file mode 100644
-index 00000000..c3c8b644
+index 0000000..c3c8b64
 --- /dev/null
 +++ b/src/views/Operations/Kvm1/Kvm1Console.vue
 @@ -0,0 +1,200 @@
@@ -590,14 +590,14 @@ index 00000000..c3c8b644
 +</style>
 diff --git a/src/views/Operations/Kvm1/index.js b/src/views/Operations/Kvm1/index.js
 new file mode 100644
-index 00000000..f309220d
+index 0000000..f309220
 --- /dev/null
 +++ b/src/views/Operations/Kvm1/index.js
 @@ -0,0 +1,2 @@
 +import Kvm1 from './Kvm1.vue';
 +export default Kvm1;
 diff --git a/src/views/Operations/VirtualMedia/VirtualMedia.vue b/src/views/Operations/VirtualMedia/VirtualMedia.vue
-index e1580597..39dba188 100644
+index e158059..39dba18 100644
 --- a/src/views/Operations/VirtualMedia/VirtualMedia.vue
 +++ b/src/views/Operations/VirtualMedia/VirtualMedia.vue
 @@ -39,6 +39,39 @@

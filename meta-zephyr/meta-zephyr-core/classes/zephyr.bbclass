@@ -1,7 +1,7 @@
 inherit terminal
 inherit python3native
 
-PYTHONPATH="${STAGING_DIR_HOST}${libdir}/${PYTHON_DIR}/site-packages"
+PYTHONPATH = "${STAGING_DIR_HOST}${libdir}/${PYTHON_DIR}/site-packages"
 DEPENDS += "python3-pyelftools-native python3-pyyaml-native python3-pykwalify-native ninja-native"
 
 OE_TERMINAL_EXPORTS += "HOST_EXTRACFLAGS HOSTLDFLAGS TERMINFO CROSS_CURSES_LIB CROSS_CURSES_INC"

@@ -353,6 +353,14 @@ def decodeurl(url):
     user, password, parameters).
     """
 
+    uri = URI(url)
+    path = uri.path if uri.path else "/"
+    return uri.scheme, uri.hostport, path, uri.username, uri.password, uri.params
+
+def decodemirrorurl(url):
+    """Decodes a mirror URL into the tokens (scheme, network location, path,
+    user, password, parameters).
+    """
     m = re.compile('(?P<type>[^:]*)://((?P<user>[^/;]+)@)?(?P<location>[^;]+)(;(?P<parm>.*))?').match(url)
     if not m:
         raise MalformedUrl(url)
@@ -371,6 +379,9 @@ def decodeurl(url):
     elif type.lower() == 'file':
         host = ""
         path = location
+        if user:
+            path = user + '@' + path
+            user = ""
     else:
         host = location
         path = "/"
@@ -403,32 +414,34 @@ def encodeurl(decoded):
 
     if not type:
         raise MissingParameterError('type', "encoded from the data %s" % str(decoded))
-    url = ['%s://' % type]
+    uri = URI()
+    uri.scheme = type
     if user and type != "file":
-        url.append("%s" % user)
+        uri.username = user
         if pswd:
-            url.append(":%s" % pswd)
-        url.append("@")
+            uri.password = pswd
     if host and type != "file":
-        url.append("%s" % host)
+        uri.hostname = host
     if path:
         # Standardise path to ensure comparisons work
         while '//' in path:
             path = path.replace("//", "/")
-        url.append("%s" % urllib.parse.quote(path))
+        uri.path = path
+        if type == "file":
+            # Use old not IETF compliant style
+            uri.relative = False
     if p:
-        for parm in p:
-            url.append(";%s=%s" % (parm, p[parm]))
+        uri.params = p
 
-    return "".join(url)
+    return str(uri)
 
 def uri_replace(ud, uri_find, uri_replace, replacements, d, mirrortarball=None):
     if not ud.url or not uri_find or not uri_replace:
         logger.error("uri_replace: passed an undefined value, not replacing")
         return None
-    uri_decoded = list(decodeurl(ud.url))
-    uri_find_decoded = list(decodeurl(uri_find))
-    uri_replace_decoded = list(decodeurl(uri_replace))
+    uri_decoded = list(decodemirrorurl(ud.url))
+    uri_find_decoded = list(decodemirrorurl(uri_find))
+    uri_replace_decoded = list(decodemirrorurl(uri_replace))
     logger.debug2("For url %s comparing %s to %s" % (uri_decoded, uri_find_decoded, uri_replace_decoded))
     result_decoded = ['', '', '', '', '', {}]
     # 0 - type, 1 - host, 2 - path, 3 - user,  4- pswd, 5 - params
@@ -793,8 +806,8 @@ def _get_srcrev(d, method_name='sortable_revision'):
         return "", revs
 
 
-    if len(scms) == 1 and len(urldata[scms[0]].names) == 1:
-        autoinc, rev = getattr(urldata[scms[0]].method, method_name)(urldata[scms[0]], d, urldata[scms[0]].names[0])
+    if len(scms) == 1:
+        autoinc, rev = getattr(urldata[scms[0]].method, method_name)(urldata[scms[0]], d, urldata[scms[0]].name)
         revs.append(rev)
         if len(rev) > 10:
             rev = rev[:10]
@@ -815,13 +828,12 @@ def _get_srcrev(d, method_name='sortable_revision'):
     seenautoinc = False
     for scm in scms:
         ud = urldata[scm]
-        for name in ud.names:
-            autoinc, rev = getattr(ud.method, method_name)(ud, d, name)
-            revs.append(rev)
-            seenautoinc = seenautoinc or autoinc
-            if len(rev) > 10:
-                rev = rev[:10]
-            name_to_rev[name] = rev
+        autoinc, rev = getattr(ud.method, method_name)(ud, d, ud.name)
+        revs.append(rev)
+        seenautoinc = seenautoinc or autoinc
+        if len(rev) > 10:
+            rev = rev[:10]
+        name_to_rev[ud.name] = rev
     # Replace names by revisions in the SRCREV_FORMAT string. The approach used
     # here can handle names being prefixes of other names and names appearing
     # as substrings in revisions (in which case the name should not be
@@ -1080,6 +1092,10 @@ def try_mirror_url(fetch, origud, ud, ld, check = False):
         # If that tarball is a local file:// we need to provide a symlink to it
         dldir = ld.getVar("DL_DIR")
 
+        if bb.utils.to_boolean(ld.getVar("BB_FETCH_PREMIRRORONLY")):
+            ld = ld.createCopy()
+            ld.setVar("BB_NO_NETWORK", "1")
+
         if origud.mirrortarballs and os.path.basename(ud.localpath) in origud.mirrortarballs and os.path.basename(ud.localpath) != os.path.basename(origud.localpath):
             # Create donestamp in old format to avoid triggering a re-download
             if ud.donestamp:
@@ -1101,7 +1117,10 @@ def try_mirror_url(fetch, origud, ud, ld, check = False):
                     origud.method.build_mirror_data(origud, ld)
             return origud.localpath
         # Otherwise the result is a local file:// and we symlink to it
-        ensure_symlink(ud.localpath, origud.localpath)
+        # This may also be a link to a shallow archive
+        # When using shallow mode, add a symlink to the original fullshallow
+        # path to ensure a valid symlink even in the `PREMIRRORS` case
+        origud.method.update_mirror_links(ud, origud)
         update_stamp(origud, ld)
         return ud.localpath
 
@@ -1135,25 +1154,6 @@ def try_mirror_url(fetch, origud, ud, ld, check = False):
         if ud.lockfile and ud.lockfile != origud.lockfile:
             bb.utils.unlockfile(lf)
 
-
-def ensure_symlink(target, link_name):
-    if not os.path.exists(link_name):
-        dirname = os.path.dirname(link_name)
-        bb.utils.mkdirhier(dirname)
-        if os.path.islink(link_name):
-            # Broken symbolic link
-            os.unlink(link_name)
-
-        # In case this is executing without any file locks held (as is
-        # the case for file:// URLs), two tasks may end up here at the
-        # same time, in which case we do not want the second task to
-        # fail when the link has already been created by the first task.
-        try:
-            os.symlink(target, link_name)
-        except FileExistsError:
-            pass
-
-
 def try_mirrors(fetch, d, origud, mirrors, check = False):
     """
     Try to use a mirrored version of the sources.
@@ -1182,7 +1182,7 @@ def trusted_network(d, url):
     if bb.utils.to_boolean(d.getVar("BB_NO_NETWORK")):
         return True
 
-    pkgname = d.expand(d.getVar('PN', False))
+    pkgname = d.getVar('PN')
     trusted_hosts = None
     if pkgname:
         trusted_hosts = d.getVarFlag('BB_ALLOWED_NETWORKS', pkgname, False)
@@ -1235,19 +1235,16 @@ def srcrev_internal_helper(ud, d, name):
         if srcrev and srcrev != "INVALID":
             break
 
-    if 'rev' in ud.parm and 'tag' in ud.parm:
-        raise FetchError("Please specify a ;rev= parameter or a ;tag= parameter in the url %s but not both." % (ud.url))
-
-    if 'rev' in ud.parm or 'tag' in ud.parm:
-        if 'rev' in ud.parm:
-            parmrev = ud.parm['rev']
-        else:
-            parmrev = ud.parm['tag']
+    if 'rev' in ud.parm:
+        parmrev = ud.parm['rev']
         if srcrev == "INVALID" or not srcrev:
             return parmrev
         if srcrev != parmrev:
             raise FetchError("Conflicting revisions (%s from SRCREV and %s from the url) found, please specify one valid value" % (srcrev, parmrev))
         return parmrev
+
+    if 'tag' in ud.parm and (srcrev == "INVALID" or not srcrev):
+        return ud.parm['tag']
 
     if srcrev == "INVALID" or not srcrev:
         raise FetchError("Please set a valid SRCREV for url %s (possible key names are %s, or use a ;rev=X URL parameter)" % (str(attempts), ud.url), ud.url)
@@ -1271,7 +1268,7 @@ def get_checksum_file_list(d):
             found = False
             paths = ud.method.localfile_searchpaths(ud, d)
             for f in paths:
-                pth = ud.decodedurl
+                pth = ud.path
                 if os.path.exists(f):
                     found = True
                 filelist.append(f + ":" + str(os.path.exists(f)))
@@ -1335,7 +1332,9 @@ class FetchData(object):
             setattr(self, "%s_name" % checksum_id, checksum_name)
             setattr(self, "%s_expected" % checksum_id, checksum_expected)
 
-        self.names = self.parm.get("name",'default').split(',')
+        self.name = self.parm.get("name",'default')
+        if "," in self.name:
+            raise ParameterError("The fetcher no longer supports multiple name parameters in a single url", self.url)
 
         self.method = None
         for m in methods:
@@ -1387,13 +1386,7 @@ class FetchData(object):
         self.lockfile = basepath + '.lock'
 
     def setup_revisions(self, d):
-        self.revisions = {}
-        for name in self.names:
-            self.revisions[name] = srcrev_internal_helper(self, d, name)
-
-        # add compatibility code for non name specified case
-        if len(self.names) == 1:
-            self.revision = self.revisions[self.names[0]]
+        self.revision = srcrev_internal_helper(self, d, self.name)
 
     def setup_localpath(self, d):
         if not self.localpath:
@@ -1580,11 +1573,11 @@ class FetchMethod(object):
                 datafile = None
                 if output:
                     for line in output.decode().splitlines():
-                        if line.startswith('data.tar.'):
+                        if line.startswith('data.tar.') or line == 'data.tar':
                             datafile = line
                             break
                     else:
-                        raise UnpackError("Unable to unpack deb/ipk package - does not contain data.tar.* file", urldata.url)
+                        raise UnpackError("Unable to unpack deb/ipk package - does not contain data.tar* file", urldata.url)
                 else:
                     raise UnpackError("Unable to unpack deb/ipk package - could not list contents", urldata.url)
                 cmd = 'ar x %s %s && %s -p -f %s && rm %s' % (file, datafile, tar_cmd, datafile, datafile)
@@ -1645,6 +1638,28 @@ class FetchMethod(object):
         Clean any existing full or partial download
         """
         bb.utils.remove(urldata.localpath)
+
+    def ensure_symlink(self, target, link_name):
+        if not os.path.exists(link_name):
+            dirname = os.path.dirname(link_name)
+            bb.utils.mkdirhier(dirname)
+            if os.path.islink(link_name):
+                # Broken symbolic link
+                os.unlink(link_name)
+
+            # In case this is executing without any file locks held (as is
+            # the case for file:// URLs), two tasks may end up here at the
+            # same time, in which case we do not want the second task to
+            # fail when the link has already been created by the first task.
+            try:
+                os.symlink(target, link_name)
+            except FileExistsError:
+                pass
+
+    def update_mirror_links(self, ud, origud):
+        # For local file:// results, create a symlink to them
+        # This may also be a link to a shallow archive
+        self.ensure_symlink(ud.localpath, origud.localpath)
 
     def try_premirror(self, urldata, d):
         """
@@ -1817,7 +1832,7 @@ class Fetch(object):
             self.ud[url] = FetchData(url, self.d)
 
         self.ud[url].setup_localpath(self.d)
-        return self.d.expand(self.ud[url].localpath)
+        return self.ud[url].localpath
 
     def localpaths(self):
         """
@@ -1870,25 +1885,28 @@ class Fetch(object):
                             logger.debug(str(e))
                             done = False
 
+                d = self.d
                 if premirroronly:
-                    self.d.setVar("BB_NO_NETWORK", "1")
+                    # Only disable the network in a copy
+                    d = bb.data.createCopy(self.d)
+                    d.setVar("BB_NO_NETWORK", "1")
 
                 firsterr = None
                 verified_stamp = False
                 if done:
-                    verified_stamp = m.verify_donestamp(ud, self.d)
-                if not done and (not verified_stamp or m.need_update(ud, self.d)):
+                    verified_stamp = m.verify_donestamp(ud, d)
+                if not done and (not verified_stamp or m.need_update(ud, d)):
                     try:
-                        if not trusted_network(self.d, ud.url):
+                        if not trusted_network(d, ud.url):
                             raise UntrustedUrl(ud.url)
                         logger.debug("Trying Upstream")
-                        m.download(ud, self.d)
+                        m.download(ud, d)
                         if hasattr(m, "build_mirror_data"):
-                            m.build_mirror_data(ud, self.d)
+                            m.build_mirror_data(ud, d)
                         done = True
                         # early checksum verify, so that if checksum mismatched,
                         # fetcher still have chance to fetch from mirror
-                        m.update_donestamp(ud, self.d)
+                        m.update_donestamp(ud, d)
 
                     except bb.fetch2.NetworkAccess:
                         raise
@@ -1907,17 +1925,17 @@ class Fetch(object):
                         firsterr = e
                         # Remove any incomplete fetch
                         if not verified_stamp and m.cleanup_upon_failure():
-                            m.clean(ud, self.d)
+                            m.clean(ud, d)
                         logger.debug("Trying MIRRORS")
-                        mirrors = mirror_from_string(self.d.getVar('MIRRORS'))
-                        done = m.try_mirrors(self, ud, self.d, mirrors)
+                        mirrors = mirror_from_string(d.getVar('MIRRORS'))
+                        done = m.try_mirrors(self, ud, d, mirrors)
 
-                if not done or not m.done(ud, self.d):
+                if not done or not m.done(ud, d):
                     if firsterr:
                         logger.error(str(firsterr))
                     raise FetchError("Unable to fetch URL from any source.", u)
 
-                m.update_donestamp(ud, self.d)
+                m.update_donestamp(ud, d)
 
             except IOError as e:
                 if e.errno in [errno.ESTALE]:

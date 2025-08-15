@@ -1,6 +1,8 @@
 DISTROOVERRIDES .= ":facebook"
 
+require conf/distro/include/cgroup.inc
 require conf/distro/include/phosphor-no-webui.inc
+require conf/distro/include/phosphor-production.inc
 
 MACHINE_FEATURES += "\
         obmc-bmc-state-mgmt \
@@ -27,4 +29,3 @@ OBMC_ORG_YAML_SUBDIRS:append:facebook = " com/meta"
 # Remove some common features we have no use for.
 DISTRO_FEATURES:remove = "avahi"
 DISTRO_FEATURES:remove = "ldap"
-DISTRO_FEATURES:remove = "slp"
