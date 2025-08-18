@@ -1,4 +1,4 @@
-DESCRIPTION="YAML Path and Command-Line Tools"
+DESCRIPTION = "YAML Path and Command-Line Tools"
 LICENSE = "ISC"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=5abda174c5040dd12ed2b225e3a096f0"
 

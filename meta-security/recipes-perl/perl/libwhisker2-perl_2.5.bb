@@ -15,7 +15,7 @@ S = "${UNPACKDIR}/libwhisker2-2.5"
 
 inherit cpan-base
 
-PACKAGEGROUP ??=""
+PACKAGEGROUP ??= ""
 PACKAGEGROUP[ssl] = ", , libnet-ssleay-perl, libnet-ssleay-perl"
 
 do_install() {

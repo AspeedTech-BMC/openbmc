@@ -16,10 +16,10 @@ UPSTREAM_CHECK_URI = "https://github.com/${BPN}/${BPN}/releases"
 
 inherit autotools pkgconfig aide-base
 
-PACKAGECONFIG ??=" gcrypt zlib e2fsattrs posix capabilities curl pthread \
-                 ${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'selinux audit', '', d)} \
-                 ${@bb.utils.contains('DISTRO_FEATURES', 'xattr', 'xattr', '', d)} \
-                 "
+PACKAGECONFIG ??= " gcrypt zlib e2fsattrs posix capabilities curl pthread \
+                  ${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'selinux audit', '', d)} \
+                  ${@bb.utils.contains('DISTRO_FEATURES', 'xattr', 'xattr', '', d)} \
+                  "
 PACKAGECONFIG[selinux] = "--with-selinux, --without-selinux, libselinux, libselinux"
 PACKAGECONFIG[zlib] = "--with-zlib, --without-zlib, zlib, zlib "
 PACKAGECONFIG[xattr] = "--with-xattr, --without-xattr, attr, attr"

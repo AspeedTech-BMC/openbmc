@@ -1,5 +1,5 @@
 SUMMARY = "Linux Kernel Runtime Guard"
-DESCRIPTION="LKRG performs runtime integrity checking of the Linux \
+DESCRIPTION = "LKRG performs runtime integrity checking of the Linux \
 kernel and detection of security vulnerability exploits against the kernel."
 SECTION = "security"
 HOMEPAGE = "https://www.openwall.com/lkrg/"
