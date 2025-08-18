@@ -1,4 +1,4 @@
-DESCRIPTION="Creates diffs of XML files"
+DESCRIPTION = "Creates diffs of XML files"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=0d0e9e3949e163c3edd1e097b8b0ed62"
 

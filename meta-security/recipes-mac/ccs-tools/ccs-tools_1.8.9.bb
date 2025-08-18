@@ -26,7 +26,7 @@ do_install(){
     oe_runmake INSTALLDIR=${D}  USRLIBDIR=${libdir} SBINDIR=${sbindir} install
 }
 
-PACKAGE="${PN} ${PN}-dbg ${PN}-doc"
+PACKAGE = "${PN} ${PN}-dbg ${PN}-doc"
 
 FILES:${PN} = "\
     ${sbindir}/* \
@@ -46,4 +46,4 @@ FILES:${PN}-dbg = "\
     /usr/src/debug/* \
 "
 
-REQUIRED_DISTRO_FEATURES ?=" tomoyo"
+REQUIRED_DISTRO_FEATURES ?= " tomoyo"

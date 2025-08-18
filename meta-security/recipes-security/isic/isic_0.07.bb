@@ -17,7 +17,7 @@ SRC_URI = "http://prdownloads.sourceforge.net/isic/${BPN}-${PV}.tgz \
 SRC_URI[md5sum] = "29f70c9bde9aa9128b8f7e66a315f9a4"
 SRC_URI[sha256sum] = "e033c53e03e26a4c72b723e2a5a1c433ee70eb4d23a1ba0d7d7e14ee1a80429d"
 
-S="${UNPACKDIR}/${BPN}-${PV}"
+S = "${UNPACKDIR}/${BPN}-${PV}"
 
 inherit autotools-brokensep
 

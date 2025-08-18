@@ -14,7 +14,7 @@ S = "${WORKDIR}/checksecurity-${PV}+nmu1"
 
 
 # allow for anylocal, no need to patch
-LOGDIR="/etc/checksecurity"
+LOGDIR = "/etc/checksecurity"
 
 do_compile() {
     sed -i -e "s;LOGDIR=/var/log/setuid;LOGDIR=${LOGDIR};g" ${B}/etc/check-setuid.conf
