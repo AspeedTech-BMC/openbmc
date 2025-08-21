@@ -1,0 +1,196 @@
+From 575480eb2cfa3babca3c985f456ec70dc44ba2a6 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Wed, 16 Jul 2025 11:22:59 +0800
+Subject: [PATCH] bmc: support ufs firmware update
+
+- Map UFS storage devices
+  /dev/mmcblk0      => /dev/sda
+  /dev/mmcblk0boot0 => /dev/sdb
+  /dev/mmcblk0boot1 => /dev/sdc
+
+- Disable force_ro for UFS updates
+
+Note: Create UFS partition at U-Boot.
+```
+ufs create lun 0 100000 (create 16GB user area)
+ufs create boot 1 1000000 (create 4MB boot part 1)
+ufs create boot 2 1000000 (create 4MB boot part 2)
+```
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-code-mgmt/+/82055]
+
+Change-Id: If6d14096f729715f24c0bbe58167102fdc732c0a
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ bmc/meson.build                               |  1 +
+ bmc/mmc/obmc-flash-mmc-mirroruboot.service.in |  1 +
+ bmc/mmc/obmc-flash-mmc@.service.in            |  1 +
+ bmc/obmc-flash-bmc                            | 62 ++++++++++++++-----
+ meson.options                                 |  8 +++
+ 5 files changed, 56 insertions(+), 17 deletions(-)
+
+diff --git a/bmc/meson.build b/bmc/meson.build
+index ba1d674..74b608b 100644
+--- a/bmc/meson.build
++++ b/bmc/meson.build
+@@ -77,6 +77,7 @@ conf.set_quoted('SYNC_LIST_DIR_PATH', get_option('sync-list-dir-path'))
+ conf.set_quoted('SYNC_LIST_FILE_NAME', get_option('sync-list-file-name'))
+ conf.set_quoted('BMC_MSL', get_option('bmc-msl'))
+ conf.set_quoted('REGEX_BMC_MSL', get_option('regex-bmc-msl'))
++conf.set_quoted('STORAGE_MODE', get_option('mmc-storage-mode'))
+ 
+ if get_option('host-bios-upgrade').allowed()
+     conf.set_quoted('BIOS_OBJPATH', get_option('bios-object-path'))
+diff --git a/bmc/mmc/obmc-flash-mmc-mirroruboot.service.in b/bmc/mmc/obmc-flash-mmc-mirroruboot.service.in
+index 97117e3..65460ae 100644
+--- a/bmc/mmc/obmc-flash-mmc-mirroruboot.service.in
++++ b/bmc/mmc/obmc-flash-mmc-mirroruboot.service.in
+@@ -4,4 +4,5 @@ Description=Copy uboot from the currently booted bmc chip to the alternate chip
+ [Service]
+ Type=oneshot
+ RemainAfterExit=no
++Environment=mode=@STORAGE_MODE@
+ ExecStart=/usr/bin/obmc-flash-bmc mmc-mirroruboot
+diff --git a/bmc/mmc/obmc-flash-mmc@.service.in b/bmc/mmc/obmc-flash-mmc@.service.in
+index 6cdbdb1..5b2b810 100644
+--- a/bmc/mmc/obmc-flash-mmc@.service.in
++++ b/bmc/mmc/obmc-flash-mmc@.service.in
+@@ -4,4 +4,5 @@ Description=Write image %I to BMC storage
+ [Service]
+ Type=oneshot
+ RemainAfterExit=no
++Environment=mode=@STORAGE_MODE@
+ ExecStart=/usr/bin/obmc-flash-bmc mmc %i @IMG_UPLOAD_DIR@
+diff --git a/bmc/obmc-flash-bmc b/bmc/obmc-flash-bmc
+index f9cc4e2..53e78d1 100644
+--- a/bmc/obmc-flash-bmc
++++ b/bmc/obmc-flash-bmc
+@@ -1,6 +1,11 @@
+ #!/bin/bash
+ set -eo pipefail
+ 
++# If the mode is not specified, default to mmc
++if [ -z "$mode" ]; then
++    mode="mmc"
++fi
++
+ # Get the root mtd device number (mtdX) from "/dev/ubiblockX_Y on /"
+ function findrootmtd() {
+     rootmatch=" on / "
+@@ -576,29 +581,40 @@ function mmc_mount() {
+ 
+ function mmc_update() {
+     # Update u-boot if needed
+-    bootPartition="mmcblk0boot0"
++    if [ "$mode" == "ufs" ]; then
++        bootPartition=$(basename "$(readlink -f /dev/disk/by-path/*ufshc-scsi-0:0:0:1)")
++    else
++        bootPartition=$(basename "$(readlink -f /dev/disk/by-path/*sdhci-boot0)")
++    fi
++    echo "mmc_update storage mode: $mode bootPartition: $bootPartition"
+     devUBoot="/dev/${bootPartition}"
+     imgUBoot="${imgpath}/${version}/image-u-boot"
+     if [ "$(cmp_uboot "${devUBoot}" "${imgUBoot}")" != "0" ]; then
+-        echo 0 > "/sys/block/${bootPartition}/force_ro"
+-        dd if="${imgUBoot}" of="${devUBoot}"
+-        echo 1 > "/sys/block/${bootPartition}/force_ro"
++        if [ "$mode" == "ufs" ]; then
++            dd if="${imgUBoot}" of="${devUBoot}"
++        else
++            echo 0 > "/sys/block/${bootPartition}/force_ro"
++            dd if="${imgUBoot}" of="${devUBoot}"
++            echo 1 > "/sys/block/${bootPartition}/force_ro"
++        fi
+     fi
+ 
+     # Update the secondary (non-running) boot and rofs partitions.
+     label="$(mmc_get_secondary_label)"
+ 
++    diskPartition=$(basename "$(readlink -f /dev/disk/by-partlabel/boot-"${label}")")
++    diskdev=$(basename "$(dirname "$(realpath "/sys/class/block/${diskPartition}")")")
++    echo "mmc_update label: $label diskPartition: $diskPartition diskdev: $diskdev"
++
+     # Update the boot and rootfs partitions, restore their labels after the update
+     # by getting the partition number mmcblk0pX from their label.
+     zstd -d -c "${imgpath}"/"${version}"/image-kernel | dd of="/dev/disk/by-partlabel/boot-${label}"
+-    number="$(readlink -f /dev/disk/by-partlabel/boot-"${label}")"
+-    number="${number##*mmcblk0p}"
+-    sgdisk --change-name="${number}":boot-"${label}" /dev/mmcblk0 1>/dev/null
++    number="$(readlink -f /dev/disk/by-partlabel/boot-"${label}" | grep -o '[0-9]\+$')"
++    sgdisk --change-name="${number}":boot-"${label}" "/dev/${diskdev}" 1>/dev/null
+ 
+     zstd -d -c "${imgpath}"/"${version}"/image-rofs | dd of="/dev/disk/by-partlabel/rofs-${label}"
+-    number="$(readlink -f /dev/disk/by-partlabel/rofs-"${label}")"
+-    number="${number##*mmcblk0p}"
+-    sgdisk --change-name="${number}":rofs-"${label}" /dev/mmcblk0 1>/dev/null
++    number="$(readlink -f /dev/disk/by-partlabel/rofs-"${label}" | grep -o '[0-9]\+$')"
++    sgdisk --change-name="${number}":rofs-"${label}" "/dev/${diskdev}" 1>/dev/null
+ 
+     # Run this after sgdisk for labels to take effect.
+     partprobe
+@@ -646,14 +662,22 @@ function mmc_setprimary() {
+ }
+ 
+ function mmc_mirroruboot() {
++    if [ "$mode" == "ufs" ]; then
++        storage_boot0=$(basename "$(readlink -f /dev/disk/by-path/*ufshc-scsi-0:0:0:1)")
++        storage_boot1=$(basename "$(readlink -f /dev/disk/by-path/*ufshc-scsi-0:0:0:2)")
++    else
++        storage_boot0=$(basename "$(readlink -f /dev/disk/by-path/*sdhci-boot0)")
++        storage_boot1=$(basename "$(readlink -f /dev/disk/by-path/*sdhci-boot1)")
++    fi
++    echo "mmc_mirroruboot storage mode: $mode storage_boot0: $storage_boot0 storage_boot1: $storage_boot1"
+     # Get current boot device; 0-primary_bootdev device; 1 - alt_bootdev
+     bootdev=$(cat /sys/kernel/debug/aspeed/sbc/abr_image)
+     if [[ "${bootdev}" == "0" ]]; then
+-        bootPartition="mmcblk0boot0"
+-        alt_bootPartition="mmcblk0boot1"
++        bootPartition="${storage_boot0}"
++        alt_bootPartition="${storage_boot1}"
+     else
+-        bootPartition="mmcblk0boot1"
+-        alt_bootPartition="mmcblk0boot0"
++        bootPartition="${storage_boot1}"
++        alt_bootPartition="${storage_boot0}"
+     fi
+ 
+     devUBoot="/dev/${bootPartition}"
+@@ -666,9 +690,13 @@ function mmc_mirroruboot() {
+ 
+     if [[ "${checksum_UBoot}" != "${checksum_alt_UBoot}" ]]; then
+         echo "Mirroring U-boot to alt chip"
+-        echo 0 > "/sys/block/${alt_bootPartition}/force_ro"
+-        dd if="${devUBoot}" of="${alt_devUBoot}"
+-        echo 1 > "/sys/block/${alt_bootPartition}/force_ro"
++        if [ "$mode" == "ufs" ]; then
++            dd if="${devUBoot}" of="${alt_devUBoot}"
++        else
++            echo 0 > "/sys/block/${alt_bootPartition}/force_ro"
++            dd if="${devUBoot}" of="${alt_devUBoot}"
++            echo 1 > "/sys/block/${alt_bootPartition}/force_ro"
++        fi
+     fi
+ }
+ 
+diff --git a/meson.options b/meson.options
+index 6c09029..b9a8a19 100644
+--- a/meson.options
++++ b/meson.options
+@@ -11,6 +11,14 @@ option(
+     description: 'The BMC layout type.',
+ )
+ 
++option(
++    'mmc-storage-mode',
++    type: 'combo',
++    choices: ['mmc', 'ufs'],
++    value: 'mmc',
++    description: 'The BMC mass storage type.',
++)
++
+ # Features
+ option(
+     'host-bios-upgrade',
+-- 
+2.43.0
+
