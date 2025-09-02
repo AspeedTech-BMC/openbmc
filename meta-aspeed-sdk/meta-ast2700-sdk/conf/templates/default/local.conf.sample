@@ -1,7 +1,7 @@
 MACHINE ??= "ast2700-default"
 #MACHINE ??= "ast2700-default-ncsi"
 #MACHINE ??= "ast2700-default-raw"
-#MACHINE ??= "ast2700-default-cptra-11"
+#MACHINE ??= "ast2700-default-irot"
 #MACHINE ??= "ast2700-emmc"
 #MACHINE ??= "ast2700-ufs"
 #MACHINE ??= "ast2700-abr"
