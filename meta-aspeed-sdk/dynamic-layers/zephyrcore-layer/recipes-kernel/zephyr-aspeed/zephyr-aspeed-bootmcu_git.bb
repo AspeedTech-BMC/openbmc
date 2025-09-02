@@ -1,0 +1,87 @@
+require recipes-kernel/zephyr-kernel/zephyr-image.inc
+require zephyr-aspeed-src.inc
+
+SUMMARY = "BootMCU runtime firmware"
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+
+PROVIDES += "virtual/bootmcu"
+PV = "1.0+git"
+
+# aspeed-zephyr-project bootmcu
+SRC_URI_ASPEED_ZEPHYR_PROJECT = "gitsm://gerrit.aspeed.com:29418/aspeed-zephyr-project;protocol=ssh"
+ASPEED_ZEPHYR_PROJECT_BRANCH = "mcu-runtime"
+SRCREV_bootmcu = "${AUTOREV}"
+
+SRC_URI += "\
+    ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
+"
+
+ZEPHYR_MODULES += "\
+${S}/aspeed-zephyr-project\;\
+"
+
+ZEPHYR_BOARD_BOOTMCU ??= "ast2700_evb/ast2700/bootmcu"
+ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
+
+ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
+
+DEPENDS += "fmc-imgtool-native"
+
+inherit deploy python3native
+
+MCU_RUNTIME_IMAGE ?= "${B}/zephyr/zephyr.bin"
+
+# Use fmc-imgtool to create fmc image since A1
+# export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
+# OpenSSL 3.0 legacy provider failed to load
+# https://github.com/pyca/cryptography/issues/10598
+do_create_fmc_image() {
+    export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
+
+    local ecc_key=""
+    local ecc_key_index=""
+    local lms_key=""
+    local lms_key_index=""
+    local sign_args=""
+
+    if [ -f "${FMC_ECC_KEY}" ]; then
+        ecc_key="--ecc-key ${FMC_ECC_KEY}"
+    fi
+
+    if [ -n "${FMC_ECC_KEY_INDEX}" ]; then
+        ecc_key_index="--ecc-key-index ${FMC_ECC_KEY_INDEX}"
+    fi
+
+    if [ -f "${FMC_LMS_KEY}" ]; then
+        lms_key="--lms-key ${FMC_LMS_KEY}"
+    fi
+
+    if [ -n "${FMC_LMS_KEY_INDEX}" ]; then
+        lms_key_index="--lms-key-index ${FMC_LMS_KEY_INDEX}"
+    fi
+
+    if [ "${FMC_SIGN_ENABLE}" = "1" ]; then
+        sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
+    fi
+
+    cd ${STAGING_LIBDIR_NATIVE}/${PYTHON_DIR}/fmc-imgtool
+    python3 main.py \
+        --verbose \
+        --version 2 \
+        --input ${MCU_RUNTIME_IMAGE} \
+        --output ${B}/zephyr/${BOOTMCU_FW_BINARY} \
+        ${sign_args}
+    cd -
+}
+
+addtask create_fmc_image before do_deploy after do_compile
+
+do_deploy() {
+    install -d ${DEPLOYDIR}
+
+    install -m 644 ${B}/zephyr/${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
+}
+
+addtask deploy before do_build after do_compile
+
+ALLOW_EMPTY:${PN} = "1"
