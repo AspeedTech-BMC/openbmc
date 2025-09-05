@@ -1,2 +1,0 @@
-MACHINE_FEATURES:append = " ast2700a1-cptra-12"
-MACHINEOVERRIDES .= ":ast2700a1-cptra-12"
