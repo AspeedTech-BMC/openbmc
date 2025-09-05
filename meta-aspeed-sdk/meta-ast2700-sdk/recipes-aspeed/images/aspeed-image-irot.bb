@@ -1,18 +1,9 @@
-# Provide support for generating the ASPEED BootMCU-RT + SSP-iRoT FIT image.
-# A new helper function (ssp_irot_fitimage) is introduced for this purpose,
-# but it deliberately reuses the same variable conventions defined by
-# uboot-sign.bbclass. This ensures compatibility with existing scripts and
-# avoids the need to maintain a separate set of variables for iRoT builds.
-require recipes-bsp/u-boot/aspeed-coprocessor.inc
-
-DESCRIPTION = "Generate ASPEED IROT image"
+DESCRIPTION = "Generate ASPEED Caliptra-1.2 (iROT) image"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${ASPEEDSDKBASE}/LICENSE;md5=a3740bd0a194cd6dcafdc482a200a56f"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 PR = "r0"
-
-DEPENDS = "u-boot-tools-native"
 
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"
@@ -20,53 +11,40 @@ do_install[noexec] = "1"
 
 inherit deploy
 
-SSP_IROT_ITS = "bl-fit-irot.its"
-SSP_IROT_FIT = "bl-fit-irot.bin"
+DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native"
 
-# Create a ITS file for the ASPEED BootMCU-RT and SSP-iRoT FIT image.
-ssp_irot_fitimage() {
-    conf_loadables="\"ibexfw\""
-    rm -f ${SSP_IROT_ITS} ${SSP_IROT_FIT}
+CPTRA_IMGTOOL_PRJ ?= "ast2700a1-irot"
+PREBUILD_IMAGE_DIR = "prebuilt/${CPTRA_IMGTOOL_PRJ}"
+CPTRA_IMGTOOL_IMAGE = "man-irot.bin"
 
-    # First we create the ITS script
-    cat << EOF >> ${SSP_IROT_ITS}
-/dts-v1/;
+# Using cptra-imgtool to create manifest image.
+create_cptra_manifest_image() {
+    export RUST_LOG="debug"
+    bbnote "Running cptra-imgtool"
 
-/ {
-    description = "BootMCU-RT and SSP-iRoT FIT";
-    #address-cells = <1>;
-
-    images {
-EOF
-    if [ -n "${UBOOT_FIT_USER_SETTINGS}" ] ; then
-        printf "%b" "${UBOOT_FIT_USER_SETTINGS}" >> ${SSP_IROT_ITS}
+    cd ${STAGING_DATADIR_NATIVE}/cptra-imgtool
+    if [ ! -d out ]; then
+        install -d out
     fi
 
-    if [ -n "${UBOOT_FIT_CONF_USER_LOADABLES}" ] ; then
-        conf_loadables="${conf_loadables}${UBOOT_FIT_CONF_USER_LOADABLES}"
-    fi
+    # Copy SSP and TSP image into cptra-imgtool prebuilt folder
+    install -m 0644 ${FREERTOS_SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/.
+    install -m 0644 ${FREERTOS_TSP_IMAGE} ${PREBUILD_IMAGE_DIR}/.
 
-    cat << EOF >> ${SSP_IROT_ITS}
-    };
+    # Update cptra-imgtool manifest.toml
+    sed -i "s/ssp\.bin/$(basename ${FREERTOS_SSP_IMAGE})/g" config/${CPTRA_IMGTOOL_PRJ}-manifest.toml
+    sed -i "s/tsp\.bin/$(basename ${FREERTOS_TSP_IMAGE})/g" config/${CPTRA_IMGTOOL_PRJ}-manifest.toml
 
-    configurations {
-        default = "conf";
-        conf {
-            description = "BootMCU-RT and SSP-iRoT FIT";
-            loadables = ${conf_loadables};
-        };
-    };
-};
-EOF
+    # Run cptra-imgtool to generate manifest image.
+    ./cptra-imgtool create-auth-flash --prj ${CPTRA_IMGTOOL_PRJ} --flash ${CPTRA_IMGTOOL_IMAGE}
 
-    #
-    # Assemble the BootMCU-RT and SSP-iRoT image
-    #
-    uboot-mkimage -f ${SSP_IROT_ITS} ${SSP_IROT_FIT}
+    # Copy manifest image
+    install -d ${DEPLOYDIR}
+    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_IMGTOOL_IMAGE} ${B}/.
 }
 
 do_compile() {
-    ssp_irot_fitimage
+    create_cptra_manifest_image
 }
 
 do_mk_empty_image() {
@@ -102,10 +80,10 @@ python do_deploy() {
     bb.build.exec_func("do_mk_empty_image", d)
     nor_image = os.path.join(d.getVar('B', True), d.getVar('IROT_IMAGE', True))
 
-    # SSP FIT
+    # MANIFEST
     append_image(os.path.join(d.getVar('B', True),
-                 '%s' % d.getVar('SSP_IROT_FIT',True)),
-                  int(d.getVar('IROT_OFFSET_SSP_FIT', True)),
+                 '%s' % d.getVar('CPTRA_IMGTOOL_IMAGE',True)),
+                  int(d.getVar('IROT_OFFSET_MANIFEST', True)),
                   int(d.getVar('IROT_OFFSET_ATF', True)),
                   nor_image)
     # ATF
@@ -130,10 +108,10 @@ python do_deploy() {
 do_deploy[depends] += " \
     optee-os:do_deploy \
     trusted-firmware-a:do_deploy \
+    virtual/bootmcu:do_deploy \
     virtual/bootloader:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ibexfw', 'virtual/ibexfw:do_deploy', '', d)} \
     "
 
 addtask deploy before do_build after do_compile

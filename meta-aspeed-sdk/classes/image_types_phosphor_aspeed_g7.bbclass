@@ -3,7 +3,6 @@
 # to ensure compatibility with image_types_phosphor.bbclass.
 UBOOT_BINARY := "u-boot.${UBOOT_SUFFIX}"
 UBOOT_BINARY:ast-irot := "${IROT_IMAGE}"
-UBOOT_BINARY:ast2700a1-cptra-12 := "${IROT_IMAGE}"
 UBOOT_SUFFIX:append = ".merged"
 
 # Install the image-u-boot to deploy folder when building the emmc image.
@@ -56,7 +55,6 @@ do_merge_uboot[depends] += " \
     u-boot:do_deploy \
     virtual/bootmcu:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'aspeed-image-irot:do_deploy', '', d)} \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'ast2700a1-cptra-12', 'aspeed-image-cptra-12:do_deploy', '', d)} \
     "
 
 addtask do_merge_uboot before do_generate_static after do_generate_rwfs_static
