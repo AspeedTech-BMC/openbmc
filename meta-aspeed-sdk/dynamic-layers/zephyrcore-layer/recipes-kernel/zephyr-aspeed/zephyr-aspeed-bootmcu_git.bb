@@ -26,8 +26,9 @@ ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
 
 DEPENDS += "fmc-imgtool-native"
+DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native', '', d)}"
 
-inherit deploy python3native
+inherit deploy python3native otptool
 
 MCU_RUNTIME_IMAGE ?= "${B}/zephyr/zephyr.bin"
 

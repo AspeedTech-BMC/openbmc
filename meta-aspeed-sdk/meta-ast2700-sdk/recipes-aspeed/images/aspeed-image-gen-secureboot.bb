@@ -383,12 +383,12 @@ python do_deploy() {
         }
     ]
 
-
-    verify_uboot_kernel_image_status(d)
     gen_secure_image_enable = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE_ENABLE', True)
     if gen_secure_image_enable != "1":
         print("Disable gen secure image. Do nothing.")
         return
+
+    verify_uboot_kernel_image_status(d)
 
     uboot_default_algo = d.getVar('UBOOT_FIT_SIGN_ALG', True)
     uboot_default_hash = d.getVar('UBOOT_FIT_HASH_ALG', True)
