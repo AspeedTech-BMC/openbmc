@@ -18,14 +18,19 @@ inherit deploy
 
 ARM_PREBUILT_CROSS_COMPILE = "arm-none-eabi-"
 
+PARALLEL_MAKE = ""
+
 EXTRA_OEMAKE = 'CROSS_COMPILE=${ARM_PREBUILT_CROSS_COMPILE} CC="${ARM_PREBUILT_CROSS_COMPILE}gcc"'
 EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CFLAGS} ${BUILD_LDFLAGS}"'
 
 do_configure () {
+    oe_runmake -C ${S} cleanconfig
     oe_runmake -C ${S} ${FREERTOS_MACHINE}
 }
 
 do_compile(){
+    oe_runmake -C ${S} clean
+    oe_runmake -C ${S} dist-clean
     oe_runmake -C ${S} image
 }
 
