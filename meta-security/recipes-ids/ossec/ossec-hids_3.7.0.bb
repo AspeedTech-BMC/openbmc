@@ -18,7 +18,7 @@ inherit autotools-brokensep  useradd
 S = "${UNPACKDIR}/git"
 
 
-OSSEC_DIR="/var/ossec"
+OSSEC_DIR = "/var/ossec"
 OSSEC_UID ?= "ossec"
 OSSEC_RUID ?= "ossecr"
 OSSEC_GID ?= "ossec"

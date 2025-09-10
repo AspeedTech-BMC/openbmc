@@ -15,8 +15,8 @@ S = "${WORKDIR}/git"
 PARALLEL_MAKE = ""
 inherit autotools pkgconfig perlnative
 
-TSS_USER="tss"
-TSS_GROUP="tss"
+TSS_USER = "tss"
+TSS_GROUP = "tss"
 
 PACKAGECONFIG ?= "openssl gnutls"
 PACKAGECONFIG += "${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'selinux', '', d)}"

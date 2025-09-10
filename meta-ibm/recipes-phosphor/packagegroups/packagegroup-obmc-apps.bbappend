@@ -25,7 +25,7 @@ EXTRA_IBM_LOGGING_PKGS:p10bmc = " \
     hostboot-pel-parsers \
 "
 
-RDEPENDS:${PN}-inventory:append:ibm-ac-server = " openpower-fru-vpd openpower-occ-control phosphor-cooling-type phosphor-gpio-monitor-presence"
+RDEPENDS:${PN}-inventory:append:ibm-ac-server = " openpower-fru-vpd phosphor-cooling-type phosphor-gpio-monitor-presence"
 RDEPENDS:${PN}-inventory:append:p10bmc = " openpower-fru-vpd openpower-occ-control phosphor-gpio-monitor-presence entity-manager"
 RDEPENDS:${PN}-inventory:append:witherspoon-tacoma = " entity-manager"
 RDEPENDS:${PN}-inventory:remove:huygens = " openpower-occ-control"
@@ -49,6 +49,7 @@ RDEPENDS:${PN}-software:append:system1 = " phosphor-software-manager-side-switch
 
 RDEPENDS:${PN}-host-state-mgmt:remove:p10bmc = "checkstop-monitor"
 RDEPENDS:${PN}-logging:append = " ${EXTRA_IBM_LOGGING_PKGS}"
+RDEPENDS:${PN}-logging:append = " phosphor-logging-test"
 RDEPENDS:${PN}-leds:remove:witherspoon-tacoma = "phosphor-led-manager-faultmonitor"
 RDEPENDS:${PN}-leds:remove:sbp1 = "phosphor-led-manager-faultmonitor"
 RDEPENDS:${PN}-devtools:remove:witherspoon = "rsync"

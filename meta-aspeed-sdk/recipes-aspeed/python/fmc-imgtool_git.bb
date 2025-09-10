@@ -5,11 +5,11 @@ HOMEPAGE = "https://github.com/AspeedTech-BMC/fmc_imgtool"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=522c9891674011c4a2390d828772384d"
 
-BRANCH="master"
+BRANCH = "master"
 SRC_URI = "git://github.com/AspeedTech-BMC/fmc_imgtool.git;protocol=https;branch=${BRANCH}"
 
-# Tag for v00.01.02
-SRCREV = "acf8450b2a889359ed66676190a10c83f8e7778a"
+# Tag for v00.01.02+
+SRCREV = "12e4a1739983bf0eb9ef7afc6a8923ae0a826f09"
 
 PV = "1.0+git"
 

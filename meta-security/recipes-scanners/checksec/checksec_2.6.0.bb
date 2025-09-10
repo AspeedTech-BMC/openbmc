@@ -2,7 +2,7 @@ SUMMARY = "Linux system security checks"
 DESCRIPTION = "The checksec script is designed to test what standard Linux OS and PaX security features are being used."
 SECTION = "security"
 LICENSE = "BSD-3-Clause"
-HOMEPAGE="https://github.com/slimm609/checksec.sh"
+HOMEPAGE = "https://github.com/slimm609/checksec.sh"
 
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=879b2147c754bc040c29e9c3b84da836"
 

@@ -97,8 +97,10 @@ def compare_file(reference, test, diffutils_sysroot):
     result.status = SAME
     return result
 
-def run_diffoscope(a_dir, b_dir, html_dir, max_report_size=0, **kwargs):
+def run_diffoscope(a_dir, b_dir, html_dir, max_report_size=0, max_diff_block_lines=1024, max_diff_block_lines_saved=0, **kwargs):
     return runCmd(['diffoscope', '--no-default-limits', '--max-report-size', str(max_report_size),
+                   '--max-diff-block-lines-saved', str(max_diff_block_lines_saved),
+                   '--max-diff-block-lines', str(max_diff_block_lines),
                    '--exclude-directory-metadata', 'yes', '--html-dir', html_dir, a_dir, b_dir],
                 **kwargs)
 
@@ -132,6 +134,11 @@ class ReproducibleTests(OESelftestTestCase):
     # Maximum report size, in bytes
     max_report_size = 250 * 1024 * 1024
 
+    # Maximum diff blocks size, in lines
+    max_diff_block_lines = 1024
+    # Maximum diff blocks size (saved in memory), in lines
+    max_diff_block_lines_saved = max_diff_block_lines
+
     # targets are the things we want to test the reproducibility of
     # Have to add the virtual targets manually for now as builds may or may not include them as they're exclude from world
     targets = ['core-image-minimal', 'core-image-sato', 'core-image-full-cmdline', 'core-image-weston', 'world', 'virtual/librpc', 'virtual/libsdl2', 'virtual/crypt']
@@ -162,6 +169,7 @@ class ReproducibleTests(OESelftestTestCase):
             'OEQA_REPRODUCIBLE_TEST_TARGET',
             'OEQA_REPRODUCIBLE_TEST_SSTATE_TARGETS',
             'OEQA_REPRODUCIBLE_EXCLUDED_PACKAGES',
+            'OEQA_REPRODUCIBLE_TEST_LEAF_TARGETS',
         ]
         bb_vars = get_bb_vars(needed_vars)
         for v in needed_vars:
@@ -170,11 +178,16 @@ class ReproducibleTests(OESelftestTestCase):
         if bb_vars['OEQA_REPRODUCIBLE_TEST_PACKAGE']:
             self.package_classes = bb_vars['OEQA_REPRODUCIBLE_TEST_PACKAGE'].split()
 
-        if bb_vars['OEQA_REPRODUCIBLE_TEST_TARGET']:
-            self.targets = bb_vars['OEQA_REPRODUCIBLE_TEST_TARGET'].split()
+        if bb_vars['OEQA_REPRODUCIBLE_TEST_TARGET'] or bb_vars['OEQA_REPRODUCIBLE_TEST_LEAF_TARGETS']:
+            self.targets = (bb_vars['OEQA_REPRODUCIBLE_TEST_TARGET'] or "").split() + (bb_vars['OEQA_REPRODUCIBLE_TEST_LEAF_TARGETS'] or "").split()
 
         if bb_vars['OEQA_REPRODUCIBLE_TEST_SSTATE_TARGETS']:
             self.sstate_targets = bb_vars['OEQA_REPRODUCIBLE_TEST_SSTATE_TARGETS'].split()
+
+        if bb_vars['OEQA_REPRODUCIBLE_TEST_LEAF_TARGETS']:
+            # Setup to build every DEPENDS of leaf recipes using sstate
+            for leaf_recipe in bb_vars['OEQA_REPRODUCIBLE_TEST_LEAF_TARGETS'].split():
+                self.sstate_targets.extend(get_bb_var('DEPENDS', leaf_recipe).split())
 
         self.extraresults = {}
         self.extraresults.setdefault('reproducible', {}).setdefault('files', {})
@@ -275,8 +288,8 @@ class ReproducibleTests(OESelftestTestCase):
         self.logger.info("Building %s (sstate%s allowed)..." % (name, '' if use_sstate else ' NOT'))
         self.write_config(config)
         d = get_bb_vars(capture_vars)
-        # targets used to be called images
         try:
+            # targets used to be called images
             bitbake("--continue "+' '.join(getattr(self, 'images', self.targets)))
         except AssertionError as e:
             bitbake_failure_count += 1
@@ -385,6 +398,8 @@ class ReproducibleTests(OESelftestTestCase):
                 self.copy_file(os.path.join(jquery_sysroot, 'usr/share/javascript/jquery/jquery.min.js'), os.path.join(package_html_dir, 'jquery.js'))
 
                 run_diffoscope('reproducibleA', 'reproducibleB-extended', package_html_dir, max_report_size=self.max_report_size,
+                        max_diff_block_lines_saved=self.max_diff_block_lines_saved,
+                        max_diff_block_lines=self.max_diff_block_lines,
                         native_sysroot=diffoscope_sysroot, ignore_status=True, cwd=package_dir)
 
         if fails:

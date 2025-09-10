@@ -575,6 +575,7 @@
             ]
         ],
         "Threshold": {
+            "HardShutdownHigh": 150,
             "CriticalHigh": 45
         },
         "Params": {
@@ -610,6 +611,7 @@
             ]
         ],
         "Threshold": {
+            "HardShutdownHigh": 150,
             "CriticalHigh": 45
         },
         "Params": {
@@ -645,6 +647,7 @@
             ]
         ],
         "Threshold": {
+            "HardShutdownHigh": 150,
             "CriticalHigh": 45
         },
         "Params": {
@@ -680,6 +683,7 @@
             ]
         ],
         "Threshold": {
+            "HardShutdownHigh": 150,
             "CriticalHigh": 45
         },
         "Params": {
@@ -715,6 +719,7 @@
             ]
         ],
         "Threshold": {
+            "HardShutdownHigh": 150,
             "CriticalHigh": 45
         },
         "Params": {
@@ -750,6 +755,7 @@
             ]
         ],
         "Threshold": {
+            "HardShutdownHigh": 150,
             "CriticalHigh": 45
         },
         "Params": {
@@ -785,6 +791,7 @@
             ]
         ],
         "Threshold": {
+            "HardShutdownHigh": 150,
             "CriticalHigh": 45
         },
         "Params": {
@@ -820,6 +827,7 @@
             ]
         ],
         "Threshold": {
+            "HardShutdownHigh": 150,
             "CriticalHigh": 45
         },
         "Params": {
@@ -1718,7 +1726,7 @@
                 }
             ]
         },
-        "Expression": "hsc_48V0_power + hsc_48V1_power - hsc_slot1_power - hsc_slot2_power - hsc_slot3_power - hsc_slot4_power - hsc_slot5_power - hsc_slot6_power - hsc_slot7_power - hsc_slot8_power"
+        "Expression": "ifNan(hsc_48V0_power, 0) + ifNan(hsc_48V1_power, 0) - ifNan(hsc_slot1_power, 0) - ifNan(hsc_slot2_power, 0) - ifNan(hsc_slot3_power, 0) - ifNan(hsc_slot4_power, 0) - ifNan(hsc_slot5_power, 0) - ifNan(hsc_slot6_power, 0) - ifNan(hsc_slot7_power, 0) - ifNan(hsc_slot8_power, 0)"
     },
     {
         "Desc": {
@@ -2031,5 +2039,77 @@
             ]
         },
         "Expression": "hsc_output_curr * hsc_output_voltage"
+    },
+    {
+        "Desc": {
+          "Name": "VIRTUAL_NIC0_TEMP_C",
+          "SensorType": "temperature"
+        },
+        "Params": {
+          "DbusParam": [
+            {
+              "ParamName": "NIC_TEMP_C",
+              "Desc": {
+                "Name": "NIC0_TEMP_C",
+                "SensorType": "temperature"
+              }
+            }
+          ]
+        },
+        "Expression": "NIC_TEMP_C == NIC_TEMP_C ? NIC_TEMP_C : 0"
+    },
+    {
+        "Desc": {
+          "Name": "VIRTUAL_NIC1_TEMP_C",
+          "SensorType": "temperature"
+        },
+        "Params": {
+          "DbusParam": [
+            {
+              "ParamName": "NIC_TEMP_C",
+              "Desc": {
+                "Name": "NIC1_TEMP_C",
+                "SensorType": "temperature"
+              }
+            }
+          ]
+        },
+        "Expression": "NIC_TEMP_C == NIC_TEMP_C ? NIC_TEMP_C : 0"
+    },
+    {
+        "Desc": {
+          "Name": "VIRTUAL_NIC2_TEMP_C",
+          "SensorType": "temperature"
+        },
+        "Params": {
+          "DbusParam": [
+            {
+              "ParamName": "NIC_TEMP_C",
+              "Desc": {
+                "Name": "NIC2_TEMP_C",
+                "SensorType": "temperature"
+              }
+            }
+          ]
+        },
+        "Expression": "NIC_TEMP_C == NIC_TEMP_C ? NIC_TEMP_C : 0"
+    },
+    {
+        "Desc": {
+          "Name": "VIRTUAL_NIC3_TEMP_C",
+          "SensorType": "temperature"
+        },
+        "Params": {
+          "DbusParam": [
+            {
+              "ParamName": "NIC_TEMP_C",
+              "Desc": {
+                "Name": "NIC3_TEMP_C",
+                "SensorType": "temperature"
+              }
+            }
+          ]
+        },
+        "Expression": "NIC_TEMP_C == NIC_TEMP_C ? NIC_TEMP_C : 0"
     }
 ]

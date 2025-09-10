@@ -1,0 +1,81 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    echo "Incorrect number of arguments. Expected 1, got $#."
+    exit 1
+fi
+
+EnableLeds()
+{
+    local portnum=$1
+
+    busctl set-property "xyz.openbmc_project.LED.GroupManager" \
+        "/xyz/openbmc_project/led/groups/leakport""$portnum""_amber" \
+        "xyz.openbmc_project.Led.Group" "Asserted" "b" "true"
+
+    busctl set-property "xyz.openbmc_project.LED.GroupManager" \
+        "/xyz/openbmc_project/led/groups/leakport""$portnum""_blue" \
+        "xyz.openbmc_project.Led.Group" "Asserted" "b" "false"
+}
+
+DetectorName=$1
+
+LeakType=$(echo "$DetectorName" | cut -d'_' -f2)
+temp=${DetectorName#*Port}
+portnum=${temp%%_*}
+
+if [ "$LeakType" == "Big" ]; then
+  EnableLeds "${portnum}"
+fi
+
+if [[ "$DetectorName" == "RackDripPan" || "$DetectorName" == "RackRightManifold" || "$DetectorName" == "RackLeftManifold" ]]; then
+
+PSU_Off ()
+{
+    curl -f -s -o /dev/null \
+    --cacert /var/facebook/rootcanal/rc_digicert_ca.pem \
+    --cert /mnt/data/etc/x509_highpriv_host.cert \
+    --key /mnt/data/etc/x509_highpriv_host.key \
+    -X POST "https://${RACKPOWER_HOSTNAME}/${RACKPOWER_URI}" \
+    --data '{"ResetType": "ForceOff"}' \
+    --resolve "${RACKPOWER_HOSTNAME}:443:${RACKPOWER_IP}"
+
+    CMD_STATUS=$?
+
+    if [ $CMD_STATUS -eq 0 ]; then
+        echo "Rack Power Off command sent successfully."
+        busctl call xyz.openbmc_project.Logging /xyz/openbmc_project/logging \
+            xyz.openbmc_project.Logging.Create Create "ssa{ss}" "Successfully sent rack power off command during rack leak to RackSwitch" \
+            xyz.openbmc_project.Logging.Entry.Level.Error 2 "DetectorName" "$1" "RackSwitch" "$RACKPOWER_HOSTNAME"
+    else
+        echo "Error: Failed($CMD_STATUS) to send Rack Power Off command."
+        busctl call xyz.openbmc_project.Logging /xyz/openbmc_project/logging \
+            xyz.openbmc_project.Logging.Create Create "ssa{ss}" "Failed to send rack power off command during rack leak to RackSwitch" \
+            xyz.openbmc_project.Logging.Entry.Level.Error 3 "DetectorName" "$1" "RackSwitch" "$RACKPOWER_HOSTNAME" "Error" 	"$CMD_STATUS"
+        exit 1
+    fi
+}
+
+files=(
+    "/var/facebook/rootcanal/rc_digicert_ca.pem"
+    "/mnt/data/etc/x509_highpriv_host.cert"
+    "/mnt/data/etc/x509_highpriv_host.key"
+    "/mnt/data/etc/rackpower_ipaddr"
+    "/mnt/data/etc/rackpower_hostname"
+)
+
+for file in "${files[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "Error: Missing required file $file"
+        echo "Stop to send the Rack Power Off command"
+        exit 1
+    fi
+done
+
+RACKPOWER_HOSTNAME=$(cat /mnt/data/etc/rackpower_hostname)
+RACKPOWER_IP=$(cat /mnt/data/etc/rackpower_ipaddr)
+RACKPOWER_URI="redfish/v1/Chassis/Rack/Actions/Chassis.Reset"
+
+PSU_Off "$1"
+
+fi

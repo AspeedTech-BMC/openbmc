@@ -24,7 +24,7 @@ Building and Running Zephyr Samples
 You can build Zephyr samples. There are several sample recipes.
 
 To use the Yocto toolchain, modify local conf by adding:
-    DISTRO="zephyr"
+    DISTRO = "zephyr"
 
 To use the Zephyr pre-built toolchain, modify local conf by adding:
     ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"

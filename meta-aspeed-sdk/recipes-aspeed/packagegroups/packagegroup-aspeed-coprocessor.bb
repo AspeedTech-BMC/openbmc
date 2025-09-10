@@ -2,7 +2,7 @@ SUMMARY = "AspeedTech BMC Co-Processor Package Group"
 
 PR = "r2"
 
-PACKAGE_ARCH="${TUNE_PKGARCH}"
+PACKAGE_ARCH = "${TUNE_PKGARCH}"
 
 inherit packagegroup
 
@@ -17,6 +17,6 @@ SUMMARY:${PN}-ssp = "AspeedTech Secondary Service Processor"
 RDEPENDS:${PN}-ssp = " \
     virtual-ssp \
     "
-RRECOMMENDS:${PN}-ssp= " \
+RRECOMMENDS:${PN}-ssp = " \
     kernel-module-aspeed-ssp \
     "

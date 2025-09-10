@@ -5,7 +5,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=9e69ba356fa59848ffd865152a3ccc13"
 
 SRC_URI = "git://github.com/openbmc/fb-ipmi-oem;branch=master;protocol=https"
-SRCREV = "d1471241918d738513eaf342dbd9b1729b663e4f"
+SRCREV = "b445febaba6d72a06c17695c54dab159f175740e"
 
 S = "${WORKDIR}/git"
 PV = "0.1+git${SRCPV}"
@@ -19,7 +19,7 @@ PACKAGECONFIG:fb-compute-multihost ??= "bic"
 
 PACKAGECONFIG[bic] = "-Dbic=enabled,-Dbic=disabled"
 
-EXTRA_OEMESON="\
+EXTRA_OEMESON = "\
     -Dtests=disabled \
     -Dmachine='${MACHINE}' \
     -Dhost-instances='${OBMC_HOST_INSTANCES}' \

@@ -36,8 +36,12 @@ SYSTEMD_PACKAGES = "${PN}-discover \
 "
 
 # Set the common defaults
-PACKAGECONFIG ??= "only-run-apr-on-power-loss \
-                   only-allow-boot-when-bmc-ready"
+PACKAGECONFIG ??= " \
+    only-run-apr-on-power-loss \
+    only-allow-boot-when-bmc-ready \
+    run-apr-on-software-reset \
+    install-utils \
+    "
 
 # Disable warm reboots of host
 PACKAGECONFIG[no-warm-reboot] = "-Dwarm-reboot=disabled,-Dwarm-reboot=enabled"
@@ -51,11 +55,22 @@ PACKAGECONFIG[only-run-apr-on-power-loss] = "-Donly-run-apr-on-power-loss=true,-
 # Only allow boot operations when BMC is in Ready state
 PACKAGECONFIG[only-allow-boot-when-bmc-ready] = "-Donly-allow-boot-when-bmc-ready=true,-Donly-allow-boot-when-bmc-ready=false"
 
+# Allow run APR when BMC has been rebooted due to pinhole action
+PACKAGECONFIG[run-apr-on-pinhole-reset] = "-Drun-apr-on-pinhole-reset=true,-Drun-apr-on-pinhole-reset=false"
+
+# Allow run APR when BMC has been rebooted due to watchdog
+PACKAGECONFIG[run-apr-on-watchdog-reset] = "-Drun-apr-on-watchdog-reset=true,-Drun-apr-on-watchdog-reset=false"
+
+# Allow run APR when BMC has been rebooted due to software request
+PACKAGECONFIG[run-apr-on-software-reset] = "-Drun-apr-on-software-reset=true,-Drun-apr-on-software-reset=false"
+
 # Enable host state GPIO
 PACKAGECONFIG[host-gpio] = "-Dhost-gpios=enabled,-Dhost-gpios=disabled,gpioplus"
 
 # Check firmware updating before do BMC/Chassis/Host transition
 PACKAGECONFIG[check-fwupdate-before-do-transition] = "-Dcheck-fwupdate-before-do-transition=enabled,-Dcheck-fwupdate-before-do-transition=disabled"
+
+PACKAGECONFIG[install-utils] = "-Dinstall-utils=enabled, -Dinstall-utils=disabled"
 
 # The host-check function will check if the host is running
 # after a BMC reset.
@@ -269,6 +284,6 @@ SYSTEMD_LINK:${PN}-obmc-targets += "${@compose_list_zip(d, 'RESET_FMT_CTRL', 'OB
 SYSTEMD_LINK[vardeps] += "OBMC_CHASSIS_INSTANCES OBMC_HOST_INSTANCES"
 
 SRC_URI = "git://github.com/openbmc/phosphor-state-manager;branch=master;protocol=https"
-SRCREV = "3d5062804ce3eb4f198ffd2bed2f4f4876af8aee"
+SRCREV = "ebaa50923eb92ca8e4b60bc84c19f9609a5b7de0"
 
 S = "${WORKDIR}/git"

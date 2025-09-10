@@ -1,0 +1,10 @@
+# Clean symlinks created for non-mmc devices
+KERNEL=="sd*[0-9]", SYMLINK-="disk/by-partlabel/%E{ID_PART_ENTRY_NAME}"
+
+# Only process mmc devices
+KERNEL!="mmcblk[0-9]p[0-9]", GOTO="mmc_only_end"
+
+# Create by-partlabel link (GPT only)
+ENV{ID_PART_ENTRY_SCHEME}=="gpt", ENV{ID_PART_ENTRY_NAME}=="?*", SYMLINK+="disk/by-partlabel/$env{ID_PART_ENTRY_NAME}"
+
+LABEL="mmc_only_end"

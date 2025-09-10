@@ -22,6 +22,9 @@ MESON_SOURCEPATH = "${S}"
 # The target to build in do_compile. If unset the default targets are built.
 MESON_TARGET ?= ""
 
+# Since 0.60.0 you can specify custom tags to install
+MESON_INSTALL_TAGS ?= ""
+
 def noprefix(var, d):
     return d.getVar(var).replace(d.getVar('prefix') + '/', '', 1)
 
@@ -59,6 +62,14 @@ def rust_tool(d, target_var):
     cmd = [rustc, "--target", d.getVar(target_var)] + d.getVar("RUSTFLAGS").split()
     return "rust = %s" % repr(cmd)
 
+def bindgen_args(d):
+    args = '${HOST_CC_ARCH}${TOOLCHAIN_OPTIONS} --target=${TARGET_SYS}'
+    # For SDK packages TOOLCHAIN_OPTIONS don't contain full sysroot path
+    if bb.data.inherits_class("nativesdk", d):
+        args += ' --sysroot=${STAGING_DIR_HOST}${SDKPATHNATIVE}${prefix_nativesdk}'
+    items = d.expand(args).split()
+    return repr(items[0] if len(items) == 1 else items)
+
 addtask write_config before do_configure
 do_write_config[vardeps] += "CC CXX AR NM STRIP READELF OBJCOPY CFLAGS CXXFLAGS LDFLAGS RUSTC RUSTFLAGS EXEWRAPPER_ENABLED"
 do_write_config() {
@@ -90,6 +101,7 @@ cpp_link_args = ${@meson_array('LDFLAGS', d)}
 [properties]
 needs_exe_wrapper = true
 sys_root = '${STAGING_DIR_HOST}'
+bindgen_clang_arguments = ${@bindgen_args(d)}
 
 [host_machine]
 system = '${@meson_operating_system('HOST_OS', d)}'
@@ -182,7 +194,10 @@ meson_do_compile() {
 }
 
 meson_do_install() {
-    meson install --destdir ${D} --no-rebuild
+    if [ "x${MESON_INSTALL_TAGS}" != "x" ] ; then
+        meson_install_tags="--tags ${MESON_INSTALL_TAGS}"
+    fi
+    meson install --destdir ${D} --no-rebuild $meson_install_tags
 }
 
 EXPORT_FUNCTIONS do_configure do_compile do_install

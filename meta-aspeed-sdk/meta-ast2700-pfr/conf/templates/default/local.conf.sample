@@ -1,6 +1,4 @@
 MACHINE ??= "ast2700-dcscm"
-#MACHINE ??= "ast2700-dcscm-ast1700-evb"
-#MACHINE ??= "ast2700-dcscm-ast1700-demo"
 
 DISTRO ?= "openbmc-phosphor"
 PACKAGE_CLASSES ?= "package_ipk"
