@@ -1,4 +1,4 @@
-From f2b9062e086deec9b51704ba3c4d8a82e8e6f501 Mon Sep 17 00:00:00 2001
+From b6024a9a05e2e12b8bb792936ccbe88c9098a4ec Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
 Date: Thu, 13 Jun 2024 10:44:20 +0800
 Subject: [PATCH] bmcweb: support ast2750 dual nodes.
@@ -21,16 +21,16 @@ VM:
 Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
- include/kvm_websocket.hpp |  35 ++-
- include/vm1_websocket.hpp | 635 ++++++++++++++++++++++++++++++++++++++
- src/webserver_run.cpp     |   2 +
+ features/kvm/kvm_websocket.hpp |  35 +-
+ include/vm1_websocket.hpp      | 635 +++++++++++++++++++++++++++++++++
+ src/webserver_run.cpp          |   2 +
  3 files changed, 668 insertions(+), 4 deletions(-)
  create mode 100644 include/vm1_websocket.hpp
 
-diff --git a/include/kvm_websocket.hpp b/include/kvm_websocket.hpp
-index adf4c5e02d..15a7224f25 100644
---- a/include/kvm_websocket.hpp
-+++ b/include/kvm_websocket.hpp
+diff --git a/features/kvm/kvm_websocket.hpp b/features/kvm/kvm_websocket.hpp
+index adf4c5e0..15a7224f 100644
+--- a/features/kvm/kvm_websocket.hpp
++++ b/features/kvm/kvm_websocket.hpp
 @@ -29,11 +29,11 @@ static constexpr const uint maxSessions = 4;
  class KvmSession : public std::enable_shared_from_this<KvmSession>
  {
@@ -91,7 +91,7 @@ index adf4c5e02d..15a7224f25 100644
              sessions.erase(&conn);
 diff --git a/include/vm1_websocket.hpp b/include/vm1_websocket.hpp
 new file mode 100644
-index 0000000000..874f0e7300
+index 00000000..874f0e73
 --- /dev/null
 +++ b/include/vm1_websocket.hpp
 @@ -0,0 +1,635 @@
@@ -731,7 +731,7 @@ index 0000000000..874f0e7300
 +
 +} // namespace crow
 diff --git a/src/webserver_run.cpp b/src/webserver_run.cpp
-index 12c82fe4e2..8975d3c375 100644
+index feda8ad4..a676fd35 100644
 --- a/src/webserver_run.cpp
 +++ b/src/webserver_run.cpp
 @@ -22,6 +22,7 @@
@@ -742,7 +742,7 @@ index 12c82fe4e2..8975d3c375 100644
  #include "watchdog.hpp"
  #include "webassets.hpp"
  
-@@ -106,6 +107,7 @@ int run()
+@@ -109,6 +110,7 @@ int run()
      }
  
      crow::obmc_vm::requestRoutes(app);

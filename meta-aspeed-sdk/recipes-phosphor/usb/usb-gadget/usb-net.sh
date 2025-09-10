@@ -53,7 +53,7 @@ usb_net_create()
 }
 
 if test "$1" = stop; then
-    ifconfig usb0 down
+    ip link set usb0 down
     rm -f $GADGET_BASE/$NAME/configs/c.1/ncm.$NAME
     rmdir $GADGET_BASE/$NAME/configs/c.1/strings/0x409
     rmdir $GADGET_BASE/$NAME/configs/c.1
@@ -62,7 +62,8 @@ if test "$1" = stop; then
     rmdir $GADGET_BASE/$NAME
 else
     usb_net_create
-    ifconfig usb0 $IP
+    ip addr add $IP/24 dev usb0
+    ip link set usb0 up
 fi
 
 

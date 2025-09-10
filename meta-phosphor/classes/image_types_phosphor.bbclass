@@ -2,7 +2,7 @@
 
 inherit image_version
 
-FIT_IMAGE_INHERIT=""
+FIT_IMAGE_INHERIT = ""
 FIT_IMAGE_INHERIT:df-obmc-static-norootfs = "fit-image"
 inherit ${FIT_IMAGE_INHERIT}
 
@@ -92,7 +92,7 @@ VERSION_PURPOSE ?= "xyz.openbmc_project.Software.Version.VersionPurpose.BMC"
 
 UBOOT_SUFFIX ?= "bin"
 
-IMAGE_NAME_SUFFIX=""
+IMAGE_NAME_SUFFIX = ""
 
 python() {
     # Compute rwfs LEB count and LEB size.
@@ -623,7 +623,7 @@ do_generate_ext4_tar() {
     install -d boot-image
     install -m 644 ${DEPLOY_DIR_IMAGE}/${FLASH_KERNEL_IMAGE} boot-image/fitImage
     mk_empty_image_zeros boot-image.${FLASH_EXT4_BASETYPE} ${MMC_BOOT_PARTITION_SIZE}
-    mkfs.ext4 -F -i 4096 -d boot-image boot-image.${FLASH_EXT4_BASETYPE}
+    mkfs.ext4 -F ${EXTRA_IMAGECMD:ext4} -d boot-image boot-image.${FLASH_EXT4_BASETYPE}
     # Error codes 0-3 indicate successfull operation of fsck
     fsck.ext4 -pvfD boot-image.${FLASH_EXT4_BASETYPE} || [ $? -le 3 ]
     zstd -f -k -T0 -c -${ZSTD_COMPRESSION_LEVEL} boot-image.${FLASH_EXT4_BASETYPE} > boot-image.${FLASH_EXT4_BASETYPE}.zst

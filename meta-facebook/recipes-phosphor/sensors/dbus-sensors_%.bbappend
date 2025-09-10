@@ -1,7 +1,17 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-PACKAGECONFIG:remove = " \
+FACEBOOK_REMOVED_DBUS_SENSORS = " \
+    exitairtempsensor \
     external \
-    intrusionsensor \
     intelcpusensor \
+    intrusionsensor \
+    ipmbsensor \
+    mcutempsensor \
+"
+PACKAGECONFIG:remove = " \
+    ${FACEBOOK_REMOVED_DBUS_SENSORS} \
+"
+
+PACKAGECONFIG:append:mf-fb-liquid-cooled = " \
+    leakdetector \
 "

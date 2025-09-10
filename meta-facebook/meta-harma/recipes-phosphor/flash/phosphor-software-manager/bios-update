@@ -33,15 +33,26 @@ echo "Bios upgrade started at $(date)"
 # If the server does not power off,
 # it will then perform a forced shutdown
 echo "Power off host server"
-obmcutil poweroff
+busctl set-property xyz.openbmc_project.State.Host0 \
+    /xyz/openbmc_project/state/host0 \
+    xyz.openbmc_project.State.Host \
+    RequestedHostTransition s \
+    xyz.openbmc_project.State.Host.Transition.Off
 
-sleep 25
-if [ "$(power_status)" != "off" ];
-then
-    echo "Host server didn't power off"
-    echo "Bios upgrade failed"
-    exit 1
-fi
+for i in $(seq 1 60)
+do
+    sleep 1
+    if [ "$(power_status)" == "off" ]; then
+        break
+    fi
+
+    if [ "$i" -eq 60 ]; then
+        echo "Host server didn't power off"
+        echo "Bios upgrade failed"
+        exit 1
+    fi
+done
+
 echo "Host server powered off"
 
 #Flip GPIO to access SPI flash used by host.

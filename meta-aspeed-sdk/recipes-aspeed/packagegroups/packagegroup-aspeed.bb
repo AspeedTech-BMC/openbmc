@@ -2,7 +2,7 @@ SUMMARY = "AspeedTech BMC Package Group"
 
 PR = "r2"
 
-PACKAGE_ARCH="${TUNE_PKGARCH}"
+PACKAGE_ARCH = "${TUNE_PKGARCH}"
 
 inherit packagegroup
 
@@ -37,7 +37,7 @@ RDEPENDS:${PN}-crypto = " \
 SUMMARY:${PN}-ssif = "IPMI SMBus System Interface"
 RDEPENDS:${PN}-ssif = " \
     "
-RRECOMMENDS:${PN}-ssif= " \
+RRECOMMENDS:${PN}-ssif = " \
     kernel-module-ipmi-msghandler \
     kernel-module-ipmi-ssif \
     kernel-module-ipmi-si \
@@ -47,7 +47,7 @@ RRECOMMENDS:${PN}-ssif= " \
 SUMMARY:${PN}-mtdtest = "MTD test utility"
 RDEPENDS:${PN}-mtdtest = " \
     "
-RRECOMMENDS:${PN}-mtdtest= " \
+RRECOMMENDS:${PN}-mtdtest = " \
     kernel-module-mtd-speedtest \
     kernel-module-mtd-stresstest \
     "
@@ -56,7 +56,7 @@ RRECOMMENDS:${PN}-mtdtest= " \
 SUMMARY:${PN}-ktools = "kernel tools"
 RDEPENDS:${PN}-ktools = " \
     "
-RRECOMMENDS:${PN}-ktools= " \
+RRECOMMENDS:${PN}-ktools = " \
     perf \
     "
 

@@ -1,7 +1,7 @@
 require conf/distro/include/phosphor-defaults.inc
 
 # Match the distro codename from upstream poky.
-DISTRO_CODENAME ?= "scarthgap"
+DISTRO_CODENAME ?= "styhead"
 
 DISTROOVERRIDES .= ":openbmc-phosphor"
 
@@ -29,17 +29,21 @@ https://.*/.*    http://downloads.yoctoproject.org/mirror/sources/ \n"
 CONNECTIVITY_CHECK_URIS ?= "https://yoctoproject.org/connectivity.html"
 
 SANITY_TESTED_DISTROS ?= " \
-            poky-4.2 \n \
-            poky-4.3 \n \
-            ubuntu-18.04 \n \
+            poky-5.0 \n \
+            poky-5.1 \n \
             ubuntu-20.04 \n \
             ubuntu-22.04 \n \
-            ubuntu-23.04 \n \
+            ubuntu-24.04 \n \
+            ubuntu-24.10 \n \
             fedora-38 \n \
+            fedora-39 \n \
+            fedora-40 \n \
             centosstream-8 \n \
             debian-11 \n \
             debian-12 \n \
             opensuseleap-15.4 \n \
+            opensuseleap-15.5 \n \
+            opensuseleap-15.6 \n \
             almalinux-8.8 \n \
             almalinux-9.2 \n \
             rocky-9 \n \
@@ -63,10 +67,11 @@ require conf/distro/include/no-static-libs.inc
 require conf/distro/include/yocto-uninative.inc
 
 DISTRO_NAME ?= "Phosphor OpenBMC (Phosphor OpenBMC Project Reference Distro)"
-TARGET_VENDOR="-openbmc"
+TARGET_VENDOR = "-openbmc"
 
 
 VIRTUAL-RUNTIME_keymaps = ""
+VIRTUAL-RUNTIME_dbus = "dbus-broker"
 
 # Phosphor OpenBMC uses systemd and udev
 INIT_MANAGER = "systemd"
@@ -103,7 +108,6 @@ DISTRO_FEATURES_DEFAULT = " \
         ipv6 \
         pam \
         security \
-        slp \
         seccomp \
         "
 
@@ -120,7 +124,7 @@ IMAGE_CLASSES:append = " image_types_phosphor phosphor-rootfs-postcommands"
 IMAGE_CLASSES:append:npcm7xx = " image_types_phosphor_nuvoton"
 IMAGE_CLASSES:append:npcm8xx = " image_types_phosphor_nuvoton_npcm8xx"
 
-IMAGE_INSTALL:append = " dbus-broker libnss-systemd"
+IMAGE_INSTALL:append = " libnss-systemd"
 
 # Skip the udev database by default.  It adds around 2MB
 # compressed to the root filesystem, and probably doesn't

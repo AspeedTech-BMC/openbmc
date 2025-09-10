@@ -1,4 +1,8 @@
 EXTRA_OEMESON:append = " \
     -Dinsecure-enable-redfish-query=enabled \
-    -Dredfish-host-logger=disabled \
-    "
+"
+
+PACKAGECONFIG:append = " \
+    redfish-dbus-log \
+    redfish-host-logger \
+"

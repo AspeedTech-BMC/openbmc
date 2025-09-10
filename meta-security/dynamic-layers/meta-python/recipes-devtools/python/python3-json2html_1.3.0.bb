@@ -1,4 +1,4 @@
-DESCRIPTION="Python wrapper to convert JSON into a human readable HTML Table representation."
+DESCRIPTION = "Python wrapper to convert JSON into a human readable HTML Table representation."
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=8065590663ea0c10aa131841ea806767"
 

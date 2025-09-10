@@ -62,6 +62,10 @@ OECMAKE_GENERATOR = "Unix Makefiles"
 
 BBCLASSEXTEND = "native nativesdk"
 
+# Clang results in a reproducibility issue
+# https://github.com/llvm/llvm-project/issues/82541
+TOOLCHAIN = "gcc"
+
 PACKAGECONFIG ??= "archive"
 
 PACKAGECONFIG[plugins] = "-DENABLE_PLUGINS=ON,-DENABLE_PLUGINS=OFF"
@@ -70,8 +74,8 @@ PACKAGECONFIG[testsuite] = "-DENABLE_TESTSUITE=ON,-DENABLE_TESTSUITE=OFF"
 # has replaced openpgp support and is written in rust: https://fedoraproject.org/wiki/Changes/RpmSequoia
 PACKAGECONFIG[sequoia] = "-DWITH_SEQUOIA=ON,-DWITH_SEQUOIA=OFF,rpm-sequoia"
 
-PACKAGECONFIG[cap] = "-DWITH_CAP=ON,-DWITH_CAP=OFF"
-PACKAGECONFIG[acl] = "-DWITH_ACL=ON,-DWITH_ACL=OFF"
+PACKAGECONFIG[cap] = "-DWITH_CAP=ON,-DWITH_CAP=OFF,libcap"
+PACKAGECONFIG[acl] = "-DWITH_ACL=ON,-DWITH_ACL=OFF,acl"
 PACKAGECONFIG[archive] = "-DWITH_ARCHIVE=ON,-DWITH_ARCHIVE=OFF,libarchive"
 PACKAGECONFIG[selinux] = "-DWITH_SELINUX=ON,-DWITH_SELINUX=OFF,libselinux"
 PACKAGECONFIG[dbus] = "-DWITH_DBUS=ON,-DWITH_DBUS=OFF"
@@ -100,6 +104,7 @@ WRAPPER_TOOLS = " \
 do_install:append:class-native() {
         for tool in ${WRAPPER_TOOLS}; do
                 test -x ${D}$tool && create_wrapper ${D}$tool \
+                        SEQUOIA_CRYPTO_POLICY=${STAGING_DATADIR_NATIVE}/crypto-policies/back-ends/rpm-sequoia.config \
                         RPM_CONFIGDIR=${STAGING_LIBDIR_NATIVE}/rpm \
                         RPM_ETCCONFIGDIR=${STAGING_DIR_NATIVE} \
                         MAGIC=${STAGING_DIR_NATIVE}${datadir_native}/misc/magic.mgc \

@@ -1,13 +1,12 @@
 SUMMARY = "XSL stylesheets for processing DocBook XML to various output formats"
 HOMEPAGE = "http://docbook.sourceforge.net"
-LICENSE = "XSL"
+LICENSE = "DocBook-XML"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6beadd98f9c54ab0c387e14211ee4d0e"
 
 SRC_URI = "${SOURCEFORGE_MIRROR}/docbook/docbook-xsl-${PV}.tar.bz2 \
            file://docbook-xsl-stylesheets-no-bashism-in-docbook-xsl-up.patch \
 "
 
-SRC_URI[md5sum] = "b48cbf929a2ad85e6672f710777ca7bc"
 SRC_URI[sha256sum] = "725f452e12b296956e8bfb876ccece71eeecdd14b94f667f3ed9091761a4a968"
 
 UPSTREAM_CHECK_URI = "http://sourceforge.net/projects/docbook/files/docbook-xsl/"

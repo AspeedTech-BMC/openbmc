@@ -3,7 +3,7 @@
 # Configure usage of the Zephyr SDK
 INHIBIT_DEFAULT_DEPS = "1"
 DEPENDS += "zephyr-sdk-native"
-export ZEPHYR_SDK_INSTALL_DIR="${STAGING_DIR_NATIVE}${prefix}/zephyr-sdk"
+export ZEPHYR_SDK_INSTALL_DIR = "${STAGING_DIR_NATIVE}${prefix}/zephyr-sdk"
 OE_TERMINAL_EXPORTS += "ZEPHYR_SDK_INSTALL_DIR"
 
 # The Zephyr SDK does not require a CMake toolchain file

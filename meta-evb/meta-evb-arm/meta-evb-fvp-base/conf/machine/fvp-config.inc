@@ -6,12 +6,16 @@ FVP_EXE ?= "FVP_Base_RevC-2xAEMvA"
 # Network
 FVP_CONFIG[bp.hostbridge.interfaceName]="enp97s0"
 FVP_CONFIG[bp.hostbridge.userNetworking]="1"
+FVP_CONFIG[bp.virtio_net.hostbridge.interfaceName] = "tap1"
 
 # Ethernet controller
 FVP_CONFIG[bp.smsc_91c111.enabled] = "1"
+FVP_CONFIG[bp.virtio_net.enabled] = "1"
 
-# Disable dc4 device for uart1
+# Disable dc4 device for uart 1-3
 FVP_CONFIG[bp.pl011_uart1.enable_dc4] = "0"
+FVP_CONFIG[bp.pl011_uart2.enable_dc4] = "0"
+FVP_CONFIG[bp.pl011_uart3.enable_dc4] = "0"
 
 # Set the baseline to ARMv8.4, as the default is 8.0.
 FVP_CONFIG[cluster0.has_arm_v8-4] = "1"

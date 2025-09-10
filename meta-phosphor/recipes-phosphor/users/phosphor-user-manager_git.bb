@@ -7,9 +7,8 @@ DEPENDS += "sdbusplus"
 DEPENDS += "phosphor-logging"
 DEPENDS += "phosphor-dbus-interfaces"
 DEPENDS += "boost"
-DEPENDS += "nss-pam-ldapd"
 DEPENDS += "systemd"
-SRCREV = "0e427be810a3233f23186cce599e8bf680ae3f62"
+SRCREV = "f21966594e9735887b3091616df643c24dd14979"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
@@ -24,8 +23,12 @@ inherit useradd
 
 EXTRA_OEMESON = "-Dtests=disabled"
 
-PACKAGECONFIG ?= "root-user-mgmt"
+PACKAGECONFIG ?= " \
+    root-user-mgmt\
+    ${@bb.utils.filter('DISTRO_FEATURES', 'ldap', d)} \
+    "
 PACKAGECONFIG[root-user-mgmt] = "-Droot_user_mgmt=enabled, -Droot_user_mgmt=disabled"
+PACKAGECONFIG[ldap] = "-Dldap=enabled, -Dldap=disabled, nss-pam-ldapd"
 
 
 do_install:append() {

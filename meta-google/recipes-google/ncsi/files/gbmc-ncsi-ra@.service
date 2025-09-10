@@ -1,0 +1,15 @@
+[Unit]
+Description=RA Gateway Updater
+Wants=gbmc-ncsi-networkd-wait.target
+After=gbmc-ncsi-networkd-wait.target
+After=ncsid@%i.service
+StartLimitIntervalSec=1min
+StartLimitBurst=5
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStart=/usr/libexec/gbmc-ncsi-ra.sh %I
+
+[Install]
+WantedBy=multi-user.target

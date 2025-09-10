@@ -10,7 +10,7 @@ inherit autotools-brokensep gettext pkgconfig systemd
 
 EXTRA_OECONF = " --enable-cswap --enable-fsck --enable-argv0switch"
 
-PACKAGECONFIG ?="intl luks gcrypt nls"
+PACKAGECONFIG ?= "intl luks gcrypt nls"
 PACKAGECONFIG:append = " ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)}"
 
 PACKAGECONFIG[systemd] = "--with-systemd, --without-systemd, systemd"

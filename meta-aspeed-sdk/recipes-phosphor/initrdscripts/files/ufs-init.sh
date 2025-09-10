@@ -20,7 +20,8 @@ kgetopt ()
 
 fslist="proc sys dev run"
 rodir=/mnt/rofs
-mmcdev="/dev/sda"
+diskPartition=$(basename "$(readlink -f /dev/disk/by-partlabel/"$(kgetopt root=PARTLABEL)")")
+mmcdev=$(basename "$(dirname "$(realpath "/sys/class/block/${diskPartition}")")")
 rwfsdev="/dev/disk/by-partlabel/rwfs"
 
 cd /

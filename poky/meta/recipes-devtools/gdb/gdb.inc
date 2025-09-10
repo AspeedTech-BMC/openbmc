@@ -12,5 +12,7 @@ SRC_URI = "${GNU_MIRROR}/gdb/gdb-${PV}.tar.xz \
            file://0005-Change-order-of-CFLAGS.patch \
            file://0006-Fix-invalid-sigprocmask-call.patch \
            file://0007-Define-alignof-using-_Alignof-when-using-C11-or-newe.patch \
+           file://0008-Add-fix-for-packages-that-are-not-compatible-with-C2.patch \
+           file://0009-Readline-8.3-alpha-release.patch \
            "
-SRC_URI[sha256sum] = "c2cc5ccca029b7a7c3879ce8a96528fdfd056b4d884f2b0511e8f7bc723355c6"
+SRC_URI[sha256sum] = "bcfcd095528a987917acf9fff3f1672181694926cc18d609c99d0042c00224c5"

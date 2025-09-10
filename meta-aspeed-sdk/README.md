@@ -50,13 +50,12 @@ ast2600-emmc-tee-515
 ast2700-default
 ast2700-default-ncsi
 ast2700-default-raw
-ast2700-default-cptra-11
+ast2700-default-irot
 ast2700-emmc
 ast2700-ufs
 ast2700-abr
 ast2700-vff
 ast2700-dcscm
-ast2700-dcscm-ast1700-evb
 ```
 
 - Linux kernel version is `6.6` by default. machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
