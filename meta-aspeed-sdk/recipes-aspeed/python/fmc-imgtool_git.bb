@@ -9,7 +9,7 @@ BRANCH = "master"
 SRC_URI = "git://github.com/AspeedTech-BMC/fmc_imgtool.git;protocol=https;branch=${BRANCH}"
 
 # Tag for v00.01.02+
-SRCREV = "12e4a1739983bf0eb9ef7afc6a8923ae0a826f09"
+SRCREV = "66445bbc3538c7c8940870be9698311081aa93fc"
 
 PV = "1.0+git"
 
