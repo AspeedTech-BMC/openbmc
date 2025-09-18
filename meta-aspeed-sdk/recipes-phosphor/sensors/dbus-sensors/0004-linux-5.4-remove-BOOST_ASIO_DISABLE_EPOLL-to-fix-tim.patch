@@ -1,0 +1,28 @@
+From c3d90eace2e0a318dc6c990eb3a679aa16c623a7 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Thu, 18 Sep 2025 15:22:23 +0800
+Subject: [PATCH] linux-5.4 remove BOOST_ASIO_DISABLE_EPOLL to fix timers
+
+Remove the `-DBOOST_ASIO_DISABLE_EPOLL` flag so boost:asio can use the epoll.
+
+Upstream-Status: Inappropriate [ASPEED specific]
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ meson.build | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index d1f1207..109cbf4 100644
+--- a/meson.build
++++ b/meson.build
+@@ -27,7 +27,6 @@ add_project_arguments(
+     '-DBOOST_ASIO_DISABLE_THREADS',
+     '-DBOOST_ALLOW_DEPRECATED_HEADERS',
+     '-DBOOST_ASIO_HAS_IO_URING',
+-    '-DBOOST_ASIO_DISABLE_EPOLL',
+     language: 'cpp',
+ )
+ 
+-- 
+2.43.0
+
