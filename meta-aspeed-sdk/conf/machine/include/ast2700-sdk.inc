@@ -58,19 +58,19 @@ UBOOT_FIT_SSP_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-ssp.bin"
 UBOOT_FIT_TSP_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-tsp.bin"
 UBOOT_FIT_IBEXFW_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-ibexfw.bin"
 
-PREFERRED_PROVIDER_virtual/bootmcu ?= "bootmcu-spl"
+PREFERRED_PROVIDER_virtual/bootmcu ??= "bootmcu-spl"
 
 # zephyr pre-built toolchain
 ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"
 
 # zephyr build
-PREFERRED_PROVIDER_virtual/ssp ?= "zephyr-aspeed-ssp"
+PREFERRED_PROVIDER_virtual/ssp ??= "zephyr-aspeed-ssp"
 ZEPHYR_BOARD_SSP ?= "ast2700_evb/ast2700/ssp_tsp"
 
-PREFERRED_PROVIDER_virtual/tsp ?= "zephyr-aspeed-tsp"
+PREFERRED_PROVIDER_virtual/tsp ??= "zephyr-aspeed-tsp"
 ZEPHYR_BOARD_TSP ?= "ast2700_evb/ast2700/tsp"
 
-PREFERRED_PROVIDER_virtual/ibexfw ?= "zephyr-aspeed-ibexfw"
+PREFERRED_PROVIDER_virtual/ibexfw ??= "zephyr-aspeed-ibexfw"
 ZEPHYR_BOARD_IBEXFW ?= "ast2700_evb/ast2700/bootmcu"
 
 QB_SYSTEM_NAME = "qemu-system-aarch64"
