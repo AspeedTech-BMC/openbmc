@@ -28,10 +28,10 @@ create_cptra_manifest_image() {
     fi
 
     # Copy SSP image into cptra-imgtool prebuilt folder
-    install -m 0644 ${FREERTOS_SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/.
+    install -m 0644 ${SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/.
 
     # Update cptra-imgtool manifest.toml
-    sed -i "s/ssp\.bin/$(basename ${FREERTOS_SSP_IMAGE})/g" config/${CPTRA_IMGTOOL_PRJ}-manifest.toml
+    sed -i 's/file = "ssp\.bin"/file = "'$(basename ${SSP_IMAGE})'"/g' config/${CPTRA_IMGTOOL_PRJ}-manifest.toml
 
     # Run cptra-imgtool to generate manifest image.
     ./cptra-imgtool create-auth-flash --prj ${CPTRA_IMGTOOL_PRJ} --flash ${CPTRA_IMGTOOL_IMAGE}
