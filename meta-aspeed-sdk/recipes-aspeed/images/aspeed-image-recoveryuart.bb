@@ -17,7 +17,7 @@ inherit deploy
 # Image composition
 # AST2600 SOURCE_IMAGE = u-boot-spl.bin
 # AST2700 A1 SOURCE_IMAGE = ast2700-caliptra-fw.bin
-SOURCE_IMAGE:aspeed-g7 ?= "ast2700-caliptra-fw.bin"
+SOURCE_IMAGE:aspeed-g7 ?= "${CALIPTRA_FW_BINARY}"
 SOURCE_IMAGE ?= "u-boot-spl.bin"
 
 RECOVERY_SOURCE_IMAGE ?= "recovery_source.bin"
