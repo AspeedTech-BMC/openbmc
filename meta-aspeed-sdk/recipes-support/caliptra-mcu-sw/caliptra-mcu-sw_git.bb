@@ -23,9 +23,6 @@ do_compile[network] = "1"
 do_compile() {
     cd ${S}
 
-    # Update MCU_RT_IDENTIFIER
-    sed -i 's/^const MCU_RT_IDENTIFIER: u32 = 0x00000002;/const MCU_RT_IDENTIFIER: u32 = 0x00000003;/' builder/src/flash_image.rs
-
     # Build xtask
     cargo build -p xtask --release
 }

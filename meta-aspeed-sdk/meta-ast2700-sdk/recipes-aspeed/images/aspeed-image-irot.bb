@@ -15,7 +15,8 @@ DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native"
 
 CPTRA_IMGTOOL_PRJ ?= "ast2700a1-irot"
 PREBUILD_IMAGE_DIR = "prebuilt/${CPTRA_IMGTOOL_PRJ}"
-CPTRA_IMGTOOL_IMAGE = "man-irot.bin"
+CPTRA_IROT_IMAGE ?= "man-irot.bin"
+CPTRA_NON_IROT_IMAGE ?= "ast2700-soc-manifest.bin"
 
 # Using cptra-imgtool to create manifest image.
 create_cptra_manifest_image() {
@@ -28,17 +29,22 @@ create_cptra_manifest_image() {
     fi
 
     # Copy SSP image into cptra-imgtool prebuilt folder
-    install -m 0644 ${FREERTOS_SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/.
+    install -m 0644 ${SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/.
 
     # Update cptra-imgtool manifest.toml
-    sed -i "s/ssp\.bin/$(basename ${FREERTOS_SSP_IMAGE})/g" config/${CPTRA_IMGTOOL_PRJ}-manifest.toml
+    sed -i 's/file = "ssp\.bin"/file = "'$(basename ${SSP_IMAGE})'"/g' config/${CPTRA_IMGTOOL_PRJ}-manifest.toml
 
-    # Run cptra-imgtool to generate manifest image.
-    ./cptra-imgtool create-auth-flash --prj ${CPTRA_IMGTOOL_PRJ} --flash ${CPTRA_IMGTOOL_IMAGE}
+    # Run cptra-imgtool to generate manifest flash image.
+    ./cptra-imgtool create-auth-flash --prj ${CPTRA_IMGTOOL_PRJ} --flash ${CPTRA_IROT_IMAGE}
+
+    # Run cptra-imgtool to generate manifest image for recovery.
+    bbnote "Running cptra-imgtool for recovery"
+    ./cptra-imgtool create-auth-man --prj ast2700a1-default --man ${CPTRA_NON_IROT_IMAGE}
 
     # Copy manifest image
     install -d ${DEPLOYDIR}
-    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_IMGTOOL_IMAGE} ${B}/.
+    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_IROT_IMAGE} ${B}/.
+    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_NON_IROT_IMAGE} ${B}/.
 }
 
 do_compile() {
@@ -80,7 +86,7 @@ python do_deploy() {
 
     # MANIFEST
     append_image(os.path.join(d.getVar('B', True),
-                 '%s' % d.getVar('CPTRA_IMGTOOL_IMAGE',True)),
+                 '%s' % d.getVar('CPTRA_IROT_IMAGE',True)),
                   int(d.getVar('IROT_OFFSET_MANIFEST', True)),
                   int(d.getVar('IROT_OFFSET_ATF', True)),
                   nor_image)
