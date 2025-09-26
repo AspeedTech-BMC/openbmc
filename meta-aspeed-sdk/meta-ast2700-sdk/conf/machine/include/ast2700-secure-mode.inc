@@ -4,10 +4,10 @@ require ast2700-secure-cot.inc
 # Secure Boot Settings for OTP and FMC
 # The following variables can be overridden in local.conf
 FMC_SIGN_ENABLE ?= "1"
-OTPTOOL_KEY_DIR ?= "${STAGING_LIBDIR_NATIVE}/${PYTHON_DIR}/fmc-imgtool/keys"
+OTPTOOL_KEY_DIR ?= "${DEPLOY_DIR_IMAGE}/keys"
 OTPTOOL_USER_DIR ?= ""
 OTPTOOL_SOC ?= "2700"
-FMC_KEY_DIR ?= "${STAGING_LIBDIR_NATIVE}/${PYTHON_DIR}/fmc-imgtool/keys"
+FMC_KEY_DIR ?= "${DEPLOY_DIR_IMAGE}/keys"
 
 #
 # By default, algorithm is "ECDSA384_LMS"

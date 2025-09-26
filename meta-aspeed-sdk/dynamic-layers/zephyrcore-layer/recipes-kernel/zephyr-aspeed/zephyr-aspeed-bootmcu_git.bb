@@ -11,8 +11,8 @@ PV = "1.0+git"
 SRC_URI_ASPEED_ZEPHYR_PROJECT = "gitsm://github.com/AspeedTech-BMC/aspeed-zephyr-project;protocol=https"
 ASPEED_ZEPHYR_PROJECT_BRANCH = "aspeed-master"
 
-# Tag for v00.03.01+
-SRCREV_bootmcu = "a385437849a6071761e324aaf271ecb4fc6304df"
+# Tag for v03.02
+SRCREV_bootmcu = "b93d51f34bec71bcda15e25f4e1ce8ee6f31c3a5"
 
 SRC_URI += "\
     ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
@@ -27,7 +27,7 @@ ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
 
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
 
-DEPENDS += "fmc-imgtool-native"
+DEPENDS += "fmc-imgtool-native fmc-images"
 DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native', '', d)}"
 
 inherit deploy python3native otptool
@@ -67,15 +67,16 @@ do_create_fmc_image() {
         sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
     fi
 
-    cd ${STAGING_LIBDIR_NATIVE}/${PYTHON_DIR}/fmc-imgtool
-    python3 main.py \
+    fmc-imgtool \
         --verbose \
         --version 2 \
         --input ${MCU_RUNTIME_IMAGE} \
         --output ${B}/zephyr/${BOOTMCU_FW_BINARY} \
+        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/fmc-images/ \
         ${sign_args}
-    cd -
 }
+
+do_create_fmc_image[depends] += "fmc-images:do_deploy"
 
 addtask create_fmc_image before do_deploy after do_compile
 

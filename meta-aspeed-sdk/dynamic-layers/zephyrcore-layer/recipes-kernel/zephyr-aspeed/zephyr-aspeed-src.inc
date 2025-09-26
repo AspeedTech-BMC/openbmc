@@ -1,8 +1,8 @@
 # Refer to meta-zephyr/meta-zephyr-core/recipes-kernel/zephyr-kernel/zephyr-kernel-src-x.x.x.inc
 # creating this file
 
-# Tag for v00.03.02+
-SRCREV_zephyr = "c0458c7a801b430f542590171bda96f5c22cf034"
+# Tag for v00.03.03
+SRCREV_zephyr = "92990185496ca59dd41e521374d1d9d40faed45d"
 ZEPHYR_BRANCH = "aspeed-main-v3.7.0"
 
 SRCREV_mbedtls = "a78176c6ff0733ba08018cba4447bd3f20de7978"

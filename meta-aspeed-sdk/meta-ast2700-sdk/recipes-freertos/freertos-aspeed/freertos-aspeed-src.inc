@@ -8,7 +8,8 @@ DEPENDS = "gcc-arm-none-eabi-native"
 BRANCH = "main"
 SRC_URI = "gitsm://github.com/AspeedTech-BMC/freertos-project;branch=${BRANCH};protocol=https"
 
-SRCREV = "1d2e94282b29a510581d5d5d0a539bb7df172347"
+# Tag for v00.01.03
+SRCREV = "a674cde7806053581735367b8153fcdfcbafeab5"
 PV = "1.0+git"
 
 S = "${WORKDIR}/git"
