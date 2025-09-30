@@ -23,11 +23,13 @@ Reference:
 . setup <machine> [build_dir]
 Target machine must be specified. Use one of:
 ast2500-default
+ast2500-default-612
 ast2500-default-515
 ast2500-default-54
 ast2600-dcscm
 ast2600-dcscm-amd
 ast2600-default
+ast2600-default-612
 ast2600-default-515
 ast2600-default-54
 ast2600-default-ecc
@@ -48,6 +50,7 @@ ast2600-emmc-secure-tee-515
 ast2600-emmc-tee
 ast2600-emmc-tee-515
 ast2700-default
+ast2700-default-612
 ast2700-default-ncsi
 ast2700-default-raw
 ast2700-default-irot
@@ -58,7 +61,7 @@ ast2700-vff
 ast2700-dcscm
 ```
 
-- Linux kernel version is `6.6` by default. machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
+- Linux kernel version is `6.6` by default, machine with `612` postfix for kernel v6.12, machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
 - AST2600
   - Default revision for A3.
   - Optee is disabled by default. machine with `tee` postfix for Optee enable.
