@@ -1,0 +1,32 @@
+From a9adb974e552767e650d699b267d32da918ed3fa Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Tue, 14 Oct 2025 11:24:38 +0800
+Subject: [PATCH] make spdmd subdir optional in meson
+
+Wrap the inclusion of the 'spdmd' subdirectory in a conditional block
+based on the 'spdmd' option in Meson. This allows building the project
+without the 'spdmd' component when the option is disabled, improving
+build flexibility.
+
+Upstream-Status: Pending
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ meson.build | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 28d26ef..a7f279f 100644
+--- a/meson.build
++++ b/meson.build
+@@ -90,5 +90,7 @@ subdir('libspdmcpp')
+ subdir('tools/libmctppacketcorrupt')
+ 
+ subdir('fuzzer')
+-subdir('spdmd')
++if get_option('spdmd').enabled()
++    subdir('spdmd')
++endif
+ subdir('spdmutil')
+-- 
+2.43.0
+

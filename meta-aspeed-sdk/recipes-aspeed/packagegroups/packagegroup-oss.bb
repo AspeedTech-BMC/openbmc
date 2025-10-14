@@ -54,6 +54,7 @@ RDEPENDS:${PN}-apps = " \
     usbutils \
     usbutils-python \
     dbus-tools \
+    spdmtool \
     "
 
 # The size of opkg package manager is 6XX KB.
@@ -92,6 +93,7 @@ RDEPENDS:${PN}-apps:remove:aspeed-g5 = " \
     picocom \
     usbutils \
     usbutils-python \
+    spdmtool \
     "
 
 SUMMARY:${PN}-libs = "Open Source Library"
