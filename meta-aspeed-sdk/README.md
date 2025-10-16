@@ -29,7 +29,7 @@ ast2500-default-54
 ast2600-dcscm
 ast2600-dcscm-amd
 ast2600-default
-ast2600-default-612
+ast2600-default-66
 ast2600-default-515
 ast2600-default-54
 ast2600-default-ecc
