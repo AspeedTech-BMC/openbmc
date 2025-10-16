@@ -23,7 +23,7 @@ Reference:
 . setup <machine> [build_dir]
 Target machine must be specified. Use one of:
 ast2500-default
-ast2500-default-612
+ast2500-default-66
 ast2500-default-515
 ast2500-default-54
 ast2600-dcscm
