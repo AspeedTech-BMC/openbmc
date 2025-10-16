@@ -36,11 +36,11 @@ ast2600-default-ecc
 ast2600-default-ncsi
 ast2600-default-raw
 ast2600-default-tee
-ast2600-default-tee-515
+ast2600-default-tee-66
 ast2600-emmc
-ast2600-emmc-515
+ast2600-emmc-66
 ast2600-emmc-tee
-ast2600-emmc-tee-515
+ast2600-emmc-tee-66
 ast2700-default
 ast2700-default-612
 ast2700-default-ncsi
@@ -53,7 +53,7 @@ ast2700-vff
 ast2700-dcscm
 ```
 
-- Linux kernel version is `6.6` by default, machine with `612` postfix for kernel v6.12, machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
+- Linux kernel version is `6.12` by default, machine with `66` postfix for kernel v6.6, machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
 - AST2600
   - Default revision for A3.
   - Optee is disabled by default. machine with `tee` postfix for Optee enable.
