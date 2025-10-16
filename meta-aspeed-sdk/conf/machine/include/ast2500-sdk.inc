@@ -17,3 +17,5 @@ QB_SYSTEM_NAME = "qemu-system-arm"
 QB_MACHINE = "-machine ast2500-evb"
 QB_MEM = "-m 1G"
 
+# temporary solution
+PREFERRED_VERSION_linux-aspeed = "6.12+%"
