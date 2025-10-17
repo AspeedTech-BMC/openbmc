@@ -25,8 +25,6 @@ MACHINEOVERRIDES =. "aspeed:"
 
 PREFERRED_VERSION_iperf3 ?= "3.1.4"
 
-PREFERRED_VERSION_linux-aspeed ?= "6.6+%"
-
 # It should be removed if kernel 5.4 is no longer supported.
 require oldest-kernel-54.inc
 
