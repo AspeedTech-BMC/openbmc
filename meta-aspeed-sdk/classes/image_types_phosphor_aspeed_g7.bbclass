@@ -1,7 +1,8 @@
-# According to the design of AST2700, bootmcu(riscv-32) execute SPL and CPU(coretax-a35) execute u-boot.
+# According to the design of AST2700, bootmcu(riscv-32) execute virtual/bootmcu and CPU(coretax-a35) execute u-boot.
 # We added the do_merge_uboot task to merge the bootmcu and u-boot image before do_generate_static
 # to ensure compatibility with image_types_phosphor.bbclass.
-UBOOT_BINARY := "u-boot.${UBOOT_SUFFIX}"
+UBOOT_BINARY := "${CPTRA_FLASH_IMAGE}"
+UBOOT_BINARY:ast2700-a1-spl := "u-boot.${UBOOT_SUFFIX}"
 UBOOT_BINARY:ast-irot := "${IROT_IMAGE}"
 UBOOT_SUFFIX:append = ".merged"
 
@@ -51,10 +52,14 @@ do_merge_uboot() {
     dd bs=1k seek=${uboot_offset} if=${DEPLOY_DIR_IMAGE}/${UBOOT_BINARY} of=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}
 }
 
+ASPEED_IMAGE_DEPENDS = "aspeed-image-manifest:do_deploy"
+ASPEED_IMAGE_DEPENDS:ast-irot = "aspeed-image-irot:do_deploy"
+ASPEED_IMAGE_DEPENDS:ast2700-a1-spl = ""
+
 do_merge_uboot[depends] += " \
     u-boot:do_deploy \
     virtual/bootmcu:do_deploy \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'aspeed-image-irot:do_deploy', '', d)} \
+    ${ASPEED_IMAGE_DEPENDS} \
     "
 
 addtask do_merge_uboot before do_generate_static after do_generate_rwfs_static
