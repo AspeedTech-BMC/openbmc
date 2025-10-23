@@ -58,7 +58,12 @@ UBOOT_FIT_SSP_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-ssp.bin"
 UBOOT_FIT_TSP_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-tsp.bin"
 UBOOT_FIT_IBEXFW_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-ibexfw.bin"
 
-PREFERRED_PROVIDER_virtual/bootmcu ??= "bootmcu-spl"
+# BootMCU Build Settings
+PREFERRED_PROVIDER_virtual/bootmcu ??= "zephyr-aspeed-bootmcu"
+
+# SSP adn TSP Settings
+SSP_IMAGE ??= "${UBOOT_FIT_SSP_IMAGE}"
+TSP_IMAGE ??= "${UBOOT_FIT_TSP_IMAGE}"
 
 # zephyr pre-built toolchain
 ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"
