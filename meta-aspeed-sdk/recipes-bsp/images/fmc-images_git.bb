@@ -24,7 +24,7 @@ addtask deploy before do_build after do_compile
 python do_cleanall:append() {
     import os, shutil, glob
 
-    deploydir = d.getVar('DEPLOYDIR', True)
+    deploydir = d.getVar('DEPLOY_DIR_IMAGE', True)
     if not deploydir:
         return
 
