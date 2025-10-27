@@ -7,6 +7,7 @@ PR = "r0"
 
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"
+do_compile[noexec] = "1"
 do_install[noexec] = "1"
 
 inherit deploy
@@ -43,7 +44,7 @@ create_cptra_manifest_image() {
     fi
 
     # Overwrite U-Boot raw image into cptra-imgtool prebuilt folder
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/u-boot.bin ${PREBUILD_IMAGE_DIR}/u-boot.bin 
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/u-boot.bin ${PREBUILD_IMAGE_DIR}/u-boot.bin
 
     # Overwrite SSP image into cptra-imgtool prebuilt folder
     if [ -n "${SSP_IMAGE}" ]; then
@@ -73,19 +74,11 @@ create_cptra_manifest_image() {
     install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_NON_FLASH_IMAGE} ${B}/.
 }
 
-do_compile() {
+do_deploy() {
     create_cptra_manifest_image
-}
 
-do_deploy_image() {
     install -d ${DEPLOYDIR}
     install -m 644 ${B}/* ${DEPLOYDIR}/.
-}
-
-python do_deploy() {
-    import subprocess
-
-    bb.build.exec_func("do_deploy_image", d)
 }
 
 do_deploy[depends] += " \
