@@ -11,7 +11,7 @@ do_install[noexec] = "1"
 
 inherit deploy
 
-DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native"
+DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native fmc-images"
 
 CPTRA_IMGTOOL_PRJ ?= "ast2700a1-irot"
 PREBUILD_IMAGE_DIR = "prebuilt/${CPTRA_IMGTOOL_PRJ}"
@@ -28,11 +28,13 @@ create_cptra_manifest_image() {
         install -d out
     fi
 
-    # Copy SSP image into cptra-imgtool prebuilt folder
-    install -m 0644 ${SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/.
+    # Copy fmc-images prebuilt image into cptra-imgtool prebuilt folder
+    install -m 644 ${DEPLOY_DIR_IMAGE}/fmc-images/* ${PREBUILD_IMAGE_DIR}/.
 
-    # Update cptra-imgtool manifest.toml
-    sed -i 's/file = "ssp\.bin"/file = "'$(basename ${SSP_IMAGE})'"/g' config/${CPTRA_IMGTOOL_PRJ}-manifest.toml
+    # Overwrite SSP image into cptra-imgtool prebuilt folder
+    if [ -n "${SSP_IMAGE}" ]; then
+        install -m 0644 ${SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/ssp.bin
+    fi
 
     # Run cptra-imgtool to generate manifest flash image.
     ./cptra-imgtool create-auth-flash --prj ${CPTRA_IMGTOOL_PRJ} --flash ${CPTRA_IROT_IMAGE}
@@ -50,6 +52,10 @@ create_cptra_manifest_image() {
 do_compile() {
     create_cptra_manifest_image
 }
+
+do_compile[depends] += " \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
+    "
 
 do_mk_empty_image() {
     # Assemble the flash image
