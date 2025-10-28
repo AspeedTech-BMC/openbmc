@@ -28,7 +28,7 @@ ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
 DEPENDS += "fmc-imgtool-native fmc-images"
 DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native', '', d)}"
 
-inherit deploy python3native otptool
+inherit otptool
 
 MCU_RUNTIME_IMAGE ?= "${B}/zephyr/zephyr.bin"
 
@@ -78,12 +78,7 @@ do_create_fmc_image[depends] += "fmc-images:do_deploy"
 
 addtask create_fmc_image before do_deploy after do_compile
 
-do_deploy() {
-    install -d ${DEPLOYDIR}
-
+do_deploy:append() {
     install -m 644 ${B}/zephyr/${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
 }
 
-addtask deploy before do_build after do_compile
-
-ALLOW_EMPTY:${PN} = "1"
