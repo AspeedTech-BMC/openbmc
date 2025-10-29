@@ -1,4 +1,4 @@
-DESCRIPTION = "Generate ASPEED Caliptra-1.2 (iROT) image"
+DESCRIPTION = "Generate ASPEED iROT image"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${ASPEEDSDKBASE}/LICENSE;md5=a3740bd0a194cd6dcafdc482a200a56f"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -13,8 +13,9 @@ inherit deploy
 
 DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native fmc-images"
 
-CPTRA_IMGTOOL_PRJ ?= "ast2700a1-irot"
-PREBUILD_IMAGE_DIR = "prebuilt/${CPTRA_IMGTOOL_PRJ}"
+CPTRA_IMGTOOL_CFG ?= "ast2700a1-irot"
+CPTRA_IMGTOOL_TOML = "config/${CPTRA_IMGTOOL_CFG}-manifest.toml"
+CPTRA_PREBUILD_IMAGE_DIR ?= "prebuilt/ast2700a1-irot"
 CPTRA_IROT_IMAGE ?= "man-irot.bin"
 CPTRA_NON_IROT_IMAGE ?= "ast2700-soc-manifest.bin"
 
@@ -24,27 +25,28 @@ create_cptra_manifest_image() {
     bbnote "Running cptra-imgtool"
 
     cd ${STAGING_DATADIR_NATIVE}/cptra-imgtool
-    if [ ! -d out ]; then
-        install -d out
-    fi
+
+    mkdir -p out
+    mkdir -p ${CPTRA_PREBUILD_IMAGE_DIR}
 
     # Copy fmc-images prebuilt image into cptra-imgtool prebuilt folder
-    install -m 644 ${DEPLOY_DIR_IMAGE}/fmc-images/* ${PREBUILD_IMAGE_DIR}/.
+    install -m 644 ${DEPLOY_DIR_IMAGE}/fmc-images/* ${CPTRA_PREBUILD_IMAGE_DIR}/.
 
     # Overwrite SSP image into cptra-imgtool prebuilt folder
     if [ -n "${SSP_IMAGE}" ]; then
-        install -m 0644 ${SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/ssp.bin
+        install -m 0644 ${SSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/ssp.bin
     fi
 
     # Run cptra-imgtool to generate manifest flash image.
-    ./cptra-imgtool create-auth-flash --prj ${CPTRA_IMGTOOL_PRJ} --flash ${CPTRA_IROT_IMAGE}
+    ./cptra-imgtool create-auth-flash --cfg ${CPTRA_IMGTOOL_CFG} --flash ${CPTRA_IROT_IMAGE}
 
     # Run cptra-imgtool to generate manifest image for recovery.
     bbnote "Running cptra-imgtool for recovery"
-    ./cptra-imgtool create-auth-man --prj ast2700a1-default --man ${CPTRA_NON_IROT_IMAGE}
+    ./cptra-imgtool create-auth-man --cfg ${CPTRA_IMGTOOL_CFG} --man ${CPTRA_NON_IROT_IMAGE}
+
+    cd -
 
     # Copy manifest image
-    install -d ${DEPLOYDIR}
     install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_IROT_IMAGE} ${B}/.
     install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_NON_IROT_IMAGE} ${B}/.
 }
@@ -101,6 +103,7 @@ python do_deploy() {
                  int(d.getVar('IROT_OFFSET_ATF', True)),
                  int(d.getVar('IROT_OFFSET_UBOOT', True)),
                  nor_image)
+
     # U-Boot raw image
     append_image(os.path.join(d.getVar('DEPLOY_DIR_IMAGE', True), 'u-boot.bin'),
                  int(d.getVar('IROT_OFFSET_UBOOT', True)),
@@ -118,10 +121,8 @@ python do_deploy() {
 do_deploy[depends] += " \
     optee-os:do_deploy \
     trusted-firmware-a:do_deploy \
-    virtual/bootmcu:do_deploy \
     virtual/bootloader:do_deploy \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
     "
 
 addtask deploy before do_build after do_compile
+
