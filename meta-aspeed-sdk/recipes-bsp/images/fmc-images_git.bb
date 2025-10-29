@@ -1,7 +1,8 @@
-SUMMARY = "ASPEED FMC images provide the necessary image for AST2700 bring-up"
+SUMMARY = "ASPEED FMC images provide the necessary prebuilt image for AST2700 bring-up"
 HOMEPAGE = "https://github.com/AspeedTech-BMC/fmc_imgtool"
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-require ../../recipes-aspeed/python/fmc-imgtool.inc
+require recipes-aspeed/python/fmc-imgtool.inc
 
 inherit deploy
 
@@ -21,28 +22,16 @@ do_deploy () {
 
 addtask deploy before do_build after do_compile
 
-python do_cleanall:append() {
-    import os, shutil, glob
+python do_cleanall:prepend() {
+    import os, shutil
 
     deploydir = d.getVar('DEPLOY_DIR_IMAGE', True)
     if not deploydir:
         return
 
-    # Remove directories
     for sub in ("fmc-images", "keys"):
         p = os.path.join(deploydir, sub)
         if os.path.isdir(p):
             bb.note(f"Removing {p}")
             shutil.rmtree(p, ignore_errors=True)
-
-    # Remove symbolic links in DEPLOYDIR that point to fmc-images/*
-    for path in glob.glob(os.path.join(deploydir, "*")):
-        if os.path.islink(path):
-            try:
-                target = os.readlink(path)
-            except OSError:
-                continue
-            if target.startswith("fmc-images/"):
-                bb.note(f"Removing symlink {path} -> {target}")
-                os.unlink(path)
 }
