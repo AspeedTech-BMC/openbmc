@@ -14,80 +14,70 @@ inherit deploy
 
 DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native fmc-images"
 
-CPTRA_IMGTOOL_PRJ ?= "ast2700a1-default"
+CPTRA_IMGTOOL_CFG ?= "ast2700a1-default"
 CPTRA_IMGTOOL_TOML = "config/${CPTRA_IMGTOOL_PRJ}-manifest.toml"
-PREBUILD_IMAGE_DIR = "prebuilt/${CPTRA_IMGTOOL_PRJ}"
+CPTRA_PREBUILD_IMAGE_DIR ?= "prebuilt/ast2700a1-default"
 CPTRA_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 CPTRA_NON_FLASH_IMAGE ?= "ast2700-soc-manifest.bin"
 
 # Using cptra-imgtool to create manifest image.
-create_cptra_manifest_image() {
+do_deploy() {
     export RUST_LOG="debug"
     bbnote "Running cptra-imgtool"
 
     cd ${STAGING_DATADIR_NATIVE}/cptra-imgtool
-    if [ ! -d out ]; then
-        install -d out
-    fi
+
+    mkdir -p out
+    mkdir -p ${CPTRA_PREBUILD_IMAGE_DIR}
 
     # Copy fmc-images prebuilt image into cptra-imgtool prebuilt folder
-    install -m 644 ${DEPLOY_DIR_IMAGE}/fmc-images/* ${PREBUILD_IMAGE_DIR}/.
+    install -m 644 ${DEPLOY_DIR_IMAGE}/fmc-images/* ${CPTRA_PREBUILD_IMAGE_DIR}/.
 
     # Overwrite AFT image into cptra-imgtool prebuilt folder
     if [ -n "${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE}" ]; then
-        install -m 0644 ${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE} ${PREBUILD_IMAGE_DIR}/atf.bin
+        install -m 0644 ${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/atf.bin
     fi
 
     # Overwrite OPTEE image into cptra-imgtool prebuilt folder
     if [ -n "${UBOOT_FIT_TEE_IMAGE}" ]; then
-        install -m 0644 ${UBOOT_FIT_TEE_IMAGE} ${PREBUILD_IMAGE_DIR}/optee.bin
+        install -m 0644 ${UBOOT_FIT_TEE_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/optee.bin
     fi
 
     # Overwrite U-Boot raw image into cptra-imgtool prebuilt folder
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/u-boot.bin ${PREBUILD_IMAGE_DIR}/u-boot.bin
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/u-boot.bin ${CPTRA_PREBUILD_IMAGE_DIR}/u-boot.bin
 
     # Overwrite SSP image into cptra-imgtool prebuilt folder
     if [ -n "${SSP_IMAGE}" ]; then
-        install -m 0644 ${SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/ssp.bin
-    fi
-
-    # Overwrite SSP image into cptra-imgtool prebuilt folder
-    if [ -n "${SSP_IMAGE}" ]; then
-        install -m 0644 ${SSP_IMAGE} ${PREBUILD_IMAGE_DIR}/ssp.bin
+        install -m 0644 ${SSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/ssp.bin
     fi
 
     # Overwrite TSP image into cptra-imgtool prebuilt folder
     if [ -n "${TSP_IMAGE}" ]; then
-        install -m 0644 ${TSP_IMAGE} ${PREBUILD_IMAGE_DIR}/tsp.bin
+        install -m 0644 ${TSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/tsp.bin
     fi
 
     # Run cptra-imgtool to generate manifest flash image.
-    ./cptra-imgtool create-auth-flash --prj ${CPTRA_IMGTOOL_PRJ} --flash ${CPTRA_FLASH_IMAGE}
+    ./cptra-imgtool create-auth-flash --cfg ${CPTRA_IMGTOOL_CFG} --flash ${CPTRA_FLASH_IMAGE}
 
     # Run cptra-imgtool to generate manifest image for recovery.
     bbnote "Running cptra-imgtool for recovery"
-    ./cptra-imgtool create-auth-man --prj ast2700a1-default --man ${CPTRA_NON_FLASH_IMAGE}
+    ./cptra-imgtool create-auth-man --cfg ${CPTRA_IMGTOOL_CFG} --man ${CPTRA_NON_FLASH_IMAGE}
 
-    # Copy manifest image
+    cd -
+
+    # deploy manifest image
     install -d ${DEPLOYDIR}
-    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_FLASH_IMAGE} ${B}/.
-    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_NON_FLASH_IMAGE} ${B}/.
-}
-
-do_deploy() {
-    create_cptra_manifest_image
-
-    install -d ${DEPLOYDIR}
-    install -m 644 ${B}/* ${DEPLOYDIR}/.
+    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_FLASH_IMAGE} ${DEPLOYDIR}
+    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_NON_FLASH_IMAGE} ${DEPLOYDIR}
 }
 
 do_deploy[depends] += " \
     optee-os:do_deploy \
     trusted-firmware-a:do_deploy \
-    virtual/bootmcu:do_deploy \
     virtual/bootloader:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
     "
 
 addtask deploy before do_build after do_compile
+
