@@ -157,8 +157,6 @@ do_create_fmc_image() {
         ${sign_args}
 }
 
-do_create_fmc_image[depends] += "fmc-images:do_deploy"
-
 addtask create_fmc_image before do_deploy after do_compile
 
 do_deploy() {

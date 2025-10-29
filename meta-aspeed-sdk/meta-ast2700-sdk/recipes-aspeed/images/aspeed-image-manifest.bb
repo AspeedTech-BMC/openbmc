@@ -88,7 +88,6 @@ do_deploy[depends] += " \
     virtual/bootloader:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
-    fmc-images:do_deploy \
     "
 
 addtask deploy before do_build after do_compile
