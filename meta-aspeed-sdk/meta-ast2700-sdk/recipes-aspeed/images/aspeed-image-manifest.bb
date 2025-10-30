@@ -15,7 +15,6 @@ inherit deploy
 DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native fmc-images"
 
 CPTRA_IMGTOOL_CFG ?= "ast2700a1-default"
-CPTRA_IMGTOOL_TOML = "config/${CPTRA_IMGTOOL_PRJ}-manifest.toml"
 CPTRA_PREBUILD_IMAGE_DIR ?= "prebuilt/ast2700a1-default"
 CPTRA_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 CPTRA_NON_FLASH_IMAGE ?= "ast2700-soc-manifest.bin"

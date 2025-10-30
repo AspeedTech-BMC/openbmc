@@ -11,12 +11,15 @@ DEPENDS = " \
     socsec-native \
     aspeed-secure-config-native \
     fmc-imgtool-native \
-    fmc-images \
     u-boot-tools-native \
     dtc-native \
     xz-native \
     e2fsprogs-native \
     parted-native \
+    cptra-imgtool-native \
+    caliptra-sw-native \
+    caliptra-mcu-sw-native \
+    fmc-images \
     virtual/kernel \
     virtual/bootloader \
     virtual/bootmcu \
@@ -36,13 +39,13 @@ ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE ?= "\
     "
 
 DISTROOVERRIDES .= ":flash-${FLASH_SIZE}"
+MCU_RUNTIME_IMAGE = "zephyr-aspeed-bootmcu.bin"
+UBOOT_IMAGE_NAME = "u-boot.bin"
 KERNEL_FITIMAGE_NAME = "fitImage-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE}"
 KERNEL_FITIMAGE_ITS_NAME = "fitImage-its-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE}"
-UBOOT_FITIMAGE_NAME = "u-boot.bin"
-UBOOT_FITIMAGE_ITS_NAME = "u-boot.its"
-SPL_IMAGE_NAME = "u-boot-spl.bin"
 ASPEED_BOOT_EMMC_UFS = "${@bb.utils.contains_any('MACHINE_FEATURES', ['ast-mmc', 'ast-ufs'], 'yes', 'no', d)}"
-ASPEED_BOOT_UFS = "${@bb.utils.contains_any('MACHINE_FEATURES', 'ast-ufs', 'yes', 'no', d)}"
+ASPEED_BOOT_UFS = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-ufs', 'yes', 'no', d)}"
+ASPEED_IROT = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'yes', 'no', d)}"
 
 IMAGE_BASE_NAME = "obmc-phosphor-image"
 INITRAMFS_IMAGE_NAME = "${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES}"
@@ -54,14 +57,17 @@ USER_DATA_IMAGE_NAME = "${IMAGE_BASE_NAME}-${MACHINE}.bin"
 USER_DATA_BOOTPART_IMAGE_NAME = "boot-image.ext4"
 
 # Keys and Configs
-SPL_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
 UBOOT_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
-
 SOCSEC_SIGN_HELPER = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/signing_helper.sh"
 OTPTOOL_KEY_DIR = "${DEPLOY_DIR_IMAGE}/keys"
 OTPTOOL_CONFIGS_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/otp"
 OTPTOOL_SOC = "2700"
 FMC_KEY_DIR = "${OTPTOOL_KEY_DIR}"
+
+# Caliptra manifest
+CPTRA_FLASH_IMAGE = "ast2700-manifest-flash.bin"
+CPTRA_NON_FLASH_IMAGE = "ast2700-soc-manifest.bin"
+CALIPTRA_MANIFEST_BINARY = "${CPTRA_FLASH_IMAGE}"
 
 install_unsigned_image() {
     install -d ${S}/${GEN_IMAGE_MODE}
@@ -70,12 +76,10 @@ install_unsigned_image() {
     install -d ${S}/${GEN_IMAGE_MODE}/arch/arm64/boot
     install -d ${S}/${GEN_IMAGE_MODE}/arch/arm64/boot/dts
     install -d ${S}/${GEN_IMAGE_MODE}/arch/arm64/boot/dts/aspeed
+    install -d ${DEPLOYDIR}
+    install -d ${DEPLOYDIR}/${GEN_IMAGE_MODE}
 
-    # caliptra
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/${CALIPTRA_FW_BINARY} ${S}/${GEN_IMAGE_MODE}
-
-    # u-boot unsigned image, dtb and its
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/${UBOOT_FITIMAGE_ITS_NAME} ${S}/${GEN_IMAGE_MODE}
+    # u-boot unsigned image and dtb
     install -m 0644 ${STAGING_DIR_HOST}/sysroot-only/u-boot* ${S}/${GEN_IMAGE_MODE}
 
     # kernel unsigned image, dtb and its
@@ -126,7 +130,7 @@ make_otp_image() {
 # export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
 # OpenSSL 3.0 legacy provider failed to load
 # https://github.com/pyca/cryptography/issues/10598
-fmc_sign_spl_and_verify() {
+make_fmc_image_and_sign() {
     export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
 
     local ecc_key=""
@@ -151,45 +155,16 @@ fmc_sign_spl_and_verify() {
         lms_key_index="--lms-key-index ${ROT_LMS_KEY_INDEX}"
     fi
 
-    if [ "${FMC_SIGN_ENABLE}" = "1" ]; then
-        sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
-    fi
-
+    sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
     echo "sign_args=${sign_args}"
 
     fmc-imgtool \
         --verbose \
         --version 2 \
-        --input ${S}/${GEN_IMAGE_MODE}/u-boot-spl.bin \
+        --input ${DEPLOY_DIR_IMAGE}/${MCU_RUNTIME_IMAGE} \
         --output ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/fmc-images/ \
         ${sign_args}
-
-    # TODO: The FMC tool does not support verification yet.
-    # To reduce the risk of unexpected run-time errors, verification should be added.
-    echo "!!! WARNING: FMC verification is not supported yet."
-}
-
-make_uboot_fitimage_and_sign() {
-    cd ${S}/${GEN_IMAGE_MODE}
-
-    # Assemble the bootloader image
-    uboot-mkimage -f ${UBOOT_FITIMAGE_ITS_NAME} ${UBOOT_FITIMAGE_NAME}
-    # Sign the Bootloader FIT image and add public key to SPL dtb
-    uboot-mkimage -F -k ${SPL_SIGN_KEYDIR} -K "u-boot-spl.dtb" -r ${UBOOT_FITIMAGE_NAME}
-    # Verify bootloader fitImage
-    uboot-fit_check_sign -f ${UBOOT_FITIMAGE_NAME} -k u-boot-spl.dtb
-    if [ $? -ne 0 ]; then
-        bbfatal "Verified bootloader fitImage failed."
-    fi
-
-    # concat spl dtb
-    cat u-boot-spl-nodtb.bin u-boot-spl.dtb > ${SPL_IMAGE_NAME}
-
-    rm -rf ${S}/${GEN_IMAGE_MODE}/arch
-    rm -f ${S}/${GEN_IMAGE_MODE}/linux.bin
-
-    cd ${S}
 }
 
 make_kernel_fitimage_and_sign() {
@@ -205,10 +180,67 @@ make_kernel_fitimage_and_sign() {
         bbfatal "Verified kernel fitImage failed."
     fi
 
+    # concat u-boot-nodtb and u-boot-dtb
+    cat u-boot-nodtb.bin u-boot.dtb > ${UBOOT_IMAGE_NAME}
+
     rm -rf ${S}/${GEN_IMAGE_MODE}/arch
     rm -f ${S}/${GEN_IMAGE_MODE}/linux.bin
 
     cd ${S}
+}
+
+make_caliptra_manifest_image_and_sign() {
+    export RUST_LOG="debug"
+    echo "Running cptra-imgtool..."
+
+    cd ${STAGING_DATADIR_NATIVE}/cptra-imgtool
+
+    mkdir -p out
+    mkdir -p ${CPTRA_PREBUILD_IMAGE_DIR}
+
+    # Copy fmc-images prebuilt image into cptra-imgtool prebuilt folder
+    echo "CPTRA_PREBUILD_IMAGE_DIR=${CPTRA_PREBUILD_IMAGE_DIR}"
+    install -m 644 ${DEPLOY_DIR_IMAGE}/fmc-images/* ${CPTRA_PREBUILD_IMAGE_DIR}/.
+
+    # Overwrite AFT image into cptra-imgtool prebuilt folder
+    if [ -f "${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE}" ]; then
+        install -m 0644 ${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/atf.bin
+    fi
+
+    # Overwrite OPTEE image into cptra-imgtool prebuilt folder
+    if [ -f "${UBOOT_FIT_TEE_IMAGE}" ]; then
+        install -m 0644 ${UBOOT_FIT_TEE_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/optee.bin
+    fi
+
+    # Overwrite U-Boot raw image into cptra-imgtool prebuilt folder
+    install -m 0644 ${S}/${GEN_IMAGE_MODE}/u-boot.bin ${CPTRA_PREBUILD_IMAGE_DIR}/u-boot.bin
+
+    # Overwrite SSP image into cptra-imgtool prebuilt folder
+    if [ -f "${SSP_IMAGE}" ]; then
+        install -m 0644 ${SSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/ssp.bin
+    fi
+
+    # Overwrite TSP image into cptra-imgtool prebuilt folder
+    if [ -f "${TSP_IMAGE}" ]; then
+        install -m 0644 ${TSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/tsp.bin
+    fi
+
+    # Run cptra-imgtool to generate manifest flash image.
+    ./cptra-imgtool create-auth-flash --cfg ${CPTRA_IMGTOOL_CFG} --flash ${CPTRA_FLASH_IMAGE}
+
+    # Run cptra-imgtool to generate manifest image for recovery.
+    ./cptra-imgtool create-auth-man --cfg ${CPTRA_IMGTOOL_CFG} --man ${CPTRA_NON_FLASH_IMAGE}
+
+    cd -
+
+    # Install manifest image
+    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_FLASH_IMAGE} ${S}/${GEN_IMAGE_MODE}
+    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_NON_FLASH_IMAGE} ${S}/${GEN_IMAGE_MODE}
+}
+
+make_recovery_image() {
+    install -m 644 ${DEPLOY_DIR_IMAGE}/recovery_${CALIPTRA_FW_BINARY} ${S}/${GEN_IMAGE_MODE}/
+    python3 ${STAGING_BINDIR_NATIVE}/recovery_spl_extraction.py -i ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY}
 }
 
 make_boot_partition_ext4() {
@@ -235,9 +267,6 @@ make_boot_partition_ext4() {
 deploy_static_image_helper() {
     otptool_config_slug="$(basename ${OTPTOOL_JSON} .json)"
 
-    install -d ${DEPLOYDIR}
-    install -d ${DEPLOYDIR}/${GEN_IMAGE_MODE}
-
     install -m 0644 ${DEPLOY_DIR_IMAGE}/image-rofs ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     install -m 0644 ${DEPLOY_DIR_IMAGE}/image-rwfs ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     install -m 0644 ${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE_NAME} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
@@ -259,15 +288,25 @@ deploy_static_image_helper() {
         cp --no-preserve=ownership -rf ${DEPLOY_DIR_IMAGE}/optee ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 
-    # co-processors
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-aspeed-*.* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    # mcu run-time
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+
+    # caliptra
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/${CALIPTRA_FW_BINARY} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+
+    # ssp
+    if [ -f "${SSP_IMAGE}" ]; then
+        install -m 0644 ${SSP_IMAGE} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    fi
+
+    # tsp
+    if [ -f "${TSP_IMAGE}" ]; then
+        install -m 0644 ${TSP_IMAGE} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    fi
 }
 
 deploy_mmc_image_helper() {
     otptool_config_slug="$(basename ${OTPTOOL_JSON} .json)"
-
-    install -d ${DEPLOYDIR}
-    install -d ${DEPLOYDIR}/${GEN_IMAGE_MODE}
 
     install -m 0644 ${DEPLOY_DIR_IMAGE}/${IMAGE_BASE_NAME}-${MACHINE}.ext4 ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     install -m 0644 ${DEPLOY_DIR_IMAGE}/${IMAGE_BASE_NAME}-${MACHINE}.rwfs.ext4 ${DEPLOYDIR}/${GEN_IMAGE_MODE}
@@ -289,8 +328,21 @@ deploy_mmc_image_helper() {
         cp --no-preserve=ownership -rf ${DEPLOY_DIR_IMAGE}/optee ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 
-    # co-processors
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-aspeed-*.* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    # mcu run-time
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+
+    # caliptra
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/${CALIPTRA_FW_BINARY} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+
+    # ssp
+    if [ -f "${SSP_IMAGE}" ]; then
+        install -m 0644 ${SSP_IMAGE} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    fi
+
+    # tsp
+    if [ -f "${TSP_IMAGE}" ]; then
+        install -m 0644 ${TSP_IMAGE} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    fi
 
     # decompress wic image for user data area boot partition update
     xz -cd ${DEPLOY_DIR_IMAGE}/${WIC_IMAGE_NAME} > ${S}/${GEN_IMAGE_MODE}/${USER_DATA_IMAGE_NAME}
@@ -655,7 +707,7 @@ def deploy_static_image(d):
                  bootmcu_end_offset)
 
     uboot_offset = bootmcu_end_offset
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('UBOOT_FITIMAGE_NAME', True)),
+    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  nor_img,
                  uboot_offset,
                  int(d.getVar('FLASH_UBOOT_ENV_OFFSET', True)))
@@ -694,7 +746,7 @@ def deploy_static_image(d):
                  bootmcu_end_offset)
 
     uboot_offset = bootmcu_end_offset
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('UBOOT_FITIMAGE_NAME', True)),
+    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  uboot_img,
                  uboot_offset,
                  int(d.getVar('FLASH_UBOOT_ENV_OFFSET', True)))
@@ -779,13 +831,54 @@ def deploy_mmc_image(d):
                  bootmcu_end_offset)
 
     uboot_offset = bootmcu_end_offset
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('UBOOT_FITIMAGE_NAME', True)),
+    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  mmc_boot_img,
                  uboot_offset,
                  int(d.getVar('MMC_UBOOT_SIZE', True)))
 
 
+def create_irot_image(d):
+    import subprocess
+
+    gen_img = d.getVar('GEN_IMAGE_MODE', True)
+    irot_boot_img = os.path.join(d.getVar('S', True), gen_img, 'irot_boot_img')
+    make_empty_image(irot_boot_img, d.getVar('IROT_IMAGE_SIZE', True))
+
+    # MANIFEST
+    append_image(os.path.join(d.getVar('S', True), gen_img, d.getVar('CPTRA_FLASH_IMAGE', True)),
+                 irot_boot_img,
+                 int(d.getVar('IROT_OFFSET_MANIFEST', True)),
+                 int(d.getVar('IROT_OFFSET_ATF', True)))
+    # ATF
+    append_image(d.getVar('UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE', True),
+                 irot_boot_img,
+                 int(d.getVar('IROT_OFFSET_ATF', True)),
+                 int(d.getVar('IROT_OFFSET_UBOOT', True)))
+    # U-Boot raw image
+    append_image(os.path.join(d.getVar('S', True), gen_img, d.getVar('UBOOT_IMAGE_NAME', True)),
+                 irot_boot_img,
+                 int(d.getVar('IROT_OFFSET_UBOOT', True)),
+                 int(d.getVar('IROT_OFFSET_TEE', True)))
+    # TEE
+    append_image(d.getVar('UBOOT_FIT_TEE_IMAGE', True),
+                 irot_boot_img,
+                 int(d.getVar('IROT_OFFSET_TEE', True)),
+                 int(d.getVar('IROT_IMAGE_SIZE', True)))
+
+    cmd = "rm -f {}".format(os.path.join(d.getVar('S', True), gen_img, d.getVar('CPTRA_FLASH_IMAGE', True)))
+    print(cmd)
+    subprocess.check_call(cmd, shell=True)
+
+    cmd = "mv {} {}".format(irot_boot_img,
+                            os.path.join(d.getVar('S', True), gen_img, d.getVar('CPTRA_FLASH_IMAGE', True)))
+    print(cmd)
+    subprocess.check_call(cmd, shell=True)
+
+
 def verify_uboot_kernel_image_status(d):
+    uboot_fitimage_enable = d.getVar('UBOOT_FITIMAGE_ENABLE', True)
+    if uboot_fitimage_enable == "1":
+        bb.fatal("Not support Bootloader FIT image")
     kernel_imagetype = d.getVar('KERNEL_IMAGETYPE', True)
     if "fitImage" not in kernel_imagetype:
         bb.fatal("Only support Kernel FIT image")
@@ -800,12 +893,11 @@ python do_deploy() {
             "rot_ecc_key_index" : "1",
             "rot_lms_key_name" : "",
             "rot_lms_key_index" : "",
-            "cot_uboot_algo": "ecdsa384",
-            "cot_uboot_hash": "sha384",
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
-            "cot_spl_sign_key_name": "test_bl2_ecdsa_secp384r1",
-            "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1"
+            "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
+            "cptra_imgtool_cfg": "ast2700a1-default-ecc",
+            "cptra_imgtool_cfg_irot": "ast2700a1-irot-ecc"
         },
         {
             "mode": "ecdsa384-lms",
@@ -814,12 +906,11 @@ python do_deploy() {
             "rot_ecc_key_index" : "1",
             "rot_lms_key_name" : "test_oem_dss_lms_key_1.prv",
             "rot_lms_key_index" : "1",
-            "cot_uboot_algo": "ecdsa384",
-            "cot_uboot_hash": "sha384",
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
-            "cot_spl_sign_key_name": "test_bl2_ecdsa_secp384r1",
-            "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1"
+            "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
+            "cptra_imgtool_cfg": "ast2700a1-default-ecc-lms",
+            "cptra_imgtool_cfg_irot": "ast2700a1-irot-ecc-lms"
         }
     ]
 
@@ -830,8 +921,8 @@ python do_deploy() {
 
     verify_uboot_kernel_image_status(d)
     gen_secure_image = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE', True)
-    uboot_fitimage_enable = d.getVar('UBOOT_FITIMAGE_ENABLE', True)
     aspeed_boot_emmc_ufs = d.getVar('ASPEED_BOOT_EMMC_UFS', True)
+    aspeed_irot = d.getVar('ASPEED_IROT', True)
 
     for gen_img in gen_secure_image.split():
         for sec_img in secure_image_list:
@@ -847,6 +938,10 @@ python do_deploy() {
         d.setVar('ROT_ECC_KEY_INDEX', sec_img["rot_ecc_key_index"])
         d.setVar('ROT_LMS_KEY_NAME', sec_img["rot_lms_key_name"])
         d.setVar('ROT_LMS_KEY_INDEX', sec_img["rot_lms_key_index"])
+        if aspeed_irot == "yes":
+            d.setVar('CPTRA_IMGTOOL_CFG', sec_img["cptra_imgtool_cfg_irot"])
+        else:
+            d.setVar('CPTRA_IMGTOOL_CFG', sec_img["cptra_imgtool_cfg"])
 
         bb.build.exec_func("install_unsigned_image", d)
         kernel_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('KERNEL_FITIMAGE_ITS_NAME', True))
@@ -855,21 +950,20 @@ python do_deploy() {
         update_hash_algo(kernel_its, sec_img["cot_kernel_hash"])
         add_or_update_signature_nodes(kernel_its, "configurations", algo, sec_img["cot_uboot_sign_key_name"])
 
-        print("Make otp image")
-        bb.build.exec_func("make_otp_image", d)
         print("Make kernel fitimage and sign")
         bb.build.exec_func("make_kernel_fitimage_and_sign", d)
+        print("Make caliptra manifest image and sign")
+        bb.build.exec_func("make_caliptra_manifest_image_and_sign", d)
+        print("Make otp image")
+        bb.build.exec_func("make_otp_image", d)
+        print("Make FMC image and sign")
+        bb.build.exec_func("make_fmc_image_and_sign", d)
+        print("Make recovery image")
+        bb.build.exec_func("make_recovery_image", d)
 
-        if uboot_fitimage_enable == "1":
-            uboot_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('UBOOT_FITIMAGE_ITS_NAME', True))
-            print("Update uboot its file", uboot_its)
-            algo = sec_img["cot_uboot_hash"] + "," + sec_img["cot_uboot_algo"]
-            update_hash_algo(uboot_its, sec_img["cot_uboot_hash"])
-            add_or_update_signature_nodes(uboot_its, "images", algo, sec_img["cot_spl_sign_key_name"], "pkcs-1.5")
-            print("Make bootloader fitimage and sign")
-            bb.build.exec_func("make_uboot_fitimage_and_sign", d)
-            print("FMC sign spl and verify")
-            bb.build.exec_func("fmc_sign_spl_and_verify", d)
+        if aspeed_irot == "yes":
+            print("Create_irot_image...")
+            create_irot_image(d)
 
         if aspeed_boot_emmc_ufs == "yes":
             print("Deploy mmc image...")
