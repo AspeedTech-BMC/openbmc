@@ -3,7 +3,6 @@
 # to ensure compatibility with image_types_phosphor.bbclass.
 UBOOT_BINARY := "${CPTRA_FLASH_IMAGE}"
 UBOOT_BINARY:ast2700-a1-spl := "u-boot.${UBOOT_SUFFIX}"
-UBOOT_BINARY:ast-irot := "${IROT_IMAGE}"
 UBOOT_SUFFIX:append = ".merged"
 
 # Install the image-u-boot to deploy folder when building the emmc image.
@@ -53,7 +52,6 @@ do_merge_uboot() {
 }
 
 ASPEED_IMAGE_DEPENDS = "aspeed-image-manifest:do_deploy"
-ASPEED_IMAGE_DEPENDS:ast-irot = "aspeed-image-irot:do_deploy"
 ASPEED_IMAGE_DEPENDS:ast2700-a1-spl = ""
 
 do_merge_uboot[depends] += " \
