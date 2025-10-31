@@ -204,24 +204,29 @@ make_caliptra_manifest_image_and_sign() {
 
     # Overwrite AFT image into cptra-imgtool prebuilt folder
     if [ -f "${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE}" ]; then
+        echo "Overwrite ${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE} into ${CPTRA_PREBUILD_IMAGE_DIR}/atf.bin"
         install -m 0644 ${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/atf.bin
     fi
 
     # Overwrite OPTEE image into cptra-imgtool prebuilt folder
     if [ -f "${UBOOT_FIT_TEE_IMAGE}" ]; then
+        echo "Overwrite ${UBOOT_FIT_TEE_IMAGE} into ${CPTRA_PREBUILD_IMAGE_DIR}/optee.bin"
         install -m 0644 ${UBOOT_FIT_TEE_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/optee.bin
     fi
 
     # Overwrite U-Boot raw image into cptra-imgtool prebuilt folder
+    echo "Overwrite${S}/${GEN_IMAGE_MODE}/u-boot.bin into ${CPTRA_PREBUILD_IMAGE_DIR}/u-boot.bin"
     install -m 0644 ${S}/${GEN_IMAGE_MODE}/u-boot.bin ${CPTRA_PREBUILD_IMAGE_DIR}/u-boot.bin
 
     # Overwrite SSP image into cptra-imgtool prebuilt folder
     if [ -f "${SSP_IMAGE}" ]; then
+        echo "Overwrite ${SSP_IMAGE} into ${CPTRA_PREBUILD_IMAGE_DIR}/ssp.bin"
         install -m 0644 ${SSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/ssp.bin
     fi
 
     # Overwrite TSP image into cptra-imgtool prebuilt folder
     if [ -f "${TSP_IMAGE}" ]; then
+        echo "Overwrite ${TSP_IMAGE} into ${CPTRA_PREBUILD_IMAGE_DIR}/tsp.bin"
         install -m 0644 ${TSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/tsp.bin
     fi
 
