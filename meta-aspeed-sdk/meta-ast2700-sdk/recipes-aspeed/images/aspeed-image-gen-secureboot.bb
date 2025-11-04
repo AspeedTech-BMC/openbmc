@@ -20,6 +20,7 @@ DEPENDS = " \
     caliptra-sw-native \
     caliptra-mcu-sw-native \
     virtual/bootloader \
+    fmc-images \
     "
 
 do_patch[noexec] = "1"
@@ -56,7 +57,7 @@ USER_DATA_BOOTPART_IMAGE_NAME = "boot-image.ext4"
 # Keys and Configs
 UBOOT_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
 SOCSEC_SIGN_HELPER = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/signing_helper.sh"
-OTPTOOL_KEY_DIR = "${DEPLOY_DIR_IMAGE}/keys"
+OTPTOOL_KEY_DIR = "${STAGING_DATADIR}/fmc-images/keys"
 OTPTOOL_CONFIGS_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/otp"
 OTPTOOL_SOC = "2700"
 FMC_KEY_DIR = "${OTPTOOL_KEY_DIR}"
@@ -160,7 +161,7 @@ make_fmc_image_and_sign() {
         --version 2 \
         --input ${DEPLOY_DIR_IMAGE}/${MCU_RUNTIME_IMAGE} \
         --output ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY} \
-        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/fmc-images/ \
+        --prebuilt-dir ${STAGING_DATADIR}/fmc-images/prebuilt/ \
         ${sign_args}
 }
 
@@ -196,8 +197,8 @@ make_caliptra_manifest_image_and_sign() {
     mkdir -p ${CPTRA_PREBUILD_IMAGE_DIR}
 
     # Copy fmc-images prebuilt image into cptra-imgtool prebuilt folder
-    echo "CPTRA_PREBUILD_IMAGE_DIR=${CPTRA_PREBUILD_IMAGE_DIR}"
-    install -m 644 ${DEPLOY_DIR_IMAGE}/fmc-images/* ${CPTRA_PREBUILD_IMAGE_DIR}/.
+    echo "Overwrite ${STAGING_DATADIR}/fmc-images/prebuilt binaries into ${CPTRA_PREBUILD_IMAGE_DIR}"
+    install -m 644 ${STAGING_DATADIR}/fmc-images/prebuilt/* ${CPTRA_PREBUILD_IMAGE_DIR}/.
 
     # Overwrite AFT image into cptra-imgtool prebuilt folder
     if [ -f "${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE}" ]; then
@@ -980,7 +981,6 @@ python do_deploy() {
 addtask deploy before do_build after do_compile
 
 do_deploy[depends] += " \
-    fmc-images:do_deploy \
     virtual/kernel:do_deploy \
     virtual/bootloader:do_deploy \
     virtual/bootmcu:do_deploy \

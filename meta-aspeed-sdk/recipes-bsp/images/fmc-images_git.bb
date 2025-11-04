@@ -4,34 +4,31 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 require recipes-aspeed/python/fmc-imgtool.inc
 
+do_patch[noexec] = "1"
+do_configure[noexec] = "1"
+do_compile[noexec] = "1"
+
 inherit deploy
 
 do_deploy () {
   install -d ${DEPLOYDIR}
-  install -d ${DEPLOYDIR}/fmc-images
-  install -d ${DEPLOYDIR}/keys
 
-  install -m 644 ${S}/prebuilt/* ${DEPLOYDIR}/fmc-images/.
-  install -m 644 ${S}/keys/* ${DEPLOYDIR}/keys/.
-
-  # Create symbolic links from fmc-images/* to DEPLOYDIR/
-  for f in ${DEPLOYDIR}/fmc-images/*; do
-    ln -sf fmc-images/$(basename "$f") ${DEPLOYDIR}/
-  done
+  install -m 644 ${S}/prebuilt/${CALIPTRA_FW_BINARY} ${DEPLOYDIR}
+  install -m 644 ${S}/prebuilt/ddr4_*.bin ${DEPLOYDIR}
+  install -m 644 ${S}/prebuilt/ddr5_*.bin ${DEPLOYDIR}
+  install -m 644 ${S}/prebuilt/dp_*.bin ${DEPLOYDIR}
+  install -m 644 ${S}/prebuilt/uefi_*.bin ${DEPLOYDIR}
 }
 
 addtask deploy before do_build after do_compile
 
-python do_cleanall:prepend() {
-    import os, shutil
+do_install () {
+    install -d ${D}${datadir}
+    install -d -m 0755 ${D}${datadir}/${BPN}
+    install -d -m 0755 ${D}${datadir}/${BPN}/prebuilt
+    install -d -m 0755 ${D}${datadir}/${BPN}/keys
 
-    deploydir = d.getVar('DEPLOY_DIR_IMAGE', True)
-    if not deploydir:
-        return
-
-    for sub in ("fmc-images", "keys"):
-        p = os.path.join(deploydir, sub)
-        if os.path.isdir(p):
-            bb.note(f"Removing {p}")
-            shutil.rmtree(p, ignore_errors=True)
+    install -m 644 ${S}/prebuilt/* ${D}${datadir}/${BPN}/prebuilt
+    install -m 644 ${S}/keys/* ${D}${datadir}/${BPN}/keys
 }
+
