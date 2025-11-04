@@ -15,7 +15,6 @@ DEPENDS = " \
     xz-native \
     e2fsprogs-native \
     parted-native \
-    virtual/kernel \
     virtual/bootloader \
     "
 
@@ -954,11 +953,13 @@ python do_deploy() {
         print("Started %s image" % gen_img)
 }
 
+addtask deploy before do_build after do_compile
+
 do_deploy[depends] += " \
+    virtual/kernel:do_deploy \
+    virtual/bootloader:do_deploy \
     obmc-phosphor-image:do_image_complete \
     "
-
-addtask deploy before do_build after do_compile
 
 python do_cleanall:prepend() {
     import subprocess

@@ -19,10 +19,7 @@ DEPENDS = " \
     cptra-imgtool-native \
     caliptra-sw-native \
     caliptra-mcu-sw-native \
-    fmc-images \
-    virtual/kernel \
     virtual/bootloader \
-    virtual/bootmcu \
     "
 
 do_patch[noexec] = "1"
@@ -980,11 +977,15 @@ python do_deploy() {
         print("Started %s image" % gen_img)
 }
 
+addtask deploy before do_build after do_compile
+
 do_deploy[depends] += " \
+    fmc-images:do_deploy \
+    virtual/kernel:do_deploy \
+    virtual/bootloader:do_deploy \
+    virtual/bootmcu:do_deploy \
     obmc-phosphor-image:do_image_complete \
     "
-
-addtask deploy before do_build after do_compile
 
 python do_cleanall:prepend() {
     import subprocess
