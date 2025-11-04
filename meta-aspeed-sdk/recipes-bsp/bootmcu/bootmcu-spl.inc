@@ -3,7 +3,7 @@ DESCRIPTION = "BootMCU is designated to load the first, verified image for the m
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 PROVIDES += "virtual/bootmcu"
-DEPENDS = "ast2700-riscv-linux-gnu-native kern-tools-native swig-native ${PYTHON_PN}-setuptools-native fmc-imgtool-native fmc-images"
+DEPENDS = "ast2700-riscv-linux-gnu-native kern-tools-native swig-native ${PYTHON_PN}-setuptools-native fmc-imgtool-native"
 DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native u-boot-tools-native', '', d)}"
 
 inherit deploy cml1 python3native otptool
@@ -158,6 +158,10 @@ do_create_fmc_image() {
 }
 
 addtask create_fmc_image before do_deploy after do_compile
+
+do_create_fmc_image[depends] += " \
+    fmc-images:do_deploy \
+    "
 
 do_deploy() {
     sub_ver=$(cat ${B}/.subversion)

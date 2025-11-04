@@ -11,7 +11,7 @@ do_install[noexec] = "1"
 
 inherit deploy
 
-DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native fmc-images"
+DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native"
 
 CPTRA_IMGTOOL_CFG ?= "ast2700a1-default"
 CPTRA_PREBUILD_IMAGE_DIR ?= "prebuilt/ast2700a1-default"
@@ -82,6 +82,7 @@ do_compile[depends] += " \
     optee-os:do_deploy \
     trusted-firmware-a:do_deploy \
     virtual/bootloader:do_deploy \
+    fmc-images:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
     "
