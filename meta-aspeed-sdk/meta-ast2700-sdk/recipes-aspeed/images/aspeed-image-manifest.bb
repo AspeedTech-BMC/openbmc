@@ -11,7 +11,7 @@ do_install[noexec] = "1"
 
 inherit deploy
 
-DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native"
+DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native fmc-images"
 
 CPTRA_IMGTOOL_CFG ?= "ast2700a1-default"
 CPTRA_PREBUILD_IMAGE_DIR ?= "prebuilt/ast2700a1-default"
@@ -30,8 +30,8 @@ create_cptra_manifest_image() {
     mkdir -p ${CPTRA_PREBUILD_IMAGE_DIR}
 
     # Copy fmc-images prebuilt image into cptra-imgtool prebuilt folder
-    echo "CPTRA_PREBUILD_IMAGE_DIR=${CPTRA_PREBUILD_IMAGE_DIR}"
-    install -m 644 ${DEPLOY_DIR_IMAGE}/fmc-images/* ${CPTRA_PREBUILD_IMAGE_DIR}/.
+    echo "Overwrite ${STAGING_DATADIR}/fmc-images/prebuilt binaries into ${CPTRA_PREBUILD_IMAGE_DIR}"
+    install -m 644 ${STAGING_DATADIR}/fmc-images/prebuilt/* ${CPTRA_PREBUILD_IMAGE_DIR}/.
 
     # Overwrite AFT image into cptra-imgtool prebuilt folder
     if [ -f "${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE}" ]; then
@@ -82,7 +82,6 @@ do_compile[depends] += " \
     optee-os:do_deploy \
     trusted-firmware-a:do_deploy \
     virtual/bootloader:do_deploy \
-    fmc-images:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
     "
