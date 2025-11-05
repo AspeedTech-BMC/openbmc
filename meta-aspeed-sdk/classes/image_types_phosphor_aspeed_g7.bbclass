@@ -1,8 +1,11 @@
 # According to the design of AST2700, bootmcu(riscv-32) execute virtual/bootmcu and CPU(coretax-a35) execute u-boot.
 # We added the do_merge_uboot task to merge the bootmcu and u-boot image before do_generate_static
 # to ensure compatibility with image_types_phosphor.bbclass.
-UBOOT_BINARY := "${CPTRA_FLASH_IMAGE}"
-UBOOT_BINARY:ast2700-a1-spl := "u-boot.${UBOOT_SUFFIX}"
+# If UBOOT_FITIMAGE_ENABLE is enabled, it means the build uses a U-Boot FIT image
+# instead of a SoC manifest image. In this case, the U-Boot binary is u-boot.bin;
+# otherwise, the U-Boot binary is the SoC manifest image.
+CPTRA_FLASH_IMAGE ??= ""
+UBOOT_BINARY := "${@oe.utils.conditional('UBOOT_FITIMAGE_ENABLE', '1', 'u-boot.${UBOOT_SUFFIX}', '${CPTRA_FLASH_IMAGE}', d)}"
 UBOOT_SUFFIX:append = ".merged"
 
 # Install the image-u-boot to deploy folder when building the emmc image.
@@ -47,13 +50,13 @@ do_merge_uboot() {
     dd bs=1k seek=${uboot_offset} if=${DEPLOY_DIR_IMAGE}/${UBOOT_BINARY} of=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}
 }
 
-ASPEED_IMAGE_DEPENDS = "aspeed-image-manifest:do_deploy"
-ASPEED_IMAGE_DEPENDS:ast2700-a1-spl = ""
-
+# If UBOOT_FITIMAGE_ENABLE is enabled, it means the build uses a U-Boot FIT image
+# instead of a SoC manifest image. In this case, skip adding aspeed-image-manifest
+# to the deploy task dependencies; otherwise, include it to generate the SoC manifest image.
 do_merge_uboot[depends] += " \
     u-boot:do_deploy \
     virtual/bootmcu:do_deploy \
-    ${ASPEED_IMAGE_DEPENDS} \
+    ${@oe.utils.conditional('UBOOT_FITIMAGE_ENABLE', '1', '', 'aspeed-image-manifest:do_deploy', d)} \
     "
 
 addtask do_merge_uboot before do_generate_static after do_generate_rwfs_static
