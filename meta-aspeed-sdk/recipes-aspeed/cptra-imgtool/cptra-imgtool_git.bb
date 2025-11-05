@@ -11,6 +11,9 @@ SRCREV = "${AUTOREV}"
 PV = "1.0+git"
 S = "${WORKDIR}/git"
 
+DEPENDS += "caliptra-sw caliptra-mcu-sw"
+RDEPENDS:${PN} += "caliptra-sw caliptra-mcu-sw"
+
 inherit cargo
 
 # Using cargo to download packages

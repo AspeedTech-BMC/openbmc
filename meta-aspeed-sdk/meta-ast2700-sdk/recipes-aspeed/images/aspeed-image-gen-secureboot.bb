@@ -17,8 +17,6 @@ DEPENDS = " \
     e2fsprogs-native \
     parted-native \
     cptra-imgtool-native \
-    caliptra-sw-native \
-    caliptra-mcu-sw-native \
     virtual/bootloader \
     fmc-images \
     "
