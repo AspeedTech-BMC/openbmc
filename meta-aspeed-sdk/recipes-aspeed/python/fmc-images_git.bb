@@ -2,7 +2,7 @@ SUMMARY = "ASPEED FMC images provide the necessary prebuilt image for AST2700 br
 HOMEPAGE = "https://github.com/AspeedTech-BMC/fmc_imgtool"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-require recipes-aspeed/python/fmc-imgtool.inc
+require fmc-imgtool.inc
 
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"
