@@ -11,7 +11,7 @@ do_install[noexec] = "1"
 
 inherit deploy
 
-DEPENDS += "cptra-imgtool-native caliptra-sw-native caliptra-mcu-sw-native fmc-images"
+DEPENDS += "cptra-imgtool-native fmc-images"
 
 CPTRA_IMGTOOL_CFG ?= "ast2700a1-default"
 CPTRA_PREBUILD_IMAGE_DIR ?= "prebuilt/ast2700a1-default"
