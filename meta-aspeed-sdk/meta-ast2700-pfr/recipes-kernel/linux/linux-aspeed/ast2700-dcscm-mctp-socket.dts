@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) ASPEED Technology Inc.
+
+#include "ast2700-dcscm.dts"
+
+/ {
+	model = "AST2700 DC-SCM PFR 5.0";
+};
+
+&i3c4 {
+	/delete-property/ initial-role;
+	/delete-property/ pid;
+	/delete-property/ dcr;
+	mctp-controller;
+};
