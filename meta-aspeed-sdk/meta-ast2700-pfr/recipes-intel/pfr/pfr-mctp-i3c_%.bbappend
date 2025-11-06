@@ -1,3 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
+SRC_URI:append = " \
+            file://mctp-i3c-starter.sh;subdir=${S} \
+            "
+
 SYSTEMD_OVERRIDE:${PN} = "hotjoin.conf:pfr-mctp-i3c.service.d/hotjoin.conf"
