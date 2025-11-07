@@ -57,8 +57,35 @@ which_dev()
        return 1
 }
 
+check_nbd_size()
+{
+    nbd_device_path="$1"
+    nbd_name=$(basename "$nbd_device_path")
+
+    # Retry up to 10 times to check NBD device size
+    retry_count=0
+    while [ "$retry_count" -lt 10 ]; do
+        nbd_size=$(cat "/sys/class/block/$nbd_name/size")
+        if [ "$nbd_size" != "0" ]; then
+            return 0
+        fi
+        echo "$nbd_name size is 0, waiting for device to be ready..."
+        sleep 1
+        retry_count=$((retry_count + 1))
+    done
+
+    echo "Error: $nbd_name size is still 0 after 10 attempts"
+    return 1
+}
+
 case "$action" in
 start)
+    # Check NBD device size and wait if necessary
+    if ! check_nbd_size "$nbd_device"; then
+        echo "Error: $nbd_device is not ready"
+        exit 1
+    fi
+
     mkdir -p $gadget_dir
     (
     cd $gadget_dir
