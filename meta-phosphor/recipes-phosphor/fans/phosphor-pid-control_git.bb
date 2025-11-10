@@ -17,7 +17,7 @@ DEPENDS += "cli11"
 DEPENDS += "boost"
 # We depend on this to be built first so we can build our providers.
 DEPENDS += "phosphor-ipmi-host"
-SRCREV = "765a6d8024061dd9f7a881bac870120886bee9db"
+SRCREV = "35ae0bb540c16b098b441394c1f7286a85e6e164"
 PV = "0.1+git${SRCPV}"
 PR = "r1"
 
@@ -34,6 +34,7 @@ inherit systemd
 
 PACKAGECONFIG ??= ""
 PACKAGECONFIG[offline-failsafe] = "-Doffline-failsafe-pwm=true,-Doffline-failsafe-pwm=false"
+PACKAGECONFIG[handle-missing-object-paths] = "-Dhandle-missing-object-paths=true,-Dhandle-missing-object-paths=false"
 
 EXTRA_OEMESON = " \
   -Dtests=disabled \

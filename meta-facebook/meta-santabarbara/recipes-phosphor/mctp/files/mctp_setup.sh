@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# shellcheck source=meta-facebook/recipes-fb/obmc_functions/files/fb-common-functions
+source /usr/libexec/fb-common-functions
+
 dev="${1:-}"
 
 # Mapping table: "DeviceLabel:PhysicalAddress:EID"
@@ -11,25 +14,75 @@ declare -a endpoint_map=(
     "rainbow3_mmc_mctp:0x21:40"
     "swb_nic1_mctp:0x32:50"
     "swb_nic2_mctp:0x32:51"
-    "swb_pex90144_mctp:0x62:52"
+    "swb_PCIe_switch_mctp:0x62:52"
     "swb_nic3_mctp:0x32:54"
     "swb_nic4_mctp:0x32:55"
 )
 
 # Build label -> interface mapping
 declare -A label_to_iface
-for iface_path in /sys/class/net/mctpi2c*; do
-    label_file="$iface_path/device/of_node/mctp@10/label"
-    if [[ -f "$label_file" ]]; then
-        IFS= read -r label < "$label_file"
-        iface=$(basename "$iface_path")
-        label_to_iface["$label"]="$iface"
-    fi
-done
 
-if [[ ${#label_to_iface[@]} -eq 0 ]]; then
-    echo "No MCTP interfaces with labels found." >&2
-    exit 1
+# Static device mapping
+label_to_iface["mb_nic0_mctp"]="mctpi2c11"
+
+# Hub device mapping (dynamic)
+declare -A hub0_port_mapping=(
+    [".port0"]="rainbow0_mmc_mctp"
+    [".port1"]="rainbow2_mmc_mctp"
+    [".port4"]="rainbow3_mmc_mctp"
+    [".port5"]="rainbow1_mmc_mctp"
+)
+
+declare -A hub1_port_mapping=(
+    [".port0"]="swb_nic1_mctp"
+    [".port1"]="swb_nic2_mctp"
+    [".port2"]="swb_PCIe_switch_mctp"
+    [".port4"]="swb_nic3_mctp"
+    [".port5"]="swb_nic4_mctp"
+)
+
+# Discover hub interfaces
+hub_devices=$(i2cdetect -l | grep "hub0-" | grep -E "\.port[0-9]")
+if [[ -n "$hub_devices" ]]; then
+    mapfile -t hub_ids < <(echo "$hub_devices" | grep -oE "hub0-[a-f0-9]+" | awk '!seen[$0]++')
+
+    hub_index=0
+    for hub_id in "${hub_ids[@]}"; do
+        hub_ports=$(echo "$hub_devices" | grep "$hub_id" | grep -oE "\.port[0-9]" | sort -n -t. -k2)
+
+        for port in $hub_ports; do
+            device_name=""
+            if [[ $hub_index -eq 0 ]]; then
+                device_name="${hub0_port_mapping[$port]}"
+            elif [[ $hub_index -eq 1 ]]; then
+                device_name="${hub1_port_mapping[$port]}"
+            fi
+
+            if [[ -n "$device_name" ]]; then
+                i2c_num=$(echo "$hub_devices" | grep "$hub_id$port" | awk '{print $1}' | cut -d'-' -f2)
+                label_to_iface["$device_name"]="mctpi2c$i2c_num"
+            fi
+        done
+
+        hub_index=$((hub_index + 1))
+    done
+fi
+
+# Supports i3c hub for EVT 2A and later phases
+if [ "$(get_gpio "MB_REV_ID_1")" -ne 0 ] || [ "$(get_gpio "MB_REV_ID_2")" -ne 0 ]; then
+    hub_devices=$(i2cdetect -l | grep "hub2-" | grep -E "\.port[0-9]")
+    if [[ -n "$hub_devices" ]]; then
+        hub_id=$(echo "$hub_devices" | grep -oEm1 "hub2-[a-f0-9]+" | awk '!seen[$0]++')
+        hub_ports=$(echo "$hub_devices" | grep "$hub_id" | grep -oE "\.port[0-9]" | sort -n -t. -k2)
+        for port in $hub_ports; do
+            device_name="${hub1_port_mapping[$port]}"
+
+            if [[ -n "$device_name" ]]; then
+                i2c_num=$(echo "$hub_devices" | grep "$hub_id$port" | awk '{print $1}' | cut -d'-' -f2)
+                label_to_iface["$device_name"]="mctpi2c$i2c_num"
+            fi
+        done
+    fi
 fi
 
 is_eid_assigned() {
