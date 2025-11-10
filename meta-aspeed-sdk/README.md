@@ -48,7 +48,6 @@ ast2700-default-irot
 ast2700-emmc
 ast2700-ufs
 ast2700-abr
-ast2700-vff
 ast2700-dcscm
 ast2700-a1
 ast2700-a1-spl (Linux Kernel v6.6)
@@ -58,7 +57,6 @@ ast2700-a1-irot
 ast2700-a1-emmc
 ast2700-a1-ufs
 ast2700-a1-abr
-ast2700-a1-vff
 ```
 
 - Linux kernel version is `6.12` by default, machine with `66` postfix for kernel v6.6, machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
