@@ -29,10 +29,8 @@ do_compile() {
 }
 
 do_install() {
-    install -d ${D}${datadir}
-    install -d -m 0755 ${D}${datadir}/cptra-imgtool
-
-    install -m 0755 ${B}/target/release/caliptra-auth-manifest-app ${D}${datadir}/cptra-imgtool/
+    install -d ${D}${bindir}
+    install -m 0755 ${B}/target/release/caliptra-auth-manifest-app ${D}${bindir}
 }
 
 BBCLASSEXTEND = "native nativesdk"
