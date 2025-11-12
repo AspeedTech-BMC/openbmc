@@ -26,18 +26,16 @@ do_compile() {
     cd ${S}
     # Build cptra_imgtool
     cargo build -p cptra-imgtool --release
+    cd -
 }
 
 do_install() {
+    install -d ${D}${bindir}
     install -d ${D}${datadir}
     install -d -m 0755 ${D}${datadir}/${BPN}
-    install -d -m 0755 ${D}${datadir}/${BPN}/config
-    install -d -m 0755 ${D}${datadir}/${BPN}/prebuilt
     install -d -m 0755 ${D}${datadir}/${BPN}/key
 
-    install -m 0755 ${B}/target/release/cptra-imgtool ${D}${datadir}/${BPN}/
-    cp --no-preserve=ownership -fr ${S}/config/* ${D}${datadir}/${BPN}/config
-    cp --no-preserve=ownership -fr ${S}/prebuilt/* ${D}${datadir}/${BPN}/prebuilt/
+    install -m 0755 ${B}/target/release/cptra-imgtool ${D}${bindir}
     cp --no-preserve=ownership -fr ${S}/key/* ${D}${datadir}/${BPN}/key/
 }
 
