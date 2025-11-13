@@ -77,7 +77,7 @@ ZEPHYR_BOARD_IBEXFW ?= "ast2700_evb/ast2700/bootmcu"
 # caliptra manifest
 CALIPTRA_MANIFEST_CONFIG_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
 CALIPTRA_MANIFEST_CONFIG ??= "ast2700a1-default-manifest.toml"
-CALIPTRA_MANIFEST_KEY_DIR ??= "${STAGING_DATADIR_NATIVE}/cptra-imgtool/key/ast2700a1-default"
+CALIPTRA_MANIFEST_KEY_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 
 QB_SYSTEM_NAME = "qemu-system-aarch64"

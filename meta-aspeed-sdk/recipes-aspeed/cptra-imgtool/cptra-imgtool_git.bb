@@ -31,12 +31,9 @@ do_compile() {
 
 do_install() {
     install -d ${D}${bindir}
-    install -d ${D}${datadir}
-    install -d -m 0755 ${D}${datadir}/${BPN}
-    install -d -m 0755 ${D}${datadir}/${BPN}/key
 
     install -m 0755 ${B}/target/release/cptra-imgtool ${D}${bindir}
-    cp --no-preserve=ownership -fr ${S}/key/* ${D}${datadir}/${BPN}/key/
 }
 
 BBCLASSEXTEND = "native nativesdk"
+
