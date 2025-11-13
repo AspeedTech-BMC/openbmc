@@ -30,8 +30,6 @@ DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secur
 
 inherit otptool
 
-MCU_RUNTIME_IMAGE ?= "${B}/zephyr/zephyr.bin"
-
 # Use fmc-imgtool to create fmc image since A1
 # export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
 # OpenSSL 3.0 legacy provider failed to load
@@ -65,10 +63,12 @@ do_create_fmc_image() {
         sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
     fi
 
+    echo "sign_args=${sign_args}"
+
     fmc-imgtool \
         --verbose \
         --version 2 \
-        --input ${MCU_RUNTIME_IMAGE} \
+        --input ${B}/zephyr/zephyr.bin \
         --output ${B}/zephyr/${BOOTMCU_FW_BINARY} \
         --prebuilt-dir ${STAGING_DATADIR}/fmc-images/prebuilt/ \
         ${sign_args}

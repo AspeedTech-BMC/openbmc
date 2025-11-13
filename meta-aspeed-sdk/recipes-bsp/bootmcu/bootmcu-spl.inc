@@ -148,6 +148,8 @@ do_create_fmc_image() {
         sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
     fi
 
+    echo "sign_args=${sign_args}"
+
     fmc-imgtool \
         --verbose \
         --version 2 \
