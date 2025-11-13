@@ -61,9 +61,11 @@ OTPTOOL_SOC = "2700"
 FMC_KEY_DIR = "${OTPTOOL_KEY_DIR}"
 
 # Caliptra manifest
-CPTRA_FLASH_IMAGE = "ast2700-manifest-flash.bin"
-CPTRA_NON_FLASH_IMAGE = "ast2700-soc-manifest.bin"
-CALIPTRA_MANIFEST_BINARY = "${CPTRA_FLASH_IMAGE}"
+CALIPTRA_MANIFEST_CONFIG_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
+CALIPTRA_MANIFEST_KEY_DIR = "${STAGING_DATADIR_NATIVE}/cptra-imgtool/key/ast2700a1-default"
+CALIPTRA_MANIFEST_FLASH_IMAGE = "ast2700-manifest-flash.bin"
+CALIPTRA_MANIFEST_RECOVERY_IMAGE = "ast2700-soc-manifest.bin"
+CALIPTRA_MANIFEST_BINARY = "${CALIPTRA_MANIFEST_FLASH_IMAGE}"
 
 install_unsigned_image() {
     install -d ${S}/${GEN_IMAGE_MODE}
@@ -187,56 +189,26 @@ make_kernel_fitimage_and_sign() {
 
 make_caliptra_manifest_image_and_sign() {
     export RUST_LOG="debug"
-    echo "Running cptra-imgtool..."
-
-    cd ${STAGING_DATADIR_NATIVE}/cptra-imgtool
-
-    mkdir -p out
-    mkdir -p ${CPTRA_PREBUILD_IMAGE_DIR}
-
-    # Copy fmc-images prebuilt image into cptra-imgtool prebuilt folder
-    echo "Overwrite ${STAGING_DATADIR}/fmc-images/prebuilt binaries into ${CPTRA_PREBUILD_IMAGE_DIR}"
-    install -m 644 ${STAGING_DATADIR}/fmc-images/prebuilt/* ${CPTRA_PREBUILD_IMAGE_DIR}/.
-
-    # Overwrite AFT image into cptra-imgtool prebuilt folder
-    if [ -f "${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE}" ]; then
-        echo "Overwrite ${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE} into ${CPTRA_PREBUILD_IMAGE_DIR}/atf.bin"
-        install -m 0644 ${UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/atf.bin
-    fi
-
-    # Overwrite OPTEE image into cptra-imgtool prebuilt folder
-    if [ -f "${UBOOT_FIT_TEE_IMAGE}" ]; then
-        echo "Overwrite ${UBOOT_FIT_TEE_IMAGE} into ${CPTRA_PREBUILD_IMAGE_DIR}/optee.bin"
-        install -m 0644 ${UBOOT_FIT_TEE_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/optee.bin
-    fi
-
-    # Overwrite U-Boot raw image into cptra-imgtool prebuilt folder
-    echo "Overwrite${S}/${GEN_IMAGE_MODE}/u-boot.bin into ${CPTRA_PREBUILD_IMAGE_DIR}/u-boot.bin"
-    install -m 0644 ${S}/${GEN_IMAGE_MODE}/u-boot.bin ${CPTRA_PREBUILD_IMAGE_DIR}/u-boot.bin
-
-    # Overwrite SSP image into cptra-imgtool prebuilt folder
-    if [ -f "${SSP_IMAGE}" ]; then
-        echo "Overwrite ${SSP_IMAGE} into ${CPTRA_PREBUILD_IMAGE_DIR}/ssp.bin"
-        install -m 0644 ${SSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/ssp.bin
-    fi
-
-    # Overwrite TSP image into cptra-imgtool prebuilt folder
-    if [ -f "${TSP_IMAGE}" ]; then
-        echo "Overwrite ${TSP_IMAGE} into ${CPTRA_PREBUILD_IMAGE_DIR}/tsp.bin"
-        install -m 0644 ${TSP_IMAGE} ${CPTRA_PREBUILD_IMAGE_DIR}/tsp.bin
-    fi
 
     # Run cptra-imgtool to generate manifest flash image.
-    ./cptra-imgtool create-auth-flash --cfg ${CPTRA_IMGTOOL_CFG} --flash ${CPTRA_FLASH_IMAGE}
+    cptra-imgtool \
+        create-auth-flash \
+        --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
+        --key-dir ${CALIPTRA_MANIFEST_KEY_DIR}/ \
+        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
+        --flash ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_FLASH_IMAGE}
 
     # Run cptra-imgtool to generate manifest image for recovery.
-    ./cptra-imgtool create-auth-man --cfg ${CPTRA_IMGTOOL_CFG} --man ${CPTRA_NON_FLASH_IMAGE}
+    cptra-imgtool \
+        create-auth-man \
+        --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
+        --key-dir ${CALIPTRA_MANIFEST_KEY_DIR}/ \
+        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
+        --man ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_RECOVERY_IMAGE}
 
-    cd -
-
-    # Install manifest image
-    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_FLASH_IMAGE} ${S}/${GEN_IMAGE_MODE}
-    install -m 644 ${STAGING_DATADIR_NATIVE}/cptra-imgtool/${CPTRA_NON_FLASH_IMAGE} ${S}/${GEN_IMAGE_MODE}
+    rm -f ${S}/${GEN_IMAGE_MODE}/caliptra-manifest.toml
+    rm -f ${S}/${GEN_IMAGE_MODE}/default_project-auth-manifest.bin
+    rm -f ${S}/${GEN_IMAGE_MODE}/svn_sig.bin
 }
 
 make_recovery_image() {
@@ -845,8 +817,8 @@ def create_irot_image(d):
     irot_boot_img = os.path.join(d.getVar('S', True), gen_img, 'irot_boot_img')
     make_empty_image(irot_boot_img, d.getVar('IROT_IMAGE_SIZE', True))
 
-    # MANIFEST
-    append_image(os.path.join(d.getVar('S', True), gen_img, d.getVar('CPTRA_FLASH_IMAGE', True)),
+    # Caliptra manifest
+    append_image(os.path.join(d.getVar('S', True), gen_img, d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)),
                  irot_boot_img,
                  int(d.getVar('IROT_OFFSET_MANIFEST', True)),
                  int(d.getVar('IROT_OFFSET_ATF', True)))
@@ -866,12 +838,12 @@ def create_irot_image(d):
                  int(d.getVar('IROT_OFFSET_TEE', True)),
                  int(d.getVar('IROT_IMAGE_SIZE', True)))
 
-    cmd = "rm -f {}".format(os.path.join(d.getVar('S', True), gen_img, d.getVar('CPTRA_FLASH_IMAGE', True)))
+    cmd = "rm -f {}".format(os.path.join(d.getVar('S', True), gen_img, d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)))
     print(cmd)
     subprocess.check_call(cmd, shell=True)
 
     cmd = "mv {} {}".format(irot_boot_img,
-                            os.path.join(d.getVar('S', True), gen_img, d.getVar('CPTRA_FLASH_IMAGE', True)))
+                            os.path.join(d.getVar('S', True), gen_img, d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)))
     print(cmd)
     subprocess.check_call(cmd, shell=True)
 
@@ -897,8 +869,8 @@ python do_deploy() {
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
-            "cptra_imgtool_cfg": "ast2700a1-default-ecc",
-            "cptra_imgtool_cfg_irot": "ast2700a1-irot-ecc"
+            "caliptra_manifest_config": "ast2700a1-default-ecc-manifest.toml",
+            "caliptra_manifest_config_irot": "ast2700a1-irot-ecc-manifest.toml"
         },
         {
             "mode": "ecdsa384-lms",
@@ -910,8 +882,8 @@ python do_deploy() {
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
-            "cptra_imgtool_cfg": "ast2700a1-default-ecc-lms",
-            "cptra_imgtool_cfg_irot": "ast2700a1-irot-ecc-lms"
+            "caliptra_manifest_config": "ast2700a1-default-ecc-lms-manifest.toml",
+            "caliptra_manifest_config_irot": "ast2700a1-irot-ecc-lms-manifest.toml"
         }
     ]
 
@@ -940,9 +912,9 @@ python do_deploy() {
         d.setVar('ROT_LMS_KEY_NAME', sec_img["rot_lms_key_name"])
         d.setVar('ROT_LMS_KEY_INDEX', sec_img["rot_lms_key_index"])
         if aspeed_irot == "yes":
-            d.setVar('CPTRA_IMGTOOL_CFG', sec_img["cptra_imgtool_cfg_irot"])
+            d.setVar('CALIPTRA_MANIFEST_CONFIG', sec_img["caliptra_manifest_config_irot"])
         else:
-            d.setVar('CPTRA_IMGTOOL_CFG', sec_img["cptra_imgtool_cfg"])
+            d.setVar('CALIPTRA_MANIFEST_CONFIG', sec_img["caliptra_manifest_config"])
 
         bb.build.exec_func("install_unsigned_image", d)
         kernel_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('KERNEL_FITIMAGE_ITS_NAME', True))
