@@ -56,11 +56,11 @@ USER_DATA_IMAGE_NAME = "${IMAGE_BASE_NAME}-${MACHINE}.bin"
 USER_DATA_BOOTPART_IMAGE_NAME = "boot-image.ext4"
 
 # Keys and Configs
-SPL_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
-UBOOT_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
+SPL_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/keys"
+UBOOT_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/keys"
 
 SOCSEC_SIGN_HELPER = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/signing_helper.sh"
-OTP_SOCSEC_KEY_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
+OTP_SOCSEC_KEY_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/keys"
 OTPTOOL_KEY_DIR = "${OTP_SOCSEC_KEY_DIR}"
 OTPTOOL_USER_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/data"
 OTPTOOL_CONFIGS_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/otp"

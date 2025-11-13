@@ -6,7 +6,7 @@
 #
 
 UBOOT_SIGN_ENABLE ?= "1"
-UBOOT_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
+UBOOT_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 
 # Algorithm "sha384,ecdsa384"
 FIT_PAD_ALG ?= ""
