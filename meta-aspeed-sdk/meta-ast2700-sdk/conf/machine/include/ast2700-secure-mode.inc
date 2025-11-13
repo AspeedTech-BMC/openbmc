@@ -4,7 +4,7 @@ require ast2700-secure-cot.inc
 # Secure Boot Settings for OTP and FMC
 # The following variables can be overridden in local.conf
 FMC_SIGN_ENABLE ?= "1"
-FMC_KEY_DIR ?= "${STAGING_DATADIR}/fmc-images/keys"
+FMC_KEY_DIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 OTPTOOL_KEY_DIR ?= "${FMC_KEY_DIR}"
 OTPTOOL_USER_DIR ?= ""
 OTPTOOL_SOC ?= "2700"

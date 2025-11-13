@@ -26,9 +26,7 @@ do_install () {
     install -d ${D}${datadir}
     install -d -m 0755 ${D}${datadir}/${BPN}
     install -d -m 0755 ${D}${datadir}/${BPN}/prebuilt
-    install -d -m 0755 ${D}${datadir}/${BPN}/keys
 
     install -m 644 ${S}/prebuilt/* ${D}${datadir}/${BPN}/prebuilt
-    install -m 644 ${S}/keys/* ${D}${datadir}/${BPN}/keys
 }
 

@@ -55,7 +55,7 @@ USER_DATA_BOOTPART_IMAGE_NAME = "boot-image.ext4"
 # Keys and Configs
 UBOOT_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 SOCSEC_SIGN_HELPER = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/signing_helper.sh"
-OTPTOOL_KEY_DIR = "${STAGING_DATADIR}/fmc-images/keys"
+OTPTOOL_KEY_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 OTPTOOL_CONFIGS_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/otp"
 OTPTOOL_SOC = "2700"
 FMC_KEY_DIR = "${OTPTOOL_KEY_DIR}"
