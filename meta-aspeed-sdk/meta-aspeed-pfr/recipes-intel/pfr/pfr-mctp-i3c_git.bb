@@ -13,11 +13,6 @@ SRC_URI = " file://main.c;subdir=${S} \
             file://mctp-i3c-starter.sh;subdir=${S} \
           "
 
-do_install() {
-    install -d ${D}${bindir}
-    install -m 0755 ${S}/mctp-i3c-starter.sh ${D}${bindir}/mctp-i3c-starter.sh
-}
-
 inherit obmc-phosphor-systemd
 SYSTEMD_SERVICE:${PN} = "pfr-mctp-i3c.service"
 
