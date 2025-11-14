@@ -18,7 +18,6 @@ DEPENDS = " \
     parted-native \
     cptra-imgtool-native \
     virtual/bootloader \
-    fmc-images \
     "
 
 do_patch[noexec] = "1"
@@ -161,7 +160,7 @@ make_fmc_image_and_sign() {
         --version 2 \
         --input ${DEPLOY_DIR_IMAGE}/${MCU_RUNTIME_IMAGE} \
         --output ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY} \
-        --prebuilt-dir ${STAGING_DATADIR}/fmc-images/prebuilt/ \
+        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         ${sign_args}
 }
 
@@ -954,6 +953,7 @@ do_deploy[depends] += " \
     virtual/kernel:do_deploy \
     virtual/bootloader:do_deploy \
     virtual/bootmcu:do_deploy \
+    fmc-images:do_deploy \
     obmc-phosphor-image:do_image_complete \
     "
 

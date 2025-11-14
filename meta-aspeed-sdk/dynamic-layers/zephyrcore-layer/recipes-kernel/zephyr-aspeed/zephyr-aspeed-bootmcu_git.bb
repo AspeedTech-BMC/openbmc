@@ -26,7 +26,7 @@ ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FW_BINARY}"
 
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
 
-DEPENDS += "fmc-imgtool-native fmc-images"
+DEPENDS += "fmc-imgtool-native"
 DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native', '', d)}"
 
 inherit otptool
@@ -71,9 +71,13 @@ do_create_fmc_image() {
         --version 2 \
         --input ${B}/zephyr/zephyr.bin \
         --output ${B}/zephyr/${BOOTMCU_FW_BINARY} \
-        --prebuilt-dir ${STAGING_DATADIR}/fmc-images/prebuilt/ \
+        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         ${sign_args}
 }
 
 addtask create_fmc_image before do_install after do_compile
+
+do_create_fmc_image[depends] += " \
+    fmc-images:do_deploy \
+    "
 

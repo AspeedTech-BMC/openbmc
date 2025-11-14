@@ -7,6 +7,7 @@ require fmc-imgtool.inc
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
+do_install[noexec] = "1"
 
 inherit deploy
 
@@ -21,12 +22,4 @@ do_deploy () {
 }
 
 addtask deploy before do_build after do_compile
-
-do_install () {
-    install -d ${D}${datadir}
-    install -d -m 0755 ${D}${datadir}/${BPN}
-    install -d -m 0755 ${D}${datadir}/${BPN}/prebuilt
-
-    install -m 644 ${S}/prebuilt/* ${D}${datadir}/${BPN}/prebuilt
-}
 
