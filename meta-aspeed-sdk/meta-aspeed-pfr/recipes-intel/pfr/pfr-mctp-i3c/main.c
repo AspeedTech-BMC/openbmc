@@ -122,7 +122,6 @@ enum mctp_mode {
 
 static enum mctp_mode g_mode = MODE_I3C;
 static int fd = -1;
-static int sock_fd = -1;
 char *dev = NULL;
 
 static void print_usage(const char *name)
@@ -437,7 +436,7 @@ void *mctp_sock_state_handler(void *arg)
 		struct mctp_vendor_intel_doe *vi_msg = NULL;
 		socklen_t alen = sizeof(addr);
 
-		int ret = recvfrom(sock_fd, buf, sizeof(buf), 0,
+		int ret = recvfrom(fd, buf, sizeof(buf), 0,
 				(struct sockaddr*)&addr, &alen);
 
 		if (ret < 0) {
@@ -453,7 +452,7 @@ void *mctp_sock_state_handler(void *arg)
 		switch (vi_msg->command_code) {
 			case MCTP_VENDOR_DOE_REGISTRATION:
 				printf("Received DOE eid registration\n");
-				mctp_sock_eid_registration(sock_fd, &addr, buf, ret);
+				mctp_sock_eid_registration(fd, &addr, buf, ret);
 				break;
 			default:
 				printf("Drop doe command : %x\n", vi_msg->command_code);
@@ -499,8 +498,8 @@ int main(int argc, char *argv[])
 
 		pthread_create(&pthread_mctp, NULL, mctp_i3c_state_handler, NULL);
 	} else if (g_mode == MODE_SOCKET) {
-		sock_fd = init_mctp_socket();
-		if (sock_fd < 0) {
+		fd = init_mctp_socket();
+		if (fd < 0) {
 			printf("Failed to open mctp socket\n");
 			print_usage(argv[0]);
 			exit(EXIT_FAILURE);
@@ -513,10 +512,8 @@ int main(int argc, char *argv[])
 
 	pthread_join(pthread_mctp, NULL);
 
-	if (g_mode == MODE_I3C && fd >= 0) {
+	if (fd >= 0) {
 		close(fd);
-	} else if (g_mode == MODE_SOCKET && sock_fd >= 0) {
-		close(sock_fd);
 	}
 
 	return 0;
