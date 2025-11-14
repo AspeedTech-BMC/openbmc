@@ -22,6 +22,7 @@ ${S}/aspeed-zephyr-project\;\
 
 ZEPHYR_BOARD_BOOTMCU ??= "ast2700_evb/ast2700/bootmcu"
 ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
+ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FW_BINARY}"
 
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
 
@@ -74,9 +75,5 @@ do_create_fmc_image() {
         ${sign_args}
 }
 
-addtask create_fmc_image before do_deploy after do_compile
-
-do_deploy:append() {
-    install -m 644 ${B}/zephyr/${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
-}
+addtask create_fmc_image before do_install after do_compile
 
