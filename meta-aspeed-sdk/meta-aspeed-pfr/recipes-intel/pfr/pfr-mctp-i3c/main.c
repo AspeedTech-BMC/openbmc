@@ -9,6 +9,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <linux/types.h>
+#include <sys/socket.h>
+#include <linux/mctp.h>
+#include <netinet/in.h>
+#include <errno.h>
+#include <string.h>
 
 #define MCTP_BTU 68
 #define MCTP_PAYLOAD_SIZE 64
@@ -102,14 +107,22 @@ struct i3c_mctp_packet {
 };
 #pragma pack()
 
-const char *sopts = "d:h";
+const char *sopts = "d:hs";
 static const struct option lopts[] = {
-	{"device",		required_argument,	NULL,	'd' },
-	{"help",		no_argument,		NULL,	'h' },
+	{"device",	required_argument,	NULL,	'd' },
+	{"socket",	no_argument,		NULL,	's' },
+	{"help",	no_argument,		NULL,	'h' },
 	{0, 0, 0, 0}
 };
 
-static int fd;
+enum mctp_mode {
+	MODE_I3C = 0,
+	MODE_SOCKET = 1,
+};
+
+static enum mctp_mode g_mode = MODE_I3C;
+static int fd = -1;
+static int sock_fd = -1;
 char *dev = NULL;
 
 static void print_usage(const char *name)
@@ -117,6 +130,7 @@ static void print_usage(const char *name)
 	fprintf(stderr, "usage: %s options...\n", name);
 	fprintf(stderr, "  options:\n");
 	fprintf(stderr, "    -d --device       <dev>          device to use.\n");
+	fprintf(stderr, "    -s --socket                      use socket interface.\n");
 	fprintf(stderr, "    -h --help                        Output usage message and exit.\n");
 }
 
@@ -155,7 +169,7 @@ int process_mctp_header( struct i3c_mctp_packet_data *mctp_msg, uint16_t len)
 		return -1;
 	}
 
-	if (header->som != 1 && header->eom != 1) {
+	if (!(header->som == 1 && header->eom == 1)) {
 		printf("Splitted mctp message is not supported\n");
 		return -1;
 	}
@@ -334,6 +348,122 @@ void *mctp_i3c_state_handler(void *arg)
 	pthread_exit(NULL);
 }
 
+#define MCTP_VNDR_HDR_MSG_TYPE 0x7E
+struct mctp_vendor_intel_msg_hdr {
+	uint16_t vendor_id;
+	uint8_t rq_dgram_inst;
+	uint8_t msg_op_code;
+} __attribute__((__packed__));
+
+struct mctp_vendor_intel_doe {
+	struct mctp_vendor_intel_msg_hdr vendor_hdr;
+	uint32_t seq_num;
+	uint8_t command_code;
+	uint8_t status;
+	uint8_t address;
+	uint8_t length;
+} __attribute__((__packed__));
+
+static int init_mctp_socket(void)
+{
+	int sd = socket(AF_MCTP, SOCK_DGRAM, 0);
+	if (sd < 0) {
+		perror("socket(AF_MCTP)");
+		return -1;
+	}
+
+	struct sockaddr_mctp addr = {0};
+	memset(&addr, 0, sizeof(addr));
+	addr.smctp_family  = AF_MCTP;
+	addr.smctp_network = MCTP_NET_ANY;
+	addr.smctp_addr.s_addr = MCTP_ADDR_ANY;
+	addr.smctp_type    = MCTP_VNDR_HDR_MSG_TYPE;
+	addr.smctp_tag     = MCTP_TAG_OWNER;
+
+	if (bind(sd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+		perror("bind(AF_MCTP)");
+		close(sd);
+		return -1;
+	}
+
+	int val = 1;
+	if (setsockopt(sd, SOL_MCTP, MCTP_OPT_ADDR_EXT, &val, sizeof(val)) < 0) {
+		perror("setsockopt(MCTP_OPT_ADDR_EXT)");
+	}
+
+	return sd;
+}
+
+static int mctp_sock_eid_registration(int sd, const struct sockaddr_mctp_ext *addr,
+		const uint8_t *buf, const size_t buf_size)
+{
+	struct mctp_vendor_intel_doe *req = NULL;
+	struct mctp_vendor_intel_doe *resp = NULL;
+	uint8_t resp_buf[sizeof(*resp) + MAX_ADDR_LEN];
+	uint8_t *req_data_ptr;
+	uint8_t *res_data_ptr;
+	size_t resp_len;
+
+	if (buf_size > sizeof(resp_buf)) {
+		return -ENOMSG;
+	}
+	req = (void*)buf;
+	resp = (void*)resp_buf;
+	memset(resp, 0x0, sizeof(*resp));
+	resp->command_code = req->command_code;
+	resp->vendor_hdr.vendor_id = req->vendor_hdr.vendor_id;
+	resp->vendor_hdr.rq_dgram_inst = 0;
+	resp->vendor_hdr.msg_op_code = req->vendor_hdr.msg_op_code;
+	resp->length = req->length;
+	req_data_ptr = (uint8_t *)req + sizeof(struct mctp_vendor_intel_doe);
+	res_data_ptr = (uint8_t *)resp + sizeof(struct mctp_vendor_intel_doe);
+	memcpy(res_data_ptr, req_data_ptr, resp->length);
+	resp_len = sizeof(*resp) + resp->length;
+
+	struct sockaddr_mctp resp_addr = {0};
+	memcpy(&resp_addr, addr, sizeof(resp_addr));
+	resp_addr.smctp_tag &= ~MCTP_TAG_OWNER;
+
+	return sendto(sd, resp, resp_len, 0,
+			(const struct sockaddr *)&resp_addr, sizeof(resp_addr));
+}
+
+void *mctp_sock_state_handler(void *arg)
+{
+	uint8_t buf[MCTP_BTU];
+
+	while (1) {
+		struct sockaddr_mctp_ext addr;
+		struct mctp_vendor_intel_doe *vi_msg = NULL;
+		socklen_t alen = sizeof(addr);
+
+		int ret = recvfrom(sock_fd, buf, sizeof(buf), 0,
+				(struct sockaddr*)&addr, &alen);
+
+		if (ret < 0) {
+			perror("socket recvfrom");
+			continue;
+		}
+
+		printf("SOCK Buffer: ");
+		for (int i = 0; i < ret; i++)
+			printf("%02x ", buf[i]);
+		printf("\n");
+		vi_msg = (struct mctp_vendor_intel_doe *)buf;
+		switch (vi_msg->command_code) {
+			case MCTP_VENDOR_DOE_REGISTRATION:
+				printf("Received DOE eid registration\n");
+				mctp_sock_eid_registration(sock_fd, &addr, buf, ret);
+				break;
+			default:
+				printf("Drop doe command : %x\n", vi_msg->command_code);
+				continue;
+		}
+	}
+
+	return NULL;
+}
+
 int main(int argc, char *argv[])
 {
 	pthread_t pthread_mctp;
@@ -347,6 +477,10 @@ int main(int argc, char *argv[])
 		switch(opt) {
 			case 'd':
 				dev = optarg;
+				g_mode = MODE_I3C;
+				break;
+			case 's':
+				g_mode = MODE_SOCKET;
 				break;
 			default:
 				print_usage(argv[0]);
@@ -354,20 +488,36 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	fd = open(dev, O_RDWR);
+	if (g_mode == MODE_I3C) {
+		fd = open(dev, O_RDWR);
 
-	if (fd < 0) {
-		printf("Failed to open i3c dev\n");
-		print_usage(argv[0]);
+		if (fd < 0) {
+			printf("Failed to open i3c dev\n");
+			print_usage(argv[0]);
+			exit(EXIT_FAILURE);
+		}
+
+		pthread_create(&pthread_mctp, NULL, mctp_i3c_state_handler, NULL);
+	} else if (g_mode == MODE_SOCKET) {
+		sock_fd = init_mctp_socket();
+		if (sock_fd < 0) {
+			printf("Failed to open mctp socket\n");
+			print_usage(argv[0]);
+			exit(EXIT_FAILURE);
+		}
+		pthread_create(&pthread_mctp, NULL, mctp_sock_state_handler, NULL);
+	} else {
+		printf("Invalid mode\n");
 		exit(EXIT_FAILURE);
 	}
 
-	pthread_create(&pthread_mctp, NULL, mctp_i3c_state_handler, NULL);
+	pthread_join(pthread_mctp, NULL);
 
-	while (1) {
-		sleep(1);
+	if (g_mode == MODE_I3C && fd >= 0) {
+		close(fd);
+	} else if (g_mode == MODE_SOCKET && sock_fd >= 0) {
+		close(sock_fd);
 	}
 
-	close(fd);
 	return 0;
 }

@@ -44,7 +44,7 @@ if mctp link|grep mctpi3c4 > /dev/null;then
 		sleep 2
 		STATE=$(GetPlatformState)
 	done
-
+	/usr/bin/pfr-mctpd -s
 elif [ -r /dev/i3c-mctp-target-0 ];then
 	/usr/bin/pfr-mctpd -d /dev/i3c-mctp-target-0
 else
