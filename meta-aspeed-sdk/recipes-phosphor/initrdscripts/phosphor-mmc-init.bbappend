@@ -1,4 +1,4 @@
-FILESEXTRAPATHS:prepend:ast-ufs := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:ast-ufs := "${THISDIR}/${PN}:"
 
 # Use ufs-init.sh for UFS init script.
 SRC_URI:append:ast-ufs = " file://ufs-init.sh \

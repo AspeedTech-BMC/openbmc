@@ -1,4 +1,4 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 #ToDo
 #SRC_URI:append = " file://0001-mctp-req-Add-data-argument-in-usage.patch"
