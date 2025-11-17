@@ -150,3 +150,8 @@ ARCHIVER_MODE[recipe] = "1"
 COPYLEFT_LICENSE_INCLUDE = "*"
 ```
 
+# Firmware Partner Information
+## AMI
+AMI firmware code supports ASPEED AST2700 and AST2600 demo boards.
+Please access [https://github.com/ocp-hm-openbmc-opf-ami](https://github.com/ocp-hm-openbmc-opf-ami) to download the code.
+
