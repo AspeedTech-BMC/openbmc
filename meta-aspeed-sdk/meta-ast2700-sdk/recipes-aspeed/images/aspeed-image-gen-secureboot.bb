@@ -189,11 +189,19 @@ make_kernel_fitimage_and_sign() {
 make_caliptra_manifest_image_and_sign() {
     export RUST_LOG="debug"
 
+    local caliptra_manifest_key_dir=""
+
+    if [ -n "${CALIPTRA_MANIFEST_KEY_DIR}" ]; then
+        caliptra_manifest_key_dir="--key-dir ${CALIPTRA_MANIFEST_KEY_DIR}/"
+    fi
+
+    echo "caliptra_manifest_key_dir=${caliptra_manifest_key_dir}"
+
     # Run cptra-imgtool to generate manifest flash image.
     cptra-imgtool \
         create-auth-flash \
         --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
-        --key-dir ${CALIPTRA_MANIFEST_KEY_DIR}/ \
+        ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         --flash ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_FLASH_IMAGE}
 
@@ -201,7 +209,7 @@ make_caliptra_manifest_image_and_sign() {
     cptra-imgtool \
         create-auth-man \
         --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
-        --key-dir ${CALIPTRA_MANIFEST_KEY_DIR}/ \
+        ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         --man ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_RECOVERY_IMAGE}
 
