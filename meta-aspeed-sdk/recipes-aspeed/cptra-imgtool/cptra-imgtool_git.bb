@@ -7,11 +7,14 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 BRANCH = "master"
 SRC_URI = "git://github.com/AspeedTech-BMC/cptra_imgtool;protocol=https;branch=${BRANCH};"
 
-# Tag for v00.01.00
-SRCREV = "dcf9a5426126f24336ffc719630cfba276abe042"
+# Tag for v00.01.01
+SRCREV = "e300bf362330bb3bb1f12bc2d155dfb7a14ccf14"
 
 PV = "1.0+git"
 S = "${WORKDIR}/git"
+
+DEPENDS += "caliptra-sw caliptra-mcu-sw"
+RDEPENDS:${PN} += "caliptra-sw caliptra-mcu-sw"
 
 inherit cargo
 
@@ -25,19 +28,14 @@ do_compile() {
     cd ${S}
     # Build cptra_imgtool
     cargo build -p cptra-imgtool --release
+    cd -
 }
 
 do_install() {
-    install -d ${D}${datadir}
-    install -d -m 0755 ${D}${datadir}/${BPN}
-    install -d -m 0755 ${D}${datadir}/${BPN}/config
-    install -d -m 0755 ${D}${datadir}/${BPN}/prebuilt
-    install -d -m 0755 ${D}${datadir}/${BPN}/key
+    install -d ${D}${bindir}
 
-    install -m 0755 ${B}/target/release/cptra-imgtool ${D}${datadir}/${BPN}/
-    cp --no-preserve=ownership -fr ${S}/config/* ${D}${datadir}/${BPN}/config
-    cp --no-preserve=ownership -fr ${S}/prebuilt/* ${D}${datadir}/${BPN}/prebuilt/
-    cp --no-preserve=ownership -fr ${S}/key/* ${D}${datadir}/${BPN}/key/
+    install -m 0755 ${B}/target/release/cptra-imgtool ${D}${bindir}
 }
 
 BBCLASSEXTEND = "native nativesdk"
+

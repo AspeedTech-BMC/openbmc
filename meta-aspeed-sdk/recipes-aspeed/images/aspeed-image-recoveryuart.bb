@@ -55,16 +55,18 @@ do_deploy () {
         python3 ${STAGING_BINDIR_NATIVE}/recovery_spl_extraction.py -i ${SOURCE_IMAGE_DIR}/${BOOTMCU_FW_BINARY}
         install -m 0644 ${SOURCE_IMAGE_DIR}/recovery_${BOOTMCU_FW_BINARY} ${OUTPUT_IMAGE_DIR}/.
 
-        # Generate AST2700 A1 I2C/I3C recovery image
-        install -m 0644 ${DEPLOY_DIR_IMAGE}/u-boot.bin ${SOURCE_IMAGE_DIR}/.
-        dd if=${SOURCE_IMAGE_DIR}/u-boot.bin of=${OUTPUT_IMAGE_DIR}/u-boot-fit-header.bin bs=64 count=1
-
         # Deploy AST2700 A1 SPL recovery image
         install -d ${DEPLOYDIR}
         install -m 644 ${OUTPUT_IMAGE_DIR}/recovery_${BOOTMCU_FW_BINARY} ${DEPLOYDIR}/.
 
-        # Deploy AST2700 A1 I2C/I3C recovery image
-        install -m 644 ${OUTPUT_IMAGE_DIR}/u-boot-fit-header.bin ${DEPLOYDIR}/.
+        # Generate the AST2700 A1 I2C/I3C recovery image.
+        # If UBOOT_FITIMAGE_ENABLE is enabled, it indicates that the build uses a U-Boot FIT image
+        # instead of a SoC manifest image. In this case, generate and deploy the U-Boot FIT header.
+        if [ "${UBOOT_FITIMAGE_ENABLE}" = "1" ]; then
+            install -m 0644 ${DEPLOY_DIR_IMAGE}/u-boot.bin ${SOURCE_IMAGE_DIR}/.
+            dd if=${SOURCE_IMAGE_DIR}/u-boot.bin of=${OUTPUT_IMAGE_DIR}/u-boot-fit-header.bin bs=64 count=1
+            install -m 644 ${OUTPUT_IMAGE_DIR}/u-boot-fit-header.bin ${DEPLOYDIR}/.
+        fi
     elif [ "${SOC_FAMILY}" = "aspeed-g6" ] ; then
         install -m 0644 ${SOURCE_IMAGE_DIR}/${SOURCE_IMAGE} ${SOURCE_IMAGE_DIR}/${RECOVERY_SOURCE_IMAGE}
     fi

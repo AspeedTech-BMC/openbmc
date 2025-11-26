@@ -44,9 +44,6 @@ sign_spl_helper() {
             $signing_helper_args \
             ${SOCSEC_SIGN_EXTRA_OPTS} \
             --output ${SPL_BINARY}.staged
-
-        # install unsigned image
-        install -m 0644 ${B}/$CONFIG_B_PATH/${SPL_BINARY} ${DEPLOYDIR}/"$(basename ${SPL_BINARY})".unsigned
         cp -f ${SPL_BINARY}.staged ${B}/$CONFIG_B_PATH/${SPL_BINARY}
         mv -f ${SPL_BINARY}.staged ${DEPLOYDIR}/${SPL_IMAGE}
     fi

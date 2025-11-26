@@ -23,30 +23,24 @@ Reference:
 . setup <machine> [build_dir]
 Target machine must be specified. Use one of:
 ast2500-default
+ast2500-default-66
 ast2500-default-515
 ast2500-default-54
 ast2600-dcscm
 ast2600-dcscm-amd
 ast2600-default
+ast2600-default-66
 ast2600-default-515
 ast2600-default-54
 ast2600-default-ecc
 ast2600-default-ncsi
 ast2600-default-raw
-ast2600-default-secure
-ast2600-default-secure-515
-ast2600-default-secure-tee
-ast2600-default-secure-tee-515
 ast2600-default-tee
-ast2600-default-tee-515
+ast2600-default-tee-66
 ast2600-emmc
-ast2600-emmc-515
-ast2600-emmc-secure
-ast2600-emmc-secure-515
-ast2600-emmc-secure-tee
-ast2600-emmc-secure-tee-515
+ast2600-emmc-66
 ast2600-emmc-tee
-ast2600-emmc-tee-515
+ast2600-emmc-tee-66
 ast2700-default
 ast2700-default-ncsi
 ast2700-default-raw
@@ -54,11 +48,18 @@ ast2700-default-irot
 ast2700-emmc
 ast2700-ufs
 ast2700-abr
-ast2700-vff
 ast2700-dcscm
+ast2700-a1
+ast2700-a1-spl (Linux Kernel v6.6)
+ast2700-a1-ncsi
+ast2700-a1-raw
+ast2700-a1-irot
+ast2700-a1-emmc
+ast2700-a1-ufs
+ast2700-a1-abr
 ```
 
-- Linux kernel version is `6.6` by default. machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
+- Linux kernel version is `6.12` by default, machine with `66` postfix for kernel v6.6, machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
 - AST2600
   - Default revision for A3.
   - Optee is disabled by default. machine with `tee` postfix for Optee enable.
@@ -148,4 +149,9 @@ ARCHIVER_MODE[src] = "original"
 ARCHIVER_MODE[recipe] = "1"
 COPYLEFT_LICENSE_INCLUDE = "*"
 ```
+
+# Firmware Partner Information
+## AMI
+AMI firmware code supports ASPEED AST2700 and AST2600 demo boards.
+Please access [https://github.com/ocp-hm-openbmc-opf-ami](https://github.com/ocp-hm-openbmc-opf-ami) to download the code.
 

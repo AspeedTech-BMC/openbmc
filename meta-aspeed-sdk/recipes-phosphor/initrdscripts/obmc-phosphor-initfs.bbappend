@@ -1,4 +1,4 @@
-FILESEXTRAPATHS:prepend:ast2700-abr := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:ast2700-abr := "${THISDIR}/${PN}:"
 
 
 # Update obmc-init.sh and obmc-update.sh for AST2700 single flash ABR.

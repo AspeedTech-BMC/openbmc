@@ -1,7 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI:append= " file://power-config-host0.json \
-                "
+SRC_URI:append = " file://power-config-host0.json \
+                 "
 
 do_install:append() {
     install -d ${D}${datadir}/${PN}

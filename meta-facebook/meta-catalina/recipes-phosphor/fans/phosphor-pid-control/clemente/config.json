@@ -1,9 +1,9 @@
 {
     "sensors": [
         {
-            "name": "FIOBOARD_TEMP_C",
+            "name": "VIRTUAL_FIOBOARD_TEMP_C",
             "type": "temp",
-            "readPath": "/xyz/openbmc_project/sensors/temperature/FIOBOARD_TEMP_C",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/VIRTUAL_FIOBOARD_TEMP_C",
             "timeout": 0,
             "ignoreDbusMinMax": true
         },
@@ -50,16 +50,37 @@
             "ignoreDbusMinMax": true
         },
         {
-            "name": "PDB_VR_P12V_N1_TEMP_C",
+            "name": "BOOTDRIVE_TEMP_C",
             "type": "temp",
-            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_VR_P12V_N1_TEMP_C",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/BOOTDRIVE_TEMP_C",
             "timeout": 0,
             "ignoreDbusMinMax": true
         },
         {
-            "name": "PDB_VR_P12V_N2_TEMP_C",
+            "name": "PDB_VR_P12V_N1_0_TEMP_C",
             "type": "temp",
-            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_VR_P12V_N2_TEMP_C",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_VR_P12V_N1_0_TEMP_C",
+            "timeout": 0,
+            "ignoreDbusMinMax": true
+        },
+        {
+            "name": "PDB_VR_P12V_N1_1_TEMP_C",
+            "type": "temp",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_VR_P12V_N1_1_TEMP_C",
+            "timeout": 0,
+            "ignoreDbusMinMax": true
+        },
+        {
+            "name": "PDB_VR_P12V_N2_0_TEMP_C",
+            "type": "temp",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_VR_P12V_N2_0_TEMP_C",
+            "timeout": 0,
+            "ignoreDbusMinMax": true
+        },
+        {
+            "name": "PDB_VR_P12V_N2_1_TEMP_C",
+            "type": "temp",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_VR_P12V_N2_1_TEMP_C",
             "timeout": 0,
             "ignoreDbusMinMax": true
         },
@@ -88,7 +109,7 @@
             "name": "FAN0_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN0_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN0_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -97,7 +118,7 @@
             "name": "FAN0_TACH_OL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN0_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN0_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -106,7 +127,7 @@
             "name": "FAN1_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN1_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN1_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -115,7 +136,7 @@
             "name": "FAN1_TACH_OL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN1_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN1_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -124,7 +145,7 @@
             "name": "FAN2_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN2_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN2_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -133,7 +154,7 @@
             "name": "FAN2_TACH_OL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN2_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN2_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -142,7 +163,7 @@
             "name": "FAN3_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN3_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN3_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -151,7 +172,7 @@
             "name": "FAN3_TACH_OL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN3_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN3_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -160,7 +181,7 @@
             "name": "FAN4_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN4_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN4_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -169,7 +190,7 @@
             "name": "FAN4_TACH_OL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN4_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN4_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -178,7 +199,7 @@
             "name": "FAN5_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN5_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN5_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -187,7 +208,7 @@
             "name": "FAN5_TACH_OL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN5_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN5_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -196,7 +217,7 @@
             "name": "FAN6_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN6_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN6_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -205,7 +226,7 @@
             "name": "FAN6_TACH_OL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN6_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN6_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -214,7 +235,7 @@
             "name": "FAN7_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN7_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN7_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -223,7 +244,7 @@
             "name": "FAN7_TACH_OL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM",
-            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN7_PWM",
+            "writePath": "/xyz/openbmc_project/control/fanpwm/FAN7_PWM_PCT",
             "min": 0,
             "max": 255,
             "ignoreDbusMinMax": true
@@ -233,7 +254,7 @@
     "zones": [
         {
             "id": 1,
-            "failsafePercent": 100.0,
+            "failsafePercent": 80.0,
             "minThermalOutput": 0.0,
             "cycleTimeBaseMS": 1000,
             "updateThermalsTimeMS": 1000,
@@ -282,7 +303,7 @@
                     "name": "STEPWISE_FIO",
                     "type": "stepwise",
                     "inputs": [
-                        "FIOBOARD_TEMP_C"
+                        "VIRTUAL_FIOBOARD_TEMP_C"
                     ],
                     "setpoint": 0.0,
                     "pid": {
@@ -318,12 +339,12 @@
                         "samplePeriod": 1,
                         "isCeiling": false,
                         "reading": {
-                            "0": 70,
+                            "0": 65,
                             "1": 80,
                             "2": 95
                         },
                         "output": {
-                            "0": 35,
+                            "0": 40,
                             "1": 60,
                             "2": 80
                         },
@@ -338,7 +359,7 @@
                         "NIC0_TEMP_C",
                         "NIC1_TEMP_C"
                     ],
-                    "setpoint": 85.0,
+                    "setpoint": 95.0,
                     "pid": {
                         "samplePeriod": 1,
                         "proportionalCoeff": -3.0,
@@ -364,21 +385,22 @@
                         "HDDBOARD0_SSD0_TEMP_C",
                         "HDDBOARD0_SSD1_TEMP_C",
                         "HDDBOARD1_SSD0_TEMP_C",
-                        "HDDBOARD1_SSD1_TEMP_C"
+                        "HDDBOARD1_SSD1_TEMP_C",
+                        "BOOTDRIVE_TEMP_C"
                     ],
                     "setpoint": 0.0,
                     "pid": {
                         "samplePeriod": 1,
                         "isCeiling": false,
                         "reading": {
-                            "0": 45,
-                            "1": 55,
+                            "0": 50,
+                            "1": 60,
                             "2": 65
                         },
                         "output": {
                             "0": 35,
-                            "1": 50,
-                            "2": 80
+                            "1": 40,
+                            "2": 60
                         },
                         "positiveHysteresis": 0,
                         "negativeHysteresis": 2
@@ -391,9 +413,10 @@
                         "HDDBOARD0_SSD0_TEMP_C",
                         "HDDBOARD0_SSD1_TEMP_C",
                         "HDDBOARD1_SSD0_TEMP_C",
-                        "HDDBOARD1_SSD1_TEMP_C"
+                        "HDDBOARD1_SSD1_TEMP_C",
+                        "BOOTDRIVE_TEMP_C"
                     ],
-                    "setpoint": 60.0,
+                    "setpoint": 64.0,
                     "pid": {
                         "samplePeriod": 1,
                         "proportionalCoeff": -3.0,
@@ -416,8 +439,10 @@
                     "name": "STEPWISE_PDB",
                     "type": "stepwise",
                     "inputs": [
-                        "PDB_VR_P12V_N1_TEMP_C",
-                        "PDB_VR_P12V_N2_TEMP_C",
+                        "PDB_VR_P12V_N1_0_TEMP_C",
+                        "PDB_VR_P12V_N1_1_TEMP_C",
+                        "PDB_VR_P12V_N2_0_TEMP_C",
+                        "PDB_VR_P12V_N2_1_TEMP_C",
                         "PDB_HSC1_TEMP_C",
                         "PDB_HSC2_TEMP_C",
                         "PDB_INLET_TEMP_C"
@@ -427,12 +452,12 @@
                         "samplePeriod": 1,
                         "isCeiling": false,
                         "reading": {
-                            "0": 70,
-                            "1": 80,
+                            "0": 90,
+                            "1": 95,
                             "2": 105
                         },
                         "output": {
-                            "0": 35,
+                            "0": 40,
                             "1": 50,
                             "2": 80
                         },
@@ -444,13 +469,15 @@
                     "name": "PID_PDB",
                     "type": "temp",
                     "inputs": [
-                        "PDB_VR_P12V_N1_TEMP_C",
-                        "PDB_VR_P12V_N2_TEMP_C",
+                        "PDB_VR_P12V_N1_0_TEMP_C",
+                        "PDB_VR_P12V_N1_1_TEMP_C",
+                        "PDB_VR_P12V_N2_0_TEMP_C",
+                        "PDB_VR_P12V_N2_1_TEMP_C",
                         "PDB_HSC1_TEMP_C",
                         "PDB_HSC2_TEMP_C",
                         "PDB_INLET_TEMP_C"
                     ],
-                    "setpoint": 90.0,
+                    "setpoint": 92.0,
                     "pid": {
                         "samplePeriod": 1,
                         "proportionalCoeff": -3.0,

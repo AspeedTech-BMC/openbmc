@@ -39,20 +39,19 @@ fi
 
 if [ -r /dev/i3c-mctp-target-0 ];then
 
-/usr/bin/pfr-mctpd -d /dev/i3c-mctp-target-0
+	/usr/bin/pfr-mctpd -d /dev/i3c-mctp-target-0
 
 else
-
-STATE=$(GetPlatformState)
-while true;do
-if [ "$STATE" = "T0 BMC booted" ] || [ "$STATE" = "T0 boot complete" ];then
-	SetupEndpoint
-	break
-fi
-sleep 2
-STATE=$(GetPlatformState)
-done
-
+	STATE=$(GetPlatformState)
+	while true;do
+		if [ "$STATE" = "T0 BMC booted" ] || [ "$STATE" = "T0 boot complete" ];then
+			SetupEndpoint
+			break
+		fi
+		sleep 2
+		STATE=$(GetPlatformState)
+	done
+	/usr/bin/pfr-mctpd -s
 fi
 systemctl start i3c-attestation-emu.service
 touch /tmp/.mctp_i3c_done

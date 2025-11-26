@@ -58,7 +58,8 @@ UBOOT_FIT_SSP_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-ssp.bin"
 UBOOT_FIT_TSP_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-tsp.bin"
 UBOOT_FIT_IBEXFW_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-ibexfw.bin"
 
-PREFERRED_PROVIDER_virtual/bootmcu ??= "bootmcu-spl"
+# BootMCU Build Settings
+PREFERRED_PROVIDER_virtual/bootmcu ??= "zephyr-aspeed-bootmcu"
 
 # zephyr pre-built toolchain
 ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"
@@ -72,6 +73,11 @@ ZEPHYR_BOARD_TSP ?= "ast2700_evb/ast2700/tsp"
 
 PREFERRED_PROVIDER_virtual/ibexfw ??= "zephyr-aspeed-ibexfw"
 ZEPHYR_BOARD_IBEXFW ?= "ast2700_evb/ast2700/bootmcu"
+
+# caliptra manifest
+CALIPTRA_MANIFEST_CONFIG_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
+CALIPTRA_MANIFEST_CONFIG ??= "ast2700a1-default-manifest.toml"
+CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 
 QB_SYSTEM_NAME = "qemu-system-aarch64"
 QB_MACHINE = "-machine ast2700a1-evb"

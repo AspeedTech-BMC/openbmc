@@ -8,8 +8,8 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 BRANCH = "aspeed-rt-1.2.0"
 SRC_URI = "gitsm://github.com/AspeedTech-BMC/caliptra-sw;protocol=https;branch=${BRANCH};"
 
-# Tag for v01.02.01
-SRCREV = "30401764cc245a0b62e5b9cf6a3340098aa1fd3f"
+# Tag for v01.02.02
+SRCREV = "9352328545665469cc9996abfe2bf73f4868530a"
 
 PV = "1.0+git"
 S = "${WORKDIR}/git"
@@ -31,10 +31,8 @@ do_compile() {
 }
 
 do_install() {
-    install -d ${D}${datadir}
-    install -d -m 0755 ${D}${datadir}/cptra-imgtool
-
-    install -m 0755 ${B}/target/release/caliptra-auth-manifest-app ${D}${datadir}/cptra-imgtool/
+    install -d ${D}${bindir}
+    install -m 0755 ${B}/target/release/caliptra-auth-manifest-app ${D}${bindir}
 }
 
 BBCLASSEXTEND = "native nativesdk"

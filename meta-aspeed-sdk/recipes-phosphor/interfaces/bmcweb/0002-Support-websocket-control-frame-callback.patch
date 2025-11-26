@@ -1,4 +1,4 @@
-From 964e4ca4c2544e467d0e49dff96e8c76772748e5 Mon Sep 17 00:00:00 2001
+From 0a8b90f1f10bb546a01066e74755a69c65de3e07 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 14:27:16 +0800
 Subject: [PATCH] Support websocket control frame callback
@@ -40,7 +40,7 @@ index 898a1d09..9db1fb8c 100644
  }
  } // namespace crow
 diff --git a/http/routing/websocketrule.hpp b/http/routing/websocketrule.hpp
-index 56bc6caf..772ae3bd 100644
+index b5ca92e6..5f174469 100644
 --- a/http/routing/websocketrule.hpp
 +++ b/http/routing/websocketrule.hpp
 @@ -88,6 +88,20 @@ class WebSocketRule : public BaseRule
@@ -62,14 +62,14 @@ index 56bc6caf..772ae3bd 100644
 +    }
 +
    protected:
-     std::function<void(crow::websocket::Connection&)> openHandler;
-     std::function<void(crow::websocket::Connection&, const std::string&, bool)>
+     std::function<void(websocket::Connection&)> openHandler;
+     std::function<void(websocket::Connection&, const std::string&, bool)>
 @@ -99,5 +113,7 @@ class WebSocketRule : public BaseRule
-     std::function<void(crow::websocket::Connection&, const std::string&)>
+     std::function<void(websocket::Connection&, const std::string&)>
          closeHandler;
-     std::function<void(crow::websocket::Connection&)> errorHandler;
-+    std::function<void(crow::websocket::Connection&, const std::string&)> pingHandler;
-+    std::function<void(crow::websocket::Connection&, const std::string&)> pongHandler;
+     std::function<void(websocket::Connection&)> errorHandler;
++    std::function<void(websocket::Connection&, const std::string&)> pingHandler;
++    std::function<void(websocket::Connection&, const std::string&)> pongHandler;
  };
  } // namespace crow
 diff --git a/http/websocket_impl.hpp b/http/websocket_impl.hpp

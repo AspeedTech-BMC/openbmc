@@ -5,7 +5,6 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 PR = "r1"
 
 SOURCE_FILES = "\
-    init \
     10-early-mounts \
     20-udev \
     21-factory-reset \
@@ -13,6 +12,8 @@ SOURCE_FILES = "\
     50-mount-persistent \
     "
 SRC_URI += "\
+    file://init \
+    file://remount-filesystem-readonly \
     ${@' '.join(\
         [ 'file://' + x for x in d.getVar('SOURCE_FILES', True).split()])} \
     "
@@ -34,10 +35,12 @@ PKG_INSTALL_DIR = "${libexecdir}/${BPN}"
 FILES:${PN} += "${PKG_INSTALL_DIR}"
 
 do_install() {
-    install -d ${D}${PKG_INSTALL_DIR}
+    install -d ${D}${PKG_INSTALL_DIR}/initfiles
+    install -m 0755 ${S}/init ${D}${PKG_INSTALL_DIR}/init
+    install -m 0755 ${S}/remount-filesystem-readonly ${D}${PKG_INSTALL_DIR}/remount-filesystem-readonly
 
     for f in ${SOURCE_FILES} ; do
-        install -m 0755 ${S}/$f ${D}${PKG_INSTALL_DIR}/$f
+        install -m 0755 ${S}/$f ${D}${PKG_INSTALL_DIR}/initfiles/$f
     done
 
     # Create persistent mount points and add to mount script.
@@ -46,7 +49,7 @@ do_install() {
         touch ${D}/$mountpoint/.keep.mount-persistent
     done
     sed -i "s#@NOROOTFS_PERSISTENT_DIRS@#${NOROOTFS_PERSISTENT_DIRS}#" \
-        ${D}${PKG_INSTALL_DIR}/50-mount-persistent
+        ${D}${PKG_INSTALL_DIR}/initfiles/50-mount-persistent
 }
 
 RDEPENDS:${PN} += " \

@@ -20,23 +20,29 @@ do_compile[noexec] = "1"
 do_install() {
     install -d ${D}${datadir}
     install -d ${D}${datadir}/aspeed-secure-config
-    install -d ${D}${datadir}/aspeed-secure-config/keys
     install -d ${D}${datadir}/aspeed-secure-config/ast2600
     install -d ${D}${datadir}/aspeed-secure-config/ast2600/otp
     install -d ${D}${datadir}/aspeed-secure-config/ast2600/data
+    install -d ${D}${datadir}/aspeed-secure-config/ast2600/keys
     install -d ${D}${datadir}/aspeed-secure-config/ast2700
     install -d ${D}${datadir}/aspeed-secure-config/ast2700/otp
+    install -d ${D}${datadir}/aspeed-secure-config/ast2700/caliptra
+    install -d ${D}${datadir}/aspeed-secure-config/ast2700/keys
 
     install -m 0755 ${S}/configs/*.sh \
         ${D}${datadir}/aspeed-secure-config
-    install -m 0644 ${S}/keys/* \
-        ${D}${datadir}/aspeed-secure-config/keys
+    install -m 0644 ${S}/keys/ast2600/* \
+        ${D}${datadir}/aspeed-secure-config/ast2600/keys
     install -m 0644 ${S}/configs/ast2600/otp/* \
         ${D}${datadir}/aspeed-secure-config/ast2600/otp
     install -m 0644 ${S}/configs/ast2600/data/* \
         ${D}${datadir}/aspeed-secure-config/ast2600/data
+    install -m 0644 ${S}/keys/ast2700/* \
+        ${D}${datadir}/aspeed-secure-config/ast2700/keys
     install -m 0644 ${S}/configs/ast2700/otp/* \
         ${D}${datadir}/aspeed-secure-config/ast2700/otp
+    install -m 0644 ${S}/configs/ast2700/caliptra/* \
+        ${D}${datadir}/aspeed-secure-config/ast2700/caliptra
 }
 
 BBCLASSEXTEND = "native"

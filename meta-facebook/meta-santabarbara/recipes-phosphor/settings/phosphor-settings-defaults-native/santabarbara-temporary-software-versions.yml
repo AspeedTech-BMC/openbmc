@@ -5,3 +5,83 @@
         Default: '""'
       Purpose:
         Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/mb_nic0:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/swb_nic1:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/swb_nic2:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/swb_nic3:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/swb_nic4:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/swb_pcie_switch:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/rainbow0_mmc:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/rainbow1_mmc:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/rainbow2_mmc:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other
+
+/xyz/openbmc_project/software/chassis/rainbow3_mmc:
+- Interface: "xyz.openbmc_project.Software.Version"
+  Properties:
+      Version:
+        Default: '""'
+      Purpose:
+        Default: Version::VersionPurpose::Other

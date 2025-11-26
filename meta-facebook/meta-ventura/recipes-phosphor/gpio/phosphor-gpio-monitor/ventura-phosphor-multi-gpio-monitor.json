@@ -1,559 +1,579 @@
 [
     {
         "Name": "PWRGD_COMPUTE_TRAY1_N",
-        "ChipId": "2",
-        "GpioNum": 148,
+        "LineName": "PWRGD_COMPUTE_TRAY1_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-1.service",
-                "led-blue-assert@leakport1.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT1_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT1_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-1.service",
-                "led-blue-deassert@leakport1.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT1_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT1_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT1_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT1_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY2_N",
-        "ChipId": "2",
-        "GpioNum": 150,
+        "LineName": "PWRGD_COMPUTE_TRAY2_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-2.service",
-                "led-blue-assert@leakport2.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT2_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT2_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-2.service",
-                "led-blue-deassert@leakport2.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT2_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT2_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT2_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT2_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY3_N",
-        "ChipId": "2",
-        "GpioNum": 152,
+        "LineName": "PWRGD_COMPUTE_TRAY3_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-3.service",
-                "led-blue-assert@leakport3.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT3_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT3_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-3.service",
-                "led-blue-deassert@leakport3.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT3_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT3_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT3_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT3_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY4_N",
-        "ChipId": "2",
-        "GpioNum": 154,
+        "LineName": "PWRGD_COMPUTE_TRAY4_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-4.service",
-                "led-blue-assert@leakport4.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT4_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT4_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-4.service",
-                "led-blue-deassert@leakport4.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT4_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT4_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT4_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT4_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY5_N",
-        "ChipId": "2",
-        "GpioNum": 156,
+        "LineName": "PWRGD_COMPUTE_TRAY5_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-5.service",
-                "led-blue-assert@leakport5.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT5_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT5_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-5.service",
-                "led-blue-deassert@leakport5.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT5_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT5_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT5_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT5_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY6_N",
-        "ChipId": "2",
-        "GpioNum": 158,
+        "LineName": "PWRGD_COMPUTE_TRAY6_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-6.service",
-                "led-blue-assert@leakport6.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT6_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT6_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-6.service",
-                "led-blue-deassert@leakport6.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT6_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT6_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT6_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT6_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY7_N",
-        "ChipId": "2",
-        "GpioNum": 160,
+        "LineName": "PWRGD_COMPUTE_TRAY7_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-7.service",
-                "led-blue-assert@leakport7.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT7_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT7_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-7.service",
-                "led-blue-deassert@leakport7.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT7_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT7_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT7_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT7_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY8_N",
-        "ChipId": "2",
-        "GpioNum": 162,
+        "LineName": "PWRGD_COMPUTE_TRAY8_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-8.service",
-                "led-blue-assert@leakport8.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT8_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT8_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-8.service",
-                "led-blue-deassert@leakport8.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT8_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT8_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT8_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT8_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY1_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 164,
+        "LineName": "PWRGD_NVS_TRAY1_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-1.service",
-                "led-blue-assert@leakport9.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT9_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT9_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-1.service",
-                "led-blue-deassert@leakport9.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT9_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT9_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT9_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT9_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY2_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 166,
+        "LineName": "PWRGD_NVS_TRAY2_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-2.service",
-                "led-blue-assert@leakport10.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT10_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT10_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-2.service",
-                "led-blue-deassert@leakport10.service"
-            ]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "PWRGD_COMPUTE_TRAY11_N",
-        "ChipId": "2",
-        "GpioNum": 168,
-        "EventMon": "BOTH",
-        "Targets": {
-            "FALLING": [
-                "power-good-assert@compute-tray-11.service",
-                "led-blue-assert@leakport20.service"
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT10_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT10_N.service"
             ],
-            "RISING": [
-                "power-good-deassert@compute-tray-11.service",
-                "led-blue-deassert@leakport20.service"
-            ]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "PWRGD_COMPUTE_TRAY12_N",
-        "ChipId": "2",
-        "GpioNum": 170,
-        "EventMon": "BOTH",
-        "Targets": {
-            "FALLING": [
-                "power-good-assert@compute-tray-12.service",
-                "led-blue-assert@leakport21.service"
-            ],
-            "RISING": [
-                "power-good-deassert@compute-tray-12.service",
-                "led-blue-deassert@leakport21.service"
-            ]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "PWRGD_COMPUTE_TRAY13_N",
-        "ChipId": "2",
-        "GpioNum": 172,
-        "EventMon": "BOTH",
-        "Targets": {
-            "FALLING": [
-                "power-good-assert@compute-tray-13.service",
-                "led-blue-assert@leakport22.service"
-            ],
-            "RISING": [
-                "power-good-deassert@compute-tray-13.service",
-                "led-blue-deassert@leakport22.service"
-            ]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "PWRGD_COMPUTE_TRAY14_N",
-        "ChipId": "2",
-        "GpioNum": 174,
-        "EventMon": "BOTH",
-        "Targets": {
-            "FALLING": [
-                "power-good-assert@compute-tray-14.service",
-                "led-blue-assert@leakport23.service"
-            ],
-            "RISING": [
-                "power-good-deassert@compute-tray-14.service",
-                "led-blue-deassert@leakport23.service"
-            ]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "PWRGD_COMPUTE_TRAY15_N",
-        "ChipId": "2",
-        "GpioNum": 176,
-        "EventMon": "BOTH",
-        "Targets": {
-            "FALLING": [
-                "power-good-assert@compute-tray-15.service",
-                "led-blue-assert@leakport24.service"
-            ],
-            "RISING": [
-                "power-good-deassert@compute-tray-15.service",
-                "led-blue-deassert@leakport24.service"
-            ]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "PWRGD_COMPUTE_TRAY16_N",
-        "ChipId": "2",
-        "GpioNum": 178,
-        "EventMon": "BOTH",
-        "Targets": {
-            "FALLING": [
-                "power-good-assert@compute-tray-16.service",
-                "led-blue-assert@leakport25.service"
-            ],
-            "RISING": [
-                "power-good-deassert@compute-tray-16.service",
-                "led-blue-deassert@leakport25.service"
-            ]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "PWRGD_COMPUTE_TRAY17_N",
-        "ChipId": "2",
-        "GpioNum": 180,
-        "EventMon": "BOTH",
-        "Targets": {
-            "FALLING": [
-                "power-good-assert@compute-tray-17.service",
-                "led-blue-assert@leakport26.service"
-            ],
-            "RISING": [
-                "power-good-deassert@compute-tray-17.service",
-                "led-blue-deassert@leakport26.service"
-            ]
-        },
-        "Continue": true
-    },
-    {
-        "Name": "PWRGD_COMPUTE_TRAY18_N",
-        "ChipId": "2",
-        "GpioNum": 182,
-        "EventMon": "BOTH",
-        "Targets": {
-            "FALLING": [
-                "power-good-assert@compute-tray-18.service",
-                "led-blue-assert@leakport27.service"
-            ],
-            "RISING": [
-                "power-good-deassert@compute-tray-18.service",
-                "led-blue-deassert@leakport27.service"
-            ]
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT10_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT10_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY3_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 184,
+        "LineName": "PWRGD_NVS_TRAY3_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-3.service",
-                "led-blue-assert@leakport11.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT11_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT11_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-3.service",
-                "led-blue-deassert@leakport11.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT11_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT11_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT11_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT11_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY4_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 186,
+        "LineName": "PWRGD_NVS_TRAY4_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-4.service",
-                "led-blue-assert@leakport12.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT12_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT12_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-4.service",
-                "led-blue-deassert@leakport12.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT12_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT12_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT12_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT12_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY5_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 188,
+        "LineName": "PWRGD_NVS_TRAY5_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-5.service",
-                "led-blue-assert@leakport13.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT13_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT13_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-5.service",
-                "led-blue-deassert@leakport13.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT13_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT13_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT13_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT13_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY6_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 190,
+        "LineName": "PWRGD_NVS_TRAY6_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-6.service",
-                "led-blue-assert@leakport14.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT14_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT14_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-6.service",
-                "led-blue-deassert@leakport14.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT14_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT14_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT14_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT14_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY7_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 192,
+        "LineName": "PWRGD_NVS_TRAY7_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-7.service",
-                "led-blue-assert@leakport15.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT15_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT15_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-7.service",
-                "led-blue-deassert@leakport15.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT15_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT15_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT15_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT15_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY8_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 194,
+        "LineName": "PWRGD_NVS_TRAY8_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-8.service",
-                "led-blue-assert@leakport16.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT16_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT16_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-8.service",
-                "led-blue-deassert@leakport16.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT16_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT16_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT16_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT16_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_NVS_TRAY9_PWROK_N",
-        "ChipId": "2",
-        "GpioNum": 196,
+        "LineName": "PWRGD_NVS_TRAY9_PWROK_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@nvs-tray-9.service",
-                "led-blue-assert@leakport17.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT17_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT17_N.service"
             ],
             "RISING": [
-                "power-good-deassert@nvs-tray-9.service",
-                "led-blue-deassert@leakport17.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT17_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT17_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT17_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT17_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY9_N",
-        "ChipId": "2",
-        "GpioNum": 198,
+        "LineName": "PWRGD_COMPUTE_TRAY9_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-9.service",
-                "led-blue-assert@leakport18.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT18_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT18_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-9.service",
-                "led-blue-deassert@leakport18.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT18_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT18_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT18_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT18_N.service"]
         },
         "Continue": true
     },
     {
         "Name": "PWRGD_COMPUTE_TRAY10_N",
-        "ChipId": "2",
-        "GpioNum": 200,
+        "LineName": "PWRGD_COMPUTE_TRAY10_N",
         "EventMon": "BOTH",
         "Targets": {
             "FALLING": [
-                "power-good-assert@compute-tray-10.service",
-                "led-blue-assert@leakport19.service"
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT19_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT19_N.service"
             ],
             "RISING": [
-                "power-good-deassert@compute-tray-10.service",
-                "led-blue-deassert@leakport19.service"
-            ]
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT19_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT19_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT19_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT19_N.service"]
         },
         "Continue": true
     },
     {
-        "Name": "AALC_RPU_READY",
-        "ChipId": "2",
-        "GpioNum": 32,
+        "Name": "PWRGD_COMPUTE_TRAY11_N",
+        "LineName": "PWRGD_COMPUTE_TRAY11_N",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@rpu_ready.service"],
-            "RISING": ["rpu-ready-assert@rpu_ready.service"]
+            "FALLING": [
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT20_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT20_N.service"
+            ],
+            "RISING": [
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT20_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT20_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT20_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT20_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWRGD_COMPUTE_TRAY12_N",
+        "LineName": "PWRGD_COMPUTE_TRAY12_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": [
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT21_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT21_N.service"
+            ],
+            "RISING": [
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT21_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT21_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT21_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT21_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWRGD_COMPUTE_TRAY13_N",
+        "LineName": "PWRGD_COMPUTE_TRAY13_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": [
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT22_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT22_N.service"
+            ],
+            "RISING": [
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT22_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT22_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT22_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT22_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWRGD_COMPUTE_TRAY14_N",
+        "LineName": "PWRGD_COMPUTE_TRAY14_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": [
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT23_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT23_N.service"
+            ],
+            "RISING": [
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT23_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT23_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT23_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT23_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWRGD_COMPUTE_TRAY15_N",
+        "LineName": "PWRGD_COMPUTE_TRAY15_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": [
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT24_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT24_N.service"
+            ],
+            "RISING": [
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT24_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT24_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT24_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT24_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWRGD_COMPUTE_TRAY16_N",
+        "LineName": "PWRGD_COMPUTE_TRAY16_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": [
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT25_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT25_N.service"
+            ],
+            "RISING": [
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT25_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT25_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT25_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT25_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWRGD_COMPUTE_TRAY17_N",
+        "LineName": "PWRGD_COMPUTE_TRAY17_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": [
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT26_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT26_N.service"
+            ],
+            "RISING": [
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT26_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT26_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT26_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT26_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWRGD_COMPUTE_TRAY18_N",
+        "LineName": "PWRGD_COMPUTE_TRAY18_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": [
+                "power-rail-deassert-log@PWRGD_TRAY_LEAK_PORT27_N.service",
+                "led-blue-assert@PWRGD_TRAY_LEAK_PORT27_N.service"
+            ],
+            "RISING": [
+                "power-rail-assert-log@PWRGD_TRAY_LEAK_PORT27_N.service",
+                "led-blue-deassert@PWRGD_TRAY_LEAK_PORT27_N.service"
+            ],
+            "INIT_LOW": ["led-blue-init-assert@PWRGD_TRAY_LEAK_PORT27_N.service"],
+            "INIT_HIGH": ["led-blue-init-deassert@PWRGD_TRAY_LEAK_PORT27_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "wAALC_RPU_READY",
+        "LineName": "wAALC_RPU_READY",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["smc-assert-log@wAALC_RPU_READY.service"],
+            "RISING": ["smc-deassert-log@wAALC_RPU_READY.service"],
+            "INIT_LOW": ["smc-assert-log@wAALC_RPU_READY.service"],
+            "INIT_HIGH": ["smc-deassert-log@wAALC_RPU_READY.service"]
         },
         "Continue": true
     },
     {
         "Name": "RPU_READY_PLD_R",
-        "ChipId": "2",
-        "GpioNum": 30,
+        "LineName": "RPU_READY_PLD_R",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@rpu0_ready.service"],
-            "RISING": ["rpu-ready-assert@rpu0_ready.service"]
+            "FALLING": ["smc-assert-log@RPU_READY_PLD_R.service"],
+            "RISING": ["smc-deassert-log@RPU_READY_PLD_R.service"]
         },
         "Continue": true
     },
     {
         "Name": "RPU_READY_SPARE_PLD_R",
-        "ChipId": "2",
-        "GpioNum": 28,
+        "LineName": "RPU_READY_SPARE_PLD_R",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@rpu0_ready_spare.service"],
-            "RISING": ["rpu-ready-assert@rpu0_ready_spare.service"]
+            "FALLING": ["smc-assert-log@RPU_READY_SPARE_PLD_R.service"],
+            "RISING": ["smc-deassert-log@RPU_READY_SPARE_PLD_R.service"]
         },
         "Continue": true
     },
     {
         "Name": "RPU_2_READY_PLD_R",
-        "ChipId": "2",
-        "GpioNum": 26,
+        "LineName": "RPU_2_READY_PLD_R",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@rpu1_ready.service"],
-            "RISING": ["rpu-ready-assert@rpu1_ready.service"]
+            "FALLING": ["smc-assert-log@RPU_2_READY_PLD_R.service"],
+            "RISING": ["smc-deassert-log@RPU_2_READY_PLD_R.service"]
         },
         "Continue": true
     },
     {
         "Name": "RPU_2_READY_SPARE_PLD_R",
-        "ChipId": "2",
-        "GpioNum": 24,
+        "LineName": "RPU_2_READY_SPARE_PLD_R",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@rpu1_ready_spare.service"],
-            "RISING": ["rpu-ready-assert@rpu1_ready_spare.service"]
+            "FALLING": ["smc-assert-log@RPU_2_READY_SPARE_PLD_R.service"],
+            "RISING": ["smc-deassert-log@RPU_2_READY_SPARE_PLD_R.service"]
         },
         "Continue": true
     },
     {
         "Name": "IT_STOP_PUMP",
-        "ChipId": "2",
-        "GpioNum": 22,
+        "LineName": "IT_STOP_PUMP",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@it_stop_pump0.service"],
-            "RISING": ["rpu-ready-assert@it_stop_pump0.service"]
+            "FALLING": ["smc-deassert-log@IT_STOP_PUMP.service"],
+            "RISING": ["smc-assert-log@IT_STOP_PUMP.service"]
         },
         "Continue": true
     },
     {
         "Name": "IT_STOP_PUMP_SPARE",
-        "ChipId": "2",
-        "GpioNum": 20,
+        "LineName": "IT_STOP_PUMP_SPARE",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@it_stop_pump0_spare.service"],
-            "RISING": ["rpu-ready-assert@it_stop_pump0_spare.service"]
+            "FALLING": ["smc-deassert-log@IT_STOP_PUMP_SPARE.service"],
+            "RISING": ["smc-assert-log@IT_STOP_PUMP_SPARE.service"]
         },
         "Continue": true
     },
     {
         "Name": "IT_STOP_PUMP_2",
-        "ChipId": "2",
-        "GpioNum": 18,
+        "LineName": "IT_STOP_PUMP_2",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@it_stop_pump1.service"],
-            "RISING": ["rpu-ready-assert@it_stop_pump1.service"]
+            "FALLING": ["smc-deassert-log@IT_STOP_PUMP_2.service"],
+            "RISING": ["smc-assert-log@IT_STOP_PUMP_2.service"]
         },
         "Continue": true
     },
     {
-        "Name": "IT_STOP_PUMP_SPARE",
-        "ChipId": "2",
-        "GpioNum": 16,
+        "Name": "IT_STOP_PUMP_SPARE_2",
+        "LineName": "IT_STOP_PUMP_SPARE_2",
         "EventMon": "BOTH",
         "Targets": {
-            "FALLING": ["rpu-ready-deassert@it_stop_pump1_spare.service"],
-            "RISING": ["rpu-ready-assert@it_stop_pump1_spare.service"]
+            "FALLING": ["smc-deassert-log@IT_STOP_PUMP_SPARE_2.service"],
+            "RISING": ["smc-assert-log@IT_STOP_PUMP_SPARE_2.service"]
         },
         "Continue": true
     }
