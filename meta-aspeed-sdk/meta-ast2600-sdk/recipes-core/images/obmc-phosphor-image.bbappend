@@ -1,3 +1,3 @@
 do_populate_lic_deploy[depends] += " \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-image-gen-secureboot:do_deploy', '', d)} \
+    ${@oe.utils.conditional('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE_ENABLE', '1', 'aspeed-image-gen-secureboot:do_deploy', '', d)} \
     "

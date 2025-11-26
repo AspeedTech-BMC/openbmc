@@ -15,7 +15,7 @@ DEPENDS += " \
   systemd \
   phosphor-dbus-interfaces \
   "
-SRCREV = "46b5b66db9781695beccda0cdfde0a5928c0dd43"
+SRCREV = "4c099f47f26369d52592ef209a21e7f01ca441b9"
 PACKAGECONFIG ??= ""
 PACKAGECONFIG[log-threshold] = "-Dlog-threshold=true,-Dlog-threshold=false,"
 PACKAGECONFIG[log-pulse] = "-Dlog-pulse=true,-Dlog-pulse=false,"
@@ -27,6 +27,7 @@ PACKAGECONFIG[sel-delete] = "-Dsel-delete=true,-Dsel-delete=false"
 PV = "0.1+git${SRCPV}"
 
 SRC_URI = "git://github.com/openbmc/phosphor-sel-logger.git;protocol=https;branch=master"
+RDEPENDS:${PN} = "${@bb.utils.contains('PACKAGECONFIG', 'send-to-logger', '', 'rsyslog', d)}"
 
 S = "${WORKDIR}/git"
 SYSTEMD_SERVICE:${PN} += "xyz.openbmc_project.Logging.IPMI.service"

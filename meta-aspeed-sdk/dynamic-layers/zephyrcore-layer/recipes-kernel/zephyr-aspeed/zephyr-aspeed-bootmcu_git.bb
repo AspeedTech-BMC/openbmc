@@ -11,8 +11,8 @@ PV = "1.0+git"
 SRC_URI_ASPEED_ZEPHYR_PROJECT = "gitsm://github.com/AspeedTech-BMC/aspeed-zephyr-project;protocol=https"
 ASPEED_ZEPHYR_PROJECT_BRANCH = "aspeed-master"
 
-# Tag for v03.02
-SRCREV_bootmcu = "b93d51f34bec71bcda15e25f4e1ce8ee6f31c3a5"
+# Tag for v03.03
+SRCREV_bootmcu = "7cfdc08b0bef98a30074fbd473c65a1f1daad076"
 
 SRC_URI += "\
     ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
@@ -24,15 +24,14 @@ ${S}/aspeed-zephyr-project\;\
 
 ZEPHYR_BOARD_BOOTMCU ??= "ast2700_evb/ast2700/bootmcu"
 ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
+ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FW_BINARY}"
 
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
 
-DEPENDS += "fmc-imgtool-native fmc-images"
+DEPENDS += "fmc-imgtool-native"
 DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native', '', d)}"
 
-inherit deploy python3native otptool
-
-MCU_RUNTIME_IMAGE ?= "${B}/zephyr/zephyr.bin"
+inherit otptool
 
 # Use fmc-imgtool to create fmc image since A1
 # export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
@@ -67,25 +66,20 @@ do_create_fmc_image() {
         sign_args="${ecc_key} ${ecc_key_index} ${lms_key} ${lms_key_index}"
     fi
 
+    echo "sign_args=${sign_args}"
+
     fmc-imgtool \
         --verbose \
         --version 2 \
-        --input ${MCU_RUNTIME_IMAGE} \
+        --input ${B}/zephyr/zephyr.bin \
         --output ${B}/zephyr/${BOOTMCU_FW_BINARY} \
-        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/fmc-images/ \
+        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         ${sign_args}
 }
 
-do_create_fmc_image[depends] += "fmc-images:do_deploy"
+addtask create_fmc_image before do_install after do_compile
 
-addtask create_fmc_image before do_deploy after do_compile
+do_create_fmc_image[depends] += " \
+    fmc-images:do_deploy \
+    "
 
-do_deploy() {
-    install -d ${DEPLOYDIR}
-
-    install -m 644 ${B}/zephyr/${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
-}
-
-addtask deploy before do_build after do_compile
-
-ALLOW_EMPTY:${PN} = "1"

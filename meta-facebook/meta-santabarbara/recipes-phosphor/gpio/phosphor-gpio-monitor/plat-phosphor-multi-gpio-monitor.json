@@ -1,0 +1,131 @@
+[
+    {
+        "Name": "FM_PWRGD_CPU0_PWROK",
+        "LineName": "FM_PWRGD_CPU0_PWROK",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "deassert-power-good-drop.service",
+                "power-rail-deassert-log@FM_PWRGD_CPU0_PWROK.service"
+            ],
+            "FALLING": [
+                "assert-power-good-drop.service",
+                "power-rail-assert-log@FM_PWRGD_CPU0_PWROK.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_RST_CPU0_RESETL_N",
+        "LineName": "FM_RST_CPU0_RESETL_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "power-rail-deassert-log@FM_RST_CPU0_RESETL_N.service"
+            ],
+            "FALLING": [
+                "power-rail-assert-log@FM_RST_CPU0_RESETL_N.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_CPU0_THERMTRIP_N",
+        "LineName": "FM_CPU0_THERMTRIP_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "thermal-deassert-log@FM_CPU0_THERMTRIP_N.service"
+            ],
+            "FALLING": [
+                "thermal-assert-log@FM_CPU0_THERMTRIP_N.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_CPU0_PROCHOT_N",
+        "LineName": "FM_CPU0_PROCHOT_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "thermal-deassert-log@FM_CPU0_PROCHOT_N.service"
+            ],
+            "FALLING": [
+                "thermal-assert-log@FM_CPU0_PROCHOT_N.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_PVDDCR_CPU0_P0_OCP_N",
+        "LineName": "FM_PVDDCR_CPU0_P0_OCP_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "vr-fault-deassert-log@FM_PVDDCR_CPU0_P0_OCP_N.service"
+            ],
+            "FALLING": [
+                "vr-fault-assert-log@FM_PVDDCR_CPU0_P0_OCP_N.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_PVDDCR_CPU1_P0_OCP_N",
+        "LineName": "FM_PVDDCR_CPU1_P0_OCP_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "vr-fault-deassert-log@FM_PVDDCR_CPU1_P0_OCP_N.service"
+            ],
+            "FALLING": [
+                "vr-fault-assert-log@FM_PVDDCR_CPU1_P0_OCP_N.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_PVDDCR_SOC_P0_OCP_N",
+        "LineName": "FM_PVDDCR_SOC_P0_OCP_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "vr-fault-deassert-log@FM_PVDDCR_SOC_P0_OCP_N.service"
+            ],
+            "FALLING": [
+                "vr-fault-assert-log@FM_PVDDCR_SOC_P0_OCP_N.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "reset-button",
+        "LineName": "reset-button",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "deassert-reset-button.service"
+            ],
+            "FALLING": [
+                "assert-reset-button.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "BIOS_POST_CMPLT",
+        "LineName": "BIOS_POST_CMPLT",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "deassert-post-end.service"
+            ],
+            "FALLING": [
+                "assert-post-end.service",
+                "platform-host-ready.target"
+            ]
+        },
+        "Continue": true
+    }
+]

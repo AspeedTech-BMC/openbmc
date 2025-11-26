@@ -1,0 +1,249 @@
+[
+    {
+        "Desc": {
+            "Name": "SYSTEM_AIRFLOW_CFM",
+            "SensorType": "airflow",
+            "MaxValue": 40000,
+            "MinValue": 0
+        },
+        "Associations": [
+            [
+                "chassis",
+                "all_sensors",
+                "/xyz/openbmc_project/inventory/system/board/NVIDIA_GB300_0"
+            ]
+        ],
+        "Params": {
+            "DbusParam": [
+                {
+                    "ParamName": "FAN0_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN0_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN1_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN1_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN2_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN2_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN3_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN3_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN4_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN4_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN5_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN5_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN6_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN6_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN7_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN7_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                }
+            ]
+        },
+        "Expression": [
+            "max(6.95927258, ",
+            "((2.825758 * (avg(FAN0_PWM_PCT, FAN1_PWM_PCT, FAN2_PWM_PCT, FAN3_PWM_PCT, FAN4_PWM_PCT, FAN5_PWM_PCT, FAN6_PWM_PCT, FAN7_PWM_PCT)^2)) + ",
+            "(91.27348 * avg(FAN0_PWM_PCT, FAN1_PWM_PCT, FAN2_PWM_PCT, FAN3_PWM_PCT, FAN4_PWM_PCT, FAN5_PWM_PCT, FAN6_PWM_PCT, FAN7_PWM_PCT)) - ",
+            "2.196333))"
+        ]
+    },
+    {
+        "Desc": {
+            "Name": "VIRTUAL_FIOBOARD_TEMP_C",
+            "SensorType": "temperature",
+            "MaxValue": 127,
+            "MinValue": -127
+        },
+        "Associations": [
+            [
+                "chassis",
+                "all_sensors",
+                "/xyz/openbmc_project/inventory/system/board/Clemente_FIO"
+            ]
+        ],
+        "Params": {
+            "DbusParam": [
+                {
+                    "ParamName": "FIOBOARD_TEMP_C",
+                    "Desc": {
+                        "Name": "FIOBOARD_TEMP_C",
+                        "SensorType": "temperature"
+                    }
+                },
+                {
+                    "ParamName": "FAN0_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN0_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN1_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN1_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN2_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN2_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN3_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN3_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN4_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN4_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN5_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN5_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN6_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN6_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                },
+                {
+                    "ParamName": "FAN7_PWM_PCT",
+                    "Desc": {
+                        "Name": "FAN7_PWM_PCT",
+                        "SensorType": "fan_pwm"
+                    }
+                }
+            ]
+        },
+        "Expression": [
+            "var DUTY_AVG:=avg(FAN0_PWM_PCT, FAN1_PWM_PCT, FAN2_PWM_PCT, FAN3_PWM_PCT, FAN4_PWM_PCT, FAN5_PWM_PCT, FAN6_PWM_PCT, FAN7_PWM_PCT);",
+            "var DUTY_OFS[11]:={100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0};",
+            "var CAL_OFS[11]:={-0.8, -0.9, -1.0, -1.2, -1.3, -1.6, -2.0, -3.0, -4.8, -4.8, -4.8};",
+            "switch {",
+            "  case inrange(DUTY_OFS[1],DUTY_AVG,DUTY_OFS[0]): FIOBOARD_TEMP_C+(CAL_OFS[0]+((DUTY_AVG-DUTY_OFS[0])*(CAL_OFS[1]-CAL_OFS[0])/(DUTY_OFS[1]-DUTY_OFS[0])));",
+            "  case inrange(DUTY_OFS[2],DUTY_AVG,DUTY_OFS[1]): FIOBOARD_TEMP_C+(CAL_OFS[1]+((DUTY_AVG-DUTY_OFS[1])*(CAL_OFS[2]-CAL_OFS[1])/(DUTY_OFS[2]-DUTY_OFS[1])));",
+            "  case inrange(DUTY_OFS[3],DUTY_AVG,DUTY_OFS[2]): FIOBOARD_TEMP_C+(CAL_OFS[2]+((DUTY_AVG-DUTY_OFS[2])*(CAL_OFS[3]-CAL_OFS[2])/(DUTY_OFS[3]-DUTY_OFS[2])));",
+            "  case inrange(DUTY_OFS[4],DUTY_AVG,DUTY_OFS[3]): FIOBOARD_TEMP_C+(CAL_OFS[3]+((DUTY_AVG-DUTY_OFS[3])*(CAL_OFS[4]-CAL_OFS[3])/(DUTY_OFS[4]-DUTY_OFS[3])));",
+            "  case inrange(DUTY_OFS[5],DUTY_AVG,DUTY_OFS[4]): FIOBOARD_TEMP_C+(CAL_OFS[4]+((DUTY_AVG-DUTY_OFS[4])*(CAL_OFS[5]-CAL_OFS[4])/(DUTY_OFS[5]-DUTY_OFS[4])));",
+            "  case inrange(DUTY_OFS[6],DUTY_AVG,DUTY_OFS[5]): FIOBOARD_TEMP_C+(CAL_OFS[5]+((DUTY_AVG-DUTY_OFS[5])*(CAL_OFS[6]-CAL_OFS[5])/(DUTY_OFS[6]-DUTY_OFS[5])));",
+            "  case inrange(DUTY_OFS[7],DUTY_AVG,DUTY_OFS[6]): FIOBOARD_TEMP_C+(CAL_OFS[6]+((DUTY_AVG-DUTY_OFS[6])*(CAL_OFS[7]-CAL_OFS[6])/(DUTY_OFS[7]-DUTY_OFS[6])));",
+            "  case inrange(DUTY_OFS[8],DUTY_AVG,DUTY_OFS[7]): FIOBOARD_TEMP_C+(CAL_OFS[7]+((DUTY_AVG-DUTY_OFS[7])*(CAL_OFS[8]-CAL_OFS[7])/(DUTY_OFS[8]-DUTY_OFS[7])));",
+            "  case inrange(DUTY_OFS[9],DUTY_AVG,DUTY_OFS[8]): FIOBOARD_TEMP_C+(CAL_OFS[8]+((DUTY_AVG-DUTY_OFS[8])*(CAL_OFS[9]-CAL_OFS[8])/(DUTY_OFS[9]-DUTY_OFS[8])));",
+            "  case inrange(DUTY_OFS[10],DUTY_AVG,DUTY_OFS[9]): FIOBOARD_TEMP_C+(CAL_OFS[9]+((DUTY_AVG-DUTY_OFS[9])*(CAL_OFS[10]-CAL_OFS[9])/(DUTY_OFS[10]-DUTY_OFS[9])));",
+            "  default: FIOBOARD_TEMP_C+CAL_OFS[10];",
+            "}"
+        ]
+    },
+    {
+        "Desc": {
+            "Name": "PDB_MAX_VR_TEMP_C",
+            "SensorType": "temperature",
+            "MaxValue": 127,
+            "MinValue": -127
+        },
+        "Associations": [
+            [
+                "chassis",
+                "all_sensors",
+                "/xyz/openbmc_project/inventory/system/board/Clemente_PDB"
+            ]
+        ],
+        "Params": {
+            "DbusParam": [
+                {
+                    "ParamName": "VR_N1_TEMP",
+                    "Desc": {
+                        "Name": "PDB_VR_P12V_N1_TEMP_C",
+                        "SensorType": "temperature"
+                    }
+                },
+                {
+                    "ParamName": "VR_N2_TEMP",
+                    "Desc": {
+                        "Name": "PDB_VR_P12V_N2_TEMP_C",
+                        "SensorType": "temperature"
+                    }
+                },
+                {
+                    "ParamName": "BRICK0_N1_TEMP",
+                    "Desc": {
+                        "Name": "PDB_BRICK0_P12V_N1_TEMP_C",
+                        "SensorType": "temperature"
+                    }
+                },
+                {
+                    "ParamName": "BRICK1_N1_TEMP",
+                    "Desc": {
+                        "Name": "PDB_BRICK1_P12V_N1_TEMP_C",
+                        "SensorType": "temperature"
+                    }
+                },
+                {
+                    "ParamName": "BRICK0_N2_TEMP",
+                    "Desc": {
+                        "Name": "PDB_BRICK0_P12V_N2_TEMP_C",
+                        "SensorType": "temperature"
+                    }
+                },
+                {
+                    "ParamName": "BRICK1_N2_TEMP",
+                    "Desc": {
+                        "Name": "PDB_BRICK1_P12V_N2_TEMP_C",
+                        "SensorType": "temperature"
+                    }
+                }
+            ]
+        },
+        "Expression": [
+            "max(0, VR_N1_TEMP, VR_N2_TEMP, BRICK0_N1_TEMP, BRICK1_N1_TEMP, BRICK0_N2_TEMP, BRICK1_N2_TEMP)"
+        ]
+    }
+]
+
+

@@ -15,7 +15,6 @@ DEPENDS = " \
     xz-native \
     e2fsprogs-native \
     parted-native \
-    virtual/kernel \
     virtual/bootloader \
     "
 
@@ -45,7 +44,6 @@ KERNEL_FITIMAGE_ITS_NAME = "fitImage-its-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE
 UBOOT_FITIMAGE_NAME = "u-boot.bin"
 UBOOT_FITIMAGE_ITS_NAME = "u-boot.its"
 SPL_IMAGE_NAME = "u-boot-spl.bin"
-ASPEED_SECURE_BOOT = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'yes', 'no', d)}"
 ASPEED_BOOT_EMMC = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-mmc', 'yes', 'no', d)}"
 IMAGE_BASE_NAME = "obmc-phosphor-image"
 INITRAMFS_IMAGE_NAME = "${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES}"
@@ -56,6 +54,17 @@ MMC_UBOOT_OFFSET = "0"
 WIC_IMAGE_NAME = "${IMAGE_BASE_NAME}-${MACHINE}.wic.xz"
 USER_DATA_IMAGE_NAME = "${IMAGE_BASE_NAME}-${MACHINE}.bin"
 USER_DATA_BOOTPART_IMAGE_NAME = "boot-image.ext4"
+
+# Keys and Configs
+SPL_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/keys"
+UBOOT_SIGN_KEYDIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/keys"
+
+SOCSEC_SIGN_HELPER = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/signing_helper.sh"
+OTP_SOCSEC_KEY_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/keys"
+OTPTOOL_KEY_DIR = "${OTP_SOCSEC_KEY_DIR}"
+OTPTOOL_USER_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/data"
+OTPTOOL_CONFIGS_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/otp"
+SOCSEC_SIGN_SOC = "2600"
 
 install_unsigned_image() {
     install -d ${S}/${GEN_IMAGE_MODE}
@@ -82,7 +91,7 @@ install_unsigned_image() {
 }
 
 make_otp_image() {
-    otptool_config="$(dirname ${OTPTOOL_CONFIGS})/${OTPTOOL_JSON}"
+    otptool_config="${OTPTOOL_CONFIGS_DIR}/${OTPTOOL_JSON}"
     otptool_config_slug="$(basename ${otptool_config} .json)"
     otptool_config_outdir="${S}/${GEN_IMAGE_MODE}/${otptool_config_slug}"
     local otptool_user_folder=""
@@ -108,7 +117,7 @@ make_otp_image() {
         bbfatal "Generated OTP image failed."
     fi
 
-    otptool print --soc ${OTPTOOL_SOC} "${otptool_config_outdir}"/otp-all.image
+    otptool print --soc ${SOCSEC_SIGN_SOC} "${otptool_config_outdir}"/otp-all.image
 
     if [ $? -ne 0 ]; then
         bbfatal "Printed OTP image failed."
@@ -120,7 +129,7 @@ make_otp_image() {
 # https://github.com/pyca/cryptography/issues/10598
 socsec_sign_spl_and_verify() {
     export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
-    socsec_sign_key_dir="$(dirname ${SOCSEC_SIGN_KEY})"
+    socsec_sign_key_dir="${OTP_SOCSEC_KEY_DIR}"
     socsec_sign_key="${socsec_sign_key_dir}/${ROT_SIGN_KEY_NAME}"
     signing_extra_default_opts="--stack_intersects_verification_region=false --rsa_key_order=big"
     signing_extra_rsa_aes_key_opts=""
@@ -301,6 +310,303 @@ def update_its_file(file_path, oldstr, newstr):
         fp.write(new_contents)
 
 
+def add_or_update_signature_nodes(its_path, target, algo, key_hint, padding=None):
+    """
+    Add or update signature blocks in either 'images' or
+    'configurations' sections of a FIT ITS file.
+
+    Behavior:
+    - target == "images":
+        Add a simple signature with algo and key-name-hint.
+    - target == "configurations":
+        Add a full signature with algo, key-name-hint, optional padding,
+        and sign-images parsed from kernel/fdt/ramdisk/loadables.
+    - Existing signatures are updated, not duplicated.
+    - Nodes starting with "hash" are skipped.
+    """
+    from pathlib import Path
+    import sys
+    import re
+
+    path = Path(its_path)
+    lines = path.read_text().splitlines()
+    out_lines = []
+    stack = []
+    inside_signature = False
+
+    # ----- Helper: return the current node in stack -----
+    def current_node():
+        """Return the most recent node from the parsing stack."""
+        for s in reversed(stack):
+            if s["type"] == "node":
+                return s
+        return None
+
+    # ----- Helper: check if inside a given section -----
+    def in_section(name):
+        """Return True if currently inside the given section."""
+        return any(
+            s["type"] == "section" and s["name"] == name for s in stack
+        )
+
+    # ----- Helper: normalize image names for sign-images -----
+    def normalize_image_name(name):
+        """
+        Clean image names:
+        - strip SoC/board suffixes (e.g. -aspeed-...),
+        - strip trailing -<digits>,
+        - strip common extensions (.dtb, .bin, .img).
+        """
+        name = re.sub(r"-aspeed.*", "", name)
+        name = re.sub(r"-[0-9]+$", "", name)
+        name = re.sub(r"\.dtb$|\.bin$|\.img$", "", name)
+        return name
+
+    # ----- Helper: extract image refs from a configuration node -----
+    def extract_images_from_conf(node_lines):
+        """Parse kernel/fdt/ramdisk/loadables and normalize names."""
+        content = "\n".join(node_lines)
+        names = set()
+        for field in ["loadables", "kernel", "fdt", "ramdisk"]:
+            matches = re.findall(rf'{field}\s*=\s*"([^"]+)"', content)
+            for m in matches:
+                for n in re.split(r"\s*,\s*", m):
+                    n = n.strip()
+                    if not n:
+                        continue
+                    names.add(normalize_image_name(n))
+        # Force canonical keys if present in any form
+        canon = set()
+        for n in names:
+            if n.startswith("kernel"):
+                canon.add("kernel")
+            elif n.startswith("fdt"):
+                canon.add("fdt")
+            elif n.startswith("ramdisk"):
+                canon.add("ramdisk")
+            else:
+                canon.add(n)
+        # Prefer the common trio ordering when present
+        ordered = []
+        for k in ["kernel", "fdt", "ramdisk"]:
+            if k in canon:
+                ordered.append(k)
+        for x in sorted(canon):
+            if x not in ("kernel", "fdt", "ramdisk"):
+                ordered.append(x)
+        return ordered
+
+    # ----- Parse ITS file line by line -----
+    for line in lines:
+        stripped = line.strip()
+
+        # --- Section start: images { ... } or configurations { ... } ---
+        if stripped.startswith("images") and "{" in stripped:
+            stack.append({"type": "section", "name": "images"})
+            out_lines.append(line)
+            continue
+        if stripped.startswith("configurations") and "{" in stripped:
+            stack.append({"type": "section", "name": "configurations"})
+            out_lines.append(line)
+            continue
+
+        # --- Node start (e.g. uboot { / conf {) ---
+        if (
+            "{" in stripped
+            and not stripped.startswith("{")
+            and not stripped.startswith("signature")
+        ):
+            name = stripped.split("{", 1)[0].strip()
+            parent = stack[-1] if stack else None
+            parent_is_section = parent and parent["type"] == "section"
+            stack.append({
+                "type": "node",
+                "name": name,
+                "has_signature": False,
+                "lines": [],
+                "parent_is_section": bool(parent_is_section),
+                "parent_section": parent["name"]
+                if parent_is_section else None
+            })
+            out_lines.append(line)
+            continue
+
+        # --- Entering a signature block ---
+        if stripped.startswith("signature") and "{" in stripped:
+            node = current_node()
+            valid_top = (
+                node and node.get("parent_is_section")
+                and not node["name"].lower().startswith("hash")
+            )
+            if valid_top:
+                node["has_signature"] = True
+                inside_signature = True
+                stack.append({"type": "signature"})
+                out_lines.append(line)
+                continue
+            # Ignore nested signatures (e.g. inside hash nodes)
+            out_lines.append(line)
+            continue
+
+        # --- Inside signature block: update fields ---
+        if inside_signature:
+            node = current_node()
+            valid_top = (
+                node and node.get("parent_is_section")
+                and not node["name"].lower().startswith("hash")
+            )
+            if not valid_top:
+                inside_signature = False
+                out_lines.append(line)
+                continue
+
+            if stripped.startswith("algo"):
+                indent = line[:line.find("a")]
+                line = f'{indent}algo = "{algo}";'
+            elif stripped.startswith("key-name-hint"):
+                indent = line[:line.find("k")]
+                line = f'{indent}key-name-hint = "{key_hint}";'
+            elif stripped.startswith("padding") and padding:
+                indent = line[:line.find("p")]
+                line = f'{indent}padding = "{padding}";'
+            elif stripped.startswith("padding") and not padding:
+                # Skip padding line if user did not request it
+                continue
+
+            if "}" in stripped:
+                if stack and stack[-1]["type"] == "signature":
+                    stack.pop()
+                inside_signature = False
+
+            out_lines.append(line)
+            continue
+
+        # --- Closing brace ("}") ---
+        if stripped.startswith("}"):
+            if stack:
+                top = stack[-1]
+                if top["type"] == "node":
+                    node = top
+                    node_lines = node.get("lines", [])
+                    in_images = in_section("images")
+                    in_configs = in_section("configurations")
+
+                    direct_child = bool(node.get("parent_is_section"))
+                    is_hash_like = node["name"].lower().startswith("hash")
+
+                    if (
+                        direct_child and not is_hash_like
+                        and not node["has_signature"]
+                    ):
+                        if target == "images" and in_images:
+                            indent = " " * 12
+                            out_lines.extend([
+                                f"{indent}signature {{",
+                                f"{indent}    algo = \"{algo}\";",
+                                f"{indent}    key-name-hint = "
+                                f"\"{key_hint}\";",
+                                f"{indent}}};"
+                            ])
+                        elif target == "configurations" and in_configs:
+                            names = extract_images_from_conf(node_lines)
+                            joined = (
+                                ", ".join(f"\"{n}\"" for n in names)
+                                if names else ""
+                            )
+                            indent = " " * 24
+                            out_lines.append(f"{indent}signature-1 {{")
+                            out_lines.append(
+                                f"{indent}    algo = \"{algo}\";"
+                            )
+                            out_lines.append(
+                                f"{indent}    key-name-hint = "
+                                f"\"{key_hint}\";"
+                            )
+                            if padding:
+                                out_lines.append(
+                                    f"{indent}    padding = "
+                                    f"\"{padding}\";"
+                                )
+                            if joined:
+                                out_lines.append(
+                                    f"{indent}    sign-images = {joined};"
+                                )
+                            out_lines.append(f"{indent}}};")
+
+                    # Pop the node from stack
+                    stack.pop()
+                elif top["type"] in ("section", "signature"):
+                    stack.pop()
+                inside_signature = False
+
+            out_lines.append(line)
+            continue
+
+        # --- Default: copy line and record node content ---
+        out_lines.append(line)
+        node = current_node()
+        if node:
+            node["lines"].append(line)
+
+    # Overwrite the original file
+    path.write_text("\n".join(out_lines))
+
+
+def update_hash_algo(its_path, new_algo):
+    """
+    Safely update the 'algo' value inside all 'hash-*' nodes
+    in an ITS file (line-by-line, no regex, in-place update).
+
+    Args:
+        its_path (str | Path): Path to the .its file.
+        new_algo (str): The new algorithm name to replace, e.g. "sha512".
+
+    Behavior:
+        - Reads the ITS file line-by-line.
+        - Detects when entering and leaving a 'hash-*' block.
+        - Replaces any line starting with 'algo =' inside that block.
+        - Writes the result directly back to the same file.
+
+    Example:
+        update_hash_algo("kernel.its", "sha512")
+    """
+    from pathlib import Path
+
+    path = Path(its_path)
+    lines = path.read_text().splitlines()
+    out_lines = []
+
+    inside_hash_block = False
+    modified_count = 0
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Detect entering a hash-* node
+        if "{" in stripped and stripped.startswith("hash-"):
+            inside_hash_block = True
+            out_lines.append(line)
+            continue
+
+        # Detect leaving a hash-* node
+        if stripped.startswith("}"):
+            if inside_hash_block:
+                inside_hash_block = False
+            out_lines.append(line)
+            continue
+
+        # Replace algo line only inside hash-* node
+        if inside_hash_block and stripped.startswith("algo"):
+            indent = line[:line.find("a")]
+            line = f'{indent}algo = "{new_algo}";'
+            modified_count += 1
+
+        out_lines.append(line)
+
+    # Overwrite the original file
+    path.write_text("\n".join(out_lines))
+
+
 def append_image(inimg, outimg, start_kb, finish_kb):
     import subprocess
     imgsize = os.path.getsize(inimg)
@@ -444,10 +750,6 @@ def deploy_mmc_image(d):
 
 
 def verify_uboot_kernel_image_status(d):
-    aspeed_secure_boot = d.getVar('ASPEED_SECURE_BOOT', True)
-    if aspeed_secure_boot != "yes":
-        bb.fatal("Only support secure boot enable")
-
     spl_binary = d.getVar('SPL_BINARY', True)
     if not spl_binary:
         bb.fatal("Only support SPL")
@@ -459,18 +761,6 @@ def verify_uboot_kernel_image_status(d):
     uboot_fitimage_enable = d.getVar('UBOOT_FITIMAGE_ENABLE', True)
     if uboot_fitimage_enable != "1":
         bb.fatal("Only support Bootloader FIT image")
-
-    spl_sign_enable = d.getVar('SPL_SIGN_ENABLE', True)
-    if spl_sign_enable != "1":
-        bb.fatal("Only support SPL sign enable")
-
-    uboot_sign_enable = d.getVar('UBOOT_SIGN_ENABLE', True)
-    if uboot_sign_enable != "1":
-        bb.fatal("Only support U-Boot sign enable")
-
-    socsec_sign_enable = d.getVar('SOCSEC_SIGN_ENABLE', True)
-    if socsec_sign_enable != "1":
-        bb.fatal("Only support SOCSEC sign enable")
 
 
 python do_deploy() {
@@ -604,18 +894,13 @@ python do_deploy() {
     ]
 
 
-    verify_uboot_kernel_image_status(d)
     gen_secure_image_enable = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE_ENABLE', True)
     if gen_secure_image_enable != "1":
         print("Disable gen secure image. Do nothing.")
         return
 
-    uboot_default_algo = d.getVar('UBOOT_FIT_SIGN_ALG', True)
-    uboot_default_hash = d.getVar('UBOOT_FIT_HASH_ALG', True)
-    kernel_default_algo = d.getVar('FIT_SIGN_ALG', True)
-    kernel_default_hash = d.getVar('FIT_HASH_ALG', True)
-    spl_default_sign_key_name = d.getVar('SPL_SIGN_KEYNAME', True)
-    uboot_default_sign_key_name = d.getVar('UBOOT_SIGN_KEYNAME', True)
+    verify_uboot_kernel_image_status(d)
+
     gen_secure_image = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE', True)
     aspeed_boot_emmc = d.getVar('ASPEED_BOOT_EMMC', True)
 
@@ -637,14 +922,15 @@ python do_deploy() {
         bb.build.exec_func("install_unsigned_image", d)
         kernel_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('KERNEL_FITIMAGE_ITS_NAME', True))
         print("Update kernel its file", kernel_its)
-        update_its_file(kernel_its, kernel_default_hash, sec_img["cot_kernel_hash"])
-        update_its_file(kernel_its, kernel_default_algo, sec_img["cot_kernel_algo"])
-        update_its_file(kernel_its, uboot_default_sign_key_name, sec_img["cot_uboot_sign_key_name"])
+        algo = sec_img["cot_kernel_hash"] + "," + sec_img["cot_kernel_algo"]
+        update_hash_algo(kernel_its, sec_img["cot_kernel_hash"])
+        add_or_update_signature_nodes(kernel_its, "configurations", algo, sec_img["cot_uboot_sign_key_name"], "pkcs-1.5")
+
         uboot_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('UBOOT_FITIMAGE_ITS_NAME', True))
         print("Update uboot its file", uboot_its)
-        update_its_file(uboot_its, uboot_default_hash, sec_img["cot_uboot_hash"])
-        update_its_file(uboot_its, uboot_default_algo, sec_img["cot_uboot_algo"])
-        update_its_file(uboot_its, spl_default_sign_key_name, sec_img["cot_spl_sign_key_name"])
+        algo = sec_img["cot_uboot_hash"] + "," + sec_img["cot_uboot_algo"]
+        update_hash_algo(uboot_its, sec_img["cot_uboot_hash"])
+        add_or_update_signature_nodes(uboot_its, "images", algo, sec_img["cot_spl_sign_key_name"], "pkcs-1.5")
 
         print("Make bootloader, kernel fitimage and sign")
         bb.build.exec_func("make_uboot_kernel_fitimage_and_sign", d)
@@ -667,11 +953,13 @@ python do_deploy() {
         print("Started %s image" % gen_img)
 }
 
+addtask deploy before do_build after do_compile
+
 do_deploy[depends] += " \
+    virtual/kernel:do_deploy \
+    virtual/bootloader:do_deploy \
     obmc-phosphor-image:do_image_complete \
     "
-
-addtask deploy before do_build after do_compile
 
 python do_cleanall:prepend() {
     import subprocess

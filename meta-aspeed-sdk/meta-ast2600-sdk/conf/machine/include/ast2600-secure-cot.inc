@@ -6,10 +6,10 @@
 #
 
 SPL_SIGN_ENABLE ?= "1"
-SPL_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
+SPL_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/keys"
 
 UBOOT_SIGN_ENABLE ?= "1"
-UBOOT_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/keys"
+UBOOT_SIGN_KEYDIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2600/keys"
 
 
 # Algorithm "sha512,rsa4096"
