@@ -1,4 +1,23 @@
 #!/bin/sh
+# CPU emulation for PFR-4.0:
+#  ┌────────────────────┐                 ┌─────────────────────┐
+#  │     AST2700        │                 │       AST1060       │
+#  │                    │                 │                     │
+#  │           i3c4     │                 │                     │
+#  │  i3c-mctp-target-0 │      I3C        │i3c2                 │
+#  │           EID=0x1D ├─────────────────┤EID=0x0B             │
+#  │                    │                 │                     │
+#  └────────────────────┘                 └─────────────────────┘
+#
+# CPU emulation for PFR-5.0:
+#  ┌────────────────────┐                 ┌─────────────────────┐
+#  │     AST2700        │                 │       AST1060       │
+#  │                    │                 │                     │
+#  │                    │                 │                     │
+#  │           mctpi3c4 │      I3C        │i3c2                 │
+#  │           EID=0x1D ├─────────────────┤EID=0x08             │
+#  │                    │                 │                     │
+#  └────────────────────┘                 └─────────────────────┘
 
 SetupEndpoint()
 {
@@ -32,8 +51,10 @@ if [ -f /tmp/.mctp_i3c_done ];then
 	exit 0
 fi
 
-
 if mctp link|grep mctpi3c4 > /dev/null;then
+	echo "Running PFR-5.0 MCTP over I3C Master"
+	mctp address add 0x1d dev mctpi3c4
+	mctp link set mctpi3c4 net 4 up mtu 68
 	STATE=$(GetPlatformState)
 	while true;do
 		if [ "$STATE" = "T0 BMC booted" ] || [ "$STATE" = "T0 boot complete" ];then
@@ -44,8 +65,9 @@ if mctp link|grep mctpi3c4 > /dev/null;then
 		sleep 2
 		STATE=$(GetPlatformState)
 	done
-	/usr/bin/pfr-mctpd -s
+	/usr/bin/pfr-mctpd -s &
 elif [ -r /dev/i3c-mctp-target-0 ];then
+	echo "Running PFR-4.0 MCTP over I3C Target"
 	/usr/bin/pfr-mctpd -d /dev/i3c-mctp-target-0
 else
 	echo "No I3C MCTP device found"

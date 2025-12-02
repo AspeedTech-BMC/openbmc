@@ -20,9 +20,4 @@ mctp addr add 0x0a dev mctpi2c8
 mctp route add 0x0b via mctpi2c8
 mctp neigh add 0x0b dev mctpi2c8 lladdr 0x70
 
-if mctp link|grep mctpi3c4 > /dev/null;then
-	mctp address add 0x1d dev mctpi3c4
-	mctp link set mctpi3c4 net 4 up mtu 68
-fi
-
 touch /tmp/.mctp_init_done
