@@ -67,8 +67,6 @@ ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"
 # zephyr build
 PREFERRED_PROVIDER_virtual/ssp ??= "zephyr-aspeed-ssp"
 PREFERRED_PROVIDER_virtual/tsp ??= "zephyr-aspeed-tsp"
-ZEPHYR_BOARD_TSP ?= "ast2700_evb/ast2700/tsp"
-
 PREFERRED_PROVIDER_virtual/ibexfw ??= "zephyr-aspeed-ibexfw"
 ZEPHYR_BOARD_IBEXFW ?= "ast2700_evb/ast2700/bootmcu"
 
