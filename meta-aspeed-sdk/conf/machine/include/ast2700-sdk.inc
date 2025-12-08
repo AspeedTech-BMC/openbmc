@@ -68,7 +68,6 @@ ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"
 PREFERRED_PROVIDER_virtual/ssp ??= "zephyr-aspeed-ssp"
 PREFERRED_PROVIDER_virtual/tsp ??= "zephyr-aspeed-tsp"
 PREFERRED_PROVIDER_virtual/ibexfw ??= "zephyr-aspeed-ibexfw"
-ZEPHYR_BOARD_IBEXFW ?= "ast2700_evb/ast2700/bootmcu"
 
 # caliptra manifest
 CALIPTRA_MANIFEST_CONFIG_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
