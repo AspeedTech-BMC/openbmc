@@ -53,7 +53,7 @@ ast2700-ufs
 ast2700-abr
 ast2700-dcscm
 ast2700-a1
-ast2700-a1-spl (Linux Kernel v6.6)
+ast2700-a1-spl
 ast2700-a1-ncsi
 ast2700-a1-raw
 ast2700-a1-irot
