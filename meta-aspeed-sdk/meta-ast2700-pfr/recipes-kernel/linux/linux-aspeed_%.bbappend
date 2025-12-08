@@ -3,6 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI:append = " \
         file://ast2700-dcscm.cfg \
         file://ast2700-dcscm-mctp-socket.dts \
+        file://ast2700a1-dcscm-mctp-socket.dts \
 "
 
 do_prepare_dts() {
