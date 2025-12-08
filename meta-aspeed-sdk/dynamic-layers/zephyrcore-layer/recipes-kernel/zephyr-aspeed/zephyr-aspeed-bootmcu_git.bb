@@ -16,7 +16,7 @@ SRC_URI += "\
     ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
 "
 
-ZEPHYR_MODULES += "\
+ZEPHYR_MODULES:append = "\
 ${S}/aspeed-zephyr-project\;\
 "
 
