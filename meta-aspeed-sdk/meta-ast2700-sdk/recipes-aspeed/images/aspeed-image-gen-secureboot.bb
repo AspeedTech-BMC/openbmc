@@ -63,7 +63,7 @@ FMC_KEY_DIR = "${OTPTOOL_KEY_DIR}"
 CALIPTRA_MANIFEST_CONFIG_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
 CALIPTRA_MANIFEST_KEY_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 CALIPTRA_MANIFEST_FLASH_IMAGE = "ast2700-manifest-flash.bin"
-CALIPTRA_MANIFEST_RECOVERY_IMAGE = "ast2700-soc-manifest.bin"
+CALIPTRA_MANIFEST_SOC_IMAGE = "ast2700-soc-manifest.bin"
 CALIPTRA_MANIFEST_BINARY = "${CALIPTRA_MANIFEST_FLASH_IMAGE}"
 
 install_unsigned_image() {
@@ -197,7 +197,7 @@ make_caliptra_manifest_image_and_sign() {
 
     echo "caliptra_manifest_key_dir=${caliptra_manifest_key_dir}"
 
-    # Run cptra-imgtool to generate manifest flash image.
+    # Build the Caliptra Flash Image (including the Caliptra SoC manifest).
     cptra-imgtool \
         create-auth-flash \
         --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
@@ -205,13 +205,13 @@ make_caliptra_manifest_image_and_sign() {
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         --flash ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_FLASH_IMAGE}
 
-    # Run cptra-imgtool to generate manifest image for recovery.
+    # Build only the Caliptra SoC Manifest.
     cptra-imgtool \
         create-auth-man \
         --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
         ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
-        --man ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_RECOVERY_IMAGE}
+        --man ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_SOC_IMAGE}
 
     rm -f ${S}/${GEN_IMAGE_MODE}/caliptra-manifest.toml
     rm -f ${S}/${GEN_IMAGE_MODE}/default_project-auth-manifest.bin
