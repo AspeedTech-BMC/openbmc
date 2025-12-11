@@ -2,8 +2,8 @@
 # We added the do_merge_uboot task to merge the bootmcu and u-boot image before do_generate_static
 # to ensure compatibility with image_types_phosphor.bbclass.
 # If UBOOT_FITIMAGE_ENABLE is enabled, it means the build uses a U-Boot FIT image
-# instead of a SoC manifest image. In this case, the U-Boot binary is u-boot.bin;
-# otherwise, the U-Boot binary is the SoC manifest image.
+# instead of a Caliptra Manifest Flash image. In this case, the U-Boot binary is u-boot.bin;
+# otherwise, the U-Boot binary is the Caliptra Manifest Flash image.
 UBOOT_BINARY := "${@oe.utils.conditional('UBOOT_FITIMAGE_ENABLE', '1', 'u-boot.${UBOOT_SUFFIX}', '${CALIPTRA_MANIFEST_FLASH_IMAGE}', d)}"
 UBOOT_SUFFIX:append = ".merged"
 
@@ -15,6 +15,23 @@ do_generate_ext4_tar:append() {
 
 # Merge Caliptra, bootmcu and u-boot image
 do_merge_uboot() {
+    # Starting from AST2700 A2, the Caliptra Manifest Flash image includes the following components:
+    # Caliptra Firmware Pre-built Image
+    # MCU Runtime Binary
+    # Caliptra SoC Manifest
+    # U-Boot Raw Image
+    # DDR4/DDR5 Pre-built Images
+    # SSP Firmware Binary and TSP Firmware Binary (optional, depending on user requirements)
+    #
+    # Therefore, u-boot.bin.merged, image-u-boot, and the Caliptra Manifest Flash image
+    # are identical for AST2700 A2 and later.
+
+    if [ -z "${FLASH_CALIPTRA_SIZE}" ] && [ -z "${FLASH_BMCU_SIZE}" ] ; then
+         install -m 644 ${DEPLOY_DIR_IMAGE}/${UBOOT_BINARY} ${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX} || { exit 1; }
+         exit 0
+    fi
+
+    # The following logic applies to AST2700 A1.
     uboot_offset=0
 
     # Merge the Caliptra image with the U-Boot image.

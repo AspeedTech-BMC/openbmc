@@ -667,26 +667,31 @@ def append_image(inimg, outimg, start_kb, finish_kb):
 def deploy_static_image(d):
     bb.build.exec_func("deploy_static_image_helper", d)
     gen_img = d.getVar('GEN_IMAGE_MODE', True)
+    flash_caliptra_size = d.getVar('FLASH_CALIPTRA_SIZE', True)
+    flash_bmcu_size = d.getVar('FLASH_BMCU_SIZE', True)
 
     # image-bmc
     nor_img = os.path.join(d.getVar('DEPLOYDIR', True), gen_img, "image-bmc")
     make_empty_image(nor_img, d.getVar('FLASH_SIZE', True))
 
     uboot_offset = int(d.getVar('FLASH_UBOOT_OFFSET', True))
-    caliptra_end_offset = uboot_offset + int(d.getVar('FLASH_CALIPTRA_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
-                 nor_img,
-                 uboot_offset,
-                 caliptra_end_offset)
 
-    uboot_offset = caliptra_end_offset
-    bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
-                 nor_img,
-                 uboot_offset,
-                 bootmcu_end_offset)
+    if flash_caliptra_size:
+        caliptra_end_offset = uboot_offset + int(flash_caliptra_size)
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
+                     nor_img,
+                     uboot_offset,
+                     caliptra_end_offset)
+        uboot_offset = caliptra_end_offset
 
-    uboot_offset = bootmcu_end_offset
+    if flash_bmcu_size:
+        bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
+                     nor_img,
+                     uboot_offset,
+                     bootmcu_end_offset)
+        uboot_offset = bootmcu_end_offset
+
     append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  nor_img,
                  uboot_offset,
@@ -712,20 +717,23 @@ def deploy_static_image(d):
     make_empty_image(uboot_img, d.getVar('FLASH_UBOOT_ENV_OFFSET', True))
 
     uboot_offset = int(d.getVar('FLASH_UBOOT_OFFSET', True))
-    caliptra_end_offset = uboot_offset + int(d.getVar('FLASH_CALIPTRA_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
-                 uboot_img,
-                 uboot_offset,
-                 caliptra_end_offset)
 
-    uboot_offset = caliptra_end_offset
-    bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
-                 uboot_img,
-                 uboot_offset,
-                 bootmcu_end_offset)
+    if flash_caliptra_size:
+        caliptra_end_offset = uboot_offset + int(flash_caliptra_size)
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
+                     uboot_img,
+                     uboot_offset,
+                     caliptra_end_offset)
+        uboot_offset = caliptra_end_offset
 
-    uboot_offset = bootmcu_end_offset
+    if flash_bmcu_size:
+        bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
+                     uboot_img,
+                     uboot_offset,
+                     bootmcu_end_offset)
+        uboot_offset = bootmcu_end_offset
+
     append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  uboot_img,
                  uboot_offset,
@@ -736,6 +744,8 @@ def deploy_mmc_image(d):
     import subprocess
 
     gen_img = d.getVar('GEN_IMAGE_MODE', True)
+    flash_caliptra_size = d.getVar('FLASH_CALIPTRA_SIZE', True)
+    flash_bmcu_size = d.getVar('FLASH_BMCU_SIZE', True)
     user_data_image = os.path.join(d.getVar('S', True), gen_img, d.getVar('USER_DATA_IMAGE_NAME', True))
     user_data_bootpart_image = os.path.join(d.getVar('S', True), gen_img, d.getVar('USER_DATA_BOOTPART_IMAGE_NAME', True))
     make_empty_image_zeros(user_data_bootpart_image, d.getVar('MMC_BOOT_PARTITION_SIZE', True))
@@ -797,20 +807,23 @@ def deploy_mmc_image(d):
     make_empty_image(mmc_boot_img, d.getVar('MMC_UBOOT_SIZE', True))
 
     uboot_offset = int(d.getVar('MMC_UBOOT_OFFSET', True))
-    caliptra_end_offset = uboot_offset + int(d.getVar('FLASH_CALIPTRA_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
-                 mmc_boot_img,
-                 uboot_offset,
-                 caliptra_end_offset)
 
-    uboot_offset = caliptra_end_offset
-    bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
-                 mmc_boot_img,
-                 uboot_offset,
-                 bootmcu_end_offset)
+    if flash_caliptra_size:
+        caliptra_end_offset = uboot_offset + int(flash_caliptra_size)
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
+                     mmc_boot_img,
+                     uboot_offset,
+                     caliptra_end_offset)
+        uboot_offset = caliptra_end_offset
 
-    uboot_offset = bootmcu_end_offset
+    if flash_bmcu_size:
+        bootmcu_end_offset = uboot_offset + int(flash_bmcu_size)
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
+                     mmc_boot_img,
+                     uboot_offset,
+                     bootmcu_end_offset)
+        uboot_offset = bootmcu_end_offset
+
     append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  mmc_boot_img,
                  uboot_offset,
