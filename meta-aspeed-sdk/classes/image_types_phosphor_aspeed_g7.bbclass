@@ -26,7 +26,7 @@ do_merge_uboot() {
     # Therefore, u-boot.bin.merged, image-u-boot, and the Caliptra Manifest Flash image
     # are identical for AST2700 A2 and later.
 
-    if [ -z "${FLASH_CALIPTRA_SIZE}" ] && [ -z "${FLASH_BMCU_SIZE}" ] ; then
+    if [ -z "${FLASH_CALIPTRA_SIZE}" ] && [ -z "${BOOTMCU_FW_BINARY}" ] ; then
          install -m 644 ${DEPLOY_DIR_IMAGE}/${UBOOT_BINARY} ${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX} || { exit 1; }
          exit 0
     fi
