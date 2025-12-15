@@ -3,6 +3,7 @@ require ast2700-secure-cot.inc
 
 # Secure Boot Settings for OTP and CALIPTRA
 # The following variables can be overridden in local.conf
+OTP_IMAGE_ENABLE ?= "1"
 OTPTOOL_KEY_DIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 OTPTOOL_USER_DIR ?= ""
 OTPTOOL_SOC ?= "2700"

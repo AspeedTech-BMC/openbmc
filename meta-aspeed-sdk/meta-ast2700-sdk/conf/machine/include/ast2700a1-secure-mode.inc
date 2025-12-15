@@ -5,6 +5,7 @@ require ast2700-secure-cot.inc
 # The following variables can be overridden in local.conf
 FMC_SIGN_ENABLE ?= "1"
 FMC_KEY_DIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
+OTP_IMAGE_ENABLE ?= "1"
 OTPTOOL_KEY_DIR ?= "${FMC_KEY_DIR}"
 OTPTOOL_USER_DIR ?= ""
 OTPTOOL_SOC ?= "2700"
