@@ -158,7 +158,7 @@ do_create_fmc_image() {
         --verbose \
         --version 2 \
         --input ${B}/spl/u-boot-spl.bin \
-        --output ${B}/${BOOTMCU_FW_BINARY} \
+        --output ${B}/${BOOTMCU_FMC_BINARY} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         ${sign_args}
 }
@@ -182,8 +182,8 @@ do_deploy() {
     # To reduce the risk of unexpected run-time errors, verification should be added.
 
     # spl fmc since AST2700 A1
-    install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}
-    install -m 644 ${BOOTMCU_FW_BINARY} ${DEPLOYDIR}/${BOOTMCU_FW_BINARY}-${sub_ver}
+    install -m 644 ${BOOTMCU_FMC_BINARY} ${DEPLOYDIR}
+    install -m 644 ${BOOTMCU_FMC_BINARY} ${DEPLOYDIR}/${BOOTMCU_FMC_BINARY}-${sub_ver}
 }
 
 addtask deploy before do_build after do_compile

@@ -21,7 +21,7 @@ inherit deploy
 #
 # AST2700 A1 source images:
 # - Caliptra firmware image (${CALIPTRA_FW_BINARY})
-# - SoC First Mutable Code image (${BOOTMCU_FW_BINARY})
+# - SoC First Mutable Code image (${BOOTMCU_FMC_BINARY})
 #
 # AST2700 A2 source images:
 # - Caliptra firmware image (${CALIPTRA_FW_BINARY})
@@ -62,9 +62,9 @@ do_deploy () {
         # Generate the SoC First Mutable Code (FMC) recovery image
         # This step is applicable only to AST2700 A1
         if [ "${FMC_IMAGE_ENABLE}" = "1" ]; then
-            install -m 0644 ${DEPLOY_DIR_IMAGE}/${BOOTMCU_FW_BINARY} ${SOURCE_IMAGE_DIR}/.
-            python3 ${STAGING_BINDIR_NATIVE}/recovery_spl_extraction.py -i ${SOURCE_IMAGE_DIR}/${BOOTMCU_FW_BINARY}
-            install -m 0644 ${SOURCE_IMAGE_DIR}/recovery_${BOOTMCU_FW_BINARY} ${OUTPUT_IMAGE_DIR}/.
+            install -m 0644 ${DEPLOY_DIR_IMAGE}/${BOOTMCU_FMC_BINARY} ${SOURCE_IMAGE_DIR}/.
+            python3 ${STAGING_BINDIR_NATIVE}/recovery_spl_extraction.py -i ${SOURCE_IMAGE_DIR}/${BOOTMCU_FMC_BINARY}
+            install -m 0644 ${SOURCE_IMAGE_DIR}/recovery_${BOOTMCU_FMC_BINARY} ${OUTPUT_IMAGE_DIR}/.
         fi
 
         # Generate the I2C/I3C recovery image for AST2700 A1

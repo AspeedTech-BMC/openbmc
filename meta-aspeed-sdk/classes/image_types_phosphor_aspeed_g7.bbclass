@@ -19,6 +19,8 @@ do_merge_uboot() {
     # Caliptra Firmware Pre-built Image
     # MCU Runtime Binary
     # Caliptra SoC Manifest
+    # ARM Trusted Firmware (ATF)
+    # OPTEE OS
     # U-Boot Raw Image
     # DDR4/DDR5 Pre-built Images
     # SSP Firmware Binary and TSP Firmware Binary (optional, depending on user requirements)
@@ -26,7 +28,7 @@ do_merge_uboot() {
     # Therefore, u-boot.bin.merged, image-u-boot, and the Caliptra Manifest Flash image
     # are identical for AST2700 A2 and later.
 
-    if [ -z "${FLASH_CALIPTRA_SIZE}" ] && [ -z "${BOOTMCU_FW_BINARY}" ] ; then
+    if [ -z "${FLASH_CALIPTRA_SIZE}" ] && [ -z "${BOOTMCU_FMC_BINARY}" ] ; then
          install -m 644 ${DEPLOY_DIR_IMAGE}/${UBOOT_BINARY} ${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX} || { exit 1; }
          exit 0
     fi
@@ -50,7 +52,7 @@ do_merge_uboot() {
     uboot_offset=${FLASH_CALIPTRA_SIZE}
 
     # Check bootmcu size
-    imgpath=${DEPLOY_DIR_IMAGE}/${BOOTMCU_FW_BINARY}
+    imgpath=${DEPLOY_DIR_IMAGE}/${BOOTMCU_FMC_BINARY}
     imgsize=$(wc -c < "$imgpath")
     maxsize=$(expr ${FLASH_BMCU_SIZE} \* 1024)
 
@@ -60,7 +62,7 @@ do_merge_uboot() {
     fi
 
     # Concatenate bootmcu and u-boot image
-    dd bs=1k seek=${uboot_offset} if=${DEPLOY_DIR_IMAGE}/${BOOTMCU_FW_BINARY} of=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}
+    dd bs=1k seek=${uboot_offset} if=${DEPLOY_DIR_IMAGE}/${BOOTMCU_FMC_BINARY} of=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}
     uboot_offset=$(expr ${uboot_offset} + ${FLASH_BMCU_SIZE})
 
     dd bs=1k seek=${uboot_offset} if=${DEPLOY_DIR_IMAGE}/${UBOOT_BINARY} of=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}

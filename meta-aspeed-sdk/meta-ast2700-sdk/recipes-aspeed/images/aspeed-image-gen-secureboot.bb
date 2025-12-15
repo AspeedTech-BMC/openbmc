@@ -170,7 +170,7 @@ make_fmc_image_and_sign() {
         --verbose \
         --version 2 \
         --input ${DEPLOY_DIR_IMAGE}/${MCU_RUNTIME_IMAGE} \
-        --output ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY} \
+        --output ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FMC_BINARY} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         ${sign_args}
 }
@@ -232,7 +232,7 @@ make_caliptra_manifest_image_and_sign() {
 make_recovery_image() {
     # Generate the SoC First Mutable Code (FMC) recovery image
     if [ "${AST2700_A1}" = "yes" ]; then
-        python3 ${STAGING_BINDIR_NATIVE}/recovery_spl_extraction.py -i ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY}
+        python3 ${STAGING_BINDIR_NATIVE}/recovery_spl_extraction.py -i ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FMC_BINARY}
     fi
 
     # Generate UART recovery images from all source images
@@ -667,7 +667,7 @@ def deploy_static_image(d):
     bb.build.exec_func("deploy_static_image_helper", d)
     gen_img = d.getVar('GEN_IMAGE_MODE', True)
     flash_caliptra_size = d.getVar('FLASH_CALIPTRA_SIZE', True)
-    bootmcu_fw_binary = d.getVar('BOOTMCU_FW_BINARY', True)
+    bootmcu_fmc_binary = d.getVar('BOOTMCU_FMC_BINARY', True)
 
     # image-bmc
     nor_img = os.path.join(d.getVar('DEPLOYDIR', True), gen_img, "image-bmc")
@@ -683,9 +683,9 @@ def deploy_static_image(d):
                      caliptra_end_offset)
         uboot_offset = caliptra_end_offset
 
-    if bootmcu_fw_binary:
+    if bootmcu_fmc_binary:
         bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fw_binary),
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fmc_binary),
                      nor_img,
                      uboot_offset,
                      bootmcu_end_offset)
@@ -725,9 +725,9 @@ def deploy_static_image(d):
                      caliptra_end_offset)
         uboot_offset = caliptra_end_offset
 
-    if bootmcu_fw_binary:
+    if bootmcu_fmc_binary:
         bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fw_binary),
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fmc_binary),
                      uboot_img,
                      uboot_offset,
                      bootmcu_end_offset)
@@ -744,7 +744,7 @@ def deploy_mmc_image(d):
 
     gen_img = d.getVar('GEN_IMAGE_MODE', True)
     flash_caliptra_size = d.getVar('FLASH_CALIPTRA_SIZE', True)
-    bootmcu_fw_binary = d.getVar('BOOTMCU_FW_BINARY', True)
+    bootmcu_fmc_binary = d.getVar('BOOTMCU_FMC_BINARY', True)
     user_data_image = os.path.join(d.getVar('S', True), gen_img, d.getVar('USER_DATA_IMAGE_NAME', True))
     user_data_bootpart_image = os.path.join(d.getVar('S', True), gen_img, d.getVar('USER_DATA_BOOTPART_IMAGE_NAME', True))
     make_empty_image_zeros(user_data_bootpart_image, d.getVar('MMC_BOOT_PARTITION_SIZE', True))
@@ -815,9 +815,9 @@ def deploy_mmc_image(d):
                      caliptra_end_offset)
         uboot_offset = caliptra_end_offset
 
-    if bootmcu_fw_binary:
+    if bootmcu_fmc_binary:
         bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fw_binary),
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fmc_binary),
                      mmc_boot_img,
                      uboot_offset,
                      bootmcu_end_offset)
