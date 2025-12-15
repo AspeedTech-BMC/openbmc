@@ -73,6 +73,7 @@ PREFERRED_PROVIDER_virtual/ibexfw ??= "zephyr-aspeed-ibexfw"
 CALIPTRA_MANIFEST_CONFIG_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
 CALIPTRA_MANIFEST_CONFIG ??= "ast2700-default-manifest.toml"
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
+CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2700-soc-manifest.bin"
 
 QB_SYSTEM_NAME = "qemu-system-aarch64"
 QB_MACHINE = "-machine ast2700a1-evb"
