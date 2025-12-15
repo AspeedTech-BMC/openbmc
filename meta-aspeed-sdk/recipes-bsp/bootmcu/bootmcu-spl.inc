@@ -128,6 +128,10 @@ do_create_fmc_image() {
     local lms_key_index=""
     local sign_args=""
 
+    if [ "${FMC_IMAGE_ENABLE}" != "1" ]; then
+        return
+    fi
+
     if [ -f "${FMC_ECC_KEY}" ]; then
         ecc_key="--ecc-key ${FMC_ECC_KEY}"
     fi
