@@ -68,7 +68,7 @@ CALIPTRA_MANIFEST_SOC_IMAGE = "ast2700-soc-manifest.bin"
 CALIPTRA_MANIFEST_BINARY = "${CALIPTRA_MANIFEST_FLASH_IMAGE}"
 
 # Recovery images
-RECOVERY_SOURCE_IMAGES = "${CALIPTRA_FW_BINARY} ${CALIPTRA_MANIFEST_SOC_IMAGE} ${MCU_RUNTIME_IMAGE}"
+RECOVERY_SOURCE_IMAGES = "${CALIPTRA_FW_BINARY} ${CALIPTRA_MANIFEST_SOC_IMAGE} ${BOOTMCU_FW_BINARY}"
 RECOVERY_SOURCE_IMAGES:ast2700-a1 = "${CALIPTRA_FW_BINARY}"
 
 install_unsigned_image() {
@@ -99,6 +99,10 @@ install_unsigned_image() {
 
     # zephyr binaries
     install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-* ${S}/${GEN_IMAGE_MODE}
+
+    if [ -n "${BOOTMCU_FW_BINARY}" ]; then
+        install -m 0644 ${DEPLOY_DIR_IMAGE}/${BOOTMCU_FW_BINARY} ${S}/${GEN_IMAGE_MODE}
+    fi
 }
 
 make_otp_image() {

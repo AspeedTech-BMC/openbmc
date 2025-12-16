@@ -26,9 +26,9 @@ inherit deploy
 # AST2700 A2 source images:
 # - Caliptra firmware image (${CALIPTRA_FW_BINARY})
 # - Caliptra SoC manifest image (${CALIPTRA_MANIFEST_SOC_IMAGE})
-# - MCU runtime firmware binary (zephyr-aspeed-bootmcu.bin)
+# - MCU runtime firmware binary (${BOOTMCU_FW_BINARY})
 
-SOURCE_IMAGES ?= "${CALIPTRA_FW_BINARY} ${CALIPTRA_MANIFEST_SOC_IMAGE} zephyr-aspeed-bootmcu.bin"
+SOURCE_IMAGES ?= "${CALIPTRA_FW_BINARY} ${CALIPTRA_MANIFEST_SOC_IMAGE} ${BOOTMCU_FW_BINARY}"
 SOURCE_IMAGES:ast2700-a1 ?= "${CALIPTRA_FW_BINARY}"
 SOURCE_IMAGES:aspeed-g6 ?= "u-boot-spl.bin"
 

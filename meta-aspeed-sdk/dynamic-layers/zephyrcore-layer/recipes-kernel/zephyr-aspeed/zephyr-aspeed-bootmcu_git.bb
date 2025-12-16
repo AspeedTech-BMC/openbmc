@@ -22,7 +22,7 @@ ${S}/aspeed-zephyr-project\;\
 
 ZEPHYR_BOARD_BOOTMCU ??= "ast2700_evb/ast2700/bootmcu"
 ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
-ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FMC_BINARY}"
+ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FMC_BINARY} ${BOOTMCU_FW_BINARY}"
 
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
 
@@ -45,6 +45,7 @@ do_create_fmc_image() {
     local sign_args=""
 
     if [ "${FMC_IMAGE_ENABLE}" != "1" ]; then
+        install -m 0644 ${B}/zephyr/zephyr.bin ${B}/zephyr/${BOOTMCU_FW_BINARY}
         return
     fi
 
