@@ -911,7 +911,7 @@ python do_deploy() {
     secure_image_list_a2 = [
         {
             "mode": "ecdsa384",
-            "otptool_json": "2700A1_ECDSA384.json",
+            "otptool_json": "2700A2_ECDSA384.json",
             "fmc_image_enable": "0",
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
@@ -921,7 +921,7 @@ python do_deploy() {
         },
         {
             "mode": "ecdsa384-lms",
-            "otptool_json": "2700A1_ECDSA384_LMS.json",
+            "otptool_json": "2700A2_ECDSA384_LMS.json",
             "fmc_image_enable": "0",
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
