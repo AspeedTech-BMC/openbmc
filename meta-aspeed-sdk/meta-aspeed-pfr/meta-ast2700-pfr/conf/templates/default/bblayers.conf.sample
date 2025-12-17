@@ -19,5 +19,5 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-aspeed-sdk \
   ##OEROOT##/meta-aspeed-sdk/meta-ast2700-sdk \
   ##OEROOT##/meta-aspeed-sdk/meta-aspeed-pfr \
-  ##OEROOT##/meta-aspeed-sdk/meta-ast2700-pfr \
+  ##OEROOT##/meta-aspeed-sdk/meta-aspeed-pfr/meta-ast2700-pfr \
   "
