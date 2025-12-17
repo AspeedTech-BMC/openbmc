@@ -1,0 +1,809 @@
+// SPDX-License-Identifier: GPL-2.0
+// Copyright (c) 2024 AMD Inc.
+// Author: Mahesh Kurapati <mahesh.kurapati@amd.com>
+//         Mohsen Dolaty <mohsen.dolaty@amd.com>
+
+/dts-v1/;
+
+#include "aspeed-g7.dtsi"
+#include "dt-bindings/gpio/aspeed-gpio.h"
+#include <dt-bindings/i2c/i2c.h>
+#include <dt-bindings/i3c/i3c.h>
+
+#define DUAL_NODE 0	// 1: DUAL_NODE, 0: SINGLE_NODE
+#define PCIE0_EP 1	// 1: EP, 0: RC
+#define PCIE1_EP 1	// 1: EP, 0: RC
+
+/ {
+	model = "AMD Kenya PRB";
+	compatible = "amd,kenya-bmc", "aspeed,ast2700";
+
+	chosen {
+		stdout-path = "serial12:115200n8";
+	};
+
+	firmware {
+		optee: optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};
+
+	memory@400000000 {
+		device_type = "memory";
+		reg = <0x4 0x00000000 0x0 0x80000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		#include "ast2700-reserved-mem.dtsi"
+
+		video_engine_memory0: video0 {
+			size = <0x0 0x02000000>;
+			alignment = <0x0 0x00010000>;
+			compatible = "shared-dma-pool";
+			reusable;
+		};
+#if 0
+		gfx_memory: framebuffer {
+			size = <0x0 0x01000000>;
+			alignment = <0x0 0x01000000>;
+			compatible = "shared-dma-pool";
+			reusable;
+		};
+#endif
+	};
+
+	aliases {
+#ifdef PDB
+		i2c100 = &riser_1A;
+		i2c101 = &riser_1B;
+		i2c102 = &riser_2A;
+		i2c103 = &riser_3A;
+		i2c104 = &riser_3B;
+		i2c105 = &m2;
+		i2c106 = &ocp;
+		i2c107 = &pdb;
+#endif
+		i2c108 = &mcio_1;
+		i2c109 = &mcio_2;
+		i2c110 = &mcio_3;
+		i2c111 = &mcio_4;
+		i2c112 = &mcio_5;
+		i2c113 = &mcio_6;
+		i2c114 = &p0_ps;
+		i2c115 = &NC_1;
+		i2c116 = &P0_id;
+		i2c117 = &P0_clk;
+		i2c118 = &P0_vr;
+		i2c119 = &NC_2;
+		i2c120 = &sys_vr;
+		i2c121 = &temp;
+		i2c122 = &lcd;
+		i2c123 = &clk_misc;
+		i2c124 = &usb3;
+		i2c125 = &adc;
+		i2c126 = &rio;
+		i2c127 = &fio;
+		i2c203 = &fan_board;
+	};
+};
+
+&mdio0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	ethphy0: ethernet-phy@0 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0>;
+	};
+};
+
+&pinctrl1 {
+	pinctrl_rgmii0_driving: rgmii0_driving {
+		pins = "C20", "C19", "A8", "R14", "A7", "P14",
+		       "D20", "A6", "B6", "N14", "B7", "B8";
+		drive-strength = <1>;
+	};
+};
+
+&mac0 {
+	status = "okay";
+	phy-mode = "rgmii-id";
+	phy-handle = <&ethphy0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_rgmii0_default &pinctrl_rgmii0_driving>;
+};
+
+&mac1 {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_rmii1_default>;
+        clock-names = "MACCLK", "RCLK";
+        use-ncsi;
+};
+
+&fmc {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_fwspi_quad_default>;
+	pinctrl-names = "default";
+
+	flash@0 {
+		status = "okay";
+		m25p,fast-read;
+		label = "bmc";
+		spi-max-frequency = <50000000>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			u-boot@0 {
+				reg = <0x0 0x400000>; // 4MB
+				label = "u-boot";
+			};
+			u-boot-env@400000 {
+				reg = <0x400000 0x20000>; // 128KB
+				label = "u-boot-env";
+			};
+			kernel@420000 {
+				reg = <0x420000 0x900000>; // 9MB
+				label = "kernel";
+			};
+			rofs@d20000 {
+				reg = <0xd20000 0x24a0000>; // 36.625MB
+				label = "rofs";
+			};
+			rwfs@31c0000 {
+				reg = <0x31c0000 0xE40000>; // 14.25MB
+				label = "rwfs";
+			};
+			pfm@4000000 {
+				reg = <0x4000000 0x20000>; // 128KB
+				label = "pfm";
+			};
+			reserved-1@4020000 {
+				reg = <0x4020000 0x200000>; // 128KB
+				label = "reserved-1";
+			};
+			rc-image@4220000 {
+				reg = <0x4220000 0x3de0000>; // 63360KB
+				label = "rc-image";
+			};
+		};
+	};
+
+	flash@1 {
+		status = "okay";
+		m25p,fast-read;
+		label = "mpflash";
+		spi-max-frequency = <50000000>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			image-stg@0000000 {
+				reg = <0x0000000 0x3de0000>; // 63360KB
+				label = "img-stg";
+			};
+			pfr-stg@3de0000 {
+				reg = <0x3de0000 0x100000>; // 1024KB
+				label = "pfr-stg";
+			};
+			cpld-stg@3ee0000 {
+				reg = <0x3ee0000 0x400000>; // 4096KB
+				label = "cpld-stg";
+			};
+			afm-stg@42e0000 {
+				reg = <0x42e0000 0x20000>; // 128KB
+				label = "afm-stg";
+			};
+			afm-rc@4300000 {
+				reg = <0x4300000 0x20000>; // 128KB
+				label = "afm-rc";
+			};
+			reserved-2@4320000 {
+				reg = <0x4320000 0x3ce0000>; // 62336KB
+				label = "reserved-2";
+			};
+		};
+	};
+};
+
+&spi0 {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_spi0_default &pinctrl_spi0_cs1_default>;
+	pinctrl-names = "default";
+
+	flash@0 {
+		status = "okay";
+		m25p,fast-read;
+		label = "pnor";
+		spi-max-frequency = <33000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+	};
+};
+
+&spi1 {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_spi1_default &pinctrl_spi1_cs1_default>;
+	pinctrl-names = "default";
+
+	flash@0 {
+		status = "okay";
+		m25p,fast-read;
+		label = "pnor";
+		spi-max-frequency = <33000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+	};
+};
+
+&spi2 {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_spi2_default &pinctrl_spi2_cs1_default>;
+	pinctrl-names = "default";
+	compatible = "aspeed,ast2700-spi-txrx";
+	flash@0 {
+		reg = <0>;
+		status = "disabled";
+		m25p,fast-read;
+		label = "pnor";
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <33000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+	};
+	oled@0 {
+        reg = < 0 >; // Chip select 0
+        compatible = "ssd,ssd1322";
+        spi-max-frequency = <1000000>; // Adjust the frequency as needed
+        label = "ssd1322";
+        status = "okay"; // Enable the SSD1322 device
+        spi-tx-bus-width = <1>;
+        spi-rx-bus-width = <1>;
+    };
+};
+
+//BMC Console
+&uart12 {
+	status = "okay";
+};
+
+&i2c0 {
+	/* FPGA_I2C_SDA<2>
+	 *
+	 * AST2700 I2C0 through I2C5 will be tunneled through the LTP,
+	 * eliminating the need for physical pins on the AST2700.
+	 */
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+	status = "okay";
+
+	i2cswitch@70 {
+		compatible = "nxp,pca9548";
+		reg = <0x70>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		fan_board: i2c@6 {
+			reg = <6>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			nct7363@20 {
+				compatible = "nct,nct7363";
+				reg = <0x20>;
+				fan_sel_gpio = <3>;
+			};
+		};
+	};
+};
+
+/* ROT board PFR mailbox. */
+&i2c6 {
+	status = "okay";
+};
+
+&i2c7 {
+	status = "okay";
+	scmeeprom@50 {
+		compatible = "atmel,24c08";
+		reg = <0x50>;
+	};
+};
+
+&i2c8 {
+	// Net name SCM_I2C<0>
+	status = "okay";
+	hpmeeprom@50 {
+		compatible = "microchip,24lc256","atmel,24c256";
+		reg = <0x50>;
+	};
+#ifdef PDB
+	i2cswitch@71 {
+		compatible = "nxp,pca9548";
+		reg = <0x71>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		riser_1A: i2c@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		riser_1B: i2c@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		riser_2A: i2c@2 {
+			reg = <2>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		riser_3A: i2c@3 {
+			reg = <3>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		riser_3B: i2c@4 {
+			reg = <4>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		m2: i2c@5 {
+			reg = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		ocp: i2c@6 {
+			reg = <6>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		pdb: i2c@7 {
+			reg = <7>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+#endif
+	i2cswitch@72 {
+		compatible = "nxp,pca9548";
+		reg = <0x72>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mcio_1: i2c@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		mcio_2: i2c@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		mcio_3: i2c@2 {
+			reg = <2>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		mcio_4: i2c@3 {
+			reg = <3>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		mcio_5: i2c@4 {
+			reg = <4>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		mcio_6: i2c@5 {
+			reg = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		p0_ps: i2c@6 {
+			reg = <6>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		NC_1: i2c@7 {
+			reg = <7>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+};
+
+&i2c12 {
+	// Net name i2c2 (SCM_I2C_SDA<2>) - VR/LM75/ADC
+	status = "okay";
+
+	i2cswitch@70 {
+		compatible = "nxp,pca9548";
+		reg = <0x70>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		sys_vr: i2c@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			p2v5_aux@8{
+				compatible = "ism,ism6636c";
+				reg = <0x8>;
+			};
+			p1v8_aux@9{
+				compatible = "ism,ism6636c";
+				reg = <0x9>;
+			};
+			p1v0_aux@a{
+				compatible = "ism,ism6636c";
+				reg = <0xa>;
+			};
+			p5v_aux@14{
+				compatible = "onsemi,fan251015";
+				reg = <0x14>;
+			};
+			p3v3_aux@15{
+				compatible = "onsemi,fan251015";
+				reg = <0x15>;
+			};
+		};
+
+		temp: i2c@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		lcd: i2c@2 {
+			reg = <2>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		clk_misc: i2c@3 {
+			reg = <3>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		usb3: i2c@4 {
+			reg = <4>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		adc: i2c@5 {
+			reg = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		rio: i2c@6 {
+			reg = <6>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		fio: i2c@7 {
+			reg = <7>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+ 
+	i2cswitch@74 {
+		compatible = "nxp,pca9546";
+		reg = <0x74>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		P0_id: i2c@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		P0_clk: i2c@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		P0_vr: i2c@2 {
+			reg = <2>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			pvdd33_s5_p0@8{
+				compatible = "ism,ism6636a";
+				reg = <0x8>;
+			};
+			pvdd18_s5_p0@12{
+				compatible = "onsemi,fan251030";
+				reg = <0x12>;
+			};
+			pvddcr_cpu0_p0@61{
+				compatible = "renesas,raa229639";
+				reg = <0x61>;
+			};
+			pvddcr_cpu1_p0@62{
+				compatible = "renesas,raa229639";
+				reg = <0x62>;
+			};
+			pvddio_p0@63{
+				compatible = "renesas,raa229641";
+				reg = <0x63>;
+			};
+		};
+
+		NC_2: i2c@3 {
+			reg = <3>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+};
+
+/* P0-SEC */
+&i2c15 {
+        status = "okay";
+        pinctrl-0 = <&pinctrl_di2c15_default>;
+        clock-frequency = <400000>;
+
+        multi-master;
+        mctp-controller;
+        mctp@10 {
+                compatible = "mctp-i2c-controller";
+                reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+        };
+};
+
+&i3c4 {
+	status = "okay";
+	initial-role = "primary";
+	internal-pullup = <2>;
+	i3c-scl-hz = <12500000>;
+	i2c-scl-hz = <1000000>;
+	mctp-controller;
+};
+
+#ifdef I3C_HUB
+
+#define JESD300_SPD_I3C_MODE(bus, index, addr) \
+spd_ ## bus ## _ ## index: spd@addr,4cc5118 ## index ## 000 { \
+        reg = <0x ## addr 0x4cc 0x5118 ## index ## 000>; \
+        assigned-address = <0x ## addr>; \
+        dcr = /bits/ 8 <0xda>; \
+        bcr = /bits/ 8 <0x6>; \
+}
+
+&i3c8 {
+        status = "okay";
+        initial-role = "primary";
+        bus-context = /bits/ 8 <I3C_BUS_CONTEXT_JESD403>;
+        internal-pullup = <2>;
+        i3c-scl-hz = <10000000>;
+        i2c-scl-hz = <1000000>;
+
+        i3c_hub0: i3chub0@70,4CC00000000 {
+                reg = <0x70 0x4CC 0x00000000>;
+                assigned-address = <0x70>;
+        };
+
+        i3c_hub1: i3chub1@71,4CC00000001 {
+                reg = <0x71 0x4CC 0x00000001>;
+                assigned-address = <0x71>;
+        };
+
+        JESD300_SPD_I3C_MODE(0, 0, 50);
+        JESD300_SPD_I3C_MODE(0, 1, 51);
+        JESD300_SPD_I3C_MODE(0, 2, 52);
+        JESD300_SPD_I3C_MODE(0, 3, 53);
+        JESD300_SPD_I3C_MODE(0, 4, 54);
+        JESD300_SPD_I3C_MODE(0, 5, 55);
+        JESD300_SPD_I3C_MODE(0, 6, 56);
+        JESD300_SPD_I3C_MODE(0, 7, 57);
+};
+#endif
+
+&gpio1 {
+	status = "okay";
+
+	/*
+     * by default the direction of the SEL_P0_SEC_I2C_ROT_BMC (GPIO B0)
+     * is "in". It should be set to "out" and value of "1" for the
+     * I2C bus to be owned by the BMC.
+     */
+    p0_sec_i2c {
+        gpio-hog;
+        gpios = <8 GPIO_ACTIVE_HIGH>;
+        output-high;
+        line-name = "SEL_P0_SEC_I2C_ROT_BMC";
+    };
+};
+
+&ltpi0 {
+        status = "okay";
+};
+
+&ltpi0_gpio {
+	status = "okay";
+	gpio-line-names =
+		/*00-07*/ "","","",
+			"P0_MGMT_ASSERT_CLR_CMOS","P0_MGMT_MON_PROCHOT_L","P0_MGMT_ASSERT_PROCHOT_L",
+			"P0_MGMT_MON_RSMRST_L","P0_ASSERT_RSMRST",
+		/*08-15*/ "P0_MGMT_MON_THERMTRIP_L","P0_MGMT_ASSERT_THERMTRIP_L","P0_PRESENT_L",
+			"","P1_PRESENT_L","","P0_MGMT_MON_POST_COMPLETE","",
+		/*16-23*/ "P0_MGMT_MON_PWR_GOOD","","P0_MGMT_MON_PSP_SOFT_FUSE_NTFY",
+			"","P0_I3C_APML_ALERT_L","","MGMT_SYS_MON_ATX_PWR_OK","",
+		/*24-31*/ "","P0_MGMT_UPDATE_FLASH_0","","P0_MGMT_UPDATE_FLASH_1","","P0_MGMT_UPDATE_FLASH_2","","P0_MGMT_ASSERT_NMI_BTN_L",
+		/*32-39*/ "","P0_MGMT_SOC_RESET_L","","MGMT_HDT_SEL","","SCM_JTAG_DBREQ","","JTAG_TRST_N",
+		/*40-47*/ "","P0_MGMT_ASSERT_WARM_RST_BTN_L","P0_MGMT_MON_DIMM_AH_PCAMP","","P0_MGMT_MON_DIMM_IP_PCAMP","","","",
+		/*48-55*/ "","","","","","","","",
+		/*56-63*/ "","","","","","","","",
+		/*64-71*/ "","","","","","","","",
+		/*72-79*/ "","","","","","","","",
+		/*80-87*/ "","","","","","","","",
+		/*88-95*/ "","","","","","","","",
+		/*96-103*/ "","","","","","","","",
+		/*104-111*/ "","","MGMT_MON_INTR_CHASSIS_L","","","HPM_STBY_EN","","",
+		/*112-119*/ "","","","","","","","",
+		/*120-127*/ "","","","","","","","",
+		/*128-135*/ "P0_MGMT_MON_RST_BTN_L","P0_MGMT_ASSERT_RST_BTN_L","P0_MGMT_MON_PWR_BTN_L",
+			 "P0_MGMT_ASSERT_PWR_BTN_L","","","","",
+		/*136-143*/ "","","","","","","","",
+		/*144-151*/ "","","","","","","","",
+		/*152-159*/ "","","","","","","","",
+		/*160-167*/ "","","","","","","","",
+		/*168-175*/ "","","","","","","","",
+		/*176-183*/ "","","","","","","","",
+		/*184-191*/ "","","","","","","","",
+		/*192-199*/ "","","","","","","","",
+		/*200-207*/ "","","","","","","","",
+		/*208-215*/ "","","","","","","","",
+		/*216-223*/ "","","","","","","","";
+};
+
+&video0 {
+	status = "okay";
+	memory-region = <&video_engine_memory0>;
+};
+
+&espi0 {
+	status = "okay";
+	perif-dma-mode;
+	perif-mmbi-enable;
+	perif-mmbi-src-addr = <0x0 0xa8000000>;
+	perif-mmbi-tgt-memory = <&espi0_mmbi_memory>;
+	perif-mmbi-instance-num = <0x1>;
+	perif-mcyc-enable;
+	perif-mcyc-src-addr = <0x0 0x98000000>;
+	perif-mcyc-size = <0x0 0x10000>;
+	oob-dma-mode;
+	flash-dma-mode;
+};
+
+&lpc0_pcc {
+	status = "okay";
+	pcc-ports = <0x80>;
+};
+
+&uart13 {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+	status = "okay";
+};
+
+#if 0 //Currently host uart from uart13 LTPI0 UART0.
+/* eSPI VUART */
+&vuart0 {
+	status = "okay";
+	virtual;
+	port = <0x3f8>;
+	sirq = <4>;
+	sirq-polarity = <0>;
+};
+#endif
+
+&xdma0 {
+	status = "okay";
+	memory-region = <&xdma_memory0>;
+};
+
+&lpc0_kcs2 {
+	status = "okay";
+	kcs-io-addr = <0xca2>;
+	kcs-channel = <2>;
+};
+
+&jtag1 {
+	status = "okay";
+};
+
+&mctp0 {
+	status = "okay";
+	memory-region = <&mctp0_reserved>;
+	mctp-controller;
+};
+
+&uphy3a {
+	status = "okay";
+};
+
+&uphy3b {
+	status = "okay";
+};
+
+&vhuba0 {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_usb2ahpd0_default>;
+};
+
+&usb3ahp {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_usb3axhp_default &pinctrl_usb2axhp_default>;
+};
+
+&usb3bhp {
+	status = "okay";
+};
+
+&uphy2b {
+	status = "okay";
+};
+
+&vhubb1 {
+	status = "okay";
+};
+
+&vhubc {
+	status = "okay";
+};
+
+&ehci3 {
+	status = "okay";
+};
+
+&uhci1 {
+	status = "okay";
+	memory-region = <&uhci1_reserved>;
+};
+
+&wdt0 {
+	status = "okay";
+};
+
+&wdt1 {
+	status = "okay";
+};
+
+&otp {
+	status = "okay";
+};
