@@ -1,0 +1,59 @@
+{
+    "gpio_configs": [
+        {
+             "Name": "PostComplete",
+             "LineName": "P0_MGMT_MON_POST_COMPLETE",
+             "Type": "GPIO",
+             "Polarity": "ActiveHigh"
+        },
+        {
+            "Name": "PowerButton",
+            "LineName": "P0_MGMT_MON_PWR_BTN_L",
+            "Type": "GPIO",
+            "Polarity": "ActiveLow"
+        },
+        {
+            "Name": "PowerOk",
+            "LineName": "P0_MGMT_MON_PWR_GOOD",
+            "Type": "GPIO",
+            "Polarity": "ActiveHigh"
+        },
+        {
+            "Name": "PowerOut",
+            "LineName": "P0_MGMT_ASSERT_PWR_BTN_L",
+            "Type": "GPIO",
+            "Polarity": "ActiveLow"
+        },
+        {
+            "Name": "ResetButton",
+            "LineName": "P0_MGMT_MON_RST_BTN_L",
+            "Type": "GPIO",
+            "Polarity": "ActiveLow"
+        },
+        {
+            "Name": "ResetOut",
+            "LineName": "P0_MGMT_ASSERT_RST_BTN_L",
+            "Type": "GPIO",
+            "Polarity": "ActiveLow"
+        },
+        {
+            "Name": "HpmStbyEn",
+            "LineName": "HPM_STBY_EN",
+            "Type": "GPIO",
+            "Polarity": "ActiveHigh"
+        }
+    ],
+    "timing_configs": {
+        "PowerPulseMs": 100,
+        "ForceOffPulseMs": 5000,
+        "ResetPulseMs": 100,
+        "PowerCycleMs": 5000,
+        "PsPowerOKWatchdogMs": 8000,
+        "GracefulPowerOffS": 90,
+        "WarmResetCheckMs": 1000,
+        "PowerOffSaveMs": 7000,
+        "DbusGetPropertyRetry": 1000
+    },
+    "event_configs": {
+    }
+}
