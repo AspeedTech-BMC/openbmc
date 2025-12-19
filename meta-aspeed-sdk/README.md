@@ -83,10 +83,10 @@ ast2700-a1-abr
    - Trusted-firmware-a is not supported.
 
 1. **AST2700**
-   - Default silicon revision is A1.
+   - Default silicon revision is A2.
    - OPTEE-OS is enabled by default.
    - Trusted-firmware-a is enabled by default and supports only BL31.
-   - Machines with the "-a1" postfix indicate support for A1 silicon.
+   - Machines with the "-a1" postfix indicate support for A1 silicon revision.
 
 - AST2700
 
