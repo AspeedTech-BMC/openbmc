@@ -757,10 +757,6 @@ spd_ ## bus ## _ ## index: spd@addr,4cc5118 ## index ## 000 { \
 	status = "okay";
 };
 
-&uphy3b {
-	status = "okay";
-};
-
 &vhuba0 {
 	status = "okay";
 	pinctrl-0 = <&pinctrl_usb2ahpd0_default>;
@@ -771,30 +767,7 @@ spd_ ## bus ## _ ## index: spd@addr,4cc5118 ## index ## 000 { \
 	pinctrl-0 = <&pinctrl_usb3axhp_default &pinctrl_usb2axhp_default>;
 };
 
-&usb3bhp {
-	status = "okay";
-};
 
-&uphy2b {
-	status = "okay";
-};
-
-&vhubb1 {
-	status = "okay";
-};
-
-&vhubc {
-	status = "okay";
-};
-
-&ehci3 {
-	status = "okay";
-};
-
-&uhci1 {
-	status = "okay";
-	memory-region = <&uhci1_reserved>;
-};
 
 &wdt0 {
 	status = "okay";
