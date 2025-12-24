@@ -75,6 +75,60 @@ WaitForPlatformReady()
 	done
 }
 
+SetupCpuI3cDevice()
+{
+	for retry_count in $(seq 1 10); do
+		if [ -e /sys/bus/i3c/devices/5-20a012900ef ]; then
+			echo "CPU I3C found after $retry_count attempts"
+			break
+		else
+			echo "CPU I3C not found, rescanning I3C MNG bus (attempt $retry_count)"
+			echo 1 > /sys/bus/i3c/devices/14c25000.i3c5/rescan
+			sleep 10
+		fi
+	done
+	if [ ! -e /sys/bus/i3c/devices/5-20a012900ef ]; then
+		echo "Warning: CPU I3C not found after 10 attempts"
+	fi
+
+	if mctp link|grep mctpi3c5 > /dev/null;then
+		echo "Setup MCTP bridge over I3C to CPU"
+		# Delete existing MCTP configurations if they exist
+		mctp neigh del 0x1d dev mctpi3c5 2>/dev/null || true
+		mctp route del 0x1d via mctpi3c5 2>/dev/null || true
+		mctp addr del 0x09 dev mctpi3c5 2>/dev/null || true
+
+		# Re-add MCTP configurations
+		mctp link set mctpi3c5 net 4 up mtu 68
+		mctp addr add 0x09 dev mctpi3c5
+		mctp route add 0x1d via mctpi3c5
+		mctp neigh add 0x1d dev mctpi3c5 lladdr 0x02:0a:01:29:00:ef
+	fi
+}
+
+MonitorPltrstn()
+{
+	# Open the pltrstn device for reading
+	exec 3< "/dev/aspeed-espi-pltrstn0"
+
+	while true; do
+		# read 1 byte (blocking)
+		v="$(dd bs=1 count=1 <&3 2>/dev/null | tr -d '\0')"
+
+		[ -n "$v" ] || continue
+
+		if [ "$v" = "1" ]; then
+			echo "MonitorPltrstn rescan i3c"
+			echo 1 > "/sys/bus/i3c/devices/14c25000.i3c5/rescan"
+			# After rescan, setup CPU I3C device again
+			SetupCpuI3cDevice
+		fi
+	done
+
+	# Close the file descriptor
+	exec 3<&-;
+}
+
 StartCpuEmulationMode()
 {
 	if mctp link|grep mctpi3c4 > /dev/null;then
@@ -102,30 +156,16 @@ StartMCTPBridgeMode()
 		WaitForPlatformReady
 	fi
 
-	# This is a workaround to ensure the CPU I3C device is available.
-	echo "Waiting for CPU I3C device to be ready..."
-	sleep 90
-	for retry_count in $(seq 1 10); do
-		if [ -e /sys/bus/i3c/devices/5-20a012900ef ]; then
-			echo "CPU I3C found after $retry_count attempts"
-			break
-		else
-			echo "CPU I3C not found, rescanning I3C MNG bus (attempt $retry_count)"
-			echo 1 > /sys/bus/i3c/devices/14c25000.i3c5/rescan
-			sleep 10
-		fi
-	done
-	if [ ! -e /sys/bus/i3c/devices/5-20a012900ef ]; then
-		echo "Warning: CPU I3C not found after 10 attempts"
-	fi
-
-	if mctp link|grep mctpi3c5 > /dev/null;then
-		echo "Setup MCTP bridge over I3C to CPU"
-		mctp link set mctpi3c5 net 4 up mtu 68
-		mctp addr add 0x09 dev mctpi3c5
-		mctp route add 0x1d via mctpi3c5
-		mctp neigh add 0x1d dev mctpi3c5 lladdr 0x02:0a:01:29:00:ef
-	fi
+	if [ ! -e /dev/aspeed-espi-pltrstn0 ]; then
+		# This is a workaround to ensure the CPU I3C device is available.
+		echo "Waiting for CPU I3C device to be ready..."
+		sleep 90
+		SetupCpuI3cDevice
+	else
+		echo "Using aspeed-espi-pltrstn0 to ensure CPU I3C device is ready"
+		SetupCpuI3cDevice
+		MonitorPltrstn
+	fi	
 
 	#ls /sys/bus/i3c/devices/
 	#mctp-client net 4 eid 0x1d type control data 80 05
