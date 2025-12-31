@@ -1,12 +1,18 @@
 #!/bin/sh
 
+SOC_REVISION=$(cat /sys/bus/soc/devices/soc0/revision)
+
 if [ "$2" = "1" ]; then
-    # For AST2750 dual nodes. 
+    # For AST2750 dual nodes.
     hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid1"
-    dev_name="12021000.usb-vhub"  # For AST2700 A1
+    if [ "${SOC_REVISION}" = "A1" ]; then
+        dev_name="12021000.usb-vhub"  # For AST2750 A1
+    else
+        dev_name="12062000.usb-vhub"  # For AST2750 A2
+    fi
 else
     hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid"
-    dev_name="12060000.usb-vhub"  # For AST2700 A1
+    dev_name="12060000.usb-vhub" # For AST2700
 fi
 
 create_hid() {

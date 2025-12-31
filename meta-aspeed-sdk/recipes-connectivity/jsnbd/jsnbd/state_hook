@@ -11,13 +11,15 @@ config=$2
 
 gadget_name=mass-storage
 gadget_dir=/sys/kernel/config/usb_gadget/$gadget_name
+SOC_FAMILY=$(cat /sys/bus/soc/devices/soc0/family)
+SOC_REVISION=$(cat /sys/bus/soc/devices/soc0/revision)
 
 #  Assign different dev_name to find AST2750 node1 device in which_dev() 
-if [ -e "/sys/bus/platform/devices/1e6a0000.usb-vhub/" ]; then
-    dev_name="1e6a0000.usb-vhub"  # For AST2600
+if [ "${SOC_FAMILY}" = "AST2500" ] || [ "${SOC_FAMILY}" = "AST2600" ]; then
+    dev_name="1e6a0000.usb-vhub"
 else
     # For AST2700
-    dev_name="12060000.usb-vhub"  # For AST2700 A1
+    dev_name="12060000.usb-vhub"
 fi
 
 case "$config" in
@@ -32,7 +34,11 @@ case "$config" in
     nbd_device=/dev/nbd8
     gadget_name=mass-storage1
     gadget_dir=/sys/kernel/config/usb_gadget/$gadget_name
-    dev_name="12021000.usb-vhub"  # For AST2700 A1
+    if [ "${SOC_REVISION}" = "A1" ]; then
+        dev_name="12021000.usb-vhub"  # For AST2750 A1
+    else
+        dev_name="12062000.usb-vhub"  # For AST2750 A2
+    fi
     ;;
 *)
     echo "invalid config $config" >&2

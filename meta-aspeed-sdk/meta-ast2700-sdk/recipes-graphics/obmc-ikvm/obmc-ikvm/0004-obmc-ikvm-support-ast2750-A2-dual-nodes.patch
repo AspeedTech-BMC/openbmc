@@ -1,7 +1,7 @@
-From eb03e8c25d9d7d90b6ab82a4bc7619a9e50a6540 Mon Sep 17 00:00:00 2001
+From ae6a73691970a7ede8ca6f6d57cefe785c8fa724 Mon Sep 17 00:00:00 2001
 From: VinceChang6637 <vince_chang@aspeedtech.com>
-Date: Wed, 29 Nov 2023 11:19:03 +0800
-Subject: [PATCH 4/4] obmc-ikvm: support ast2750 dual nodes.
+Date: Wed, 31 Dec 2025 11:17:22 -0600
+Subject: [PATCH 4/5] obmc-ikvm: support ast2750 A2 dual nodes.
 
 Expect result:
 /usr/bin/obmc-ikvm -v /dev/video0 -k /dev/hidg0 -p /dev/hidg1
@@ -9,8 +9,10 @@ Expect result:
 
 /dev/video0 listen port 5900
 /dev/video1 listen port 5901
-/dev/hidg0 use "12011000.usb-vhub" UDC
-/dev/hidg2 use "12021000.usb-vhub" UDC
+
+For AST2700 A2:
+/dev/hidg0 use "12060000.usb-vhub" UDC
+/dev/hidg2 use "12062000.usb-vhub" UDC
 
 Upstream-Status: Pending
 Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
@@ -44,7 +46,7 @@ index 8cdefe4..09a19c8 100644
      hidUdcStream.open(hidUdcPath, std::ios::out | std::ios::app);
  }
 diff --git a/ikvm_input.hpp b/ikvm_input.hpp
-index 00d8e7f..0669f81 100644
+index 00d8e7f..8bbe462 100644
 --- a/ikvm_input.hpp
 +++ b/ikvm_input.hpp
 @@ -79,11 +79,15 @@ class Input
@@ -60,9 +62,9 @@ index 00d8e7f..0669f81 100644
 -    static constexpr const char* usbVirtualHubPath =
 -        "/sys/bus/platform/devices/1e6a0000.usb-vhub";
 +    static constexpr const char* USB_VHUB_PATH =
-+        "/sys/bus/platform/devices/12011000.usb-vhub";
++        "/sys/bus/platform/devices/12060000.usb-vhub";
 +    static constexpr const char* USB_VHUB_PATH_1 =
-+        "/sys/bus/platform/devices/12021000.usb-vhub";
++        "/sys/bus/platform/devices/12062000.usb-vhub";
      /* @brief Retry limit for writing an HID report */
      static constexpr int HID_REPORT_RETRY_MAX = 5;
      /*
@@ -78,7 +80,7 @@ index 00d8e7f..0669f81 100644
       * @brief Mapping of RFB key code to report data index to keep track
       *        of which keys are down
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index c8ddcb7..4626351 100644
+index 66d05cb..3773671 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
 @@ -49,6 +49,12 @@ Server::Server(const Args& args, Input& i, Video& v) :
@@ -95,5 +97,5 @@ index c8ddcb7..4626351 100644
  
      rfbInitServer(server);
 -- 
-2.25.1
+2.43.0
 
