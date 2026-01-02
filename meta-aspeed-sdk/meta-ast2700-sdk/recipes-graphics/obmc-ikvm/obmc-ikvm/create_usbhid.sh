@@ -1,18 +1,28 @@
 #!/bin/sh
 
+hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid"
+SOC_FAMILY=$(cat /sys/bus/soc/devices/soc0/family)
 SOC_REVISION=$(cat /sys/bus/soc/devices/soc0/revision)
 
-if [ "$2" = "1" ]; then
-    # For AST2750 dual nodes.
-    hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid1"
-    if [ "${SOC_REVISION}" = "A1" ]; then
-        dev_name="12021000.usb-vhub"  # For AST2750 A1
+if [ "${SOC_FAMILY}" = "AST2500" ] || [ "${SOC_FAMILY}" = "AST2600" ]; then
+    DEV_NAME="1e6a0000.usb-vhub"
+elif [ "${SOC_FAMILY}" = "AST2700" ] || [ "${SOC_FAMILY}" = "AST2750" ]; then
+    if [ "$2" = "1" ]; then
+        # For AST2750 dual nodes.
+        hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid1"
+        if [ "${SOC_REVISION}" = "A1" ]; then
+            DEV_NAME="12021000.usb-vhub"  # For AST2750 A1
+        else
+            DEV_NAME="12062000.usb-vhub"  # For AST2750 A2
+        fi
     else
-        dev_name="12062000.usb-vhub"  # For AST2750 A2
+        hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid"
+        DEV_NAME="12060000.usb-vhub" # For AST2700
     fi
 else
-    hid_conf_directory="/sys/kernel/config/usb_gadget/obmc_hid"
-    dev_name="12060000.usb-vhub" # For AST2700
+    DEV_NAME="1e6a0000.usb-vhub"
+    echo "Unknown SOC_FAMILY '${SOC_FAMILY}', defaulting DEV_NAME to '${DEV_NAME}'"
+    exit 1
 fi
 
 create_hid() {
@@ -137,27 +147,23 @@ create_hid() {
 }
 
 connect_hid() {
-    if ! grep -q "${dev_name}:p" UDC; then
+    if ! grep -q "${DEV_NAME}:p" UDC; then
         i=0
         num_ports=5
-        base_usb_dir="/sys/bus/platform/devices/${dev_name}/${dev_name}:p"
+        base_usb_dir="/sys/bus/platform/devices/${DEV_NAME}/${DEV_NAME}:p"
         while [ "${i}" -lt "${num_ports}" ]; do
             port=$(("${i}" + 1))
             i="${port}"
-            # Kernel 6.0:
-            # /sys/.../1e6a0000.usb-vhub:pX/gadget.Y/suspended
-            # Kernel 5.15:
-            # /sys/.../1e6a0000.usb-vhub:pX/gadget/suspended
-            if [ ! -e "${base_usb_dir}${port}/gadget.0/suspended" ]; then
+            if [ ! -e "${base_usb_dir}${port}/gadget/suspended" ]; then
                 break
             fi
         done
-        echo "${dev_name}:p${port}" > UDC
+        echo "${DEV_NAME}:p${port}" > UDC
     fi
 }
 
 disconnect_hid() {
-    if grep -q "${dev_name}:p" UDC; then
+    if grep -q "${DEV_NAME}:p" UDC; then
         echo "" > UDC
     fi
 }
