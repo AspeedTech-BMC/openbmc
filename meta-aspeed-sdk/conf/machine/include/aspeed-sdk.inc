@@ -25,8 +25,8 @@ MACHINEOVERRIDES =. "aspeed:"
 
 PREFERRED_VERSION_iperf3 ?= "3.1.4"
 
-# It should be removed if kernel 5.4 is no longer supported.
-require oldest-kernel-54.inc
+# Required to explicitly define the oldest kernel version supported by the ASPEED SDK.
+require oldest-kernel.inc
 
 # Installs static development packages, which are static libraries (i.e. *.a files), for all packages installed in a given SDK
 SDKIMAGE_FEATURES += "staticdev-pkgs"
