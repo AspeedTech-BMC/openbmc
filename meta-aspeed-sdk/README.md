@@ -64,8 +64,9 @@ ast2700-a1-abr
 
 1. **Kernel Version**
 
-   All machines use kernel 6.12 by default. If users want to use a different kernel version:
+   All machines use kernel 6.18 by default. If users want to use a different kernel version:
 
+   - Choose the machine with the "-612" postfix for kernel 6.12.
    - Choose the machine with the "-66" postfix for kernel 6.6.
    - Choose the machine with the "-515" postfix for kernel 5.15.
    - Choose the machine with the "-54" postfix for kernel 5.4.
