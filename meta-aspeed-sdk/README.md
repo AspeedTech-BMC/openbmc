@@ -26,12 +26,14 @@ Reference:
 . setup <machine> [build_dir]
 Target machine must be specified. Use one of:
 ast2500-default
+ast2500-default-612
 ast2500-default-66
 ast2500-default-515
 ast2500-default-54
 ast2600-dcscm
 ast2600-dcscm-amd
 ast2600-default
+ast2600-default-612
 ast2600-default-66
 ast2600-default-515
 ast2600-default-54
@@ -39,12 +41,13 @@ ast2600-default-ecc
 ast2600-default-ncsi
 ast2600-default-raw
 ast2600-default-tee
-ast2600-default-tee-66
+ast2600-default-tee-612
 ast2600-emmc
-ast2600-emmc-66
+ast2600-emmc-612
 ast2600-emmc-tee
-ast2600-emmc-tee-66
+ast2600-emmc-tee-612
 ast2700-default
+ast2700-default-612
 ast2700-default-ncsi
 ast2700-default-raw
 ast2700-default-irot
@@ -53,6 +56,7 @@ ast2700-ufs
 ast2700-abr
 ast2700-dcscm
 ast2700-a1
+ast2700-a1-612
 ast2700-a1-spl
 ast2700-a1-ncsi
 ast2700-a1-raw
