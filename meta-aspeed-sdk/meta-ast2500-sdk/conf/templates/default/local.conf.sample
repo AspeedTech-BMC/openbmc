@@ -2,6 +2,7 @@ MACHINE ??= "ast2500-default"
 #MACHINE ??= "ast2500-default-612"
 #MACHINE ??= "ast2500-default-66"
 #MACHINE ??= "ast2500-default-515"
+#MACHINE ??= "ast2500-default-54"
 
 DISTRO ?= "openbmc-phosphor"
 PACKAGE_CLASSES ?= "package_ipk"
