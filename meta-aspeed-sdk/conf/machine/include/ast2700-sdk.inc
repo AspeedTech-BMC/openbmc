@@ -71,7 +71,8 @@ PREFERRED_PROVIDER_virtual/ibexfw ??= "zephyr-aspeed-ibexfw"
 
 # caliptra manifest
 CALIPTRA_MANIFEST_CONFIG_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
-CALIPTRA_MANIFEST_CONFIG ??= "ast2700-default-manifest.toml"
+CALIPTRA_MANIFEST_CONFIG ??= "ast2700-default-ecc-manifest.toml"
+CALIPTRA_MANIFEST_KEY_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2700-soc-manifest.bin"
 
