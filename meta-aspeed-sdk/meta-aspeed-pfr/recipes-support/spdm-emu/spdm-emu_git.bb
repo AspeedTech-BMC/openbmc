@@ -88,6 +88,17 @@ do_install:append () {
 	install -m 0644 ${UNPACKDIR}/ecp384/inter.key ${D}${datadir}/spdm-emu/ecp384
 	install -m 0644 ${UNPACKDIR}/ecp384/inter.req ${D}${datadir}/spdm-emu/ecp384
 	install -m 0644 ${UNPACKDIR}/ecp384/param.pem ${D}${datadir}/spdm-emu/ecp384
+
+	# It installs libmbedcrypto.a, libmbedtls.a, and libmbedx509.a into the /usr/lib directory.
+	# However, these libraries are already provided by mbedtls. If a user installs mbedtls into
+	# the rootfs, the build will fail when running bitbake -c populate_sdk, because both
+	# spdm-emu and mbedtls install the same static libraries into the same directory.
+	#
+	# To fix this issue, and since the mbedtls static libraries here are used only for spdm-emu,
+	# they are removed from the install step.
+	rm -f ${D}${libdir}/libmbedcrypto.a
+	rm -f ${D}${libdir}/libmbedtls.a
+	rm -f ${D}${libdir}/libmbedx509.a
 }
 
 
