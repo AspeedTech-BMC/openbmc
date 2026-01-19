@@ -125,6 +125,7 @@
         pinctrl-0 = <&pinctrl_rmii1_default>;
         clock-names = "MACCLK", "RCLK";
         use-ncsi;
+        phy-mode = "rmii";
 };
 
 &fmc {
