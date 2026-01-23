@@ -7,8 +7,8 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 BRANCH = "master"
 SRC_URI = "git://github.com/AspeedTech-BMC/cptra_imgtool;protocol=https;branch=${BRANCH};"
 
-# Tag for v00.01.01
-SRCREV = "e300bf362330bb3bb1f12bc2d155dfb7a14ccf14"
+# Tag for v00.01.02
+SRCREV = "56eec099972680bb1a27e4b8846e929bd54df1bf"
 
 PV = "1.0+git"
 S = "${WORKDIR}/git"

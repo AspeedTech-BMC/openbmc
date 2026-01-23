@@ -5,4 +5,4 @@ Description=Flashing the PFR firmware image
 Type=oneshot
 RemainAfterExit=no
 ExecStart=/usr/sbin/pfr_update.sh %I
-TimeoutSec=300
+TimeoutSec=600

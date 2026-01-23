@@ -1,0 +1,101 @@
+From ae6a73691970a7ede8ca6f6d57cefe785c8fa724 Mon Sep 17 00:00:00 2001
+From: VinceChang6637 <vince_chang@aspeedtech.com>
+Date: Wed, 31 Dec 2025 11:17:22 -0600
+Subject: [PATCH 4/5] obmc-ikvm: support ast2750 A2 dual nodes.
+
+Expect result:
+/usr/bin/obmc-ikvm -v /dev/video0 -k /dev/hidg0 -p /dev/hidg1
+/usr/bin/obmc-ikvm -v /dev/video1 -k /dev/hidg2 -p /dev/hidg3
+
+/dev/video0 listen port 5900
+/dev/video1 listen port 5901
+
+For AST2700 A2:
+/dev/hidg0 use "12060000.usb-vhub" UDC
+/dev/hidg2 use "12062000.usb-vhub" UDC
+
+Upstream-Status: Pending
+Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
+---
+ ikvm_input.cpp  | 12 ++++++++++++
+ ikvm_input.hpp  | 14 +++++++++++---
+ ikvm_server.cpp |  6 ++++++
+ 3 files changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/ikvm_input.cpp b/ikvm_input.cpp
+index 8cdefe4..09a19c8 100644
+--- a/ikvm_input.cpp
++++ b/ikvm_input.cpp
+@@ -27,6 +27,18 @@ Input::Input(const std::string& kbdPath, const std::string& ptrPath,
+     keyboardFd(-1), pointerFd(-1), keyboardReport{0}, pointerReport{0},
+     keyboardPath(kbdPath), pointerPath(ptrPath), udcName(udc)
+ {
++    // Support AST2750 dual nodes
++    if (kbdPath == "/dev/hidg2")
++    {
++        hidUdcPath = OBMC_HID_PATH_1;
++        usbVirtualHubPath = USB_VHUB_PATH_1;
++    }
++    else
++    {
++        hidUdcPath = OBMC_HID_PATH;
++        usbVirtualHubPath = USB_VHUB_PATH;
++    }
++
+     hidUdcStream.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+     hidUdcStream.open(hidUdcPath, std::ios::out | std::ios::app);
+ }
+diff --git a/ikvm_input.hpp b/ikvm_input.hpp
+index 00d8e7f..8bbe462 100644
+--- a/ikvm_input.hpp
++++ b/ikvm_input.hpp
+@@ -79,11 +79,15 @@ class Input
+         0x40  // right alt
+     };
+     /* @brief Path to the HID gadget UDC */
+-    static constexpr const char* hidUdcPath =
++    static constexpr const char* OBMC_HID_PATH =
+         "/sys/kernel/config/usb_gadget/obmc_hid/UDC";
++    static constexpr const char* OBMC_HID_PATH_1 =
++        "/sys/kernel/config/usb_gadget/obmc_hid1/UDC";
+     /* @brief Path to the USB virtual hub */
+-    static constexpr const char* usbVirtualHubPath =
+-        "/sys/bus/platform/devices/1e6a0000.usb-vhub";
++    static constexpr const char* USB_VHUB_PATH =
++        "/sys/bus/platform/devices/12060000.usb-vhub";
++    static constexpr const char* USB_VHUB_PATH_1 =
++        "/sys/bus/platform/devices/12062000.usb-vhub";
+     /* @brief Retry limit for writing an HID report */
+     static constexpr int HID_REPORT_RETRY_MAX = 5;
+     /*
+@@ -116,6 +120,10 @@ class Input
+     std::string pointerPath;
+     /* @brief Name of UDC */
+     std::string udcName;
++    /* @brief Path to the HID gadget UDC */
++    std::string hidUdcPath;
++    /* @brief Path to the USB virtual hub */
++    std::string usbVirtualHubPath;
+     /*
+      * @brief Mapping of RFB key code to report data index to keep track
+      *        of which keys are down
+diff --git a/ikvm_server.cpp b/ikvm_server.cpp
+index 66d05cb..3773671 100644
+--- a/ikvm_server.cpp
++++ b/ikvm_server.cpp
+@@ -49,6 +49,12 @@ Server::Server(const Args& args, Input& i, Video& v) :
+     server->cursor->xhot = 1;
+     server->cursor->yhot = 1;
+ 
++    // Support AST2750 dual nodes
++    if (args.getVideoPath() == "/dev/video1")
++    {
++        server->port = 5901;
++    }
++
+     rfbStringToAddr(&ip[0], &server->listenInterface);
+ 
+     rfbInitServer(server);
+-- 
+2.43.0
+

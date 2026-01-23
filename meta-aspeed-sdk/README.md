@@ -1,34 +1,39 @@
 # Create build environment
+
 ## Prerequisite
 
 ### Ubuntu 22.04
+
 ```
-sudo apt install gawk wget git diffstat unzip texinfo gcc build-essential chrpath socat cpio python3 python3-pip python3-pexpect xz-utils \
-    debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev python3-subunit mesa-common-dev zstd liblz4-tool file locales
+sudo apt install gawk wget git diffstat unzip texinfo gcc build-essential chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 python3-subunit zstd liblz4-tool file locales libacl1
 ```
 
 ### Required Git, tar, Python, make, gcc/g++ Versions
+
 - Git 1.8.3.1 or greater
 - tar 1.28 or greater
-- Python 3.8.0 or greater
+- Python 3.9.0 or greater
 - GNU make 4.0 or greater
-- gcc/g++ 8.0 or greater
+- Gcc/G++ 10.1 or greater
 
 Reference:
 - [OpenBMC/README.md](https://github.com/openbmc/openbmc#1-prerequisite)
 - [Yocto Project Quick Build](https://docs.yoctoproject.org/brief-yoctoprojectqs/index.html)
 
 ## Target the machine
+
 ```
 . setup <machine> [build_dir]
 Target machine must be specified. Use one of:
 ast2500-default
+ast2500-default-612
 ast2500-default-66
 ast2500-default-515
 ast2500-default-54
 ast2600-dcscm
 ast2600-dcscm-amd
 ast2600-default
+ast2600-default-612
 ast2600-default-66
 ast2600-default-515
 ast2600-default-54
@@ -36,12 +41,14 @@ ast2600-default-ecc
 ast2600-default-ncsi
 ast2600-default-raw
 ast2600-default-tee
-ast2600-default-tee-66
+ast2600-default-tee-612
 ast2600-emmc
-ast2600-emmc-66
+ast2600-emmc-612
 ast2600-emmc-tee
-ast2600-emmc-tee-66
+ast2600-emmc-tee-612
 ast2700-default
+ast2700-default-612
+ast2700-default-66
 ast2700-default-ncsi
 ast2700-default-raw
 ast2700-default-irot
@@ -50,42 +57,62 @@ ast2700-ufs
 ast2700-abr
 ast2700-dcscm
 ast2700-a1
-ast2700-a1-spl (Linux Kernel v6.6)
+ast2700-a1-612
+ast2700-a1-66
+ast2700-a1-spl
 ast2700-a1-ncsi
 ast2700-a1-raw
 ast2700-a1-irot
 ast2700-a1-emmc
 ast2700-a1-ufs
 ast2700-a1-abr
+ast2700-a1-dcscm
 ```
 
-- Linux kernel version is `6.12` by default, machine with `66` postfix for kernel v6.6, machine with `515` postfix for kernel v5.15, machine with `54` postfix for kernel v5.4.
-- AST2600
-  - Default revision for A3.
-  - Optee is disabled by default. machine with `tee` postfix for Optee enable.
-  - ATF is not support.
+1. **Kernel Version**
+
+   All machines use kernel 6.18 by default. If users want to use a different kernel version:
+
+   - Choose the machine with the "-612" postfix for kernel 6.12.
+   - Choose the machine with the "-66" postfix for kernel 6.6.
+   - Choose the machine with the "-515" postfix for kernel 5.15.
+   - Choose the machine with the "-54" postfix for kernel 5.4.
+
+1. **U-Boot Version**
+   - AST2500 and AST2600 use version 2019.04.
+   - AST2700 uses version 2023.10.
+
+1. **AST2500**
+   - OPTEE-OS and Trusted-firmware-A are not supported.
+
+1. **AST2600**
+   - Only silicon revision A3 is supported.
+   - OPTEE-OS is disabled by default. To enable OPTEE-OS, choose a machine with the "tee" postfix.
+   - Trusted-firmware-a is not supported.
+
+1. **AST2700**
+   - Default silicon revision is A2.
+   - OPTEE-OS is enabled by default.
+   - Trusted-firmware-a is enabled by default and supports only BL31.
+   - Machines with the "-a1" postfix indicate support for A1 silicon revision.
+
 - AST2700
-  - Default revision for A1.
-  - Optee is enabled by default.
-  - ATF is enabled by default and only support BL31.
 
-1. AST2700
+  ```
+  . setup ast2700-default [build_dir]
+  ```
 
-```
-. setup ast2700-default [build_dir]
-```
+- AST2600
 
-2. AST2600
+  ```
+  . setup ast2600-default [build_dir]
+  ```
 
-```
-. setup ast2600-default [build_dir]
-```
+- AST2500
 
-3. AST2500
-
-```
-. setup ast2500-default [build_dir]
-```
+  ```
+  . setup ast2500-default [build_dir]
+  ```
 
 ## Build OpenBMC firmware
 
@@ -94,9 +121,12 @@ bitbake obmc-phosphor-image
 ```
 
 # Output image
+
 After you successfully built the image, the image file can be found in: `[build_dir]/tmp/work/deploy/images/${MACHINE}/`.
 
 ## OpenBMC firmware
+
+This section shows an example for **AST2600**.
 
 ### Boot from SPI image
 - `image-bmc`: whole flash image
@@ -137,7 +167,7 @@ The Yocto/OpenBMC build system supports to provide the following things to meet 
 
 The Yocto Project generates a license manifest during image creation that is located in ${DEPLOY_DIR}/licenses/image_name-datestamp to assist with any audits.
 During the creation of your image, the source and patch from all recipes that deploy packages to the image is placed within subdirectories of DEPLOY_DIR/sources on the LICENSE for each recipe.
-Please refer to [Working With Licenses](https://docs.yoctoproject.org/dev-manual/common-tasks.html#working-with-licenses) for detail.
+Please refer to [Working With Licenses](https://docs.yoctoproject.org/dev-manual/licenses.html) for detail.
 
 To create it, please add the following settings in `local.conf`.
 By default, it only creates for `GPL, LGPL and AGPL` LICENSE. User can add `COPYLEFT_LICENSE_INCLUDE = "*"` to create for all LICENSE.

@@ -14,7 +14,7 @@ inherit deploy
 DEPENDS += "cptra-imgtool-native aspeed-secure-config-native"
 
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
-CALIPTRA_MANIFEST_RECOVERY_IMAGE ?= "ast2700-soc-manifest.bin"
+CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2700-soc-manifest.bin"
 ASPEED_IROT = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'yes', 'no', d)}"
 
 # Using cptra-imgtool to create manifest image.
@@ -29,7 +29,7 @@ create_cptra_manifest_image() {
 
     echo "caliptra_manifest_key_dir=${caliptra_manifest_key_dir}"
 
-    # Run cptra-imgtool to generate manifest flash image.
+    # Build the Caliptra Flash Image (including the Caliptra SoC manifest).
     cptra-imgtool \
         create-auth-flash \
         --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
@@ -37,13 +37,13 @@ create_cptra_manifest_image() {
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         --flash ${B}/${CALIPTRA_MANIFEST_FLASH_IMAGE}
 
-    # Run cptra-imgtool to generate manifest image for recovery.
+    # Build only the Caliptra SoC Manifest.
     cptra-imgtool \
         create-auth-man \
         --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
         ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
-        --man ${B}/${CALIPTRA_MANIFEST_RECOVERY_IMAGE}
+        --man ${B}/${CALIPTRA_MANIFEST_SOC_IMAGE}
 }
 
 do_compile() {
@@ -63,7 +63,7 @@ do_compile[depends] += " \
 do_deploy_image() {
     install -d ${DEPLOYDIR}
     install -m 644 ${B}/${CALIPTRA_MANIFEST_FLASH_IMAGE} ${DEPLOYDIR}
-    install -m 644 ${B}/${CALIPTRA_MANIFEST_RECOVERY_IMAGE} ${DEPLOYDIR}
+    install -m 644 ${B}/${CALIPTRA_MANIFEST_SOC_IMAGE} ${DEPLOYDIR}
 }
 
 

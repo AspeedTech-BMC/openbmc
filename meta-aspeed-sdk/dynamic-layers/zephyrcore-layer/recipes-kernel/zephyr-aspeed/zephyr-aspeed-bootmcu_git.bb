@@ -11,20 +11,20 @@ PV = "1.0+git"
 SRC_URI_ASPEED_ZEPHYR_PROJECT = "gitsm://github.com/AspeedTech-BMC/aspeed-zephyr-project;protocol=https"
 ASPEED_ZEPHYR_PROJECT_BRANCH = "aspeed-master"
 
-# Tag for v03.03
-SRCREV_bootmcu = "7cfdc08b0bef98a30074fbd473c65a1f1daad076"
+# Tag for v03.04
+SRCREV_bootmcu = "d1c4bbaa7795f4bc84eaf8c458e61d34c2c96355"
 
 SRC_URI += "\
     ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
 "
 
-ZEPHYR_MODULES += "\
+ZEPHYR_MODULES:append = "\
 ${S}/aspeed-zephyr-project\;\
 "
 
 ZEPHYR_BOARD_BOOTMCU ??= "ast2700_evb/ast2700/bootmcu"
 ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
-ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FW_BINARY}"
+ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FMC_BINARY} ${BOOTMCU_FW_BINARY}"
 
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
 
@@ -45,6 +45,11 @@ do_create_fmc_image() {
     local lms_key=""
     local lms_key_index=""
     local sign_args=""
+
+    if [ "${FMC_IMAGE_ENABLE}" != "1" ]; then
+        install -m 0644 ${B}/zephyr/zephyr.bin ${B}/zephyr/${BOOTMCU_FW_BINARY}
+        return
+    fi
 
     if [ -f "${FMC_ECC_KEY}" ]; then
         ecc_key="--ecc-key ${FMC_ECC_KEY}"
@@ -72,7 +77,7 @@ do_create_fmc_image() {
         --verbose \
         --version 2 \
         --input ${B}/zephyr/zephyr.bin \
-        --output ${B}/zephyr/${BOOTMCU_FW_BINARY} \
+        --output ${B}/zephyr/${BOOTMCU_FMC_BINARY} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         ${sign_args}
 }

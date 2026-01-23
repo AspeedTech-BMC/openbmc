@@ -1,0 +1,11 @@
+[Unit]
+Description=Set all Fan speeds at at boot time
+After=dropbearkey.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/bin/set-fan-speed.sh 30
+
+[Install]
+WantedBy=multi-user.target
