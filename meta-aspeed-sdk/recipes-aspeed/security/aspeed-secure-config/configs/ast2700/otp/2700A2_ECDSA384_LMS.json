@@ -1,0 +1,113 @@
+{
+    "name": "2700-a2_ECDSA384",
+    "version": "2700A2",
+    // unmark this for mass production
+    // "config_region": {
+    //     // OTPCFG0[9]
+    //     "enable_secure_boot": true
+    // },
+    "secure_region": {
+        "keys": [
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0xa0",
+                "number_id": 0
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0xb8",
+                "number_id": 1
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0xd0",
+                "number_id": 2
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0xe8",
+                "number_id": 3
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x100",
+                "number_id": 4
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x118",
+                "number_id": 5
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x130",
+                "number_id": 6
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x148",
+                "number_id": 7
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x160",
+                "number_id": 8
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x178",
+                "number_id": 9
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x190",
+                "number_id": 10
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x1a8",
+                "number_id": 11
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x1c0",
+                "number_id": 12
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x1d8",
+                "number_id": 13
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x1f0",
+                "number_id": 14
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x208",
+                "number_id": 15
+            }
+        ]
+    },
+    "caliptra_region": {
+        // OTPCAL0
+        "Enable_LMS_verify": true
+    }
+}

@@ -1,0 +1,361 @@
+{
+    "name": "2700-a2_sample-full",
+    "version": "2700A2",
+    "rom_region": {},
+    "rbp_region": {
+        // OTPRBP3 - 16 bits
+        "Caliptra_Owner_public_key_hash_retire": "0x0",
+        // OTPRBP4 - 64 bits
+        "SoC_Manifest_Hardware_SVN_0": "0x0",
+        "SoC_Manifest_Hardware_SVN_1": "0x0",
+        // OTPRBP8 - 32 bits
+        "Caliptra_FMC_Hardware_SVN": "0x0",
+        // OTPRBP10 - 128 bits
+        "Caliptra_Runtime_Hardware_SVN_0": "0x0",
+        "Caliptra_Runtime_Hardware_SVN_1": "0x0",
+        "Caliptra_Runtime_Hardware_SVN_2": "0x0",
+        "Caliptra_Runtime_Hardware_SVN_3": "0x0",
+        // OTPRBP18 - 4 bits
+        "Caliptra_Manufacture_ECC_key_mask": "0x0",
+        // OTPRBP19 - 32 bits
+        "Caliptra_Manufacture_LMS_key_mask": "0x0"
+    },
+    "config_region": {
+        // OTPCFG0[15]
+        "otp_mem_lock_enable": false,
+        // OTPCFG0[14]
+        "wr_protect_puf": false,
+        // OTPCFG0[13]
+        "dis_otp_bist": false,
+        // OTPCFG0[12]
+        "wr_protect_caliptra": false,
+        // OTPCFG0[11]
+        "rd_protect_caliptra": false,
+        // OTPCFG0[10]
+        "wr_protect_otp_rbp": false,
+        // OTPCFG0[9]
+        "enable_secure_boot": false,
+        // OTPCFG0[8]
+        "retire_mechanism_option": false,
+        // OTPCFG0[7]
+        "wr_protect_otp_strap": false,
+        // OTPCFG0[6]
+        "wr_protect_otp_cfg": false,
+        // OTPCFG0[5]
+        "wr_protect_rom": false,
+        // OTPCFG0[4]
+        "wr_protect_otp_strap_ext": false,
+        // OTPCFG0[3]
+        "rd_protect_otp_strap": false,
+        // OTPCFG0[2]
+        "rd_protect_otp_cfg": false,
+        // OTPCFG0[1]
+        "rd_protect_rom": false,
+        // OTPCFG0[0]
+        "rd_protect_otp_strap_ext": false,
+        // OTPCFG2[13]
+        "puf_source": false,
+        // OTPCFG2[11]
+        "dis_low_secure_key0": false,
+        // OTPCFG2[9:8]
+        "dev_life_cycle_state": "0x0",
+        // OTPCFG2[7:6]
+        "Boot_From_UART_Port_Selection": "0x0",
+        // OTPCFG2[5]
+        "en_emmc_sw_reset": false,
+        // OTPCFG2[4]
+        "dis_boot_msg": false,
+        // OTPCFG2[3]
+        "dis_recovery_mode": false,
+        // OTPCFG2[0]
+        "dis_rom_patch": false,
+        // OTPCFG4[10:1]
+        "OTP_Patch_Code_location_1": "0x0",
+        // OTPCFG4[0]
+        "otp_patch_vld_1": false,
+        // OTPCFG5[9:0]
+        "OTP_Patch_Size_1": "0x0",
+        // OTPCFG6[10:1]
+        "OTP_Patch_Code_location_2": "0x0",
+        // OTPCFG6[0]
+        "otp_patch_vld_2": false,
+        // OTPCFG7[9:0]
+        "OTP_Patch_Size_2": "0x0",
+        // OTPCFG9[15]
+        "en_auto_load_SCU_debug_control": false,
+        // OTPCFG9[14:0]
+        "SCU0_0C8_debug_control_value": "0x0",
+        // OTPCFG10[7:0]
+        "SCU1_0C8_debug_control_value": "0x0",
+        // OTPCFG11[15]
+        "en_auto_load_usr0": false,
+        // OTPCFG11[14]
+        "rd_protect_otp_usr0": false,
+        // OTPCFG11[13]
+        "wr_protect_otp_usr0": false,
+        // OTPCFG11[11:0]
+        "usr0_region_start_offset": "0x0",
+        // OTPCFG12[15:0]
+        "usr0_region_size": "0x0",
+        // OTPCFG13[15]
+        "en_auto_load_secure0": false,
+        // OTPCFG13[14]
+        "rd_protect_otp_secure0": false,
+        // OTPCFG13[13]
+        "wr_protect_otp_secure0": false,
+        // OTPCFG13[11:0]
+        "secure0_region_start_offset": "0x0",
+        // OTPCFG14[15:0]
+        "secure0_region_size": "0x0",
+        // OTPCFG15[15:8]
+        "i3c_i2c_identify": "0x0",
+        // OTPCFG15[4]
+        "i3c_hj_req": false,
+        // OTPCFG15[3:0]
+        "i3c_i2c_channel": "0x0",
+        // OTPCFG17[15]
+        "usb_uart6_mode_lsb": false,
+        // OTPCFG17[14]
+        "usb_uart5_tx_discard_off": false,
+        // OTPCFG17[13:12]
+        "usb_uart5_mode": "0x0",
+        // OTPCFG17[11]
+        "usb_uart3_tx_discard_off": false,
+        // OTPCFG17[10:9]
+        "usb_uart3_mode": "0x0",
+        // OTPCFG17[8]
+        "usb_uart2_tx_discard_off": false,
+        // OTPCFG17[7:6]
+        "usb_uart2_mode": "0x0",
+        // OTPCFG17[5]
+        "usb_uart1_tx_discard_off": false,
+        // OTPCFG17[4:3]
+        "usb_uart1_mode": "0x0",
+        // OTPCFG17[2]
+        "usb_uart0_tx_discard_off": false,
+        // OTPCFG17[1:0]
+        "usb_uart0_mode": "0x0",
+        // OTPCFG18[15:14]
+        "usb_uart11_mode": "0x0",
+        // OTPCFG18[13]
+        "usb_uart10_tx_discard_off": false,
+        // OTPCFG18[12:11]
+        "usb_uart10_mode": "0x0",
+        // OTPCFG18[10]
+        "usb_uart9_tx_discard_off": false,
+        // OTPCFG18[9:8]
+        "usb_uart9_mode": "0x0",
+        // OTPCFG18[7]
+        "usb_uart8_tx_discard_off": false,
+        // OTPCFG18[6:5]
+        "usb_uart8_mode": "0x0",
+        // OTPCFG18[4]
+        "usb_uart7_tx_discard_off": false,
+        // OTPCFG18[3:2]
+        "usb_uart7_mode": "0x0",
+        // OTPCFG18[1]
+        "usb_uart6_tx_discard_off": false,
+        // OTPCFG18[0]
+        "usb_uart6_mode_msb": false,
+        // OTPCFG19[15:13]
+        "uart_io_route": "0x0",
+        // OTPCFG19[9]
+        "usb_uart_put_all_boot_message": false,
+        // OTPCFG19[8]
+        "usb_uart_mode3": false,
+        // OTPCFG19[7]
+        "usb_uart_hub_23ports": false,
+        // OTPCFG19[6]
+        "usb_uart15_tx_discard_off": false,
+        // OTPCFG19[5:4]
+        "usb_uart15_mode": "0x0",
+        // OTPCFG19[3]
+        "usb_uart12_tx_discard_off": false,
+        // OTPCFG19[2:1]
+        "usb_uart12_mode": "0x0",
+        // OTPCFG19[0]
+        "usb_uart11_tx_discard_off": false,
+        // OTPCFG20[15]
+        "en_auto_load_cptra0": false,
+        // OTPCFG20[14]
+        "rd_protect_otp_cptra0": false,
+        // OTPCFG20[13]
+        "wr_protect_otp_cptra0": false,
+        // OTPCFG20[11:0]
+        "cptra0_region_start_offset": "0x0",
+        // OTPCFG21[15:0]
+        "cptra0_region_size": "0x0",
+        // OTPCFG22[15]
+        "HPM_LTPI0_DDR_mode_disable": false,
+        // OTPCFG22[14:0]
+        "HPM_LTPI0_speed_capability_disabling": "0x0",
+        // OTPCFG23[8]
+        "LTPI0_check_RX_LINK_SPEED_enable": false,
+        // OTPCFG23[5:4]
+        "LTPI0_PHY_clock_inverse": "0x0",
+        // OTPCFG23[1]
+        "LTPI_Runtime_firmware_enable": false,
+        // OTPCFG23[0]
+        "LTPI_CRC_format": false,
+        // OTPCFG24[10:1]
+        "OTP_Patch_Code_location_3": "0x0",
+        // OTPCFG24[0]
+        "otp_patch_vld_3": false,
+        // OTPCFG25[9:0]
+        "OTP_Patch_Size_3": "0x0",
+        // OTPCFG26[10:1]
+        "OTP_Patch_Code_location_4": "0x0",
+        // OTPCFG26[0]
+        "otp_patch_vld_4": false,
+        // OTPCFG27[9:0]
+        "OTP_Patch_Size_4": "0x0",
+        // OTPCFG28[10:1]
+        "OTP_Patch_Code_location_5": "0x0",
+        // OTPCFG28[0]
+        "otp_patch_vld_5": false,
+        // OTPCFG29[9:0]
+        "OTP_Patch_Size_5": "0x0"
+    },
+    "secure_region": {
+        "keys": [
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0xa0",
+                "number_id": 0
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0xb8",
+                "number_id": 1
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0xd0",
+                "number_id": 2
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0xe8",
+                "number_id": 3
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x100",
+                "number_id": 4
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x118",
+                "number_id": 5
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x130",
+                "number_id": 6
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x148",
+                "number_id": 7
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x160",
+                "number_id": 8
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x178",
+                "number_id": 9
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x190",
+                "number_id": 10
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x1a8",
+                "number_id": 11
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x1c0",
+                "number_id": 12
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x1d8",
+                "number_id": 13
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x1f0",
+                "number_id": 14
+            },
+            {
+                "key_file": "owner_key_hash.bin",
+                "type": "cal_own_pub_hash",
+                "w_offset": "0x208",
+                "number_id": 15
+            },
+            {
+                "key_file": "test_vault_key.bin",
+                "type": "soc_vault",
+                "w_offset": "0x220",
+                "number_id": 0
+            },
+            {
+                "key_file": "test_vault_key.bin",
+                "type": "soc_vault",
+                "w_offset": "0x230",
+                "number_id": 1
+            },
+            {
+                "key_file": "test_vault_key.bin",
+                "type": "soc_vault",
+                "w_offset": "0x240",
+                "number_id": 2
+            },
+            {
+                "key_file": "test_vault_key.bin",
+                "type": "soc_vault",
+                "w_offset": "0x250",
+                "number_id": 3
+            }
+        ]
+    },
+    "caliptra_region": {
+        // OTPCAL0
+        "Enable_LMS_verify": false,
+        // OTPCAL1
+        "Anti-rollback_disable": false,
+        // OTPCAL2
+        "Field_Entropy": "",
+        // OTPCAL18
+        "Manufacture_Key_Hash": "",
+        // OTPCAL42
+        "IDEVID_Cert_attr": "",
+        // OTPCAL90
+        "IDEVID_manuf_HSM_identifier": "",
+        // OTPCAL98
+        "IDEVID_TBS": "",
+        // OTPCAL610
+        "IDEVID_Cert_Signature": ""
+    }
+}

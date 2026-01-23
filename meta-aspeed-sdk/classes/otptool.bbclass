@@ -8,7 +8,7 @@ OTPTOOL_USER_DIR ?= ""
 OTPTOOL_EXTRA_OPTS ?= ""
 OTPTOOL_EXTRA_DEPENDS ?= " socsec-native"
 DEPENDS += '${@oe.utils.conditional("SOCSEC_SIGN_ENABLE", "1", "${OTPTOOL_EXTRA_DEPENDS}", "", d)}'
-DEPENDS += '${@oe.utils.conditional("FMC_SIGN_ENABLE", "1", "${OTPTOOL_EXTRA_DEPENDS}", "", d)}'
+DEPENDS += '${@oe.utils.conditional("OTP_IMAGE_ENABLE", "1", "${OTPTOOL_EXTRA_DEPENDS}", "", d)}'
 
 do_otptool() {
     local otptool_config=$1
@@ -78,7 +78,7 @@ create_otp() {
 }
 
 do_deploy:prepend() {
-    if [ "${SOCSEC_SIGN_ENABLE}" = "1" ] || [ "${FMC_SIGN_ENABLE}" = "1" ] ; then
+    if [ "${SOCSEC_SIGN_ENABLE}" = "1" ] || [ "${OTP_IMAGE_ENABLE}" = "1" ] ; then
         create_otp
     fi
 }

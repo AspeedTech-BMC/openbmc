@@ -1,0 +1,10 @@
+[Unit]
+Description=Platform Init
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/bin/platform-init.sh
+
+[Install]
+WantedBy=sysinit.target

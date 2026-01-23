@@ -41,6 +41,7 @@ KERNEL_FITIMAGE_ITS_NAME = "fitImage-its-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE
 ASPEED_BOOT_EMMC_UFS = "${@bb.utils.contains_any('MACHINE_FEATURES', ['ast-mmc', 'ast-ufs'], 'yes', 'no', d)}"
 ASPEED_BOOT_UFS = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-ufs', 'yes', 'no', d)}"
 ASPEED_IROT = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'yes', 'no', d)}"
+AST2700_A1 = "${@bb.utils.contains('MACHINE_FEATURES', 'ast2700-a1', 'yes', 'no', d)}"
 
 IMAGE_BASE_NAME = "obmc-phosphor-image"
 INITRAMFS_IMAGE_NAME = "${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES}"
@@ -63,8 +64,12 @@ FMC_KEY_DIR = "${OTPTOOL_KEY_DIR}"
 CALIPTRA_MANIFEST_CONFIG_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
 CALIPTRA_MANIFEST_KEY_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 CALIPTRA_MANIFEST_FLASH_IMAGE = "ast2700-manifest-flash.bin"
-CALIPTRA_MANIFEST_RECOVERY_IMAGE = "ast2700-soc-manifest.bin"
+CALIPTRA_MANIFEST_SOC_IMAGE = "ast2700-soc-manifest.bin"
 CALIPTRA_MANIFEST_BINARY = "${CALIPTRA_MANIFEST_FLASH_IMAGE}"
+
+# Recovery images
+RECOVERY_SOURCE_IMAGES = "${CALIPTRA_FW_BINARY} ${CALIPTRA_MANIFEST_SOC_IMAGE} ${BOOTMCU_FW_BINARY}"
+RECOVERY_SOURCE_IMAGES:ast2700-a1 = "${CALIPTRA_FW_BINARY}"
 
 install_unsigned_image() {
     install -d ${S}/${GEN_IMAGE_MODE}
@@ -88,6 +93,16 @@ install_unsigned_image() {
         install -m 0644 ${DEPLOY_DIR_IMAGE}/${kernel_dtb_basename} ${S}/${GEN_IMAGE_MODE}
         install -m 0644 ${DEPLOY_DIR_IMAGE}/${kernel_dtb_basename} ${S}/${GEN_IMAGE_MODE}/arch/arm64/boot/dts/aspeed
     done
+
+    # caliptra firmware
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/${CALIPTRA_FW_BINARY} ${S}/${GEN_IMAGE_MODE}
+
+    # zephyr binaries
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-* ${S}/${GEN_IMAGE_MODE}
+
+    if [ -n "${BOOTMCU_FW_BINARY}" ]; then
+        install -m 0644 ${DEPLOY_DIR_IMAGE}/${BOOTMCU_FW_BINARY} ${S}/${GEN_IMAGE_MODE}
+    fi
 }
 
 make_otp_image() {
@@ -159,7 +174,7 @@ make_fmc_image_and_sign() {
         --verbose \
         --version 2 \
         --input ${DEPLOY_DIR_IMAGE}/${MCU_RUNTIME_IMAGE} \
-        --output ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY} \
+        --output ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FMC_BINARY} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         ${sign_args}
 }
@@ -197,7 +212,7 @@ make_caliptra_manifest_image_and_sign() {
 
     echo "caliptra_manifest_key_dir=${caliptra_manifest_key_dir}"
 
-    # Run cptra-imgtool to generate manifest flash image.
+    # Build the Caliptra Flash Image (including the Caliptra SoC manifest).
     cptra-imgtool \
         create-auth-flash \
         --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
@@ -205,13 +220,13 @@ make_caliptra_manifest_image_and_sign() {
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         --flash ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_FLASH_IMAGE}
 
-    # Run cptra-imgtool to generate manifest image for recovery.
+    # Build only the Caliptra SoC Manifest.
     cptra-imgtool \
         create-auth-man \
         --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
         ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
-        --man ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_RECOVERY_IMAGE}
+        --man ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_SOC_IMAGE}
 
     rm -f ${S}/${GEN_IMAGE_MODE}/caliptra-manifest.toml
     rm -f ${S}/${GEN_IMAGE_MODE}/default_project-auth-manifest.bin
@@ -219,8 +234,18 @@ make_caliptra_manifest_image_and_sign() {
 }
 
 make_recovery_image() {
-    install -m 644 ${DEPLOY_DIR_IMAGE}/recovery_${CALIPTRA_FW_BINARY} ${S}/${GEN_IMAGE_MODE}/
-    python3 ${STAGING_BINDIR_NATIVE}/recovery_spl_extraction.py -i ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FW_BINARY}
+    # Generate the SoC First Mutable Code (FMC) recovery image
+    if [ "${AST2700_A1}" = "yes" ]; then
+        python3 ${STAGING_BINDIR_NATIVE}/recovery_spl_extraction.py -i ${S}/${GEN_IMAGE_MODE}/${BOOTMCU_FMC_BINARY}
+    fi
+
+    # Generate UART recovery images from all source images
+    for source_image in ${RECOVERY_SOURCE_IMAGES}; do
+        output_image="recovery_${source_image}"
+        python3 ${STAGING_BINDIR_NATIVE}/gen_uart_booting_image.py \
+            ${S}/${GEN_IMAGE_MODE}/${source_image} \
+            ${S}/${GEN_IMAGE_MODE}/${output_image}
+    done
 }
 
 make_boot_partition_ext4() {
@@ -268,20 +293,9 @@ deploy_static_image_helper() {
         cp --no-preserve=ownership -rf ${DEPLOY_DIR_IMAGE}/optee ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 
-    # mcu run-time
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
-
-    # caliptra
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/${CALIPTRA_FW_BINARY} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
-
-    # ssp
-    if [ -f "${SSP_IMAGE}" ]; then
-        install -m 0644 ${SSP_IMAGE} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
-    fi
-
-    # tsp
-    if [ -f "${TSP_IMAGE}" ]; then
-        install -m 0644 ${TSP_IMAGE} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    # irot image
+    if [ "${ASPEED_IROT}" = "yes" ]; then
+        install -m 0644 ${DEPLOY_DIR_IMAGE}/freertos-* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 }
 
@@ -308,20 +322,9 @@ deploy_mmc_image_helper() {
         cp --no-preserve=ownership -rf ${DEPLOY_DIR_IMAGE}/optee ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 
-    # mcu run-time
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/zephyr-* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
-
-    # caliptra
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/${CALIPTRA_FW_BINARY} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
-
-    # ssp
-    if [ -f "${SSP_IMAGE}" ]; then
-        install -m 0644 ${SSP_IMAGE} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
-    fi
-
-    # tsp
-    if [ -f "${TSP_IMAGE}" ]; then
-        install -m 0644 ${TSP_IMAGE} ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    # irot image
+    if [ "${ASPEED_IROT}" = "yes" ]; then
+        install -m 0644 ${DEPLOY_DIR_IMAGE}/freertos-* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 
     # decompress wic image for user data area boot partition update
@@ -667,26 +670,31 @@ def append_image(inimg, outimg, start_kb, finish_kb):
 def deploy_static_image(d):
     bb.build.exec_func("deploy_static_image_helper", d)
     gen_img = d.getVar('GEN_IMAGE_MODE', True)
+    flash_caliptra_size = d.getVar('FLASH_CALIPTRA_SIZE', True)
+    bootmcu_fmc_binary = d.getVar('BOOTMCU_FMC_BINARY', True)
 
     # image-bmc
     nor_img = os.path.join(d.getVar('DEPLOYDIR', True), gen_img, "image-bmc")
     make_empty_image(nor_img, d.getVar('FLASH_SIZE', True))
 
     uboot_offset = int(d.getVar('FLASH_UBOOT_OFFSET', True))
-    caliptra_end_offset = uboot_offset + int(d.getVar('FLASH_CALIPTRA_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
-                 nor_img,
-                 uboot_offset,
-                 caliptra_end_offset)
 
-    uboot_offset = caliptra_end_offset
-    bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
-                 nor_img,
-                 uboot_offset,
-                 bootmcu_end_offset)
+    if flash_caliptra_size:
+        caliptra_end_offset = uboot_offset + int(flash_caliptra_size)
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
+                     nor_img,
+                     uboot_offset,
+                     caliptra_end_offset)
+        uboot_offset = caliptra_end_offset
 
-    uboot_offset = bootmcu_end_offset
+    if bootmcu_fmc_binary:
+        bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fmc_binary),
+                     nor_img,
+                     uboot_offset,
+                     bootmcu_end_offset)
+        uboot_offset = bootmcu_end_offset
+
     append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  nor_img,
                  uboot_offset,
@@ -712,20 +720,23 @@ def deploy_static_image(d):
     make_empty_image(uboot_img, d.getVar('FLASH_UBOOT_ENV_OFFSET', True))
 
     uboot_offset = int(d.getVar('FLASH_UBOOT_OFFSET', True))
-    caliptra_end_offset = uboot_offset + int(d.getVar('FLASH_CALIPTRA_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
-                 uboot_img,
-                 uboot_offset,
-                 caliptra_end_offset)
 
-    uboot_offset = caliptra_end_offset
-    bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
-                 uboot_img,
-                 uboot_offset,
-                 bootmcu_end_offset)
+    if flash_caliptra_size:
+        caliptra_end_offset = uboot_offset + int(flash_caliptra_size)
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
+                     uboot_img,
+                     uboot_offset,
+                     caliptra_end_offset)
+        uboot_offset = caliptra_end_offset
 
-    uboot_offset = bootmcu_end_offset
+    if bootmcu_fmc_binary:
+        bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fmc_binary),
+                     uboot_img,
+                     uboot_offset,
+                     bootmcu_end_offset)
+        uboot_offset = bootmcu_end_offset
+
     append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  uboot_img,
                  uboot_offset,
@@ -736,6 +747,8 @@ def deploy_mmc_image(d):
     import subprocess
 
     gen_img = d.getVar('GEN_IMAGE_MODE', True)
+    flash_caliptra_size = d.getVar('FLASH_CALIPTRA_SIZE', True)
+    bootmcu_fmc_binary = d.getVar('BOOTMCU_FMC_BINARY', True)
     user_data_image = os.path.join(d.getVar('S', True), gen_img, d.getVar('USER_DATA_IMAGE_NAME', True))
     user_data_bootpart_image = os.path.join(d.getVar('S', True), gen_img, d.getVar('USER_DATA_BOOTPART_IMAGE_NAME', True))
     make_empty_image_zeros(user_data_bootpart_image, d.getVar('MMC_BOOT_PARTITION_SIZE', True))
@@ -797,20 +810,23 @@ def deploy_mmc_image(d):
     make_empty_image(mmc_boot_img, d.getVar('MMC_UBOOT_SIZE', True))
 
     uboot_offset = int(d.getVar('MMC_UBOOT_OFFSET', True))
-    caliptra_end_offset = uboot_offset + int(d.getVar('FLASH_CALIPTRA_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
-                 mmc_boot_img,
-                 uboot_offset,
-                 caliptra_end_offset)
 
-    uboot_offset = caliptra_end_offset
-    bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
-    append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('BOOTMCU_FW_BINARY', True)),
-                 mmc_boot_img,
-                 uboot_offset,
-                 bootmcu_end_offset)
+    if flash_caliptra_size:
+        caliptra_end_offset = uboot_offset + int(flash_caliptra_size)
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_FW_BINARY', True)),
+                     mmc_boot_img,
+                     uboot_offset,
+                     caliptra_end_offset)
+        uboot_offset = caliptra_end_offset
 
-    uboot_offset = bootmcu_end_offset
+    if bootmcu_fmc_binary:
+        bootmcu_end_offset = uboot_offset + int(d.getVar('FLASH_BMCU_SIZE', True))
+        append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, bootmcu_fmc_binary),
+                     mmc_boot_img,
+                     uboot_offset,
+                     bootmcu_end_offset)
+        uboot_offset = bootmcu_end_offset
+
     append_image(os.path.join(d.getVar('DEPLOYDIR', True), gen_img, d.getVar('CALIPTRA_MANIFEST_BINARY', True)),
                  mmc_boot_img,
                  uboot_offset,
@@ -865,10 +881,11 @@ def verify_uboot_kernel_image_status(d):
 
 
 python do_deploy() {
-    secure_image_list = [
+    secure_image_list_a1 = [
         {
             "mode": "ecdsa384",
             "otptool_json": "2700A1_ECDSA384.json",
+            "fmc_image_enable": "1",
             "rot_ecc_key_name" : "test_oem_dss_private_key_ecdsa384_1.pem",
             "rot_ecc_key_index" : "1",
             "rot_lms_key_name" : "",
@@ -882,6 +899,7 @@ python do_deploy() {
         {
             "mode": "ecdsa384-lms",
             "otptool_json": "2700A1_ECDSA384_LMS.json",
+            "fmc_image_enable": "1",
             "rot_ecc_key_name" : "test_oem_dss_private_key_ecdsa384_1.pem",
             "rot_ecc_key_index" : "1",
             "rot_lms_key_name" : "test_oem_dss_lms_key_1.prv",
@@ -894,6 +912,29 @@ python do_deploy() {
         }
     ]
 
+    secure_image_list_a2 = [
+        {
+            "mode": "ecdsa384",
+            "otptool_json": "2700A2_ECDSA384.json",
+            "fmc_image_enable": "0",
+            "cot_kernel_algo": "ecdsa384",
+            "cot_kernel_hash": "sha384",
+            "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
+            "caliptra_manifest_config": "ast2700-default-ecc-manifest.toml",
+            "caliptra_manifest_config_irot": "ast2700-irot-ecc-manifest.toml"
+        },
+        {
+            "mode": "ecdsa384-lms",
+            "otptool_json": "2700A2_ECDSA384_LMS.json",
+            "fmc_image_enable": "0",
+            "cot_kernel_algo": "ecdsa384",
+            "cot_kernel_hash": "sha384",
+            "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
+            "caliptra_manifest_config": "ast2700-default-ecc-lms-manifest.toml",
+            "caliptra_manifest_config_irot": "ast2700-irot-ecc-lms-manifest.toml"
+        }
+    ]
+
     gen_secure_image_enable = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE_ENABLE', True)
     if gen_secure_image_enable != "1":
         print("Disable gen secure image. Do nothing.")
@@ -903,6 +944,12 @@ python do_deploy() {
     gen_secure_image = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE', True)
     aspeed_boot_emmc_ufs = d.getVar('ASPEED_BOOT_EMMC_UFS', True)
     aspeed_irot = d.getVar('ASPEED_IROT', True)
+    ast2700_a1 = d.getVar('AST2700_A1', True)
+
+    if ast2700_a1 == "yes":
+       secure_image_list = secure_image_list_a1
+    else:
+        secure_image_list = secure_image_list_a2
 
     for gen_img in gen_secure_image.split():
         for sec_img in secure_image_list:
@@ -914,10 +961,7 @@ python do_deploy() {
         print("Start %s image..." % gen_img)
         d.setVar('GEN_IMAGE_MODE', gen_img)
         d.setVar('OTPTOOL_JSON', sec_img["otptool_json"])
-        d.setVar('ROT_ECC_KEY_NAME', sec_img["rot_ecc_key_name"])
-        d.setVar('ROT_ECC_KEY_INDEX', sec_img["rot_ecc_key_index"])
-        d.setVar('ROT_LMS_KEY_NAME', sec_img["rot_lms_key_name"])
-        d.setVar('ROT_LMS_KEY_INDEX', sec_img["rot_lms_key_index"])
+
         if aspeed_irot == "yes":
             d.setVar('CALIPTRA_MANIFEST_CONFIG', sec_img["caliptra_manifest_config_irot"])
         else:
@@ -930,14 +974,20 @@ python do_deploy() {
         update_hash_algo(kernel_its, sec_img["cot_kernel_hash"])
         add_or_update_signature_nodes(kernel_its, "configurations", algo, sec_img["cot_uboot_sign_key_name"])
 
+        if sec_img["fmc_image_enable"] == "1":
+            d.setVar('ROT_ECC_KEY_NAME', sec_img["rot_ecc_key_name"])
+            d.setVar('ROT_ECC_KEY_INDEX', sec_img["rot_ecc_key_index"])
+            d.setVar('ROT_LMS_KEY_NAME', sec_img["rot_lms_key_name"])
+            d.setVar('ROT_LMS_KEY_INDEX', sec_img["rot_lms_key_index"])
+            print("Make FMC image and sign")
+            bb.build.exec_func("make_fmc_image_and_sign", d)
+
         print("Make kernel fitimage and sign")
         bb.build.exec_func("make_kernel_fitimage_and_sign", d)
         print("Make caliptra manifest image and sign")
         bb.build.exec_func("make_caliptra_manifest_image_and_sign", d)
         print("Make otp image")
         bb.build.exec_func("make_otp_image", d)
-        print("Make FMC image and sign")
-        bb.build.exec_func("make_fmc_image_and_sign", d)
         print("Make recovery image")
         bb.build.exec_func("make_recovery_image", d)
 

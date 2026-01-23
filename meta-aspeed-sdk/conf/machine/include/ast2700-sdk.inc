@@ -66,18 +66,15 @@ ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"
 
 # zephyr build
 PREFERRED_PROVIDER_virtual/ssp ??= "zephyr-aspeed-ssp"
-ZEPHYR_BOARD_SSP ?= "ast2700_evb/ast2700/ssp_tsp"
-
 PREFERRED_PROVIDER_virtual/tsp ??= "zephyr-aspeed-tsp"
-ZEPHYR_BOARD_TSP ?= "ast2700_evb/ast2700/tsp"
-
 PREFERRED_PROVIDER_virtual/ibexfw ??= "zephyr-aspeed-ibexfw"
-ZEPHYR_BOARD_IBEXFW ?= "ast2700_evb/ast2700/bootmcu"
 
 # caliptra manifest
 CALIPTRA_MANIFEST_CONFIG_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
-CALIPTRA_MANIFEST_CONFIG ??= "ast2700a1-default-manifest.toml"
+CALIPTRA_MANIFEST_CONFIG ??= "ast2700-default-ecc-manifest.toml"
+CALIPTRA_MANIFEST_KEY_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
+CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2700-soc-manifest.bin"
 
 QB_SYSTEM_NAME = "qemu-system-aarch64"
 QB_MACHINE = "-machine ast2700a1-evb"

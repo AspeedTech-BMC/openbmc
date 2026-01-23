@@ -19,5 +19,6 @@ RDEPENDS:${PN}-apps = " \
     spdm-emu \
     pfr-mctp-i3c \
     pfr-i3ctool \
+    pfr-manager \
     "
 
