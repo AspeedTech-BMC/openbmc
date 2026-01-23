@@ -1,4 +1,4 @@
-KBRANCH = "aspeed-dev-v6.18"
+KBRANCH = "aspeed-master-v6.18"
 LINUX_VERSION ?= "6.18"
 
 # Tag for v00.08.00
