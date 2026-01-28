@@ -40,7 +40,11 @@ do_install() {
     install -m 0644 ${S}/provision_tools/*.* ${PFR_PROVISION_TOOLS_DIR}/.
 
     cd ${PFR_PROVISION_TOOLS_DIR}
-    python3 provisioning_image_generator.py provisioning_image_generator_rootkey.ini
+    if [ "${SOC_FAMILY}" = "aspeed-g7" ]; then
+        python3 provisioning_image_generator.py "provisioning_image_generator_rootkey_2700.ini"
+    else
+        python3 provisioning_image_generator.py "provisioning_image_generator_rootkey.ini"
+    fi
 
     dd if=/dev/zero bs=1k count=${PROVISION_IMAGE_SIZE} | tr '\000' '\377' > \
         ${PFR_PROVISION_TOOLS_DIR}/final_provision.bin

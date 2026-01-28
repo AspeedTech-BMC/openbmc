@@ -1,0 +1,199 @@
+<!-- Version Format SVN(XX).Major(XX).Minor(XX) -->
+<Firmware type="BMC" platform="Server-BMC" version="00.08.06">
+  <VersionAddr>0x00000001</VersionAddr>
+  <RuntimeUpdate>false</RuntimeUpdate>
+  <ReadWrite>
+      <Region>
+          <StartAddr>0x00400000</StartAddr> <!-- u-boot env -->
+          <EndAddr>0x0041ffff</EndAddr>
+          <OperationOnFailure>Restore</OperationOnFailure>
+      </Region>
+      <Region>
+          <StartAddr>0x031c0000</StartAddr> <!-- rwfs -->
+          <EndAddr>0x03efffff</EndAddr>
+          <OperationOnFailure>Erase</OperationOnFailure>
+      </Region>
+      <Region>
+          <StartAddr>0x3f20000</StartAddr> <!-- pfr-stging -->
+          <EndAddr>0x03ffffff</EndAddr>
+          <OperationOnFailure>Nothing</OperationOnFailure>
+      </Region>
+      <Region>
+          <StartAddr>0x08000000</StartAddr> <!-- staging -->
+          <EndAddr>0x0bf3ffff</EndAddr>
+          <OperationOnFailure>Nothing</OperationOnFailure>
+      </Region>
+  </ReadWrite>
+
+  <SignedImage>
+      <KeyId>0</KeyId>
+      <PrivateKey>pricsk0_2048.pem</PrivateKey>
+      <HashType>SHA256</HashType>
+      <Region>
+          <StartAddr>0x00000000</StartAddr> <!-- u-boot -->
+          <EndAddr>0x003fffff</EndAddr>
+      </Region>
+      <Region>
+          <StartAddr>0x00420000</StartAddr> <!-- fit-image -->
+          <EndAddr>0x031bffff</EndAddr>
+      </Region>
+      <ValidateOnBoot>true</ValidateOnBoot>
+  </SignedImage>
+
+  <I2cFilterRule> <!-- I2c command filtering rule -->
+      <Filter>
+          <FilterId>0</FilterId> <!-- I2C_FILTER_0 -->
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xb0</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value> <Value>0x03</Value> <Value>0x05</Value> <Value>0x06</Value>
+                  <Value>0x19</Value> <Value>0x1a</Value> <Value>0x30</Value> <Value>0x3a</Value>
+                  <Value>0x3b</Value> <Value>0x3c</Value> <Value>0x3d</Value> <Value>0x3e</Value>
+                  <Value>0x79</Value> <Value>0x7a</Value> <Value>0x7b</Value> <Value>0x7c</Value>
+                  <Value>0x7d</Value> <Value>0x7e</Value> <Value>0x7f</Value> <Value>0x81</Value>
+                  <Value>0x82</Value> <Value>0x86</Value> <Value>0x87</Value> <Value>0x88</Value>
+                  <Value>0x89</Value> <Value>0x8c</Value> <Value>0x8d</Value> <Value>0x8e</Value>
+                  <Value>0x8f</Value> <Value>0x90</Value> <Value>0x91</Value> <Value>0x92</Value>
+                  <Value>0x93</Value> <Value>0x94</Value> <Value>0x95</Value> <Value>0x96</Value>
+                  <Value>0x97</Value> <Value>0x98</Value> <Value>0x9a</Value> <Value>0xa6</Value>
+                  <Value>0xa7</Value> <Value>0xd0</Value> <Value>0xd3</Value> <Value>0xd4</Value>
+                  <Value>0xd5</Value> <Value>0xd6</Value> <Value>0xd7</Value> <Value>0xd8</Value>
+                  <Value>0xd9</Value> <Value>0xdc</Value> <Value>0xdd</Value> <Value>0xde</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xb2</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value> <Value>0x03</Value> <Value>0x05</Value> <Value>0x06</Value>
+                  <Value>0x19</Value> <Value>0x1a</Value> <Value>0x30</Value> <Value>0x3a</Value>
+                  <Value>0x3b</Value> <Value>0x3c</Value> <Value>0x3d</Value> <Value>0x3e</Value>
+                  <Value>0x79</Value> <Value>0x7a</Value> <Value>0x7b</Value> <Value>0x7c</Value>
+                  <Value>0x7d</Value> <Value>0x7e</Value> <Value>0x7f</Value> <Value>0x81</Value>
+                  <Value>0x82</Value> <Value>0x86</Value> <Value>0x87</Value> <Value>0x88</Value>
+                  <Value>0x89</Value> <Value>0x8c</Value> <Value>0x8d</Value> <Value>0x8e</Value>
+                  <Value>0x8f</Value> <Value>0x90</Value> <Value>0x91</Value> <Value>0x92</Value>
+                  <Value>0x93</Value> <Value>0x94</Value> <Value>0x95</Value> <Value>0x96</Value>
+                  <Value>0x97</Value> <Value>0x98</Value> <Value>0x9a</Value> <Value>0xa6</Value>
+                  <Value>0xa7</Value> <Value>0xd0</Value> <Value>0xd3</Value> <Value>0xd4</Value>
+                  <Value>0xd5</Value> <Value>0xd6</Value> <Value>0xd7</Value> <Value>0xd8</Value>
+                  <Value>0xd9</Value> <Value>0xdc</Value> <Value>0xdd</Value> <Value>0xde</Value>
+              </WhiteListCmd>
+          </Device>
+      </Filter>
+      <Filter>
+          <FilterId>1</FilterId> <!-- I2C_FILTER_1 -->
+	  <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xb4</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xd4</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0x4a</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0x4c</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xdc</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xec</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xe0</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xb0</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xc4</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xcc</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xe4</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value>
+              </WhiteListCmd>
+          </Device>
+      </Filter>
+      <Filter>
+          <FilterId>2</FilterId> <!-- I2C_FILTER_2 -->
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xd0</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value> <Value>0x01</Value> <Value>0x02</Value> <Value>0x03</Value>
+                  <Value>0x04</Value> <Value>0x09</Value> <Value>0x0a</Value> <Value>0x0b</Value>
+                  <Value>0x0c</Value> <Value>0x0d</Value> <Value>0x0e</Value> <Value>0x0f</Value>
+                  <Value>0x10</Value> <Value>0x13</Value> <Value>0x17</Value> <Value>0x1b</Value>
+                  <Value>0x1c</Value> <Value>0x1d</Value> <Value>0x20</Value> <Value>0x21</Value>
+                  <Value>0x22</Value> <Value>0x23</Value> <Value>0x25</Value> <Value>0x30</Value>
+                  <Value>0x31</Value> <Value>0x32</Value> <Value>0x33</Value> <Value>0x35</Value>
+                  <Value>0x36</Value> <Value>0x37</Value> <Value>0x38</Value> <Value>0x39</Value>
+                  <Value>0x3a</Value> <Value>0x3b</Value> <Value>0x3c</Value> <Value>0x3d</Value>
+              </WhiteListCmd>
+          </Device>
+          <Device>
+              <Enable>1</Enable>
+              <SlaveAddr>0xd8</SlaveAddr>
+              <WhiteListCmd>
+                  <Value>0x00</Value> <Value>0x01</Value> <Value>0x02</Value> <Value>0x03</Value>
+                  <Value>0x04</Value> <Value>0x09</Value> <Value>0x0a</Value> <Value>0x0b</Value>
+                  <Value>0x0c</Value> <Value>0x0d</Value> <Value>0x0e</Value> <Value>0x0f</Value>
+                  <Value>0x10</Value> <Value>0x13</Value> <Value>0x17</Value> <Value>0x1b</Value>
+                  <Value>0x1c</Value> <Value>0x1d</Value> <Value>0x20</Value> <Value>0x21</Value>
+                  <Value>0x22</Value> <Value>0x23</Value> <Value>0x25</Value> <Value>0x30</Value>
+                  <Value>0x31</Value> <Value>0x32</Value> <Value>0x33</Value> <Value>0x35</Value>
+                  <Value>0x36</Value> <Value>0x37</Value> <Value>0x38</Value> <Value>0x39</Value>
+                  <Value>0x3a</Value> <Value>0x3b</Value> <Value>0x3c</Value> <Value>0x3d</Value>
+              </WhiteListCmd>
+          </Device>
+      </Filter>
+  </I2cFilterRule>
+</Firmware>

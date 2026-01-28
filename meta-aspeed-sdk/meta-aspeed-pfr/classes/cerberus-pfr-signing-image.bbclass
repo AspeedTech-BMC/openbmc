@@ -28,6 +28,14 @@ do_generate_signed_pfr_image(){
 
     install -d ${PFR_IMAGES_DIR}
 
+    if [ "${SOC_FAMILY}" = "aspeed-g7" ]; then
+        OBMC_PFM_CONFIG="obmc_pfm_generator_2700.config"
+        OBMC_RECOVERY_IMAGE_CONFIG="obmc_recovery_image_generator_2700.config"
+    else
+        OBMC_PFM_CONFIG="obmc_pfm_generator.config"
+        OBMC_RECOVERY_IMAGE_CONFIG="obmc_recovery_image_generator.config"
+    fi
+
     # Assemble the flash image
     mk_empty_image ${PFR_IMAGES_DIR}/${PFR_IMAGE_BIN} ${PFR_IMAGE_SIZE}
 
@@ -40,7 +48,7 @@ do_generate_signed_pfr_image(){
     rm -f ${PFR_MANIFEST_TOOLS_DIR}/obmc_pfm.bin
     install ${PFR_IMAGES_DIR}/${PFR_IMAGE_BIN} ${PFR_MANIFEST_TOOLS_DIR}
     cd ${PFR_MANIFEST_TOOLS_DIR}
-    python3 pfm_generator.py obmc_pfm_generator.config
+    python3 pfm_generator.py ${OBMC_PFM_CONFIG}
     install obmc_pfm.bin ${PFR_IMAGES_DIR}/.
     cd ${S}
 
@@ -54,7 +62,7 @@ do_generate_signed_pfr_image(){
     rm -f ${PFR_RECOVERY_TOOLS_DIR}/obmc_recovery_image.bin
     install ${PFR_IMAGES_DIR}/${PFR_IMAGE_BIN} ${PFR_RECOVERY_TOOLS_DIR}
     cd ${PFR_RECOVERY_TOOLS_DIR}
-    python3 recovery_image_generator.py obmc_recovery_image_generator.config
+    python3 recovery_image_generator.py ${OBMC_RECOVERY_IMAGE_CONFIG}
     install obmc_recovery_image.bin ${PFR_IMAGES_DIR}/.
     cd ${S}
 
@@ -74,5 +82,12 @@ do_generate_signed_pfr_image(){
     install -d ${PFR_DEPLOY_IMAGES_DIR}
     install -m 0644 ${PFR_IMAGES_DIR}/*.bin ${PFR_DEPLOY_IMAGES_DIR}/.
     install -m 0644 ${PFR_IMAGES_DIR}/${PFR_IMAGE_BIN} ${PFR_DEPLOY_IMAGES_DIR}/.
+    # check dual flash setting
+    if [ "${DUAL_FLASH}" = "1" ]; then
+        [ -z "${FIRST_FLASH_SIZE}" ] && bberror "FIRST_FLASH_SIZE not defined"
+        dd if=${PFR_DEPLOY_IMAGES_DIR}/${PFR_IMAGE_BIN} of=${PFR_DEPLOY_IMAGES_DIR}/${PFR_IMAGE_BIN}.1 bs=1K count=${FIRST_FLASH_SIZE}
+        dd if=${PFR_DEPLOY_IMAGES_DIR}/${PFR_IMAGE_BIN} of=${PFR_DEPLOY_IMAGES_DIR}/${PFR_IMAGE_BIN}.2 bs=1K skip=${FIRST_FLASH_SIZE}
+    fi
+
 }
 

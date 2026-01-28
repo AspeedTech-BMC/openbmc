@@ -161,19 +161,19 @@
 				label = "rofs";
 			};
 			rwfs@31c0000 {
-				reg = <0x31c0000 0xE40000>; // 14.25MB
+				reg = <0x31c0000 0xD40000>; // 13.25MB
 				label = "rwfs";
 			};
-			pfm@4000000 {
-				reg = <0x4000000 0x20000>; // 128KB
+			pfm@3F00000 {
+				reg = <0x3f00000 0x20000>; // 128KB
 				label = "pfm";
 			};
-			reserved-1@4020000 {
-				reg = <0x4020000 0x200000>; // 128KB
-				label = "reserved-1";
+			pfr-stg@3f20000 {
+				reg = <0x3f20000 0xe0000>; // 896KB
+				label = "pfr-stg";
 			};
-			rc-image@4220000 {
-				reg = <0x4220000 0x3de0000>; // 63360KB
+			rc-image@4000000 {
+				reg = <0x4000000 0x4000000>; // 65536KB
 				label = "rc-image";
 			};
 		};
@@ -191,27 +191,11 @@
 			#address-cells = <1>;
 			#size-cells = <1>;
 			image-stg@0000000 {
-				reg = <0x0000000 0x3de0000>; // 63360KB
+				reg = <0x0000000 0x4000000>; // 65536KB
 				label = "img-stg";
 			};
-			pfr-stg@3de0000 {
-				reg = <0x3de0000 0x100000>; // 1024KB
-				label = "pfr-stg";
-			};
-			cpld-stg@3ee0000 {
-				reg = <0x3ee0000 0x400000>; // 4096KB
-				label = "cpld-stg";
-			};
-			afm-stg@42e0000 {
-				reg = <0x42e0000 0x20000>; // 128KB
-				label = "afm-stg";
-			};
-			afm-rc@4300000 {
-				reg = <0x4300000 0x20000>; // 128KB
-				label = "afm-rc";
-			};
-			reserved-2@4320000 {
-				reg = <0x4320000 0x3ce0000>; // 62336KB
+			reserved-2@4040000 {
+				reg = <0x4000000 0x4000000>; // 65536KB
 				label = "reserved-2";
 			};
 		};

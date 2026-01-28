@@ -1,0 +1,17 @@
+{
+    "Flag": "0x01",
+    "BMCPFMOffset":"0x03F00000",
+    "BMCActiveSize":"0x03F00000",
+    "BMCRecoveryOffset":"0x04000000",
+    "BMCRecoverySize":"0x03F00000",
+    "BMCStagingOffset":"0x08000000",
+    "BMCStageSize":"0x04000000",
+    "PCHPFMOffset":"0x00ba0000",
+    "PCHActiveSize":"0x02000000",
+    "PCHRecoveryOffset":"0x02000000",
+    "PCHRecoverySize":"0x02000000",
+    "PCHStagingOffset":"0x04000000",
+    "PCHStageSize":"0x02000000",
+    "RootKey":"pubkey_2048.pem",
+    "OTPSignKey":"prikey_2048.pem"
+}
