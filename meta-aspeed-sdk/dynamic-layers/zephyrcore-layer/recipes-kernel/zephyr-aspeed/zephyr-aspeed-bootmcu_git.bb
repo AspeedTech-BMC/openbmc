@@ -32,11 +32,8 @@ DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secur
 inherit otptool
 
 # Use fmc-imgtool to create fmc image since A1
-# export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
-# OpenSSL 3.0 legacy provider failed to load
-# https://github.com/pyca/cryptography/issues/10598
 do_create_fmc_image() {
-    export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
+    export OPENSSL_MODULES="${STAGING_LIBDIR_NATIVE}/ossl-modules"
 
     local ecc_key=""
     local ecc_key_index=""

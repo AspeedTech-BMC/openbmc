@@ -19,11 +19,8 @@ DEPENDS += '${@oe.utils.conditional("SOCSEC_SIGN_ENABLE", "1", " socsec-native",
 
 
 # Signs the SPL binary with a pre-established key
-# export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
-# OpenSSL 3.0 legacy provider failed to load
-# https://github.com/pyca/cryptography/issues/10598
 sign_spl_helper() {
-    export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
+    export OPENSSL_MODULES="${STAGING_LIBDIR_NATIVE}/ossl-modules"
     signing_helper_args=""
 
     if [ "${SOC_FAMILY}" != "aspeed-g6" ] ; then
