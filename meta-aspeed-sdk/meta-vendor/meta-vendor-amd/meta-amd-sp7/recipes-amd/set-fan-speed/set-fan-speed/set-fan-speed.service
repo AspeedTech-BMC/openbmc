@@ -5,7 +5,7 @@ After=dropbearkey.service
 [Service]
 Type=oneshot
 RemainAfterExit=no
-ExecStart=/usr/bin/set-fan-speed.sh 30
+ExecStart=/usr/bin/set-fan-speed.sh 60
 
 [Install]
 WantedBy=multi-user.target
