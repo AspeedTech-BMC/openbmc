@@ -30,7 +30,7 @@ ecc_priv_key = "own-man-ecc-prvk.pem"
 # lms_priv_key = "own-man-lms-prvk.pem"
 
 [image_runtime_list]
-caliptra_file = "ast2700-caliptra-fw-v1.2-ecc-lms.bin"
+caliptra_file = "caliptra-fw.bin"
 mcu_file = "zephyr-aspeed-bootmcu.bin"
 
 [[image_metadata_list]]
