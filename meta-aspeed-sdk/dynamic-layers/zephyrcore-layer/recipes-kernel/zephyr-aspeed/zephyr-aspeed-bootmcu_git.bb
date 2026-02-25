@@ -12,7 +12,7 @@ SRC_URI_ASPEED_ZEPHYR_PROJECT = "gitsm://github.com/AspeedTech-BMC/aspeed-zephyr
 ASPEED_ZEPHYR_PROJECT_BRANCH = "aspeed-master"
 
 # Tag for v03.05
-SRCREV_bootmcu = "f69f14ac56efbef27f29e537294be358ab31d580"
+SRCREV_bootmcu = "e27a46c16a643b6aed40cda0d9adfcc7054f5e1a"
 
 SRC_URI += "\
     ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
