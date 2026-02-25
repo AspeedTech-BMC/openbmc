@@ -166,7 +166,7 @@ do_create_fmc_image() {
 addtask create_fmc_image before do_deploy after do_compile
 
 do_create_fmc_image[depends] += " \
-    fmc-images:do_deploy \
+    bmc-pb:do_deploy \
     "
 
 do_deploy() {

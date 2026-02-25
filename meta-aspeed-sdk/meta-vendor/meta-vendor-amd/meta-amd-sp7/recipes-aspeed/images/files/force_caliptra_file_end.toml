@@ -30,11 +30,12 @@ security_version = 1
 # lms_priv_key = "own-man-lms-prvk.pem"
 
 [image_runtime_list]
-caliptra_file = "caliptra-fw.bin"
-mcu_file = "zephyr-aspeed-bootmcu.bin"
+caliptra_file = ""
+zero_caliptra_file_end = 0x20000
+mcu_file = "zephyr-mcu-runtime-a2.bin"
 
 [[image_metadata_list]]
-file = "zephyr-aspeed-bootmcu.bin"
+file = ""
 source = 1
 fw_id = 1
 ignore_auth_check = false

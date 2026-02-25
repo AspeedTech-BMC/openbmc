@@ -1011,7 +1011,7 @@ do_deploy[depends] += " \
     virtual/kernel:do_deploy \
     virtual/bootloader:do_deploy \
     virtual/bootmcu:do_deploy \
-    fmc-images:do_deploy \
+    bmc-pb:do_deploy \
     obmc-phosphor-image:do_image_complete \
     "
 
