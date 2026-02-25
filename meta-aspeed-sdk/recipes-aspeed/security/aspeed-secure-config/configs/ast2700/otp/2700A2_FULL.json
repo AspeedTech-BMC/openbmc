@@ -357,5 +357,398 @@
         "IDEVID_TBS": "",
         // OTPCAL610
         "IDEVID_Cert_Signature": ""
+    },
+    "strap_region": {
+        // OTPSTRAP[1]
+        "BootSPI": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[3:2]
+        // 00: 2.0GHz, 01: 1.9GHz, 10: 1.8GHz, 11: 1.7GHz
+        "HPLLFreq": {
+            "value": "0x0",
+            "protect": false
+        },
+        // OTPSTRAP[4]
+        "CPUHPLL": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[6:5]
+        // 0x: 400MHz, 0x: 400MHz, 10: 266MHz, 11: 200MHz when HCLKPLL=0\n0x: 500MHz, 0x: 500MHz, 10: 333MHz, 11: 250MHz when HCLKPLL=1
+        "HCLKSel": {
+            "value": "0x0",
+            "protect": false
+        },
+        // OTPSTRAP[7]
+        "HCLKHPLL": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[8]
+        "DisDebug": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[9]
+        "TSPRsntSel": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[10]
+        "VGALinearSize[0]": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[11]
+        "VGALinearSize[1]": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[12]
+        "DisSSP": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[13]
+        "DisTSP": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[14]
+        "En_UFS_Secure": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[16]
+        "En_SecBoot": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[17]
+        "DisDebug1": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[18]
+        "Dis_WDTfull": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[19]
+        "Dis_UartDbg": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[20]
+        "UartDbgSel": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[21]
+        "Dis_CptraJTag": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[22]
+        "En_ROM_Intr": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[23]
+        "Dis_ROM": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[24]
+        "eMMC_UFS_Boot": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[25]
+        "SPI_Flash_Wait_Ready": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[26]
+        "SPI_Flash_4_Byte_Mode": {
+            "value": false,
+            "protect": false
+        },
+        // OTPSTRAP[28:27]
+        // 0: Uart, 1: USB, 2: I2C, 3: I3C
+        "Recovery_mode_selection": {
+            "value": "0x0",
+            "protect": false
+        },
+        // OTPSTRAP[30:29]
+        // 0: port A, 1: port B, 2: port C, 3: port D
+        "RecUSBSel": {
+            "value": "0x0",
+            "protect": false
+        },
+        // OTPSTRAP[31]
+        "Dis_Cptra": {
+            "value": false,
+            "protect": false
+        }
+    },
+    "strap_ext_region": {
+        // OTPSTRAP_EXT[16]
+        "DisARMICE": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[18]
+        "VGA_CC": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[19]
+        "ufs_clk_sel": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[20]
+        "BooteMMCSpeed": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[21]
+        "Disable_XHCI": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[22]
+        "DisARMICE_TZ": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[25]
+        "Dis_WDTfull": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[27:26]
+        // default: unlimited\nneed to sync CPU-die reg
+        "udbg_to_sel": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPSTRAP_EXT[28]
+        "DAC_Src": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[29]
+        "DP_Src": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[30]
+        "Dis_RVAS": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[100]
+        "VRSize": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[103]
+        "En_PCIeVGA0": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[104]
+        "En_PCIeIPMI0": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[105]
+        "En_PCIeEHCI0": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[106]
+        "En_PCIeXHCI0": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[107]
+        "En_PCIeVGA1": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[108]
+        "En_PCIeIPMI1": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[109]
+        "En_PCIeEHCI1": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[110]
+        "En_PCIeXHCI1": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[32]
+        "ABR": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[33]
+        "ROM_Clear_SRAM": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[40:39]
+        // OTPSTRAP_EXT[43]
+        "En_Cptra_debug": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[44]
+        "En_ROM_WDT": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[47:45]
+        // 0: disable, 1: 8MB, 2: 16MB, 3: 32MB, 4: 64MB, 5: 128MB, 6: 256MB, 7: 512MB
+        "FWSPISize": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPSTRAP_EXT[48]
+        "En_FWSPIAux": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[50:49]
+        // \u3000
+        "FWSPI_CRTM": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPSTRAP_EXT[56:55]
+        // 2b'00: 12.5MHz (by default)\n2b'01: 25MHz\n2b'10: 40MHz\n2b'11: 50MHz
+        "Boot_SPI_Freq": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPSTRAP_EXT[57]
+        "Check_Flash_Access": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[59]
+        "ABR_RECOVERY_DIS": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[60]
+        "FMC_ABR_CS_SWAP_DIS": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[61]
+        "FMC_ABR_MODE": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[66:64]
+        "Node0_HostSPISize0": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPSTRAP_EXT[67]
+        "Node0_En_HSPIAux": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[69:68]
+        "Node0_HSPI0_CRTM": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPSTRAP_EXT[70]
+        "Node0_SIODecSel": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[71]
+        "Node0_Dis_SIODec": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[72]
+        "Node0_En_ACPI": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[73]
+        "Node0_En_LPC": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[74]
+        "Node0_En_eDAF": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[75]
+        "Node0_En_eRTC": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[82:80]
+        "Node1_HostSPISize1": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPSTRAP_EXT[83]
+        "Node1_En_HSPIAux": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[85:84]
+        "Node1_HSPI1_CRTM": {
+            "value": "0x0",
+            "valid": false
+        },
+        // OTPSTRAP_EXT[86]
+        "Node1_SIODecSel": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[87]
+        "Node1_Dis_SIODec": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[88]
+        "Node1_En_ACPI": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[89]
+        "Node1_En_LPC": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[90]
+        "Node1_En_eDAF": {
+            "value": false,
+            "valid": false
+        },
+        // OTPSTRAP_EXT[91]
+        "Node1_En_eRTC": {
+            "value": false,
+            "valid": false
+        }
     }
 }

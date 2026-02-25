@@ -11,8 +11,8 @@ PV = "1.0+git"
 SRC_URI_ASPEED_ZEPHYR_PROJECT = "gitsm://github.com/AspeedTech-BMC/aspeed-zephyr-project;protocol=https"
 ASPEED_ZEPHYR_PROJECT_BRANCH = "aspeed-master"
 
-# Tag for v03.04
-SRCREV_bootmcu = "d1c4bbaa7795f4bc84eaf8c458e61d34c2c96355"
+# Tag for v03.05
+SRCREV_bootmcu = "f69f14ac56efbef27f29e537294be358ab31d580"
 
 SRC_URI += "\
     ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
@@ -85,6 +85,6 @@ do_create_fmc_image() {
 addtask create_fmc_image before do_install after do_compile
 
 do_create_fmc_image[depends] += " \
-    fmc-images:do_deploy \
+    bmc-pb:do_deploy \
     "
 
