@@ -32,7 +32,7 @@ security_version = 1
 [image_runtime_list]
 caliptra_file = ""
 zero_caliptra_file_end = 0x20000
-mcu_file = "zephyr-mcu-runtime-a2.bin"
+mcu_file = "zephyr-aspeed-bootmcu.bin"
 
 [[image_metadata_list]]
 file = ""
