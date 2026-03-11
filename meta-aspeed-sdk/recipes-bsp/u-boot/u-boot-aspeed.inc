@@ -7,8 +7,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 DEPENDS += "kern-tools-native"
 
-# Changes to inherit uboot-sign-aspeed to support arm-trusted-firmware-a and optee-os
-inherit uboot-config uboot-extlinux-config uboot-sign-aspeed deploy cml1 python3native
+inherit uboot-config uboot-extlinux-config uboot-sign deploy cml1 python3native
 
 DEPENDS += "swig-native"
 
