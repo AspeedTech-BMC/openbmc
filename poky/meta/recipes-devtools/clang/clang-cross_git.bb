@@ -7,10 +7,12 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0-with-LLVM-exception;
 SECTION = "devel"
 
 PN = "clang-cross-${TARGET_ARCH}"
+BPN = "clang"
 
 require common-clang.inc
 require common-source.inc
 inherit cross
+TOOLCHAIN = "clang"
 DEPENDS += "clang-native virtual/cross-binutils"
 
 #INHIBIT_PACKAGE_STRIP = "1"

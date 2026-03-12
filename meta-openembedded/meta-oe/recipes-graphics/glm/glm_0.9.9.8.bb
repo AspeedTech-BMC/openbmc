@@ -20,9 +20,10 @@ SRC_URI = " \
 SRCREV = "efec5db081e3aad807d0731e172ac597f6a39447"
 PV .= "+0.9.9.9+git"
 
-S = "${WORKDIR}/git"
 
 inherit cmake
+
+EXTRA_OECMAKE = "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
 do_install() {
     install -d ${D}${includedir} ${D}${docdir}/glm ${D}${libdir}/pkgconfig ${D}${libdir}/cmake/glm

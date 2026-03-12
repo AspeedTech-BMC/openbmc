@@ -7,15 +7,13 @@ DEPENDS += "phosphor-ipmi-blobs"
 DEPENDS += "phosphor-logging"
 DEPENDS += "nanopb-generator-native"
 DEPENDS += "nanopb-runtime"
-SRCREV = "719b65fd9eac8517029d89d300de11c2cc787bcc"
+SRCREV = "80dd73dc4e4ad9e41f26368b801af053f6df1346"
 PACKAGECONFIG ??= ""
 PACKAGECONFIG[blobtool] = "-Dblobtool=enabled,-Dblobtool=disabled"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
 SRC_URI = "git://github.com/openbmc/phosphor-ipmi-blobs-binarystore;branch=master;protocol=https"
-
-S = "${WORKDIR}/git"
 
 inherit meson pkgconfig systemd
 

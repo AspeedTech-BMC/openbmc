@@ -12,8 +12,7 @@ SYSTEMD_SERVICE:${PN} = "first-boot-set-mac@.service"
 
 SRC_URI = "file://${BPN}.sh file://${BPN}@.service"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 do_install() {
     install -d ${D}${bindir} ${D}${systemd_system_unitdir}
     install ${BPN}.sh ${D}${bindir}/

@@ -7,14 +7,12 @@ DEPENDS += "sdbusplus"
 DEPENDS += "phosphor-logging"
 DEPENDS += "phosphor-dbus-interfaces"
 DEPENDS += "systemd"
-SRCREV = "73b8ab4379b724d8ab6abc0d21d6e272d95833f2"
+SRCREV = "c4b2ffb5c22403bb3cc6cf973c72903360e5514d"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
 SRC_URI = "git://github.com/openbmc/phosphor-user-manager;branch=master;protocol=https"
 SRC_URI += "file://upgrade_hostconsole_group.sh"
-
-S = "${WORKDIR}/git"
 
 inherit meson pkgconfig
 inherit obmc-phosphor-dbus-service
@@ -28,7 +26,6 @@ PACKAGECONFIG ?= " \
     "
 PACKAGECONFIG[root-user-mgmt] = "-Droot_user_mgmt=enabled, -Droot_user_mgmt=disabled"
 PACKAGECONFIG[ldap] = "-Dldap=enabled, -Dldap=disabled, nss-pam-ldapd"
-
 
 do_install:append() {
   install -d ${D}${libexecdir}

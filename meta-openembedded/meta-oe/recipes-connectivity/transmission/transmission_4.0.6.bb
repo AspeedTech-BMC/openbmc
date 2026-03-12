@@ -9,13 +9,17 @@ RDEPENDS:${PN}-web = "${PN}"
 
 SRC_URI = " \
 	gitsm://github.com/transmission/transmission;branch=4.0.x;protocol=https \
+	file://0001-build-bump-CMake-version-to-3.10-4.patch;patchdir=third-party/dht \
+	file://0001-bump-cmake-to-3.10.patch;patchdir=third-party/libb64 \
+	file://0001-Increase-minimum-CMake-version-to-3.10.patch;patchdir=third-party/libdeflate \
+	file://0001-miniupnpc-bump-CMake-version-to-3.14.patch;patchdir=third-party/miniupnpc \
+	file://0001-build-set-minimum-required-CMake-to-3.5.patch;patchdir=third-party/libnatpmp \
 	file://transmission-daemon \
 "
 
 # Transmission release 4.0.6
 SRCREV = "38c164933e9f77c110b48fe745861c3b98e3d83e"
 
-S = "${WORKDIR}/git"
 
 inherit cmake gettext update-rc.d pkgconfig systemd mime-xdg
 

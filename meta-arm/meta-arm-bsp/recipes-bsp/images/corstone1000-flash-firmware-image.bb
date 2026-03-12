@@ -14,7 +14,8 @@ inherit tfm_sign_image
 inherit uefi_capsule
 inherit deploy
 
-DEPENDS += "external-system \
+DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'corstone1000-extsys', \
+                                 'external-system', '', d)} \
             trusted-firmware-a \
             trusted-firmware-m \
             u-boot \

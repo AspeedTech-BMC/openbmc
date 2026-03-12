@@ -7,9 +7,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=05e355bbd617507216a836c56cf24983"
 inherit module
 
 SRC_URI = "git://gitlab.arm.com/linux-arm/linux-trusted-services;protocol=https;branch=debugfs \
-           file://Makefile;subdir=git \
+           file://Makefile;subdir=${S} \
           "
-S = "${WORKDIR}/git"
 
 # Tag debugfs-v5.0.2
 SRCREV = "885af0d1c3bf11aba12320d5484429160a9b9f26"

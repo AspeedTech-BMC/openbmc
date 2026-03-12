@@ -19,6 +19,7 @@ SRC_URI = "https://la-samhna.de/archive/samhain_signed-${PV}.tar.gz \
            file://0008-Add-LDFLAGS-variable-for-compiling-samhain_setpwd.patch \
            file://0009-fix-build-with-new-version-attr.patch \
            file://0010-Fix-initializer-element-is-not-constant.patch \
+           file://0001-Format-test-output-to-match-Automake-standards.patch \
            "
 
 SRC_URI[sha256sum] = "0b5d3534fd60ecf45dfd79bd415e81f7a56eba7f1755771735e204f334033578"

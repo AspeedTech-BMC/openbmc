@@ -1,0 +1,32 @@
+From 72f923440fef3b875e5570094e4cf398a201521f Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Thu, 13 Jul 2017 18:29:52 -0700
+Subject: [PATCH] define loff_t if not already defined
+
+Helps to build with musl
+
+Upstream-Status: Pending
+
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+---
+ core/yaffs_guts.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/core/yaffs_guts.h b/core/yaffs_guts.h
+index 74ded0b..4bd2646 100644
+--- a/core/yaffs_guts.h
++++ b/core/yaffs_guts.h
+@@ -17,6 +17,10 @@
+ 
+ #include "yportenv.h"
+ 
++#ifndef loff_t
++#define loff_t off_t
++#endif
++
+ #define YAFFS_OK	1
+ #define YAFFS_FAIL  0
+ 
+-- 
+2.34.1
+

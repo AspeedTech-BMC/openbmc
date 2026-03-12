@@ -10,7 +10,17 @@ e.g. wAALC_RPU_READY
 "
 
 gpio_name="$2"
-stash_file="/run/${gpio_name}.log_entry"
+stash_file="/var/lib/phosphor-gpio-monitor/${gpio_name}.log_entry"
+
+# shellcheck source=meta-facebook/meta-ventura/recipes-ventura/plat-svc/files/gpio_util
+source "/usr/libexec/ventura/gpio_util"
+
+# For VT cooling systems, AALC-related signals should be ignored.
+if [[ "$gpio_name" == *RPU* || "$gpio_name" == *PUMP* ]] &&
+    [[ $(get_gpio_val_by_name "wPRSNT_RETURN_PLD_R_N") == 0 &&
+    $(get_gpio_val_by_name "wPRSNT_SUPPLY_PLD_R_N") == 0 ]]; then
+    exit 0
+fi
 
 get_failure_type() {
     if [ "$1" = "wAALC_RPU_READY" ]; then
@@ -66,16 +76,14 @@ case "$1" in
     ;;
 
 "assert")
-    if [ ! -s "$stash_file" ]; then
-        log-create "xyz.openbmc_project.State.SMC.SMCFailed" --json \
-            "{\"IDENTIFIER\": \"$(get_identifier "$gpio_name")\", \"FAILURE_TYPE\": \"$(get_failure_type "$gpio_name")\"}" \
-            >"${stash_file}"
-    fi
+    log-create "xyz.openbmc_project.State.SMC.SMCFailed" --json \
+        "{\"IDENTIFIER\": \"$(get_identifier "$gpio_name")\", \"FAILURE_TYPE\": \"$(get_failure_type "$gpio_name")\"}" \
+        >"${stash_file}"
     ;;
 
 "deassert")
     if [ -s "${stash_file}" ]; then
-        log-resolve -p "$(<"${stash_file}")" && rm "${stash_file}"
+        log-resolve -p "$(<"${stash_file}")" ; rm "${stash_file}"
         log-create "xyz.openbmc_project.State.SMC.SMCRestored" --json \
             "{\"IDENTIFIER\": \"$(get_identifier "$gpio_name")\"}"
     fi

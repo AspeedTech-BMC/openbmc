@@ -50,6 +50,8 @@ UBOOT_FITIMAGE_BINARY ?= "u-boot-fitImage"
 UBOOT_FITIMAGE_SYMLINK ?= "u-boot-fitImage-${MACHINE}"
 SPL_DIR ?= "spl"
 SPL_DTB_IMAGE ?= "u-boot-spl-${MACHINE}-${PV}-${PR}.dtb"
+# When SPL is not used, set SPL_DTB_BINARY ?= "" to explicitly indicate
+# that no SPL DTB should be created or signed.
 SPL_DTB_BINARY ?= "u-boot-spl.dtb"
 SPL_DTB_SIGNED ?= "${SPL_DTB_BINARY}-signed"
 SPL_DTB_SYMLINK ?= "u-boot-spl-${MACHINE}.dtb"
@@ -112,13 +114,14 @@ UBOOT_FIT_CONF_USER_LOADABLES ?= ''
 UBOOT_FIT_UBOOT_LOADADDRESS ?= "${UBOOT_LOADADDRESS}"
 UBOOT_FIT_UBOOT_ENTRYPOINT ?= "${UBOOT_ENTRYPOINT}"
 
+
+DEPENDS:append = " ${@'kernel-signing-keys-native' if d.getVar('FIT_GENERATE_KEYS') == '1' else ''}"
+
 python() {
     # We need u-boot-tools-native if we're creating a U-Boot fitImage
     sign = d.getVar('UBOOT_SIGN_ENABLE') == '1'
     if d.getVar('UBOOT_FITIMAGE_ENABLE') == '1' or sign:
         d.appendVar('DEPENDS', " u-boot-tools-native dtc-native")
-    if d.getVar('FIT_GENERATE_KEYS') == '1' and sign:
-        d.appendVarFlag('do_uboot_assemble_fitimage', 'depends', ' virtual/kernel:do_kernel_generate_rsa_keys')
 }
 
 concat_dtb() {
@@ -195,21 +198,23 @@ concat_dtb() {
 	# If we're not using a signed u-boot fit, concatenate SPL w/o DTB & U-Boot DTB
 	# with public key (otherwise U-Boot will be packaged by uboot_fitimage_assemble)
 	if [ "${SPL_SIGN_ENABLE}" != "1" ] ; then
-		if [ "x${UBOOT_SUFFIX}" = "ximg" -o "x${UBOOT_SUFFIX}" = "xrom" ] && \
-			[ -e "${UBOOT_DTB_BINARY}" ]; then
+		if [ ! -e "${UBOOT_DTB_BINARY}" ]; then
+			bbwarn "Failure while adding public key to u-boot binary. Verified boot won't be available."
+			return
+		fi
+
+		if [ "x${UBOOT_SUFFIX}" = "ximg" ] || [ "x${UBOOT_SUFFIX}" = "xrom" ]; then
 			oe_runmake EXT_DTB="${UBOOT_DTB_SIGNED}" ${UBOOT_MAKE_TARGET}
 			if [ -n "${binary}" ]; then
 				cp ${binary} ${UBOOT_BINARYNAME}-${type}.${UBOOT_SUFFIX}
 			fi
-		elif [ -e "${UBOOT_NODTB_BINARY}" -a -e "${UBOOT_DTB_BINARY}" ]; then
+		elif [ -e "${UBOOT_NODTB_BINARY}" ]; then
 			if [ -n "${binary}" ]; then
 				cat ${UBOOT_NODTB_BINARY} ${UBOOT_DTB_SIGNED} | tee ${binary} > \
 					${UBOOT_BINARYNAME}-${type}.${UBOOT_SUFFIX}
 			else
 				cat ${UBOOT_NODTB_BINARY} ${UBOOT_DTB_SIGNED} > ${UBOOT_BINARY}
 			fi
-		else
-			bbwarn "Failure while adding public key to u-boot binary. Verified boot won't be available."
 		fi
 	fi
 }
@@ -241,7 +246,7 @@ deploy_dtb() {
 }
 
 concat_spl_dtb() {
-	if [ -e "${SPL_DIR}/${SPL_NODTB_BINARY}" -a -e "${SPL_DIR}/${SPL_DTB_BINARY}" ] ; then
+	if [ -e "${SPL_DIR}/${SPL_NODTB_BINARY}" ] && [ -e "${SPL_DIR}/${SPL_DTB_BINARY}" ] ; then
 		cat ${SPL_DIR}/${SPL_NODTB_BINARY} ${SPL_DIR}/${SPL_DTB_SIGNED} > "${SPL_BINARY}"
 	else
 		bbwarn "Failure while adding public key to spl binary. Verified U-Boot boot won't be available."
@@ -465,25 +470,31 @@ EOF
 		${UBOOT_FITIMAGE_BINARY}
 
 	if [ "${SPL_SIGN_ENABLE}" = "1" ] ; then
-		#
-		# Sign the U-boot FIT image and add public key to SPL dtb
-		#
-		${UBOOT_MKIMAGE_SIGN} \
-			${@'-D "${SPL_MKIMAGE_DTCOPTS}"' if len('${SPL_MKIMAGE_DTCOPTS}') else ''} \
-			-F -k "${SPL_SIGN_KEYDIR}" \
-			-K "${SPL_DIR}/${SPL_DTB_BINARY}" \
-			-r ${UBOOT_FITIMAGE_BINARY} \
-			${SPL_MKIMAGE_SIGN_ARGS}
-		#
-		# Verify the U-boot FIT image and SPL dtb
-		#
-		${UBOOT_FIT_CHECK_SIGN} \
-			-k "${SPL_DIR}/${SPL_DTB_BINARY}" \
-			-f ${UBOOT_FITIMAGE_BINARY}
-	fi
+		if [ -n "${SPL_DTB_BINARY}" ] ; then
+			#
+			# Sign the U-boot FIT image and add public key to SPL dtb
+			#
+			${UBOOT_MKIMAGE_SIGN} \
+				${@'-D "${SPL_MKIMAGE_DTCOPTS}"' if len('${SPL_MKIMAGE_DTCOPTS}') else ''} \
+				-F -k "${SPL_SIGN_KEYDIR}" \
+				-K "${SPL_DIR}/${SPL_DTB_BINARY}" \
+				-r ${UBOOT_FITIMAGE_BINARY} \
+				${SPL_MKIMAGE_SIGN_ARGS}
 
-	if [ -e "${SPL_DIR}/${SPL_DTB_BINARY}" ]; then
-		cp ${SPL_DIR}/${SPL_DTB_BINARY} ${SPL_DIR}/${SPL_DTB_SIGNED}
+			# Verify the U-boot FIT image and SPL dtb
+			${UBOOT_FIT_CHECK_SIGN} \
+				-k "${SPL_DIR}/${SPL_DTB_BINARY}" \
+				-f ${UBOOT_FITIMAGE_BINARY}
+
+			cp ${SPL_DIR}/${SPL_DTB_BINARY} ${SPL_DIR}/${SPL_DTB_SIGNED}
+		else
+			# Sign the U-boot FIT image
+			${UBOOT_MKIMAGE_SIGN} \
+				${@'-D "${SPL_MKIMAGE_DTCOPTS}"' if len('${SPL_MKIMAGE_DTCOPTS}') else ''} \
+				-F -k "${SPL_SIGN_KEYDIR}" \
+				-r ${UBOOT_FITIMAGE_BINARY} \
+				${SPL_MKIMAGE_SIGN_ARGS}
+		fi
 	fi
 }
 
@@ -491,15 +502,15 @@ uboot_assemble_fitimage_helper() {
 	type="$1"
 	binary="$2"
 
-	if [ "${UBOOT_SIGN_ENABLE}" = "1" -a -n "${UBOOT_DTB_BINARY}" ] ; then
+	if [ "${UBOOT_SIGN_ENABLE}" = "1" ] && [ -n "${UBOOT_DTB_BINARY}" ] ; then
 		concat_dtb "$type" "$binary"
 	fi
 
-	if [ "${UBOOT_FITIMAGE_ENABLE}" = "1" -a -n "${SPL_DTB_BINARY}" ]; then
+	if [ "${UBOOT_FITIMAGE_ENABLE}" = "1" ]; then
 		uboot_fitimage_assemble
 	fi
 
-	if [ "${SPL_SIGN_ENABLE}" = "1" -a -n "${SPL_DTB_BINARY}" ] ; then
+	if [ "${SPL_SIGN_ENABLE}" = "1" ] && [ -n "${SPL_DTB_BINARY}" ] ; then
 		concat_spl_dtb
 	fi
 }
@@ -538,11 +549,11 @@ addtask uboot_assemble_fitimage before do_install do_deploy after do_compile
 deploy_helper() {
 	type="$1"
 
-	if [ "${UBOOT_SIGN_ENABLE}" = "1" -a -n "${UBOOT_DTB_SIGNED}" ] ; then
+	if [ "${UBOOT_SIGN_ENABLE}" = "1" ] && [ -n "${UBOOT_DTB_SIGNED}" ] ; then
 		deploy_dtb $type
 	fi
 
-	if [ "${UBOOT_FITIMAGE_ENABLE}" = "1" -a -n "${SPL_DTB_BINARY}" ]; then
+	if [ "${UBOOT_FITIMAGE_ENABLE}" = "1" ]; then
 		if [ -n "${type}" ]; then
 			uboot_its_image="u-boot-its-${type}-${PV}-${PR}"
 			uboot_fitimage_image="u-boot-fitImage-${type}-${PV}-${PR}"
@@ -560,7 +571,7 @@ deploy_helper() {
 		fi
 	fi
 
-	if [ "${SPL_SIGN_ENABLE}" = "1" -a -n "${SPL_DTB_SIGNED}" ] ; then
+	if [ "${SPL_SIGN_ENABLE}" = "1" ] && [ -n "${SPL_DTB_BINARY}" ] ; then
 		deploy_spl_dtb $type
 	fi
 }
@@ -585,7 +596,7 @@ do_deploy:prepend() {
 		deploy_helper ""
 	fi
 
-	if [ "${UBOOT_SIGN_ENABLE}" = "1" -a -n "${UBOOT_DTB_BINARY}" ] ; then
+	if [ "${UBOOT_SIGN_ENABLE}" = "1" ] && [ -n "${UBOOT_DTB_BINARY}" ] ; then
 		ln -sf ${UBOOT_DTB_IMAGE} ${DEPLOYDIR}/${UBOOT_DTB_BINARY}
 		ln -sf ${UBOOT_DTB_IMAGE} ${DEPLOYDIR}/${UBOOT_DTB_SYMLINK}
 		ln -sf ${UBOOT_NODTB_IMAGE} ${DEPLOYDIR}/${UBOOT_NODTB_SYMLINK}
@@ -599,7 +610,7 @@ do_deploy:prepend() {
 		ln -sf ${UBOOT_FITIMAGE_IMAGE} ${DEPLOYDIR}/${UBOOT_FITIMAGE_SYMLINK}
 	fi
 
-	if [ "${SPL_SIGN_ENABLE}" = "1" -a -n "${SPL_DTB_BINARY}" ] ; then
+	if [ "${SPL_SIGN_ENABLE}" = "1" ] && [ -n "${SPL_DTB_BINARY}" ] ; then
 		ln -sf ${SPL_DTB_IMAGE} ${DEPLOYDIR}/${SPL_DTB_SYMLINK}
 		ln -sf ${SPL_DTB_IMAGE} ${DEPLOYDIR}/${SPL_DTB_BINARY}
 		ln -sf ${SPL_NODTB_IMAGE} ${DEPLOYDIR}/${SPL_NODTB_SYMLINK}

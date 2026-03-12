@@ -4,10 +4,10 @@
 # Armv8-A Base Platform FVP
 #
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files/:${THISDIR}/files/fvp-base"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/:${THISDIR}/files/fvp-base:"
 
 SRC_URI:append = " \
-    file://optee_spmc_maifest.dts;subdir=git/plat/arm/board/fvp/fdts \
+    file://optee_spmc_maifest.dts;subdir=${BB_GIT_DEFAULT_DESTSUFFIX}/plat/arm/board/fvp/fdts \
 "
 
 # OP-TEE SPMC related configuration

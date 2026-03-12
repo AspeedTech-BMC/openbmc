@@ -22,7 +22,7 @@ LINUX_VERSION_EXTENSION ?= "-${SRCREV}"
 
 PV = "${LINUX_VERSION}+git${SRCPV}"
 
-inherit kernel
+inherit kernel kernel-fit-extra-artifacts
 require recipes-kernel/linux/linux-yocto.inc
 
 ERROR_QA:remove = "buildpaths"

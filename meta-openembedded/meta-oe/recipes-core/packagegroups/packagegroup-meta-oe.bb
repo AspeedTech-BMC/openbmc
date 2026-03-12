@@ -201,6 +201,7 @@ RDEPENDS:packagegroup-meta-oe-crypto = "\
 RDEPENDS:packagegroup-meta-oe-crypto:remove:riscv32 = "botan"
 
 RDEPENDS:packagegroup-meta-oe-dbs = "\
+    influxdb \
     leveldb \
     libdbi \
     lmdb \
@@ -345,7 +346,6 @@ RDEPENDS:packagegroup-meta-oe-extended = "\
     isomd5sum \
     jansson \
     jpnevulator \
-    konkretcmpi \
     libblockdev \
     libcec \
     libconfig \
@@ -973,7 +973,7 @@ RDEPENDS:packagegroup-meta-oe-fortran-packages = "\
 # opencl-headers sdbus-c++-libsystemd nlohmann-fifo sqlite-orm
 # nlohmann-json exprtk liblightmodbus p8platform gnome-doc-utils-stub
 # glm ttf-mplus xbitmaps ceres-solver cli11 fftw gnulib libeigen ade
-# spdlog span-lite uthash websocketpp catch2 properties-cpp cpp-netlib
+# spdlog span-lite uthash websocketpp catch2 cpp-netlib
 
 # rsyslog conflicts with syslog-ng so its not included here
 

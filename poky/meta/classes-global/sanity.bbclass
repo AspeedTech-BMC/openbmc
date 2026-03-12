@@ -514,12 +514,9 @@ def check_userns():
 # built buildtools-extended-tarball)
 #
 def check_gcc_version(sanity_data):
-    import subprocess
-    
-    build_cc, version = oe.utils.get_host_compiler_version(sanity_data)
-    if build_cc.strip() == "gcc":
-        if bb.utils.vercmp_string_op(version, "8.0", "<"):
-            return "Your version of gcc is older than 8.0 and will break builds. Please install a newer version of gcc (you could use the project's buildtools-extended-tarball or use scripts/install-buildtools).\n"
+    version = oe.utils.get_host_gcc_version(sanity_data)
+    if bb.utils.vercmp_string_op(version, "8.0", "<"):
+        return "Your version of gcc is older than 8.0 and will break builds. Please install a newer version of gcc (you could use the project's buildtools-extended-tarball or use scripts/install-buildtools).\n"
     return None
 
 # Tar version 1.24 and onwards handle overwriting symlinks correctly
@@ -609,7 +606,7 @@ def drop_v14_cross_builds(d):
 
 def check_cpp_toolchain_flag(d, flag, error_message=None):
     """
-    Checks if the C++ toolchain support the given flag
+    Checks if the g++ compiler supports the given flag
     """
     import shlex
     import subprocess
@@ -622,7 +619,7 @@ def check_cpp_toolchain_flag(d, flag, error_message=None):
     }
     """
 
-    cmd = shlex.split(d.getVar("BUILD_CXX")) + ["-x", "c++","-", "-o", "/dev/null", flag]
+    cmd = ["g++", "-x", "c++","-", "-o", "/dev/null", flag]
     try:
         subprocess.run(cmd, input=cpp_code, capture_output=True, text=True, check=True)
         return None
@@ -675,6 +672,8 @@ def check_sanity_sstate_dir_change(sstate_dir, data):
     return testmsg
 
 def check_sanity_version_change(status, d):
+    import glob
+
     # Sanity checks to be done when SANITY_VERSION or NATIVELSBSTRING changes
     # In other words, these tests run once in a given build directory and then 
     # never again until the sanity version or host distribution id/version changes.
@@ -700,11 +699,16 @@ def check_sanity_version_change(status, d):
     if not check_app_exists("${MAKE}", d):
         missing = missing + "GNU make,"
 
-    if not check_app_exists('${BUILD_CC}', d):
-        missing = missing + "C Compiler (%s)," % d.getVar("BUILD_CC")
+    if not check_app_exists('gcc', d):
+        missing = missing + "C Compiler (gcc),"
 
-    if not check_app_exists('${BUILD_CXX}', d):
-        missing = missing + "C++ Compiler (%s)," % d.getVar("BUILD_CXX")
+    if not check_app_exists('g++', d):
+        missing = missing + "C++ Compiler (g++),"
+
+    # installing emacs on Ubuntu 24.04 pulls in emacs-gtk -> libgcc-14-dev despite gcc being 13
+    # this breaks libcxx-native and compiler-rt-native builds so tell the user to fix things
+    if glob.glob("/usr/lib/gcc/*/14/libgcc_s.so") and not glob.glob("/usr/lib/gcc/*/14/libstdc++.so"):
+        status.addresult('libgcc-14-dev is installed and not libstdc++-14-dev which will break clang native compiles. Please remove one or install the other.')
 
     required_utilities = d.getVar('SANITY_REQUIRED_UTILITIES')
 

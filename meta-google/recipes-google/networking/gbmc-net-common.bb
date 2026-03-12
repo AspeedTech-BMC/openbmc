@@ -7,8 +7,7 @@ SRC_URI += " \
   file://gbmc-net-lib.sh \
   file://gbmc-ra.sh \
   "
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 FILES:${PN} += " \
   ${datadir}/ \

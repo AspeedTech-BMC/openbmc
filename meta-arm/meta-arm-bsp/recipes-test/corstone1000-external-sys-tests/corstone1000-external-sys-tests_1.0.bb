@@ -10,8 +10,6 @@ PV .= "+git"
 
 COMPATIBLE_MACHINE = "corstone1000"
 
-S = "${WORKDIR}/git"
-
 do_compile() {
     ${CC} ${S}/test-app.c ${CFLAGS} ${LDFLAGS} -o ${S}/systems-comms-tests
 }

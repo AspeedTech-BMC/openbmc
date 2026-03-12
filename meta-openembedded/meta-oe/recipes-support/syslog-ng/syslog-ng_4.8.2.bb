@@ -59,10 +59,12 @@ PACKAGECONFIG[dbi] = "--enable-sql,--disable-sql,libdbi,"
 PACKAGECONFIG[spoof-source] = "--enable-spoof-source --with-libnet=${STAGING_BINDIR_CROSS},--disable-spoof-source,libnet,"
 PACKAGECONFIG[http] = "--enable-http,--disable-http,curl,"
 PACKAGECONFIG[smtp] = "--enable-smtp --with-libesmtp=${STAGING_LIBDIR},--disable-smtp,libesmtp,"
+PACKAGECONFIG[stomp] = "--enable-stomp,--disable-stomp,,"
 PACKAGECONFIG[json] = "--enable-json,--disable-json,json-c,"
 PACKAGECONFIG[tcp-wrapper] = "--enable-tcp-wrapper,--disable-tcp-wrapper,tcp-wrappers,"
 PACKAGECONFIG[geoip] = "--enable-geoip,--disable-geoip,geoip,"
 PACKAGECONFIG[native] = "--enable-native,--disable-native,,"
+PACKAGECONFIG[examples] = "--enable-example-modules,--disable-example-modules,,"
 
 do_install:append() {
     install -d ${D}${sysconfdir}/${BPN}

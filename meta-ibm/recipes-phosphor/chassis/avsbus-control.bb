@@ -8,8 +8,7 @@ inherit obmc-phosphor-systemd
 
 RDEPENDS:${PN} += "i2c-tools"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 SRC_URI:append:witherspoon = " file://avsbus-enable.sh"
 SRC_URI:append:witherspoon = " file://avsbus-disable.sh"
@@ -19,7 +18,6 @@ do_install:witherspoon() {
         install -m 0755 ${S}/avsbus-enable.sh ${D}${bindir}/avsbus-enable.sh
         install -m 0755 ${S}/avsbus-disable.sh ${D}${bindir}/avsbus-disable.sh
 }
-
 
 TMPL_EN = "avsbus-enable@.service"
 TMPL_DIS = "avsbus-disable@.service"

@@ -8,8 +8,6 @@ PR = "r1"
 
 SRC_URI += "${PHOSPHOR_MRW_URI}"
 
-S = "${WORKDIR}/git"
-
 inherit obmc-xmlpatch
 inherit mrw-xml
 inherit native

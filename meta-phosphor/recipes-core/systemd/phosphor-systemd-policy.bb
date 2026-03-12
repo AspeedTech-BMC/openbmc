@@ -8,8 +8,7 @@ PR = "r1"
 SRC_URI += "file://service-restart-policy.conf"
 SRC_URI += "file://journald-maxlevel-policy.conf"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_install() {
         install -m 644 -D ${UNPACKDIR}/service-restart-policy.conf ${D}${systemd_unitdir}/system.conf.d/service-restart-policy.conf

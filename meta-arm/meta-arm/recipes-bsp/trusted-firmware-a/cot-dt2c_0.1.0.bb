@@ -14,8 +14,6 @@ inherit python_poetry_core
 
 BBCLASSEXTEND = "native nativesdk"
 
-S = "${UNPACKDIR}/git"
-
 # Dependencies of plotly and igraph are not needed for the standard case
 RDEPENDS:${PN} += "python3-click \
                    python3-pydevicetree \

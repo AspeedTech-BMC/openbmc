@@ -12,7 +12,6 @@ inherit obmc-phosphor-ipmiprovider-symlink
 DEPENDS += "phosphor-ipmi-host"
 DEPENDS += "autoconf-archive-native"
 
-S = "${WORKDIR}/git"
 SRC_URI = "git://github.com/openbmc/wistron-ipmi-oem;branch=master;protocol=https"
 SRCREV = "e04459e5141c23b85b1a5fd1427062558da80d9c"
 

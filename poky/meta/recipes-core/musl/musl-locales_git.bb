@@ -7,12 +7,12 @@ LICENSE = "MIT & LGPL-3.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=cf5713fba707073020b1db2acaa73e78 \
                     file://LICENSE.MIT;md5=a4f1c6864a83ddf4b754cdab7d593523"
 
-SRC_URI = "git://git.adelielinux.org/adelie/musl-locales;protocol=https;branch=main"
+SRC_URI = "git://git.adelielinux.org/adelie/musl-locales;protocol=https;branch=main \
+           file://0001-cmake-Support-builds-with-CMake-4.patch \
+           "
 
 PV = "1.0+git"
 SRCREV = "5663f5bfd30bf9e1e0ba3fc5fe2da6725969f30e"
-
-S = "${WORKDIR}/git"
 
 DEPENDS = "virtual/libintl gettext-native"
 
@@ -81,5 +81,22 @@ FILES:locale-base-pt-pt += "${datadir}/i18n/locales/musl/pt_PT.UTF-8"
 FILES:locale-base-ru-ru += "${datadir}/i18n/locales/musl/ru_RU.UTF-8"
 FILES:locale-base-sr-rs += "${datadir}/i18n/locales/musl/sr_RS.UTF-8"
 FILES:locale-base-sv-se += "${datadir}/i18n/locales/musl/sv_SE.UTF-8"
+
+RRECOMMENDS:locale-base-cs-cz += "${PN}"
+RRECOMMENDS:locale-base-de-ch += "${PN}"
+RRECOMMENDS:locale-base-de-de += "${PN}"
+RRECOMMENDS:locale-base-en-gb += "${PN}"
+RRECOMMENDS:locale-base-en-us += "${PN}"
+RRECOMMENDS:locale-base-es-es += "${PN}"
+RRECOMMENDS:locale-base-fi-fi += "${PN}"
+RRECOMMENDS:locale-base-fr-ca += "${PN}"
+RRECOMMENDS:locale-base-fr-fr += "${PN}"
+RRECOMMENDS:locale-base-it-it += "${PN}"
+RRECOMMENDS:locale-base-nb-no += "${PN}"
+RRECOMMENDS:locale-base-nl-nl += "${PN}"
+RRECOMMENDS:locale-base-pt-br += "${PN}"
+RRECOMMENDS:locale-base-ru-ru += "${PN}"
+RRECOMMENDS:locale-base-sr-sr += "${PN}"
+RRECOMMENDS:locale-base-sv-se += "${PN}"
 
 UPSTREAM_CHECK_COMMITS = "1"

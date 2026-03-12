@@ -14,7 +14,6 @@ PR = "r1"
 SRC_URI = "git://github.com/openbmc/ssifbridge.git;protocol=https;branch=master"
 
 SYSTEMD_SERVICE:${PN} = "ssifbridge.service"
-S = "${WORKDIR}/git"
 
 inherit meson pkgconfig
 inherit systemd

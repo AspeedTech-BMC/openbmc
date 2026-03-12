@@ -13,8 +13,6 @@ SRC_URI = " \
     file://state_hook \
     "
 
-S = "${WORKDIR}/git"
-
 inherit meson pkgconfig
 
 do_install:append() {

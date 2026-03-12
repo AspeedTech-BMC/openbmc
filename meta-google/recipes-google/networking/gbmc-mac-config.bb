@@ -10,8 +10,7 @@ SRC_URI += " \
   file://gbmc-mac-config.sh.in \
   "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} += " \
   bash \

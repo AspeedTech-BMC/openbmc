@@ -9,8 +9,6 @@ inherit obmc-phosphor-systemd
 
 inherit autotools
 
-S = "${WORKDIR}/git"
-
 SYSTEMD_SERVICE:${PN} += "pnorboot.service"
 
 SRC_URI = "git://github.com/shenki/aspeed-lpc-control;branch=master;protocol=https"

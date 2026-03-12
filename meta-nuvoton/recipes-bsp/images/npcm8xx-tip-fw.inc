@@ -6,7 +6,6 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=f789971f29c65e31dbb33ed209b4dc91"
 
 TIP_FW = "Kmt_TipFwL0_Skmt_TipFwL1.bin"
 SA_TIP_FW = "SA_Kmt_TipFwL0.bin"
-S = "${WORKDIR}/git"
 
 SRC_URI = "git://github.com/Nuvoton-Israel/npcm8xx-tip-fw;branch=main;protocol=https"
 

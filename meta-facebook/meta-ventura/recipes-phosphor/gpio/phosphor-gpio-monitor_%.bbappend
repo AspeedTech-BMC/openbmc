@@ -10,6 +10,7 @@ SERVICE_LIST = "power-rail-assert-log@.service \
                 led-blue-deassert@.service \
                 led-blue-init-assert@.service \
                 led-blue-init-deassert@.service \
+                tray-identify@.service \
                 "
 
 SERVICE_FILE_FMT = "file://{0}"
@@ -19,6 +20,7 @@ SRC_URI += "file://ventura-phosphor-multi-gpio-monitor.json \
             file://smc-event-logger \
             file://logging \
             file://frontled \
+            file://tray-identify \
             ${@compose_list(d, 'SERVICE_FILE_FMT', 'SERVICE_LIST')} \
             "
 
@@ -29,6 +31,7 @@ FILES:${PN} += "${systemd_system_unitdir}/*"
 SYSTEMD_SERVICE:${PN} += "${SERVICE_LIST}"
 
 do_install:append() {
+    install -d ${D}${localstatedir}/lib/phosphor-gpio-monitor
     install -d ${D}${datadir}/phosphor-gpio-monitor
     install -m 0644 ${UNPACKDIR}/ventura-phosphor-multi-gpio-monitor.json \
                     ${D}${datadir}/phosphor-gpio-monitor/phosphor-multi-gpio-monitor.json
@@ -43,4 +46,6 @@ do_install:append() {
     install -m 0755 ${UNPACKDIR}/frontled ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/power-rail-event-logger ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/smc-event-logger ${D}${libexecdir}/${PN}/
+    install -d ${D}${bindir}
+    install -m 0755 ${UNPACKDIR}/tray-identify ${D}${bindir}/
 }

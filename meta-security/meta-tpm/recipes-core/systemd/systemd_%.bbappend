@@ -11,7 +11,10 @@ PACKAGECONFIG:append = " \
 # TODO: use swtpm-native to calculate TPM measurements
 do_install:append() {
     if "${@bb.utils.contains('DISTRO_FEATURES', 'tpm2', 'true', 'false', d)}"; then
-        sed -i -e "s/^ConditionSecurity=measured-uki/ConditionSecurity=tpm2/g" \
-            $( grep -rl ^ConditionSecurity=measured-uki ${D} )
+        FILES=$( grep -rl ^ConditionSecurity=measured-uki ${D} || true )
+        if [ "$FILES" != "" ]; then
+            sed -i -e "s/^ConditionSecurity=measured-uki/ConditionSecurity=tpm2/g" \
+                $FILES
+        fi
     fi
 }

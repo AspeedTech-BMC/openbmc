@@ -10,7 +10,6 @@ SRC_URI = "git://gn.googlesource.com/gn;protocol=https;branch=main"
 SRCREV = "ab638bd7cbb9ac8468bf2fbe60c74ed4706a14a7"
 PV = "0+git"
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 # Map from our _OS strings to the GN's platform values.

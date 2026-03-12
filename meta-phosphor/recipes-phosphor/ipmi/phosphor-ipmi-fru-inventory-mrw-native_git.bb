@@ -7,8 +7,6 @@ PROVIDES += "virtual/phosphor-ipmi-fru-inventory"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
-S = "${WORKDIR}/git"
-
 inherit phosphor-ipmi-fru
 inherit mrw-xml
 inherit native

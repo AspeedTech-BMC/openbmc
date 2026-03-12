@@ -12,7 +12,6 @@ python3-chardet-native python3-requests-native python3-construct-native \
 dtc-native python3-dtschema-wrapper-native"
 
 PV = "v2023.04"
-S = "${WORKDIR}/git"
 SRC_URI = "\
         git://git.gitlab.arm.com/systemready/systemready-scripts.git;protocol=https;nobranch=1 \
         file://0001-check-sr-results-Return-non-zero-exit-code-on-failur.patch \

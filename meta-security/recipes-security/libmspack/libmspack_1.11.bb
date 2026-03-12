@@ -11,6 +11,6 @@ SRC_URI = "git://github.com/kyz/libmspack.git;branch=master;protocol=https"
 
 inherit autotools
 
-S = "${UNPACKDIR}/git/${BPN}"
+S = "${UNPACKDIR}/${BP}/${BPN}"
 
 inherit autotools

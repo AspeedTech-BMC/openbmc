@@ -1,5 +1,7 @@
 [Unit]
 Description=Deassert Power Good Status
+Conflicts=assert-power-good.service
+After=assert-power-good.service
 
 [Service]
 Type=oneshot

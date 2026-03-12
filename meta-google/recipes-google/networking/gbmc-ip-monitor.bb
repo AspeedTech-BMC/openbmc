@@ -11,8 +11,7 @@ SRC_URI += " \
   file://gbmc-ip-monitor-test.sh \
   "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 DEPENDS += "test-sh"
 

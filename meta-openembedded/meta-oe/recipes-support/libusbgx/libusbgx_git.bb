@@ -18,7 +18,6 @@ SRC_URI = " \
     file://usbgx.service \
 "
 
-S = "${WORKDIR}/git"
 
 PACKAGECONFIG ??= "examples gadget-schemes libconfig"
 PACKAGECONFIG[libconfig] = "--with-libconfig=yes,--without-libconfig,libconfig"
@@ -35,7 +34,7 @@ SYSTEMD_AUTO_ENABLE:${PN}-examples = "${@bb.utils.contains('PACKAGECONFIG', 'exa
 INITSCRIPT_PACKAGES = "${@bb.utils.contains('PACKAGECONFIG', 'examples', '${PN}-examples', '', d)}"
 INITSCRIPT_NAME = "usbgx"
 INITSCRIPT_PARAMS = "defaults"
-INHIBIT_UPDATERCD_BBCLASS = "${@bb.utils.contains('PACKAGECONFIG', 'examples', '1', '0', d)}"
+INHIBIT_UPDATERCD_BBCLASS = "${@bb.utils.contains('PACKAGECONFIG', 'examples', '', '1', d)}"
 
 do_install:append() {
     install -Dm 0755 ${UNPACKDIR}/gadget-start ${D}${bindir}/gadget-start

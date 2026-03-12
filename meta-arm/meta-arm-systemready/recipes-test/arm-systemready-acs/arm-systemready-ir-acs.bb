@@ -48,7 +48,7 @@ TEST_SUITES = "arm_systemready_ir_acs"
 PV = "2.0.0"
 PV_DATE = "23.03"
 FULL_PV = "v${PV_DATE}_${PV}"
-ARM_SYSTEMREADY_IR_ACS_BRANCH ?= "main"
+ARM_SYSTEMREADY_IR_ACS_BRANCH ?= "legacy_systemready"
 IMAGE_FILENAME = "ir-acs-live-image-generic-arm64-${PV}.wic"
 SRC_URI = " \
     https://github.com/ARM-software/arm-systemready/raw/${ARM_SYSTEMREADY_IR_ACS_BRANCH}/IR/prebuilt_images/${FULL_PV}/ir-acs-live-image-generic-arm64.wic.xz;name=acs-img;downloadfilename=${IMAGE_FILENAME}.xz \
@@ -58,6 +58,6 @@ SRC_URI[acs-img.sha256sum] = "ea52f84dab44bde97de3e2d2224d883acaae35724dd8e2bdfb
 # Revision pointing to v2023.04 tag
 SRCREV_sr-ir-template = "c714db178ddf72e5ae5017f15421095297d5bf0e"
 
-S = "${WORKDIR}/sources-unpack"
+S = "${UNPACKDIR}"
 
 inherit arm-systemready-acs

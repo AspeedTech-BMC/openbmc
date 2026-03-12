@@ -62,8 +62,6 @@ HOST_ERROR_FMT = "../${OCC_DISABLE_TMPL}:${HOST_ERROR_TGTFMT}.wants/${OCC_DISABL
 
 SYSTEMD_LINK:${PN} += "${@compose_list(d, 'HOST_ERROR_FMT', 'HOST_ERROR_TARGETS', 'OBMC_HOST_INSTANCES')}"
 
-S = "${WORKDIR}/git"
-
 # Remove packages not required for native build
 DEPENDS:remove:class-native = " \
         phosphor-logging \

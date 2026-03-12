@@ -32,7 +32,6 @@ RDEPENDS:${PN}-flash = " \
         phosphor-software-manager \
         "
 
-
 SUMMARY:${PN}-system = "Wistron System"
 RDEPENDS:${PN}-system = " \
         entity-manager \

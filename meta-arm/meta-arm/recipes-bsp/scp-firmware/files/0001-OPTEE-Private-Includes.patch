@@ -8,7 +8,7 @@ in every build, which can result in compile failures as /core/include/ doesn't e
 
 For some reason this behaviour isn't deterministic, a ticket has been filed with upstream.
 
-Upstream-Status: Pending
+Upstream-Status: Submitted [https://gitlab.arm.com/firmware/SCP-firmware/-/merge_requests/1198]
 Signed-off-by: Ross Burton <ross.burton@arm.com>
 ---
  product/optee/common/module/console/CMakeLists.txt | 2 +-

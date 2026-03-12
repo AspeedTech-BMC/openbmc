@@ -3,4 +3,4 @@ inherit skeleton-rev
 HOMEPAGE = "http://github.com/openbmc/skeleton"
 
 SRC_URI += "${SKELETON_URI}"
-S = "${WORKDIR}/git/${SKELETON_DIR}"
+S = "${UNPACKDIR}/${PN}-1.0+git/${SKELETON_DIR}"

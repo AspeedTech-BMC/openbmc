@@ -17,6 +17,7 @@ SRC_URI:append:corstone1000  = " \
     file://0013-Revert-Load-and-store-UEFI-variable-index-in-chunks.patch \
     file://0014-Revert-Make-constraints-of-NV-UEFI-variables-persist.patch \
     file://0015-se-proxy-protobuf-change.patch \
+    file://0021-Align-PSA-Crypto-structs-with-TF-Mv2.1.1.patch \
     "
 # The patches above introduce errors with GCC 14.1, silence them for now
 CFLAGS:append:corstone1000 = " -Wno-int-conversion -Wno-implicit-function-declaration"

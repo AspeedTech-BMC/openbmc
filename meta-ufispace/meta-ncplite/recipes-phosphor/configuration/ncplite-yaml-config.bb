@@ -12,8 +12,7 @@ SRC_URI = " \
     file://ncplite-ipmi-inventory-sensors.yaml \
     "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}/sources"
 
 do_install() {
     install -m 0644 -D ncplite-ipmi-fru.yaml \

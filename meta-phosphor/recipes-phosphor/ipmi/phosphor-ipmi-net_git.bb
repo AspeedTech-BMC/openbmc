@@ -23,7 +23,6 @@ PR = "r1"
 
 SRC_URI = "git://github.com/openbmc/phosphor-net-ipmid;branch=master;protocol=https"
 
-S = "${WORKDIR}/git"
 # install parameterized service and socket files
 SYSTEMD_SERVICE:${PN} = " \
         ${PN}@${RMCPP_IFACE}.service \

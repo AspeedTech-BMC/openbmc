@@ -8,7 +8,7 @@ DEPENDS += "autoconf-archive-native \
             systemd \
             libgpiod \
            "
-SRCREV = "d972ab558efb5d23790c4638a3012de6c06a7fad"
+SRCREV = "1aeced9155d34fc51c5082b6cbb4a53509a0e076"
 PACKAGECONFIG ??= "udev ssh"
 PACKAGECONFIG[udev] = "-Dudev=enabled,-Dudev=disabled,udev"
 PACKAGECONFIG[concurrent-servers] = "-Dconcurrent-servers=true,-Dconcurrent-servers=false,"
@@ -21,7 +21,6 @@ SRC_URI = "git://github.com/openbmc/obmc-console;branch=master;protocol=https"
 SRC_URI += "file://${BPN}.conf"
 SRC_URI += "file://dropbear.env"
 
-S = "${WORKDIR}/git"
 UNPACKDIR = "${WORKDIR}/sources-unpack"
 SYSTEMD_SERVICE:${PN} += " obmc-console@.service"
 

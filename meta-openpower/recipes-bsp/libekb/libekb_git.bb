@@ -5,11 +5,11 @@ DESCRIPTION = "Provides infrastructure to run hardware procedures"
 PR = "r1"
 PV = "1.0+git${SRCPV}"
 LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
-
-S = "${WORKDIR}/git"
+LIC_FILES_CHKSUM = "file://${UNPACKDIR}/${PN}-1.0+git/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
 
 require recipes-bsp/ekb/ekb.inc
+
+S = "${UNPACKDIR}/${PN}-1.0+git"
 
 inherit autotools
 inherit python3native
@@ -21,7 +21,7 @@ SRCREV_libekb = "bc2b16f059bbc78de71c7c3b82197d65a2f532fb"
 SRCREV_ekb = "${EKB_REV}"
 
 SRC_URI = "git://git@github.com/open-power/libekb_p10;branch=main;name=libekb;protocol=https \
-           ${EKB_URI};name=ekb;destsuffix=git/ekb \
+           ${EKB_URI};name=ekb;destsuffix=${BPN}-1.0+git/ekb \
            "
 
 DEPENDS = "pdbg libxml-simple-perl-native"

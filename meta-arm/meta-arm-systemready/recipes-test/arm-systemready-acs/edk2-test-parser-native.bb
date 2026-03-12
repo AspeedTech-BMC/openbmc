@@ -11,7 +11,6 @@ RDEPENDS:${PN} = "python3-packaging-native python3-pyyaml-native \
                   python3-jsonschema-native"
 
 PV = "v2023.04"
-S = "${WORKDIR}/git"
 SRC_URI = "git://git.gitlab.arm.com/systemready/edk2-test-parser.git;protocol=https;nobranch=1"
 
 # The SRCREV is at the v2023.04 tag

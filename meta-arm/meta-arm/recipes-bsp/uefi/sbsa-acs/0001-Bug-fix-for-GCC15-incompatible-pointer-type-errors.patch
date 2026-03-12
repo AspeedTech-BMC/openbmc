@@ -1,0 +1,31 @@
+From eaec352436ee0830f2c34088931f707c0ae73d2a Mon Sep 17 00:00:00 2001
+From: Jon Mason <jon.mason@arm.com>
+Date: Sun, 8 Jun 2025 10:33:27 -0400
+Subject: [PATCH] Bug fix for GCC15 incompatible pointer type errors
+
+GCC15 is identifying isr in RegisterInterruptSource as having an
+incompatible pointer type due to the function definition not matching
+the declared one in in edk2 firmware
+EmbeddedPkg/Include/Protocol/HardwareInterrupt.h
+
+Change the local one to match this one and everyone is happy.
+
+Signed-off-by: Jon Mason <jon.mason@arm.com>
+Upstream-Status: Pending [https://github.com/ARM-software/bsa-acs/issues/504]
+---
+ pal/uefi_acpi/common/src/pal_gic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pal/uefi_acpi/common/src/pal_gic.c b/pal/uefi_acpi/common/src/pal_gic.c
+index 755d2bce62ee..e52899eb613e 100644
+--- a/pal/uefi_acpi/common/src/pal_gic.c
++++ b/pal/uefi_acpi/common/src/pal_gic.c
+@@ -198,7 +198,7 @@ pal_gic_create_info_table(GIC_INFO_TABLE *GicTable)
+   @return Status of the operation
+ **/
+ UINT32
+-pal_gic_install_isr(UINT32 int_id,  VOID (*isr)())
++pal_gic_install_isr(UINT32 int_id,  VOID (*isr)(long long unsigned int,  EFI_SYSTEM_CONTEXT))
+ {
+ 
+   EFI_STATUS  Status;

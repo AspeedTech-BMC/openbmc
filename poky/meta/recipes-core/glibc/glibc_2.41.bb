@@ -17,7 +17,7 @@ Allows for ASLR bypass so can bypass some hardening, not an exploit in itself, m
 easier access for another. 'ASLR bypass itself is not a vulnerability.'"
 
 CVE_STATUS_GROUPS += "CVE_STATUS_STABLE_BACKPORTS"
-CVE_STATUS_STABLE_BACKPORTS = ""
+CVE_STATUS_STABLE_BACKPORTS = "CVE-2025-4802 CVE-2025-5702 CVE-2025-5745"
 CVE_STATUS_STABLE_BACKPORTS[status] = "cpe-stable-backport: fix available in used git hash"
 
 DEPENDS += "gperf-native bison-native"
@@ -56,7 +56,6 @@ SRC_URI =  "${GLIBC_GIT_URI};branch=${SRCBRANCH};name=glibc \
            file://0001-stdlib-Add-single-threaded-fast-path-to-rand.patch \
            file://0001-Propagate-ffile-prefix-map-from-CFLAGS-to-ASFLAGS.patch \
 "
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build-${TARGET_SYS}"
 
 PACKAGES_DYNAMIC = ""
@@ -112,7 +111,7 @@ do_configure () {
 }
 
 LDFLAGS += "-fuse-ld=bfd"
-CC += "-fuse-ld=bfd"
+CFLAGS += "-fuse-ld=bfd"
 
 do_compile () {
 	base_do_compile

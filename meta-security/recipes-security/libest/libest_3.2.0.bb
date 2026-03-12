@@ -20,8 +20,6 @@ EXTRA_OECONF = "--disable-pthreads --with-ssl-dir=${STAGING_LIBDIR}"
 CFLAGS += "-fcommon"
 LDFLAGS:append:libc-musl = " -lexecinfo"
 
-S = "${UNPACKDIR}/git"
-
 PACKAGES = "${PN} ${PN}-dbg ${PN}-dev"
 
 FILES:${PN} = "${bindir}/* ${libdir}/libest-3.2.0p.so"

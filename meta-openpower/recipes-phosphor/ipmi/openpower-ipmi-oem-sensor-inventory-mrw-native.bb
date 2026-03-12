@@ -8,8 +8,7 @@ inherit native
 
 SRC_URI += "file://openpower-config.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_install() {
         DEST=${D}${sensor_yamldir}

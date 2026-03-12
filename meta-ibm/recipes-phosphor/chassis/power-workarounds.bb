@@ -8,8 +8,7 @@ inherit obmc-phosphor-systemd
 
 RDEPENDS:${PN} += "i2c-tools"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}/${MACHINE}:"
 SRC_URI:append:witherspoon = " file://power-workarounds.sh"
