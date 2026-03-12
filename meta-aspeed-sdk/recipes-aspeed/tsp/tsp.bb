@@ -8,9 +8,6 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 PROVIDES += "virtual/tsp"
 PR = "r0"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 TSP_FIRMWARE ?= "ast2700-tsp.bin"
 TSP_FIRMWARE_ELF ?= "ast2700-tsp.elf"
 

@@ -22,8 +22,6 @@ SRC_URI = " \
 PV = "2.2.0+git"
 SRCREV = "aef708d2016a17722ff9eddb7f312fb5ac8e4f7e"
 
-S = "${WORKDIR}/git"
-
 EXTRA_OECMAKE = "-DARCH=arm -DTOOLCHAIN=YOCTO -DTARGET=Debug -DCRYPTO=mbedtls"
 
 DEPENDS += " \

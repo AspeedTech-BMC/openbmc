@@ -13,7 +13,7 @@ ASPEED_ZEPHYR_PROJECT_BRANCH = "mcu-runtime"
 SRCREV_bootmcu = "${AUTOREV}"
 
 SRC_URI += "\
-    ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
+    ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=${S}/aspeed-zephyr-project \
 "
 
 ZEPHYR_MODULES:append = "\

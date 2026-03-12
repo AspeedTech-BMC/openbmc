@@ -10,4 +10,3 @@ SRC_URI = "git://gerrit.aspeed.com:29418/bmc-pb.git;protocol=ssh;branch=${BRANCH
 SRCREV = "${AUTOREV}"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"

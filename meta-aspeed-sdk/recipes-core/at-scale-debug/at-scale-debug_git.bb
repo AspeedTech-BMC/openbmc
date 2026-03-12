@@ -16,7 +16,6 @@ USERADD_PACKAGES = "${PN}"
 # add a special user asdbg
 USERADD_PARAM:${PN} = "-u 9999 asdbg"
 
-S = "${WORKDIR}/git"
 
 SYSTEMD_SERVICE:${PN} += "com.intel.AtScaleDebug.service"
 SYSTEMD_AUTO_ENABLE:${PN} = "disable"

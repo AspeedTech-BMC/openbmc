@@ -1,9 +1,6 @@
 # AST2700 mcu-runtime bundle build.
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 A2_ZEPHYR_IMAGE = "${BOOTMCU_FW_BINARY}"
 A1_ZEPHYR_IMAGE = "zephyr-aspeed-bootmcu-a1.bin"
 OUT_A1_ZEPHYR_IMAGE = "ast-zephyr-mcu-runtime-a1.bin"

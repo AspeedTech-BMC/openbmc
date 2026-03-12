@@ -6,7 +6,5 @@ PV = "1.0+git"
 SRCREV = "72bd5a915ff046a59ce4303c8de672e77622a86c"
 SRC_URI = "git://github.com/PieVo/mdio-tool;protocol=https;branch=master"
 
-S = "${WORKDIR}/git"
-
 inherit cmake
 

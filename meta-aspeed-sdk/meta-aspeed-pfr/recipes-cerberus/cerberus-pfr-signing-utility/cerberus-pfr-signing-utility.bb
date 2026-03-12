@@ -14,7 +14,6 @@ PV = "1.0+git"
 SRCREV = "${AUTOREV}"
 BRANCH = "aspeed-dev"
 
-S = "${WORKDIR}/git"
 
 inherit python3native setuptools3
 

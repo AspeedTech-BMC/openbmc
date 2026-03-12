@@ -11,7 +11,6 @@ DEPENDS = "libnl"
 RDEPENDS:${PN} = "libnl libnl-genl"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"
 
 TARGET_CC_ARCH += "${LDFLAGS}"
 
