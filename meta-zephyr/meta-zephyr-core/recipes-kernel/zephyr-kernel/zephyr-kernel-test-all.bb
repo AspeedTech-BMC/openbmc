@@ -1,7 +1,7 @@
 LICENSE = "Apache-2.0"
 INHIBIT_DEFAULT_DEPS = "1"
 
-require zephyr-kernel-test.inc
+require recipes-kernel/zephyr-kernel/zephyr-kernel-test.inc
 
 addtask testimage
 deltask compile

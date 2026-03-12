@@ -2,11 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-ZEPHYR_INHERIT_CLASSES += "zephyr cmake"
+ZEPHYR_INHERIT_CLASSES += "zephyr cmake zephyr-sample"
 
 inherit ${ZEPHYR_INHERIT_CLASSES}
-
-require recipes-kernel/zephyr-kernel/zephyr-sample.inc
 
 SRC_URI:append = " file://0001-zephyr-Export-an-OpenEmbedded-machine-config.patch"
 
