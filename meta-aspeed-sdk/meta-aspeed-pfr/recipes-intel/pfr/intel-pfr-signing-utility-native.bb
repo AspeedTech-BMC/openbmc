@@ -25,3 +25,5 @@ do_install:append() {
 }
 
 EXTRA_OECMAKE:append = ' -DYOCTO_STAGING_INCDIR_NATIVE="${STAGING_INCDIR_NATIVE}" '
+# Fix CMake Error: Compatibility with CMake < 3.5 has been removed from CMake
+EXTRA_OECMAKE:append = " -DCMAKE_POLICY_VERSION_MINIMUM=3.5"

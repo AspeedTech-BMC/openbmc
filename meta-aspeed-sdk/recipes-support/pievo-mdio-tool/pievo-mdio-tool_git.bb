@@ -8,3 +8,5 @@ SRC_URI = "git://github.com/PieVo/mdio-tool;protocol=https;branch=master"
 
 inherit cmake
 
+# Fix CMake Error: Compatibility with CMake < 3.5 has been removed from CMake
+EXTRA_OECMAKE += " -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
