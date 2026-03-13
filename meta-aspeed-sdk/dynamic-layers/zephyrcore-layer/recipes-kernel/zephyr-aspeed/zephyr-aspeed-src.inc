@@ -21,6 +21,9 @@ ${S}/modules/crypto/mbedtls\;\
 ${S}/modules/hal/cmsis\;\
 "
 
+# Override meta-zephyr default image naming
+ZEPHYR_IMAGE_LINK_NAME = "${PN}"
+
 INSANE_SKIP:${PN} += "arch"
 
 INHIBIT_SYSROOT_STRIP = "1"
