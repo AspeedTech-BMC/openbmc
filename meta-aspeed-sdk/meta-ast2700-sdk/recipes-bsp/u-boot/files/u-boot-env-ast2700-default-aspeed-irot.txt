@@ -1,0 +1,7 @@
+baudrate=115200
+bootargs=console=ttyS12,115200n8 root=/dev/ram rw earlycon
+bootcmd=run bootram
+bootdelay=2
+bootram=bootm ${loadaddr}
+loadaddr=0x403000000
+verify=yes
