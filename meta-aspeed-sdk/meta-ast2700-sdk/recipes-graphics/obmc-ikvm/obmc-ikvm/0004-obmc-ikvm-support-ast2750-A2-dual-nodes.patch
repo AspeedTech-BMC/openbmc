@@ -1,7 +1,7 @@
-From ae6a73691970a7ede8ca6f6d57cefe785c8fa724 Mon Sep 17 00:00:00 2001
-From: VinceChang6637 <vince_chang@aspeedtech.com>
+From 53e9470ae03416bd212cc15fa89c2f229f486f44 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
 Date: Wed, 31 Dec 2025 11:17:22 -0600
-Subject: [PATCH 4/5] obmc-ikvm: support ast2750 A2 dual nodes.
+Subject: [PATCH 5/6] obmc-ikvm: support ast2750 A2 dual nodes.
 
 Expect result:
 /usr/bin/obmc-ikvm -v /dev/video0 -k /dev/hidg0 -p /dev/hidg1
@@ -15,7 +15,7 @@ For AST2700 A2:
 /dev/hidg2 use "12062000.usb-vhub" UDC
 
 Upstream-Status: Pending
-Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  ikvm_input.cpp  | 12 ++++++++++++
  ikvm_input.hpp  | 14 +++++++++++---
@@ -23,7 +23,7 @@ Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
  3 files changed, 29 insertions(+), 3 deletions(-)
 
 diff --git a/ikvm_input.cpp b/ikvm_input.cpp
-index 8cdefe4..09a19c8 100644
+index 1b58c22..c531e26 100644
 --- a/ikvm_input.cpp
 +++ b/ikvm_input.cpp
 @@ -27,6 +27,18 @@ Input::Input(const std::string& kbdPath, const std::string& ptrPath,
@@ -46,7 +46,7 @@ index 8cdefe4..09a19c8 100644
      hidUdcStream.open(hidUdcPath, std::ios::out | std::ios::app);
  }
 diff --git a/ikvm_input.hpp b/ikvm_input.hpp
-index 00d8e7f..8bbe462 100644
+index afd2561..d34bd9a 100644
 --- a/ikvm_input.hpp
 +++ b/ikvm_input.hpp
 @@ -79,11 +79,15 @@ class Input

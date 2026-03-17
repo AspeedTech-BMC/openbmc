@@ -1,0 +1,40 @@
+From 2e2218a83d375b92b5f3224ae05be4353c234c20 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Tue, 17 Mar 2026 11:12:06 -0600
+Subject: [PATCH] fix webpack runtimeId error
+
+After limit to one chunk commit.
+https://github.com/openbmc/webui-vue/commit/740cbd525fa619e6a4190ec08c80f45ae72435eb
+
+Using "LimitChunkCountPlugin " causes the following build error:
+```
+|  error  in webpack/runtime/runtimeId
+|
+| RuntimeIdRuntimeModule must be in a single runtime
+```
+
+Set optimization.runtimeChunk to 'single' to ensure all runtime modules
+are emitted into a single runtime.
+
+Upstream-Status: Inappropriate [ASPEED specific]
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ vue.config.js | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/vue.config.js b/vue.config.js
+index 1dfcc49..1598bdd 100644
+--- a/vue.config.js
++++ b/vue.config.js
+@@ -154,7 +154,7 @@ module.exports = {
+       maxAssetSize: 512000,
+     };
+ 
+-    config.optimization.runtimeChunk = false;
++    config.optimization.runtimeChunk = 'single';
+ 
+     // Define Vue 3 compile-time feature flags
+     // These flags must be explicitly defined to avoid Vue warnings and optimize bundle size
+-- 
+2.43.0
+
