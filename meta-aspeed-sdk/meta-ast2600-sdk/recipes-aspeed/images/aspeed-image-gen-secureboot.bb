@@ -80,8 +80,7 @@ install_unsigned_image() {
 
     # kernel unsigned image, dtb and its
     install -m 0644 ${DEPLOY_DIR_IMAGE}/${KERNEL_FITIMAGE_ITS_NAME} ${S}/${GEN_IMAGE_MODE}
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/fitImage-linux.bin-${MACHINE} ${S}/${GEN_IMAGE_MODE}
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/fitImage-linux.bin-${MACHINE} ${S}/${GEN_IMAGE_MODE}/linux.bin
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/linux.bin ${S}/${GEN_IMAGE_MODE}/linux.bin
     for kernel_dtb in ${KERNEL_DEVICETREE}; do
         kernel_dtb_basename=$(basename ${kernel_dtb})
         install -m 0644 ${DEPLOY_DIR_IMAGE}/${kernel_dtb_basename} ${S}/${GEN_IMAGE_MODE}
@@ -751,8 +750,8 @@ def verify_uboot_kernel_image_status(d):
     if not spl_binary:
         bb.fatal("Only support SPL")
 
-    kernel_imagetype = d.getVar('KERNEL_IMAGETYPE', True)
-    if "fitImage" not in kernel_imagetype:
+    kernel_imagetype = d.getVar('KERNEL_CLASSES', True)
+    if "kernel-fit-extra-artifacts" not in kernel_imagetype:
         bb.fatal("Only support Kernel FIT image")
 
     uboot_fitimage_enable = d.getVar('UBOOT_FITIMAGE_ENABLE', True)
