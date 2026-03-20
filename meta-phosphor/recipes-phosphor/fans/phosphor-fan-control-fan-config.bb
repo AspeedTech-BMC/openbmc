@@ -6,14 +6,13 @@ PR = "r1"
 
 SRC_URI = "file://fans.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 inherit phosphor-fan
 
 do_install() {
-    install -D fans.yaml ${D}${control_datadir}/fans.yaml
+    install -D ${S}/fans.yaml ${D}${control_datadir}/fans.yaml
 }
 
 FILES:${PN} += "${control_datadir}/fans.yaml"

@@ -9,8 +9,7 @@ inherit obmc-phosphor-systemd
 
 RDEPENDS:${PN} += "i2c-tools bash"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 SRC_URI:append:ibm-ac-server = " file://ir35221-unbind-bind.sh"
 SRC_URI:append:ibm-ac-server = " file://vrm-control.sh"
 

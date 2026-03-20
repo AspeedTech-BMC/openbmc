@@ -8,8 +8,7 @@ inherit systemd
 DEPENDS = "systemd"
 RDEPENDS:${PN} = "bash"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}/sources"
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += " \
     file://pwm_init.service \

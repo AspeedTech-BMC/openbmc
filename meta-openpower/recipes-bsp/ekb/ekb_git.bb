@@ -12,8 +12,6 @@ require ekb.inc
 SRC_URI = "${EKB_URI}"
 SRCREV = "${EKB_REV}"
 
-S = "${WORKDIR}/git"
-
 BBCLASSEXTEND = "native"
 
 do_install() {

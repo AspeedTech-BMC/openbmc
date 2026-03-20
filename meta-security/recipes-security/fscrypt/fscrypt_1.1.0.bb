@@ -20,8 +20,6 @@ inherit go goarch features_check
 
 REQUIRED_DISTRO_FEATURES = "pam"
 
-S = "${UNPACKDIR}/git"
-
 do_compile() {
 	export GOARCH=${TARGET_GOARCH}
 	export GOROOT="${STAGING_LIBDIR_NATIVE}/${TARGET_SYS}/go"

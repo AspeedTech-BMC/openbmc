@@ -1,6 +1,5 @@
 EXTRA_OEMESON:append = " \
     -Dibm-management-console=enabled \
-    -Dredfish-oem-manager-fan-data=disabled \
     -Dinsecure-enable-redfish-query=enabled \
     -Dhttp-body-limit=400 \
     -Dredfish-use-hardcoded-system-location-indicator=disabled \
@@ -12,10 +11,10 @@ PACKAGECONFIG:append = " \
 
 PACKAGECONFIG:remove = " \
     redfish-bmc-journal \
+    redfish-oem-manager-fan-data \
 "
 
-EXTRA_OEMESON:append:p10bmc = " \
-    -Dvm-websocket=disabled \
+EXTRA_OEMESON:append:ibm-enterprise = " \
     -Dhypervisor-computer-system=enabled \
 "
 
@@ -23,9 +22,10 @@ EXTRA_OEMESON:append:sbp1 = " \
     -Dredfish-updateservice-use-dbus=disabled \
 "
 
-PACKAGECONFIG:remove:p10bmc = " \
+PACKAGECONFIG:remove:ibm-enterprise = " \
     kvm \
     mutual-tls-auth \
+    vm-websocket \
 "
 
 # Witherspoon doesn't have the space for the both zstd and xz compression

@@ -76,7 +76,9 @@ $ git config format.subjectPrefix meta-hardening][PATCH
 
 Now you can just do 'git send-email origin/master' to send all local patches.
 
-Maintainers:  Armin Kuster <akuster808@gmail.com>
+Maintainers:
+Scott Murray <scott.murray@konsulko.com>
+Marta Rybczynska <rybczynska@gmail.com>
 
 License
 =======

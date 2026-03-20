@@ -10,7 +10,6 @@ SRC_URI = "gitsm://gerrit.aspeed.com:29418/caliptra-sw;protocol=ssh;branch=${BRA
 SRCREV = "${AUTOREV}"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"
 
 CARGO_SRC_DIR = "auth-manifest/app/"
 

@@ -16,7 +16,6 @@ SRC_URI = "git://github.com/cisco/hash-sigs.git;protocol=https;branch=master \
 PV = "1.0+git"
 SRCREV = "b0631b8891295bf2929e68761205337b7c031726"
 
-S = "${WORKDIR}/git"
 
 EXPORT_HEADER = "hss.h \
                  common_defs.h \

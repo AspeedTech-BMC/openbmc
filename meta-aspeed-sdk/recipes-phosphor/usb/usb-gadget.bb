@@ -3,8 +3,8 @@ DESCRIPTION = "Script to turn on usb gadget after BMC is ready"
 
 RDEPENDS:${PN} = "aspeed-app"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
+
 SRC_URI = "file://usb-net.sh \
            file://usb-rndis.sh \
            file://usb-ms.sh \

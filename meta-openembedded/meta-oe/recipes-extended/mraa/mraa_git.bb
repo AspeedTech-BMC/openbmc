@@ -12,9 +12,9 @@ SRC_URI = "git://github.com/eclipse/${BPN}.git;protocol=https;branch=master \
            file://0001-cmake-Use-a-regular-expression-to-match-x86-architec.patch \
            file://0001-mraa-Use-posix-basename.patch \
            file://0002-gpio-Include-limits.h-for-PATH_MAX.patch \
+           file://0003-allow-build-with-cmake-4.patch \
            "
 
-S = "${WORKDIR}/git"
 
 # CMakeLists.txt checks the architecture, only x86 and ARM supported for now
 COMPATIBLE_HOST = "(x86_64.*|i.86.*|aarch64.*|arm.*)-linux"

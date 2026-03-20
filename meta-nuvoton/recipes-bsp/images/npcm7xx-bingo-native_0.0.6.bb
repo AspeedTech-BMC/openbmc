@@ -9,8 +9,6 @@ SRC_URI = "git://github.com/Nuvoton-Israel/bingo;branch=master;protocol=https"
 # tag Bingo_0.0.6
 SRCREV = "1692a12d38f1c62ef7d870a8d2687e70888e1779"
 
-S = "${WORKDIR}/git"
-
 do_install () {
 
 	install -d "${D}${bindir}"

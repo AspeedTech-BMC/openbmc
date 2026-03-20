@@ -41,6 +41,7 @@ SRC_URI:append:corstone1000 = " \
     file://0020-Platform-CS1000-Validate-both-metadata-replicas.patch \
     file://0021-platform-corstone1000-add-unique-guid-for-mps3.patch \
     file://0022-CC312-alignment-of-cc312-differences.patch \
+    file://0023-Platform-CS1000-Remove-duplicate-configuration-parameters.patch \
     "
 
 FILESEXTRAPATHS:prepend:corstone1000-mps3 := "${THISDIR}/files/corstone1000/psa-adac:"

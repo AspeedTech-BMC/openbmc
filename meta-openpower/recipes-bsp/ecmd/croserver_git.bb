@@ -9,8 +9,6 @@ DEPENDS += "zlib"
 
 SRC_URI += "file://croserver.service"
 
-S = "${WORKDIR}/git"
-
 inherit python3native
 DEPENDS += "${PYTHON_PN}-distro-native"
 

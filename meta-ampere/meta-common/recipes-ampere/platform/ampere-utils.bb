@@ -7,16 +7,18 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7ca
 inherit systemd
 inherit obmc-phosphor-systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}/sources"
 
 SRC_URI = " \
            file://ampere_add_redfishevent.sh \
+           file://ampere_redfish_utils.sh \
           "
 
 RDEPENDS:${PN} = "bash"
+SYSTEMD_SERVICE:${PN} = ""
 
 do_install() {
     install -d ${D}/usr/sbin
     install -m 0755 ${UNPACKDIR}/ampere_add_redfishevent.sh ${D}/${sbindir}/
+    install -m 0755 ${UNPACKDIR}/ampere_redfish_utils.sh ${D}/${sbindir}/
 }

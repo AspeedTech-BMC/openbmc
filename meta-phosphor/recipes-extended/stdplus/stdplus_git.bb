@@ -14,8 +14,6 @@ PR = "r1"
 
 SRC_URI = "git://github.com/openbmc/stdplus;branch=master;protocol=https"
 
-S = "${WORKDIR}/git"
-
 inherit meson pkgconfig
 
 EXTRA_OEMESON = " \

@@ -13,13 +13,13 @@ SRC_URI_ZEPHYR_{{ project.name | bitbake_var }} ?= "{{ project.url | git_url_to_
 {%- endfor %}
 
 SRC_URI_PATCHES ?= "\
-    file://0001-{{ short_version }}-x86-fix-efi-binary-generation-issue-in-cross-compila.patch;patchdir=zephyr \
+    file://0001-v{{ version }}-x86-fix-efi-binary-generation-issue-in-cross-compila.patch;patchdir=zephyr \
 "
 
 SRC_URI = "\
-    ${SRC_URI_ZEPHYR};branch=${ZEPHYR_BRANCH};name=default;destsuffix=git/zephyr \
+    ${SRC_URI_ZEPHYR};branch=${ZEPHYR_BRANCH};name=default;destsuffix=${P}/zephyr \
 {%- for project in projects %}
-    ${SRC_URI_ZEPHYR_{{ project.name | bitbake_var }}};name={{ project.name }};nobranch=1;destsuffix=git/{{ project.path }} \
+    ${SRC_URI_ZEPHYR_{{ project.name | bitbake_var }}};name={{ project.name }};nobranch=1;destsuffix=${P}/{{ project.path }} \
 {%- endfor %}
     ${SRC_URI_PATCHES} \
 "

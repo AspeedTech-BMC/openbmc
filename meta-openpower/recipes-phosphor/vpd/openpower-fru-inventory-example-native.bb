@@ -10,8 +10,7 @@ SRC_URI += "file://inventory"
 
 PROVIDES += "virtual/openpower-fru-inventory"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_install() {
         # This recipe is supposed to create a systemd environment file

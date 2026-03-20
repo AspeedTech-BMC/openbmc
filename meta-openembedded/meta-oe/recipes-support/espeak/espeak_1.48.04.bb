@@ -10,10 +10,10 @@ SRC_URI = "http://downloads.sourceforge.net/espeak/espeak-1.48.04-source.zip \
 "
 SRC_URI[sha256sum] = "bf9a17673adffcc28ff7ea18764f06136547e97bbd9edf2ec612f09b207f0659"
 
-S = "${WORKDIR}/espeak-${PV}-source"
+S = "${UNPACKDIR}/espeak-${PV}-source"
 
 DEPENDS = "portaudio-v19 qemu-helper-native"
-inherit siteinfo
+inherit siteinfo qemu
 
 
 CXXFLAGS += "-DUSE_PORTAUDIO"
@@ -31,7 +31,7 @@ do_compile() {
     oe_runmake
 
     cd "${S}/platforms/big_endian"
-    qemu_binary="${@oe.qemu.qemu_wrapper_cmdline(d, '${STAGING_DIR_TARGET}', ['${S}/platforms/big_endian', '${STAGING_DIR_TARGET}${base_libdir}'])}"
+    qemu_binary="${@qemu_wrapper_cmdline(d, '${STAGING_DIR_TARGET}', ['${S}/platforms/big_endian', '${STAGING_DIR_TARGET}${base_libdir}'])}"
     cat >qemuwrapper <<EOF
 #!/bin/sh
 $qemu_binary "\$@"

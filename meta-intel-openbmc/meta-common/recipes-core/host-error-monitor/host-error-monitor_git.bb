@@ -16,6 +16,4 @@ DEPENDS = "boost sdbusplus libgpiod libpeci phosphor-dbus-interfaces"
 PV = "0.1+git${SRCPV}"
 SRCREV = "34aa3d08e94a999f4314bc57ba2c32e9d482e5e7"
 
-S = "${WORKDIR}/git"
-
 SYSTEMD_SERVICE:${PN} += "xyz.openbmc_project.HostErrorMonitor.service"

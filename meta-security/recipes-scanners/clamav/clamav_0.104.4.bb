@@ -21,7 +21,6 @@ SRC_URI = "git://github.com/Cisco-Talos/clamav;branch=rel/0.104;protocol=https \
     file://headers_fixup.patch \
     file://oe_cmake_fixup.patch \
 "
-S = "${UNPACKDIR}/git"
 
 LEAD_SONAME = "libclamav.so"
 SO_VER = "9.6.0"

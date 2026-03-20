@@ -17,6 +17,5 @@ DEPENDS += " \
            "
 
 # Source code repository
-S = "${WORKDIR}/git"
 SRC_URI = "git://github.com/YADRO-KNS/obmc-yadro-lsinventory.git;branch=master;protocol=https"
 SRCREV  = "d8e25f82ff29c7b2c6d1888e9fe28307f173b078"

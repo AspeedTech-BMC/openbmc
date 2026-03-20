@@ -8,8 +8,7 @@ DEPENDS += " \
 PROVIDES += "virtual/phosphor-logging-callouts"
 PR = "r1"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit phosphor-logging
 inherit mrw-xml

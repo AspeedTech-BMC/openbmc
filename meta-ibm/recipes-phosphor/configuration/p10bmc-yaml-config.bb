@@ -11,8 +11,7 @@ SRC_URI = " \
     file://p10bmc-ipmi-inventory-sensors.yaml \
     "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_install() {
     install -m 0644 -D p10bmc-ipmi-fru.yaml \

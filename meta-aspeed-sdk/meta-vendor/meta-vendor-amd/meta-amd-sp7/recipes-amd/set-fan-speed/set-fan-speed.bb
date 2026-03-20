@@ -9,8 +9,7 @@ inherit obmc-phosphor-systemd
 DEPENDS = "systemd"
 RDEPENDS:${PN} = "bash"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 SRC_URI = " file://set-fan-speed.sh \
             file://set-fan-speed.service \

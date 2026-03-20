@@ -18,7 +18,6 @@ DEPENDS += " \
         cli11 \
         ipl \
         "
-S = "${WORKDIR}/git"
 
 # This provides below applications that are called into in case
 # of host checkstop, host watchdog and host watchdog-timeout respectively.

@@ -16,10 +16,7 @@ SRC_URI = "git://github.com/rpm-software-management/rpm-sequoia.git;protocol=htt
 	file://0001-Use-optional-env-vars-to-force-runtime-paths-in-test.patch \
 "
 
-
 SRCREV = "0667e04ae7fb8cf0490919978d69883d16400e41"
-
-S = "${UNPACKDIR}/git"
 
 require ${BPN}-crates.inc
 
@@ -29,7 +26,7 @@ CARGO_INSTALL_LIBRARIES = "1"
 do_compile:prepend () {
 	# rpm-sequoia.pc is generated in the source directory
 	# but the target directory does not exist there.
-	mkdir -p ${S}/target/release
+	mkdir -p ${S}/target/${BUILD_DIR}
 
 	# From rpm-sequoia's README.md:
 	#
@@ -61,7 +58,7 @@ do_install:append () {
 
 	# rpm-sequoia does not install its pkgconfig file. Do it manually.
 	mkdir -p ${D}${libdir}/pkgconfig
-	install -m644 ${S}/target/release/rpm-sequoia.pc ${D}${libdir}/pkgconfig
+	install -m644 ${S}/target/${BUILD_DIR}/rpm-sequoia.pc ${D}${libdir}/pkgconfig
 }
 
 do_install_ptest:append () {

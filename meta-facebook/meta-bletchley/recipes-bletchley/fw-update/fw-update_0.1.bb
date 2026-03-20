@@ -8,8 +8,7 @@ inherit obmc-phosphor-systemd
 RDEPENDS:${PN} += "bash"
 RDEPENDS:${PN} += "libgpiod-tools"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 SRC_URI += " \
     file://usb-controller-update \
 "

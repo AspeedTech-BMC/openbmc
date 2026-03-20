@@ -18,7 +18,6 @@ DEPENDS += "augeas libnl libxslt libxml2"
 
 do_configure[depends] += "${MLPREFIX}gnulib:do_populate_sysroot"
 
-S = "${WORKDIR}/git"
 
 inherit gettext autotools perlnative pkgconfig systemd
 
@@ -26,8 +25,6 @@ EXTRA_OECONF:append:class-target = " --with-driver=redhat"
 
 PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}"
 PACKAGECONFIG[systemd] = "--with-sysinit=systemd,--with-sysinit=initscripts,"
-
-EXTRA_AUTORECONF += "-I ${S}/gnulib/m4"
 
 do_configure:prepend() {
     currdir=`pwd`

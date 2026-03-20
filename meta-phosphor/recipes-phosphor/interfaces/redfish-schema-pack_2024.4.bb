@@ -5,8 +5,6 @@ SRC_URI = "git://github.com/DMTF/Redfish-Publications;branch=main;protocol=https
 SRCREV = "5cc369c5c0fb39698259071b7a597f7504b24e55"
 PV = "2024.4"
 
-S = "${WORKDIR}/git"
-
 inherit allarch
 BBCLASSEXTEND = "native nativesdk"
 

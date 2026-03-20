@@ -11,7 +11,6 @@ PV = "1.0+git"
 SRCREV = "${AUTOREV}"
 BRANCH = "develop"
 
-S = "${WORKDIR}/git"
 
 inherit meson
 

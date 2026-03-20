@@ -13,8 +13,6 @@ SRC_URI = "git://github.com/lkrg-org/lkrg.git;protocol=https;branch=main"
 
 SRCREV = "5dc5cfea1f4dc8febdd5274d99e277c17df06acc"
 
-S = "${UNPACKDIR}/git"
-
 inherit module kernel-module-split
 
 MAKE_TARGETS = "modules"

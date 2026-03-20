@@ -1,2 +1,2 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI:append:qemu-x86 = " file://0001-libgloss-i386-Disable-warnings-as-errors.patch"
+CFLAGS:append:qemu-x86 = " -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=return-mismatch "
+

@@ -7,7 +7,7 @@ The psa_client_key_attributes_s struct had to be aligned with the
 psa_key_attributes_s struct in TF-M.
 
 Signed-off-by: Ali Can Ozaslan <ali.oezaslan@arm.com>
-Upstream-Status: Pending
+Upstream-Status: Backport [Included in version v1.2.0]
 ---
  components/service/crypto/include/psa/crypto_client_struct.h | 1 -
  1 file changed, 1 deletion(-)

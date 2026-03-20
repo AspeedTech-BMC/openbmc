@@ -11,8 +11,6 @@ SRC_URI = " \
 # tag IGPS_02.01.18
 SRCREV = "e0fc2ba58d561220a957bc06aefe1ac7f6e96126"
 
-S = "${WORKDIR}/git"
-
 DEST = "${D}${datadir}/${BPN}"
 
 do_install() {

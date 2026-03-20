@@ -10,8 +10,6 @@ PR = "r1"
 
 SRC_URI = "git://github.com/openbmc/btbridge;branch=master;protocol=https"
 
-S = "${WORKDIR}/git"
-
 inherit meson pkgconfig
 inherit obmc-phosphor-dbus-service
 

@@ -11,7 +11,7 @@ DEPENDS += " \
         gpioplus \
         cli11 \
         "
-SRCREV = "341e3cfa73af2dc87a1279e1189d03a61b8b8507"
+SRCREV = "5e0b842edb9768512aef246b908a535c3796d149"
 PACKAGECONFIG ??= ""
 # Meson configure option to enable/disable max31785-msl
 PACKAGECONFIG[max31785-msl] = "-Denable-max31785-msl=true, -Denable-max31785-msl=false"
@@ -24,7 +24,6 @@ SRC_URI = "git://github.com/openbmc/phosphor-hwmon;branch=master;protocol=https"
 SYSTEMD_PACKAGES = "${PN} max31785-msl"
 SYSTEMD_SERVICE:${PN} = "xyz.openbmc_project.Hwmon@.service"
 SYSTEMD_SERVICE:max31785-msl = "${@bb.utils.contains('PACKAGECONFIG', 'max31785-msl', 'phosphor-max31785-msl@.service', '', d)}"
-S = "${WORKDIR}/git"
 
 inherit pkgconfig meson
 inherit obmc-phosphor-systemd

@@ -14,7 +14,7 @@ DEPENDS = " \
     ${@bb.utils.contains('PTEST_ENABLED', '1', 'gtest', '', d)} \
     ${@bb.utils.contains('PTEST_ENABLED', '1', 'gmock', '', d)} \
 "
-SRCREV = "21cbc0003a9af5d62195eee5429684d0a992c00e"
+SRCREV = "ec2bf1600189018a57611b990aa86308e16d0a7d"
 PV = "1.0+git${SRCPV}"
 
 SRC_URI = "git://github.com/openbmc/bmcweb.git;branch=master;protocol=https"
@@ -22,7 +22,6 @@ SRC_URI += " \
     file://run-ptest \
 "
 
-S = "${WORKDIR}/git"
 SYSTEMD_SERVICE:${PN} += "bmcweb.service bmcweb.socket"
 
 inherit systemd
@@ -34,6 +33,8 @@ PACKAGECONFIG ??= " \
     kvm \
     mutual-tls-auth \
     redfish-bmc-journal \
+    redfish-oem-manager-fan-data \
+    vm-websocket \
 "
 
 PACKAGECONFIG[dbus-rest] = "-Drest=enabled,-Drest=disabled"
@@ -46,7 +47,10 @@ PACKAGECONFIG[redfish-bmc-journal] = "-Dredfish-bmc-journal=enabled,-Dredfish-bm
 PACKAGECONFIG[redfish-cpu-log] = "-Dredfish-cpu-log=enabled,-Dredfish-cpu-log=disabled"
 PACKAGECONFIG[redfish-dbus-log] = "-Dredfish-dbus-log=enabled,-Dredfish-dbus-log=disabled"
 PACKAGECONFIG[redfish-dump-log] = "-Dredfish-dump-log=enabled,-Dredfish-dump-log=disabled"
+PACKAGECONFIG[redfish-eventlog-managers] = "-Dredfish-eventlog-location=managers,-Dredfish-eventlog-location=systems"
 PACKAGECONFIG[redfish-host-logger] = "-Dredfish-host-logger=enabled,-Dredfish-host-logger=disabled"
+PACKAGECONFIG[redfish-oem-manager-fan-data] = "-Dredfish-oem-manager-fan-data=enabled,-Dredfish-oem-manager-fan-data=disabled"
+PACKAGECONFIG[vm-websocket] = "-Dvm-websocket=enabled,-Dvm-websocket=disabled,,jsnbd"
 
 MUTUAL_TLS_PARSING = "CommonName"
 
@@ -64,7 +68,6 @@ do_install_ptest() {
 }
 
 RDEPENDS:${PN} += " \
-    jsnbd \
     phosphor-objmgr \
 "
 

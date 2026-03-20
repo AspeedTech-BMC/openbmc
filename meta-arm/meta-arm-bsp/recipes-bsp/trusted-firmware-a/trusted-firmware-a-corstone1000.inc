@@ -5,11 +5,6 @@ COMPATIBLE_MACHINE = "(corstone1000)"
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/corstone1000:"
 SRC_URI:append = " \
 	file://0001-Fix-FF-A-version-in-SPMC-manifest.patch \
-	file://0002-fix-corstone1000-pass-spsr-value-explicitly.patch \
-	file://0003-fix-corstone1000-remove-unused-NS_SHARED_RAM-region.patch \
-	file://0004-fix-corstone1000-clean-the-cache-and-disable-interru.patch \
-	file://0005-feat-corstone1000-Add-multicore-support-for-FVP-plat.patch \
-	file://0006-feat-corstone1000-include-platform-header-file.patch \
        "
 
 TFA_DEBUG = "1"
@@ -56,3 +51,9 @@ EXTRA_OEMAKE:append = " \
                         FVP_USE_GIC_DRIVER=FVP_GICV2 \
                         "
 EXTRA_OEMAKE:append:corstone1000-fvp = "${@bb.utils.contains('MACHINE_FEATURES', 'corstone1000_fvp_smp', ' ENABLE_MULTICORE=1', '', d)}"
+
+# If GENERATE_COT is set, then TF-A will try to use local poetry install
+# to run the python cot-dt2c command.  Disable the local poetry and use
+# the provided cot-dt2c.
+EXTRA_OEMAKE += "POETRY=''"
+DEPENDS += "cot-dt2c-native"

@@ -22,9 +22,9 @@ SRC_URI = " \
 PV = "2.2.0+git"
 SRCREV = "aef708d2016a17722ff9eddb7f312fb5ac8e4f7e"
 
-S = "${WORKDIR}/git"
-
 EXTRA_OECMAKE = "-DARCH=arm -DTOOLCHAIN=YOCTO -DTARGET=Debug -DCRYPTO=mbedtls"
+# Fix CMake Error: Compatibility with CMake < 3.5 has been removed from CMake
+EXTRA_OECMAKE += " -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
 DEPENDS += " \
 	libmctp-intel \

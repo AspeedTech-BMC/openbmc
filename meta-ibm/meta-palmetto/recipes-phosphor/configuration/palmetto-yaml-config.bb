@@ -11,8 +11,7 @@ SRC_URI = " \
     file://palmetto-ipmi-sensors.yaml \
     "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_install() {
     install -m 0644 -D palmetto-ipmi-fru-properties.yaml \

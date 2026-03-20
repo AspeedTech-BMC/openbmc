@@ -1,0 +1,36 @@
+From ee75dcb0ea9818a10a6f7f85a3b5ee37572a3b08 Mon Sep 17 00:00:00 2001
+From: Scott Murray <scott.murray@konsulko.com>
+Date: Thu, 3 Jul 2025 17:41:50 -0400
+Subject: [PATCH 2/2] Fix building without dbus backend
+
+Move libsystemd and libcap dependencies into conditional logic for
+dbus_backend option so that building without the backend works when
+libsystemd and libcap are not available in the build environment.
+This situation occurs when building with OpenEmbedded.
+
+Upstream-Status: Pending
+Signed-off-by: Scott Murray <scott.murray@konsulko.com>
+---
+ transports/meson.build | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/transports/meson.build b/transports/meson.build
+index e9f30d4..5abd103 100644
+--- a/transports/meson.build
++++ b/transports/meson.build
+@@ -9,10 +9,10 @@ transport_srcs = [
+ 
+ incdir = include_directories('..')
+ libusb = dependency('libusb-1.0')
+-libsystemd = dependency('libsystemd')
+-libcap = dependency('libcap')
+ 
+ if get_option('dbus_backend')
++    libsystemd = dependency('libsystemd')
++    libcap = dependency('libcap')
+     libhoth_dbus = static_library(
+         'hoth_dbus',
+         'libhoth_dbus.c',
+-- 
+2.50.0
+

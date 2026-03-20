@@ -1,4 +1,4 @@
-From 9491e35f5c08d94d378ceed186fd8444316855ff Mon Sep 17 00:00:00 2001
+From c5872e59d3029949b5aa00230779cabd9e8ec99f Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 14:58:55 +0800
 Subject: [PATCH 1/4] Add control for aspeed format
@@ -23,10 +23,10 @@ Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
  6 files changed, 85 insertions(+), 7 deletions(-)
 
 diff --git a/ikvm_args.cpp b/ikvm_args.cpp
-index 7e824dc..b3a95fc 100644
+index d5e18dd..6164b4d 100644
 --- a/ikvm_args.cpp
 +++ b/ikvm_args.cpp
-@@ -8,13 +8,14 @@
+@@ -8,12 +8,13 @@
  namespace ikvm
  {
  Args::Args(int argc, char* argv[]) :
@@ -37,25 +37,24 @@ index 7e824dc..b3a95fc 100644
 -    const char* opts = "f:s:h:k:p:u:v:c";
 +    const char* opts = "f:s:m:hk:p:u:v:c";
      struct option lopts[] = {
-         {"frameRate", 1, 0, 'f'},
-         {"subsampling", 1, 0, 's'},
+         {"frameRate", 1, nullptr, 'f'},   {"subsampling", 1, nullptr, 's'},
 +        {"format", 1, 0, 'm'},
-         {"help", 0, 0, 'h'},
-         {"keyboard", 1, 0, 'k'},
-         {"mouse", 1, 0, 'p'},
-@@ -37,6 +38,11 @@ Args::Args(int argc, char* argv[]) :
+         {"help", 0, nullptr, 'h'},        {"keyboard", 1, nullptr, 'k'},
+         {"mouse", 1, nullptr, 'p'},       {"udcName", 1, nullptr, 'u'},
+         {"videoDevice", 1, nullptr, 'v'}, {"calcCRC", 0, nullptr, 'c'},
+@@ -33,6 +34,11 @@ Args::Args(int argc, char* argv[]) :
                  if (subsampling < 0 || subsampling > 1)
                      subsampling = 0;
                  break;
 +            case 'm':
-+                format = (int)strtol(optarg, NULL, 0);
++                format = (int)strtol(optarg, nullptr, 0);
 +                if (format < 0 || format > 2)
 +                    format = 0;
 +                break;
              case 'h':
                  printUsage();
                  exit(0);
-@@ -66,6 +72,7 @@ void Args::printUsage()
+@@ -62,6 +68,7 @@ void Args::printUsage()
      fprintf(stderr, "Usage: obmc-ikvm [options]\n");
      fprintf(stderr, "-f frame rate          try this frame rate\n");
      fprintf(stderr, "-s subsampling         try this subsampling\n");
@@ -106,7 +105,7 @@ index 9274a9b..36c57c1 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
 @@ -9,6 +9,8 @@
- #include <phosphor-logging/log.hpp>
+ #include <phosphor-logging/lg2.hpp>
  #include <xyz/openbmc_project/Common/error.hpp>
  
 +#define        rfbEncodingAspeed   18
@@ -153,7 +152,7 @@ index 9274a9b..36c57c1 100644
                  break;
          }
 diff --git a/ikvm_video.cpp b/ikvm_video.cpp
-index 3445715..3fa26a0 100644
+index b2b10d8..ef3eb49 100644
 --- a/ikvm_video.cpp
 +++ b/ikvm_video.cpp
 @@ -30,11 +30,26 @@ using namespace phosphor::logging;
@@ -193,8 +192,8 @@ index 3445715..3fa26a0 100644
 +    rc = ioctl(fd, VIDIOC_S_FMT, &fmt);
 +    if (rc < 0)
 +    {
-+        log<level::ERR>("Failed to set video device format",
-+                        entry("ERROR=%s", strerror(errno)));
++        lg2::error("Failed to set video device format", {ERROR}", "ERROR",
++                   strerror(errno));
 +        elog<ReadFailure>(
 +            xyz::openbmc_project::Common::Device::ReadFailure::CALLOUT_ERRNO(
 +                errno),
@@ -214,10 +213,10 @@ index 3445715..3fa26a0 100644
 +    if (pixelformat != V4L2_PIX_FMT_RGB24 && pixelformat != V4L2_PIX_FMT_JPEG
 +        && pixelformat != V4L2_PIX_FMT_AJPG)
      {
-         log<level::ERR>("Pixel Format not supported",
-                         entry("PIXELFORMAT=%d", pixelformat));
+         lg2::error("Pixel Format not supported {PIXELFORMAT}", "PIXELFORMAT",
+                    pixelformat);
 diff --git a/ikvm_video.hpp b/ikvm_video.hpp
-index 15bbb0b..591d1e4 100644
+index ab95e5a..3d0b23e 100644
 --- a/ikvm_video.hpp
 +++ b/ikvm_video.hpp
 @@ -6,6 +6,14 @@
@@ -243,7 +242,7 @@ index 15bbb0b..591d1e4 100644
 +    Video(const std::string& p, Input& input, int fr = 30, int sub = 0, int fmt = 0);
      ~Video();
      Video(const Video&) = default;
-     Video& operator=(const Video&) = default;
+     Video& operator=(const Video&) = delete;
 -- 
-2.25.1
+2.43.0
 

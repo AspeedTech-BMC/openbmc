@@ -11,7 +11,7 @@ import os
 import signal
 import socket
 import sys
-import multiprocessing
+from bb import multiprocessing
 import logging
 from .connection import StreamConnection, WebsocketConnection
 from .exceptions import ClientError, ServerError, ConnectionClosedError, InvokeError
@@ -211,7 +211,10 @@ class UnixStreamServer(StreamServer):
         self.server.close()
 
     def cleanup(self):
-        os.unlink(self.path)
+        try:
+            os.unlink(self.path)
+        except FileNotFoundError:
+            pass
 
 
 class WebsocketsServer(object):

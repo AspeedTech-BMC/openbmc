@@ -12,7 +12,6 @@ SRC_URI = "gitsm://gerrit.aspeed.com:29418/freertos-project;branch=${BRANCH};pro
 SRCREV = "${AUTOREV}"
 PV = "1.0+git"
 
-S = "${WORKDIR}/git"
 
 inherit deploy
 

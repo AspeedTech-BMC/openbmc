@@ -13,7 +13,6 @@ SRC_URI = " \
 
 PV = "1.3.1"
 
-# CVE-2014-0363, CVE-2014-0364, CVE-2016-10027 is valnerble for other product.
 CVE_STATUS[CVE-2014-0363] = "cpe-incorrect: different product"
 CVE_STATUS[CVE-2014-0364] = "cpe-incorrect: different product"
 CVE_STATUS[CVE-2016-10027] = "cpe-incorrect: different product"
@@ -23,9 +22,6 @@ inherit ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','systemd','systemd',
 inherit features_check
 
 REQUIRED_DISTRO_FEATURES = "smack"
-
-
-S = "${WORKDIR}/git"
 
 PACKAGECONFIG ??= ""
 PACKAGECONFIG:append = " ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)}"

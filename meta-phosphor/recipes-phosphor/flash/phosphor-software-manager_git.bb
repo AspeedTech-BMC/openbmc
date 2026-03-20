@@ -21,7 +21,7 @@ PACKAGECONFIG[software-update-dbus-interface] = "-Dsoftware-update-dbus-interfac
 PACKAGECONFIG[bios-software-update] = "-Dbios-software-update=enabled, -Dbios-software-update=disabled, libgpiod libpldm"
 PACKAGECONFIG[i2cvr-software-update] = "-Di2cvr-software-update=enabled, -Di2cvr-software-update=disabled, libpldm libgpiod i2c-tools"
 PACKAGECONFIG[eepromdevice-software-update] = "-Deepromdevice-software-update=enabled, -Deepromdevice-software-update=disabled, libgpiod libpldm"
-PACKAGECONFIG[cpld-software-update] = "-Dcpld-software-update=enabled, -Dcpld-software-update=disabled, libpldm i2c-tools"
+PACKAGECONFIG[cpld-software-update] = "-Dcpld-software-update=enabled, -Dcpld-software-update=disabled, libgpiod libpldm i2c-tools"
 PACKAGECONFIG[tpm-software-update] = "-Dtpm-software-update=enabled, -Dtpm-software-update=disabled, libpldm"
 PACKAGECONFIG ?= "software-update-dbus-interface"
 
@@ -64,7 +64,6 @@ SYSTEMD_SERVICE:${PN}-i2cvr-software-update += "${@bb.utils.contains('PACKAGECON
 SYSTEMD_SERVICE:${PN}-eepromdevice-software-update += "${@bb.utils.contains('PACKAGECONFIG', 'eepromdevice-software-update', 'xyz.openbmc_project.Software.EEPROMDevice.service', '', d)}"
 SYSTEMD_SERVICE:${PN}-cpld-software-update += "${@bb.utils.contains('PACKAGECONFIG', 'cpld-software-update', 'xyz.openbmc_project.Software.CPLD.service', '', d)}"
 SYSTEMD_SERVICE:${PN}-tpm-software-update += "${@bb.utils.contains('PACKAGECONFIG', 'tpm-software-update', 'xyz.openbmc_project.Software.TPM.service', '', d)}"
-S = "${WORKDIR}/git"
 
 inherit meson pkgconfig
 inherit obmc-phosphor-dbus-service

@@ -14,8 +14,6 @@ SRCREV = "b158dad150bf02879668f72ce306445250838201"
 
 UPSTREAM_CHECK_GITTAGREGEX = "^edk2-stable(?P<pver>\d+)$"
 
-S = "${WORKDIR}/git"
-
 inherit native
 
 RDEPENDS:${PN} += "python3-core"

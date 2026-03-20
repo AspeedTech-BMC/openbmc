@@ -10,7 +10,7 @@ DEPENDS += " \
   systemd \
   ipmi-blob-tool \
 "
-SRCREV = "b90c9a7c72e95dceedf651271b9672eb4e7b59d0"
+SRCREV = "0c9edcfedabdb64a049d1e2ca705da860cb37955"
 PACKAGECONFIG ?= "cleanup-delete"
 PACKAGECONFIG[cleanup-delete] = "-Dcleanup-delete=enabled,-Dcleanup-delete=disabled"
 # If using static-layout, reboot-update is a good option to handle updating.
@@ -35,7 +35,6 @@ PR = "r1"
 
 SRC_URI = "git://github.com/openbmc/phosphor-ipmi-flash;branch=master;protocol=https"
 
-S = "${WORKDIR}/git"
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE:${PN} += " \
   phosphor-ipmi-flash-bmc-prepare.target \

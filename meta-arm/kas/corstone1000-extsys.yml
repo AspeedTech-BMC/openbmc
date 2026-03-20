@@ -4,3 +4,6 @@ header:
 local_conf_header:
   extsys: |
     MACHINE_FEATURES += "corstone1000-extsys"
+
+    # external system firmware
+    CORE_IMAGE_EXTRA_INSTALL:firmware += "external-system-elf"

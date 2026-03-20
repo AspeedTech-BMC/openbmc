@@ -10,7 +10,6 @@ SRC_URI = "git://gerrit.aspeed.com:29418/socsec;protocol=ssh;branch=${BRANCH}"
 PV = "2.0+git"
 SRCREV = "${AUTOREV}"
 
-S = "${WORKDIR}/git"
 
 inherit python3native setuptools3
 

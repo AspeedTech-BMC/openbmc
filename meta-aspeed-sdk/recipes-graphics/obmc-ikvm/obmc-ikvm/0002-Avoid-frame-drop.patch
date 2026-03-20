@@ -1,4 +1,4 @@
-From a629c5b7a0ee601d7c0f1641668a32e373ec16a6 Mon Sep 17 00:00:00 2001
+From f3ba0791f4cff280de6a62ce55ca89354d4659c5 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 15:26:31 +0800
 Subject: [PATCH 2/4] Avoid frame drop
@@ -35,7 +35,7 @@ Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
  3 files changed, 100 insertions(+), 58 deletions(-)
 
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index 36c57c1..b775e3c 100644
+index c493060..af24fa5 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
 @@ -10,6 +10,7 @@
@@ -157,7 +157,7 @@ index 36c57c1..b775e3c 100644
  
      rfbReleaseClientIterator(it);
 diff --git a/ikvm_video.cpp b/ikvm_video.cpp
-index 3fa26a0..6bce429 100644
+index f978556..cf8fe0a 100644
 --- a/ikvm_video.cpp
 +++ b/ikvm_video.cpp
 @@ -32,7 +32,7 @@ using namespace sdbusplus::xyz::openbmc_project::Common::Device::Error;
@@ -247,8 +247,8 @@ index 3fa26a0..6bce429 100644
 +        if (rc)
          {
 -            continue;
-+            log<level::ERR>("Failed to queue buffer",
-+                            entry("ERROR=%s", strerror(errno)));
++            lg2::error("Failed to query buffer {ERROR}", "ERROR",
++                       strerror(errno));
          }
 -
 -        if (!buffers[i].queued)
@@ -262,8 +262,8 @@ index 3fa26a0..6bce429 100644
 -            rc = ioctl(fd, VIDIOC_QBUF, &buf);
 -            if (rc)
 -            {
--                log<level::ERR>("Failed to queue buffer",
--                                entry("ERROR=%s", strerror(errno)));
+-                lg2::error("Failed to queue buffer {ERROR}", "ERROR",
+-                           strerror(errno));
 -            }
 -            else
 -            {
@@ -290,7 +290,7 @@ index 3fa26a0..6bce429 100644
  bool Video::needsResize()
  {
      int rc;
-@@ -198,7 +224,7 @@ bool Video::needsResize()
+@@ -197,7 +223,7 @@ bool Video::needsResize()
                  xyz::openbmc_project::Common::File::Open::PATH(path.c_str()));
          }
  
@@ -299,16 +299,16 @@ index 3fa26a0..6bce429 100644
          return true;
      }
  
-@@ -489,7 +515,7 @@ void Video::start()
-     pixelformat = fmt.fmt.pix.pixelformat;
- 
-     if (pixelformat != V4L2_PIX_FMT_RGB24 && pixelformat != V4L2_PIX_FMT_JPEG
--        && pixelformat != V4L2_PIX_FMT_AJPG)
-+	&& pixelformat != V4L2_PIX_FMT_AJPG)
+@@ -451,7 +477,7 @@ void Video::start()
+     rc = ioctl(fd, VIDIOC_S_FMT, &fmt);
+     if (rc < 0)
      {
-         log<level::ERR>("Pixel Format not supported",
-                         entry("PIXELFORMAT=%d", pixelformat));
-@@ -514,7 +540,7 @@ void Video::stop()
+-        lg2::error("Failed to set video device format", {ERROR}", "ERROR",
++        lg2::error("Failed to set video device format {ERROR}", "ERROR",
+                    strerror(errno));
+         elog<ReadFailure>(
+             xyz::openbmc_project::Common::Device::ReadFailure::CALLOUT_ERRNO(
+@@ -512,7 +538,7 @@ void Video::stop()
          return;
      }
  
@@ -318,7 +318,7 @@ index 3fa26a0..6bce429 100644
      rc = ioctl(fd, VIDIOC_STREAMOFF, &type);
      if (rc)
 diff --git a/ikvm_video.hpp b/ikvm_video.hpp
-index 591d1e4..1197b08 100644
+index 4245fb8..c7ad916 100644
 --- a/ikvm_video.hpp
 +++ b/ikvm_video.hpp
 @@ -5,6 +5,7 @@
@@ -401,5 +401,5 @@ index 591d1e4..1197b08 100644
      size_t height;
      /* @brief Width in pixels of the video frame */
 -- 
-2.25.1
+2.43.0
 

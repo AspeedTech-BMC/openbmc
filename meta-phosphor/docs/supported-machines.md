@@ -42,9 +42,11 @@ covered by [Jenkins](https://jenkins.openbmc.org/job/ci-openbmc/) CI testing.
   * fbdarwin
   * harma
   * minerva
+  * sanmiguel
   * santabarbara
   * tiogapass
   * ventura
+  * ventura2
   * yosemite4
   * yosemite4n
   * yosemite5
@@ -80,7 +82,7 @@ covered by [Jenkins](https://jenkins.openbmc.org/job/ci-openbmc/) CI testing.
   * gb200nvl-obmc
   * nvl32-obmc
 * qualcomm
-  * qcom-dc-scm-v1
+  * qcom-bmc-ast2600
 * quanta
   * f0b
   * gbs

@@ -1,4 +1,4 @@
-From 17df0e93949097c18c65567bdf8c7ad2478f63b4 Mon Sep 17 00:00:00 2001
+From 148120a41c5ef3abe63d9e2e42c6b5c4e425aa5a Mon Sep 17 00:00:00 2001
 From: Ross Burton <ross.burton@arm.com>
 Date: Thu, 16 Feb 2023 21:53:25 -0500
 Subject: [PATCH] Patch in the paths to the SBSA test suite
@@ -10,15 +10,15 @@ Signed-off-by: Ross Burton <ross.burton@arm.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/ShellPkg/ShellPkg.dsc b/ShellPkg/ShellPkg.dsc
-index 7e985f8280a7..052510236cae 100644
+index 7e985f8280a7..1d23aefa120e 100644
 --- a/ShellPkg/ShellPkg.dsc
 +++ b/ShellPkg/ShellPkg.dsc
 @@ -23,6 +23,8 @@
  !include MdePkg/MdeLibs.dsc.inc
  
  [LibraryClasses.common]
-+  SbsaValLib|ShellPkg/Application/sbsa-acs/val/SbsaValLib.inf
-+  SbsaPalLib|ShellPkg/Application/sbsa-acs/platform/pal_uefi/SbsaPalLib.inf
++  SbsaValLib|ShellPkg/Application/bsa-acs/val/SbsaValLib.inf
++  SbsaPalLib|ShellPkg/Application/bsa-acs/pal/uefi_acpi/SbsaPalLib.inf
    UefiApplicationEntryPoint|MdePkg/Library/UefiApplicationEntryPoint/UefiApplicationEntryPoint.inf
    UefiDriverEntryPoint|MdePkg/Library/UefiDriverEntryPoint/UefiDriverEntryPoint.inf
    UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf

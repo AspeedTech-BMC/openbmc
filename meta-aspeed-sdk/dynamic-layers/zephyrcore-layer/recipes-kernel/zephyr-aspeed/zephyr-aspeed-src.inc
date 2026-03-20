@@ -11,15 +11,18 @@ SRC_URI_ZEPHYR_MBEDTLS = "git://github.com/zephyrproject-rtos/mbedtls;protocol=h
 SRC_URI_ZEPHYR_CMSIS = "git://github.com/zephyrproject-rtos/cmsis;protocol=https"
 
 SRC_URI = "\
-    ${SRC_URI_ZEPHYR};name=zephyr;branch=${ZEPHYR_BRANCH};destsuffix=git/zephyr \
-    ${SRC_URI_ZEPHYR_MBEDTLS};name=mbedtls;nobranch=1;destsuffix=git/modules/crypto/mbedtls \
-    ${SRC_URI_ZEPHYR_CMSIS};name=cmsis;nobranch=1;destsuffix=git/modules/hal/cmsis \
+    ${SRC_URI_ZEPHYR};name=zephyr;branch=${ZEPHYR_BRANCH};destsuffix=${S}/zephyr \
+    ${SRC_URI_ZEPHYR_MBEDTLS};name=mbedtls;nobranch=1;destsuffix=${S}/modules/crypto/mbedtls \
+    ${SRC_URI_ZEPHYR_CMSIS};name=cmsis;nobranch=1;destsuffix=${S}/modules/hal/cmsis \
 "
 
 ZEPHYR_MODULES = "\
 ${S}/modules/crypto/mbedtls\;\
 ${S}/modules/hal/cmsis\;\
 "
+
+# Override meta-zephyr default image naming
+ZEPHYR_IMAGE_LINK_NAME = "${PN}"
 
 INSANE_SKIP:${PN} += "arch"
 

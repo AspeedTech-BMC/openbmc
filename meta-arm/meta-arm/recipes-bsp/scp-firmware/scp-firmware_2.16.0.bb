@@ -34,7 +34,6 @@ TOOLCHAIN = "gcc"
 inherit deploy
 
 B = "${WORKDIR}/build"
-S = "${WORKDIR}/git"
 
 # Allow platform specific copying of only scp or both scp & mcp, default to both
 FW_TARGETS ?= "scp mcp"

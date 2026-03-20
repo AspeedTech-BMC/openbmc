@@ -21,6 +21,7 @@ UPSTREAM_CHECK_URI = "https://gnupg.org/download/index.html"
 SRC_URI = "${GNUPG_MIRROR}/libgcrypt/libgcrypt-${PV}.tar.bz2 \
            file://0001-libgcrypt-fix-m4-file-for-oe-core.patch \
            file://0004-tests-Makefile.am-fix-undefined-reference-to-pthread.patch \
+           file://0001-tests-Fix-link-errors-for-t-thread-local.patch \
            file://no-native-gpg-error.patch \
            file://no-bench-slope.patch \
            file://run-ptest \
@@ -30,6 +31,8 @@ SRC_URI[sha256sum] = "24e91c9123a46c54e8371f3a3a2502f1198f2893fbfbf59af95bc1c214
 BINCONFIG = "${bindir}/libgcrypt-config"
 
 inherit autotools texinfo binconfig-disabled pkgconfig ptest
+
+require recipes-support/gnupg/drop-unknown-suffix.inc
 
 EXTRA_OECONF = "--disable-asm"
 EXTRA_OEMAKE:class-target = "LIBTOOLFLAGS='--tag=CC'"

@@ -9,8 +9,7 @@ PR = "r1"
 
 SRC_URI += "file://mrw-override-settings.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit phosphor-settings-manager
 inherit mrw-xml

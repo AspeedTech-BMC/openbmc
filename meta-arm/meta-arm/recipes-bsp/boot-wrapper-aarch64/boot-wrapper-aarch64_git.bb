@@ -11,8 +11,6 @@ UPSTREAM_CHECK_COMMITS = "1"
 
 PV = "0+git"
 
-S = "${WORKDIR}/git"
-
 inherit autotools deploy
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -53,7 +51,6 @@ REAL_DTB = "${@os.path.basename(d.getVar('BOOT_WRAPPER_AARCH64_DEVICETREE'))}"
 EXTRA_OEMAKE += "'KERNEL_DTB=${DEPLOY_DIR_IMAGE}/${REAL_DTB}'"
 EXTRA_OEMAKE += "'KERNEL_IMAGE=${DEPLOY_DIR_IMAGE}/${BOOT_WRAPPER_AARCH64_KERNEL}'"
 EXTRA_OEMAKE += "'CMDLINE=${BOOT_WRAPPER_AARCH64_CMDLINE}'"
-
 
 do_configure:prepend() {
     # Create dummy files to make configure happy.

@@ -26,8 +26,6 @@ SRC_URI = "git://gitlab.com/gsasl/libgssglue.git;protocol=https;branch=master \
           "
 SRCREV = "ada76bdaec665f70505f0b3aefe871b873e7c4b6"
 
-S = "${WORKDIR}/git"
-
 inherit autotools-brokensep ptest
 
 do_configure:prepend() {

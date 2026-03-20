@@ -10,8 +10,7 @@ SRC_URI += "file://example.yaml"
 
 PROVIDES += "virtual/openpower-fru-properties"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_install() {
         # This recipe is supposed to create an output yaml file with

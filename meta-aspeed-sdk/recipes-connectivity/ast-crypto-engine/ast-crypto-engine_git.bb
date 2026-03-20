@@ -11,8 +11,6 @@ inherit cmake pkgconfig
 PV = "1.0+git"
 SRCREV = "${AUTOREV}"
 
-S = "${WORKDIR}/git"
-
 DEPENDS = "openssl"
 RDEPENDS:${PN} = "openssl"
 

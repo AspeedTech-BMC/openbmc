@@ -7,4 +7,3 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 inherit phosphor-logging-yaml-provider
 require openpower-occ-control.inc
 
-S = "${WORKDIR}/git"

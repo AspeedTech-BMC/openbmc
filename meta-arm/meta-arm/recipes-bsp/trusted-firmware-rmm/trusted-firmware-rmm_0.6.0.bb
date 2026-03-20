@@ -16,8 +16,6 @@ RMM_CONFIG:qemuarm64 = "qemu_virt_defcfg"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 COMPATIBLE_MACHINE = "qemuarm64"
 
-S = "${WORKDIR}/git"
-
 # Build for debug (set RMM_DEBUG to 1 to activate)
 RMM_DEBUG ?= "0"
 RMM_BUILD_MODE ?= "${@bb.utils.contains('RMM_DEBUG', '1', 'Debug', 'Release', d)}"

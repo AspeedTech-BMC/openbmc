@@ -1,7 +1,7 @@
 SUMMARY = "Universal Boot Loader for embedded devices"
 PROVIDES = "virtual/bootloader"
 
-B = "${WORKDIR}/build"
+B = "${UNPACKDIR}/build"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 

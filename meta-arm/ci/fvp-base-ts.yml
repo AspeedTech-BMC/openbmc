@@ -5,12 +5,11 @@ header:
   includes:
     - ci/fvp-base.yml
     - ci/meta-openembedded.yml
-    - ci/testimage.yml
 
 local_conf_header:
   trusted_services: |
     # Enable the needed test suites
-    TEST_SUITES = " ping ssh trusted_services"
+    TEST_SUITES:append = " trusted_services"
     # Include all Secure Partitions into the image
     MACHINE_FEATURES:append = " arm-ffa ts-crypto ts-storage ts-its"
     MACHINE_FEATURES:append = " ts-attestation ts-smm-gateway optee-spmc-test"

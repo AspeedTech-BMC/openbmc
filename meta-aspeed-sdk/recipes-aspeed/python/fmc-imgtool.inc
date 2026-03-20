@@ -10,4 +10,3 @@ SRC_URI = "git://gerrit.aspeed.com:29418/fmc_imgtool.git;protocol=ssh;branch=${B
 SRCREV = "${AUTOREV}"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"

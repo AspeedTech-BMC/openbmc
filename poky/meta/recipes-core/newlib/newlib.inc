@@ -22,7 +22,6 @@ SRCREV = "5e5e51f1dc56a99eb4648c28e00d73b6ea44a8b0"
 INHIBIT_DEFAULT_DEPS = "1"
 DEPENDS = "virtual/cross-cc"
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 ## disable stdlib
@@ -34,7 +33,6 @@ TARGET_CC_ARCH:append = " -nostdlib"
 # starts at 0x80000000 on RISC-V 64
 # Keep RISC-V 32 using -mcmodel=medlow (symbols lie between -2GB:2GB)
 TARGET_CFLAGS:append:qemuriscv64 = " -mcmodel=medany"
-
 
 EXTRA_OECONF = " \
                 --build=${BUILD_SYS}  \

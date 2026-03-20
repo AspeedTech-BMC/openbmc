@@ -9,7 +9,6 @@ SRC_URI = "git://gerrit.aspeed.com:29418/cptra_imgtool;protocol=ssh;branch=${BRA
 SRCREV = "${AUTOREV}"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"
 
 DEPENDS += "caliptra-sw caliptra-mcu-sw"
 RDEPENDS:${PN} += "caliptra-sw caliptra-mcu-sw"

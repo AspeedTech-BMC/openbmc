@@ -7,8 +7,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7ca
 inherit systemd
 inherit obmc-phosphor-systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}/sources"
 
 SRC_URI = "file://ampere-host-shutdown.service \
           file://ampere_power_util.sh \

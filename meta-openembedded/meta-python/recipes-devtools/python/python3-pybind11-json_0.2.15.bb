@@ -9,6 +9,7 @@ SRC_URI = "git://github.com/pybind/pybind11_json;branch=master;protocol=https \
 DEPENDS += "nlohmann-json python3-pybind11"
 
 EXTRA_OECMAKE += "-DPYBIND11_USE_CROSSCOMPILING=ON"
-S = "${WORKDIR}/git"
 
 inherit cmake python3native python3targetconfig
+
+BBCLASSEXTEND = "native nativesdk"

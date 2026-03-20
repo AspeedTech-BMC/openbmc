@@ -16,7 +16,6 @@ PR = "r1"
 SRC_URI = "git://github.com/openbmc/kcsbridge.git;branch=master;protocol=https"
 
 SYSTEMD_SERVICE:${PN} = "${PN}@${KCS_DEVICE}.service"
-S = "${WORKDIR}/git"
 
 inherit meson pkgconfig
 inherit systemd

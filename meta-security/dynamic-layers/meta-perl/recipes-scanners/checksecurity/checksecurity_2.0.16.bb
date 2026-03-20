@@ -10,8 +10,7 @@ SRC_URI = "http://ftp.de.debian.org/debian/pool/main/c/checksecurity/checksecuri
 
 SRC_URI[sha256sum] = "9803b3760e9ec48e06ebaf48cec081db48c6fe72254a476224e4c5c55ed97fb0"
 
-S = "${WORKDIR}/checksecurity-${PV}+nmu1"
-
+S = "${UNPACKDIR}/checksecurity-${PV}+nmu1"
 
 # allow for anylocal, no need to patch
 LOGDIR = "/etc/checksecurity"

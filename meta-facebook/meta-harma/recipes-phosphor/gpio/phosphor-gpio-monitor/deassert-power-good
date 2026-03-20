@@ -5,6 +5,7 @@ source /usr/libexec/phosphor-state-manager/power-cmd
 
 # Check SGPIO validity
 if ! check_valid_sgpio; then
+    echo "SGPIO invalid, skipping power good deassertion"
     exit 0
 fi
 
@@ -22,6 +23,7 @@ current_state=$(busctl get-property \
 
 # Exit if host is already transitioning to running
 if [ "$current_state" = "xyz.openbmc_project.State.Host.HostState.TransitioningToRunning" ]; then
+    echo "Host is transitioning to running, skipping power good deassertion"
     exit 0
 fi
 
@@ -31,9 +33,17 @@ block_services=(
     host-powerreset@0.service
 )
 
-# Exit if any blocking service is not inactive
+# Check each service's state
 for svc in "${block_services[@]}"; do
-    if [ "$(systemctl is-active "$svc")" != "inactive" ]; then
+    # Get the detailed SubState (e.g., running, exited, dead)
+    substate=$(systemctl show -p SubState --value "$svc")
+    # Get the general ActiveState (e.g., active, inactive, activating)
+    active_state=$(systemctl is-active "$svc")
+
+    # LOGIC: Block if the service is neither "inactive" nor "exited"
+    # This effectively blocks "running", "activating", and "deactivating"
+    if [ "$active_state" != "inactive" ] && [ "$substate" != "exited" ]; then
+        echo "Blocking service $svc is busy ($active_state/$substate), skipping process"
         exit 0
     fi
 done

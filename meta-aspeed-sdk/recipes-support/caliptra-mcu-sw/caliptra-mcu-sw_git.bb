@@ -9,7 +9,6 @@ SRC_URI = "gitsm://gerrit.aspeed.com:29418/caliptra-mcu-sw;protocol=ssh;branch=$
 SRCREV = "${AUTOREV}"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"
 
 inherit cargo
 

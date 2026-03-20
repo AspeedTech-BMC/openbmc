@@ -60,8 +60,6 @@ PACKAGECONFIG[sensor-monitor] = "-Dsensor-monitor-service=enabled,-Dsensor-monit
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
-S = "${WORKDIR}/git"
-
 # OBMC_CHASSIS_ZERO_ONLY: hacky way to fix the templates until
 # openbmc/phosphor-fan-presence#26 is resolved.  This should likely be
 # returned to OBMC_CHASSIS_INSTANCES.
