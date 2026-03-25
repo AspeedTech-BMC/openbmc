@@ -1027,6 +1027,7 @@ addtask deploy before do_build after do_compile
 
 do_deploy[depends] += " \
     virtual/kernel:do_deploy \
+    linux-yocto-fitimage:do_deploy \
     virtual/bootloader:do_deploy \
     virtual/bootmcu:do_deploy \
     bmc-pb:do_deploy \

@@ -953,6 +953,7 @@ addtask deploy before do_build after do_compile
 
 do_deploy[depends] += " \
     virtual/kernel:do_deploy \
+    linux-yocto-fitimage:do_deploy \
     virtual/bootloader:do_deploy \
     obmc-phosphor-image:do_image_complete \
     "
