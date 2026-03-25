@@ -6,13 +6,13 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 S = "${UNPACKDIR}"
 
-SRC_URI = " file://mctp-astpcie-test.c;subdir=${S} \
-            file://mctp-astpcie-test.h;subdir=${S} \
-            file://mctp-smbus-test.c;subdir=${S} \
-            file://mctp-smbus-test.h;subdir=${S} \
-            file://mctp-test-utils.c;subdir=${S} \
-            file://mctp-test-utils.h;subdir=${S} \
-            file://CMakeLists.txt;subdir=${S} \
+SRC_URI = " file://mctp-astpcie-test.c \
+            file://mctp-astpcie-test.h \
+            file://mctp-smbus-test.c \
+            file://mctp-smbus-test.h \
+            file://mctp-test-utils.c \
+            file://mctp-test-utils.h \
+            file://CMakeLists.txt \
           "
 
 DEPENDS = "libmctp-intel"

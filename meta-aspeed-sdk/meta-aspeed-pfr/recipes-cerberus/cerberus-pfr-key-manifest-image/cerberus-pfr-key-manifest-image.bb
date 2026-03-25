@@ -6,11 +6,13 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit python3native setuptools3
 
+S = "${UNPACKDIR}"
+
 DEPENDS:append = " ${PYTHON_PN}-pycryptodome-native \
                    cerberus-pfr-signing-utility-native \
                  "
 
-SRC_URI = " file://key_management_tools;subdir=${S} "
+SRC_URI = " file://key_management_tools "
 
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"

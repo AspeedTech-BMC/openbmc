@@ -17,9 +17,11 @@ SSP_FIRMWARE:aspeed-g6 ?= "ast2600_ssp.bin"
 SSP_FIRMWARE_ELF ?= "ast2700-ssp.elf"
 SSP_FIRMWARE_ELF:aspeed-g6 ?= ""
 
-SSP_FIRMWARE_EXTRA ?= "${@'file://${SSP_FIRMWARE_ELF};subdir=${S}' if len('${SSP_FIRMWARE_ELF}') else ''}"
+SSP_FIRMWARE_EXTRA ?= "${@'file://${SSP_FIRMWARE_ELF}' if len('${SSP_FIRMWARE_ELF}') else ''}"
 
-SRC_URI = "file://${SSP_FIRMWARE};subdir=${S} \
+S = "${UNPACKDIR}"
+
+SRC_URI = "file://${SSP_FIRMWARE} \
            ${SSP_FIRMWARE_EXTRA} \
           "
 

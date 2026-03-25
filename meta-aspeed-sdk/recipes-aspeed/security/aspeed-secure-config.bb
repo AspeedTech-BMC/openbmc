@@ -6,9 +6,11 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit allarch
 
+S = "${UNPACKDIR}"
+
 SRC_URI = " \
-    file://configs;subdir=${S} \
-    file://keys;subdir=${S} \
+    file://configs \
+    file://keys \
     "
 
 do_patch[noexec] = "1"

@@ -11,9 +11,11 @@ PR = "r0"
 TSP_FIRMWARE ?= "ast2700-tsp.bin"
 TSP_FIRMWARE_ELF ?= "ast2700-tsp.elf"
 
-TSP_FIRMWARE_EXTRA ?= "${@'file://${TSP_FIRMWARE_ELF};subdir=${S}' if len('${TSP_FIRMWARE_ELF}') else ''}"
+TSP_FIRMWARE_EXTRA ?= "${@'file://${TSP_FIRMWARE_ELF}' if len('${TSP_FIRMWARE_ELF}') else ''}"
 
-SRC_URI = "file://${TSP_FIRMWARE};subdir=${S} \
+S = "${UNPACKDIR}"
+
+SRC_URI = "file://${TSP_FIRMWARE} \
            ${TSP_FIRMWARE_EXTRA} \
           "
 
