@@ -49,7 +49,8 @@ ast2700-default-612
 ast2700-default-66
 ast2700-default-ncsi
 ast2700-default-raw
-ast2700-default-irot
+ast2700-rtos
+ast2700-irot
 ast2700-emmc
 ast2700-ufs
 ast2700-abr
@@ -60,7 +61,7 @@ ast2700-a1-66
 ast2700-a1-spl
 ast2700-a1-ncsi
 ast2700-a1-raw
-ast2700-a1-irot
+ast2700-a1-rtos
 ast2700-a1-emmc
 ast2700-a1-ufs
 ast2700-a1-abr
