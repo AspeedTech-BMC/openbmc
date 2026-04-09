@@ -97,28 +97,28 @@ ignore_auth_check = false
 load_stage = 0
 
 [[image_metadata_list]]
-file = ""
+file = "bl31.bin"
 source = 1
 fw_id = 10
 ignore_auth_check = false
 load_stage = 2
 
 [[image_metadata_list]]
-file = ""
+file = "optee/tee-raw.bin"
 source = 1
 fw_id = 11
 ignore_auth_check = false
 load_stage = 2
 
 [[image_metadata_list]]
-file = ""
+file = "u-boot.bin"
 source = 1
 fw_id = 12
 ignore_auth_check = false
 load_stage = 2
 
 [[image_metadata_list]]
-file = "freertos-aspeed-ssp.bin"
+file = "zephyr-aspeed-ssp-irot.bin"
 source = 1
 fw_id = 13
 ignore_auth_check = false

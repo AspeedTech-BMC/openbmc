@@ -3,7 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append = " file://fw_env_ast2700_nor.config"
 SRC_URI:append:ast-mmc = " file://fw_env_ast2700_mmc.config"
 SRC_URI:append:ast-ufs = " file://fw_env_ast2700_ufs.config"
-SRC_URI:append:ast2700-default-aspeed-irot = " \
+SRC_URI:append:ast2700-irot = " \
     file://boot-ram.cfg \
 "
 

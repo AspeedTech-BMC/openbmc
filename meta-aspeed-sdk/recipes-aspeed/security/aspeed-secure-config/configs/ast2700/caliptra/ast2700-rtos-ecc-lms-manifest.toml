@@ -97,28 +97,28 @@ ignore_auth_check = false
 load_stage = 0
 
 [[image_metadata_list]]
-file = "bl31.bin"
+file = ""
 source = 1
 fw_id = 10
 ignore_auth_check = false
 load_stage = 2
 
 [[image_metadata_list]]
-file = "optee/tee-raw.bin"
+file = ""
 source = 1
 fw_id = 11
 ignore_auth_check = false
 load_stage = 2
 
 [[image_metadata_list]]
-file = "u-boot.bin"
+file = ""
 source = 1
 fw_id = 12
 ignore_auth_check = false
 load_stage = 2
 
 [[image_metadata_list]]
-file = "zephyr-aspeed-ssp-irot.bin"
+file = "freertos-aspeed-ssp.bin"
 source = 1
 fw_id = 13
 ignore_auth_check = false
@@ -130,10 +130,3 @@ source = 1
 fw_id = 14
 ignore_auth_check = false
 load_stage = 0
-
-[[image_metadata_list]]
-file = "obmc-phosphor-image-ast2700-default-aspeed-irot.cpio.zst.fitImage"
-source = 1
-fw_id = 15
-ignore_auth_check = false
-load_stage = 2

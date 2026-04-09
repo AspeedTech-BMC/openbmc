@@ -15,7 +15,7 @@ DEPENDS += "cptra-imgtool-native aspeed-secure-config-native"
 
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2700-soc-manifest.bin"
-ASPEED_IROT = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'yes', 'no', d)}"
+ASPEED_RTOS = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-rtos', 'yes', 'no', d)}"
 
 # Using cptra-imgtool to create manifest image.
 create_cptra_manifest_image() {
@@ -56,7 +56,7 @@ do_compile[depends] += " \
     virtual/bootloader:do_deploy \
     virtual/bootmcu:do_deploy \
     bmc-pb:do_deploy \
-    ${@bb.utils.contains('MACHINE', 'ast2700-default-aspeed-irot', 'obmc-phosphor-image:do_image_complete', '', d)} \
+    ${@bb.utils.contains('MACHINE', 'ast2700-irot', 'obmc-phosphor-image:do_image_complete', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
     "
@@ -91,48 +91,48 @@ def append_image(inimg, outimg, start_kb, finish_kb):
     subprocess.check_call(cmd, shell=True)
 
 
-def create_irot_image(d):
+def create_rtos_image(d):
     import subprocess
 
-    irot_boot_img = os.path.join(d.getVar('B', True), 'irot_boot_img')
-    make_empty_image(irot_boot_img, d.getVar('IROT_IMAGE_SIZE', True))
+    rtos_boot_img = os.path.join(d.getVar('B', True), 'rtos_boot_img')
+    make_empty_image(rtos_boot_img, d.getVar('RTOS_IMAGE_SIZE', True))
 
     # Caliptra manifest
     append_image(os.path.join(d.getVar('B', True), d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)),
-                 irot_boot_img,
-                 int(d.getVar('IROT_OFFSET_MANIFEST', True)),
-                 int(d.getVar('IROT_OFFSET_ATF', True)))
+                 rtos_boot_img,
+                 int(d.getVar('RTOS_OFFSET_MANIFEST', True)),
+                 int(d.getVar('RTOS_OFFSET_ATF', True)))
     # ATF
     append_image(d.getVar('UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE', True),
-                 irot_boot_img,
-                 int(d.getVar('IROT_OFFSET_ATF', True)),
-                 int(d.getVar('IROT_OFFSET_UBOOT', True)))
+                 rtos_boot_img,
+                 int(d.getVar('RTOS_OFFSET_ATF', True)),
+                 int(d.getVar('RTOS_OFFSET_UBOOT', True)))
     # U-Boot raw image
     append_image(os.path.join(d.getVar('DEPLOY_DIR_IMAGE', True), 'u-boot.bin'),
-                 irot_boot_img,
-                 int(d.getVar('IROT_OFFSET_UBOOT', True)),
-                 int(d.getVar('IROT_OFFSET_TEE', True)))
+                 rtos_boot_img,
+                 int(d.getVar('RTOS_OFFSET_UBOOT', True)),
+                 int(d.getVar('RTOS_OFFSET_TEE', True)))
     # TEE
     append_image(d.getVar('UBOOT_FIT_TEE_IMAGE', True),
-                 irot_boot_img,
-                 int(d.getVar('IROT_OFFSET_TEE', True)),
-                 int(d.getVar('IROT_IMAGE_SIZE', True)))
+                 rtos_boot_img,
+                 int(d.getVar('RTOS_OFFSET_TEE', True)),
+                 int(d.getVar('RTOS_IMAGE_SIZE', True)))
 
     cmd = "rm -f {}".format(os.path.join(d.getVar('B', True), d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)))
     print(cmd)
     subprocess.check_call(cmd, shell=True)
 
-    cmd = "mv {} {}".format(irot_boot_img,
+    cmd = "mv {} {}".format(rtos_boot_img,
                             os.path.join(d.getVar('B', True), d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)))
     print(cmd)
     subprocess.check_call(cmd, shell=True)
 
 
 python do_deploy() {
-    aspeed_irot = d.getVar('ASPEED_IROT', True)
-    if aspeed_irot == "yes":
-        print("Create_irot_image...")
-        create_irot_image(d)
+    aspeed_rtos = d.getVar('ASPEED_RTOS', True)
+    if aspeed_rtos == "yes":
+        print("Create_rtos_image...")
+        create_rtos_image(d)
 
     bb.build.exec_func("do_deploy_image", d)
 }

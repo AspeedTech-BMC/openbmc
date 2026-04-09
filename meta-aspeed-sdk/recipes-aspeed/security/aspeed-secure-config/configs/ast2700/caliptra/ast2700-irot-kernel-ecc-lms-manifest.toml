@@ -130,3 +130,10 @@ source = 1
 fw_id = 14
 ignore_auth_check = false
 load_stage = 0
+
+[[image_metadata_list]]
+file = "obmc-phosphor-image-ast2700-irot.cpio.zst.fitImage"
+source = 1
+fw_id = 15
+ignore_auth_check = false
+load_stage = 2

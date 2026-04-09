@@ -40,7 +40,7 @@ KERNEL_FITIMAGE_NAME = "fitImage-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE}"
 KERNEL_FITIMAGE_ITS_NAME = "fitImage-its-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE}"
 ASPEED_BOOT_EMMC_UFS = "${@bb.utils.contains_any('MACHINE_FEATURES', ['ast-mmc', 'ast-ufs'], 'yes', 'no', d)}"
 ASPEED_BOOT_UFS = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-ufs', 'yes', 'no', d)}"
-ASPEED_IROT = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'yes', 'no', d)}"
+ASPEED_RTOS = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-rtos', 'yes', 'no', d)}"
 AST2700_A1 = "${@bb.utils.contains('MACHINE_FEATURES', 'ast2700-a1', 'yes', 'no', d)}"
 
 IMAGE_BASE_NAME = "obmc-phosphor-image"
@@ -111,8 +111,8 @@ install_unsigned_image() {
         cp --no-preserve=ownership -rf ${DEPLOY_DIR_IMAGE}/optee ${S}/${GEN_IMAGE_MODE}
     fi
 
-    # irot image
-    if [ "${ASPEED_IROT}" = "yes" ]; then
+    # rtos image
+    if [ "${ASPEED_RTOS}" = "yes" ]; then
         install -m 0644 ${DEPLOY_DIR_IMAGE}/freertos-* ${S}/${GEN_IMAGE_MODE}
     fi
 
@@ -311,8 +311,8 @@ deploy_static_image_helper() {
         cp --no-preserve=ownership -rf ${S}/${GEN_IMAGE_MODE}/optee ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 
-    # irot image
-    if [ "${ASPEED_IROT}" = "yes" ]; then
+    # rtos image
+    if [ "${ASPEED_RTOS}" = "yes" ]; then
         install -m 0644 ${S}/${GEN_IMAGE_MODE}/freertos-* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 }
@@ -340,8 +340,8 @@ deploy_mmc_image_helper() {
         cp --no-preserve=ownership -rf ${S}/${GEN_IMAGE_MODE}/optee ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 
-    # irot image
-    if [ "${ASPEED_IROT}" = "yes" ]; then
+    # rtos image
+    if [ "${ASPEED_RTOS}" = "yes" ]; then
         install -m 0644 ${S}/${GEN_IMAGE_MODE}/freertos-* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
     fi
 
@@ -851,39 +851,39 @@ def deploy_mmc_image(d):
                  int(d.getVar('MMC_UBOOT_SIZE', True)))
 
 
-def create_irot_image(d):
+def create_rtos_image(d):
     import subprocess
 
     gen_img = d.getVar('GEN_IMAGE_MODE', True)
-    irot_boot_img = os.path.join(d.getVar('S', True), gen_img, 'irot_boot_img')
-    make_empty_image(irot_boot_img, d.getVar('IROT_IMAGE_SIZE', True))
+    rtos_boot_img = os.path.join(d.getVar('S', True), gen_img, 'rtos_boot_img')
+    make_empty_image(rtos_boot_img, d.getVar('RTOS_IMAGE_SIZE', True))
 
     # Caliptra manifest
     append_image(os.path.join(d.getVar('S', True), gen_img, d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)),
-                 irot_boot_img,
-                 int(d.getVar('IROT_OFFSET_MANIFEST', True)),
-                 int(d.getVar('IROT_OFFSET_ATF', True)))
+                 rtos_boot_img,
+                 int(d.getVar('RTOS_OFFSET_MANIFEST', True)),
+                 int(d.getVar('RTOS_OFFSET_ATF', True)))
     # ATF
     append_image(d.getVar('UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE', True),
-                 irot_boot_img,
-                 int(d.getVar('IROT_OFFSET_ATF', True)),
-                 int(d.getVar('IROT_OFFSET_UBOOT', True)))
+                 rtos_boot_img,
+                 int(d.getVar('RTOS_OFFSET_ATF', True)),
+                 int(d.getVar('RTOS_OFFSET_UBOOT', True)))
     # U-Boot raw image
     append_image(os.path.join(d.getVar('S', True), gen_img, d.getVar('UBOOT_IMAGE_NAME', True)),
-                 irot_boot_img,
-                 int(d.getVar('IROT_OFFSET_UBOOT', True)),
-                 int(d.getVar('IROT_OFFSET_TEE', True)))
+                 rtos_boot_img,
+                 int(d.getVar('RTOS_OFFSET_UBOOT', True)),
+                 int(d.getVar('RTOS_OFFSET_TEE', True)))
     # TEE
     append_image(d.getVar('UBOOT_FIT_TEE_IMAGE', True),
-                 irot_boot_img,
-                 int(d.getVar('IROT_OFFSET_TEE', True)),
-                 int(d.getVar('IROT_IMAGE_SIZE', True)))
+                 rtos_boot_img,
+                 int(d.getVar('RTOS_OFFSET_TEE', True)),
+                 int(d.getVar('RTOS_IMAGE_SIZE', True)))
 
     cmd = "rm -f {}".format(os.path.join(d.getVar('S', True), gen_img, d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)))
     print(cmd)
     subprocess.check_call(cmd, shell=True)
 
-    cmd = "mv {} {}".format(irot_boot_img,
+    cmd = "mv {} {}".format(rtos_boot_img,
                             os.path.join(d.getVar('S', True), gen_img, d.getVar('CALIPTRA_MANIFEST_FLASH_IMAGE', True)))
     print(cmd)
     subprocess.check_call(cmd, shell=True)
@@ -912,7 +912,7 @@ python do_deploy() {
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
             "caliptra_manifest_config": "ast2700a1-default-ecc-manifest.toml",
-            "caliptra_manifest_config_irot": "ast2700a1-irot-ecc-manifest.toml"
+            "caliptra_manifest_config_rtos": "ast2700a1-rtos-ecc-manifest.toml"
         },
         {
             "mode": "ecdsa384-lms",
@@ -926,7 +926,7 @@ python do_deploy() {
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
             "caliptra_manifest_config": "ast2700a1-default-ecc-lms-manifest.toml",
-            "caliptra_manifest_config_irot": "ast2700a1-irot-ecc-lms-manifest.toml"
+            "caliptra_manifest_config_rtos": "ast2700a1-rtos-ecc-lms-manifest.toml"
         }
     ]
 
@@ -939,7 +939,7 @@ python do_deploy() {
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
             "caliptra_manifest_config": "ast2700-default-ecc-manifest.toml",
-            "caliptra_manifest_config_irot": "ast2700-irot-ecc-manifest.toml"
+            "caliptra_manifest_config_rtos": "ast2700-rtos-ecc-manifest.toml"
         },
         {
             "mode": "ecdsa384-lms",
@@ -949,7 +949,7 @@ python do_deploy() {
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
             "caliptra_manifest_config": "ast2700-default-ecc-lms-manifest.toml",
-            "caliptra_manifest_config_irot": "ast2700-irot-ecc-lms-manifest.toml"
+            "caliptra_manifest_config_rtos": "ast2700-rtos-ecc-lms-manifest.toml"
         }
     ]
 
@@ -961,7 +961,7 @@ python do_deploy() {
     verify_uboot_kernel_image_status(d)
     gen_secure_image = d.getVar('ASPEED_CUSTOMIZE_GEN_SECURE_IMAGE', True)
     aspeed_boot_emmc_ufs = d.getVar('ASPEED_BOOT_EMMC_UFS', True)
-    aspeed_irot = d.getVar('ASPEED_IROT', True)
+    aspeed_rtos = d.getVar('ASPEED_RTOS', True)
     ast2700_a1 = d.getVar('AST2700_A1', True)
 
     if ast2700_a1 == "yes":
@@ -980,8 +980,8 @@ python do_deploy() {
         d.setVar('GEN_IMAGE_MODE', gen_img)
         d.setVar('OTPTOOL_JSON', sec_img["otptool_json"])
 
-        if aspeed_irot == "yes":
-            d.setVar('CALIPTRA_MANIFEST_CONFIG', sec_img["caliptra_manifest_config_irot"])
+        if aspeed_rtos == "yes":
+            d.setVar('CALIPTRA_MANIFEST_CONFIG', sec_img["caliptra_manifest_config_rtos"])
         else:
             d.setVar('CALIPTRA_MANIFEST_CONFIG', sec_img["caliptra_manifest_config"])
 
@@ -1009,9 +1009,9 @@ python do_deploy() {
         print("Make recovery image")
         bb.build.exec_func("make_recovery_image", d)
 
-        if aspeed_irot == "yes":
-            print("Create_irot_image...")
-            create_irot_image(d)
+        if aspeed_rtos == "yes":
+            print("Create_rtos_image...")
+            create_rtos_image(d)
 
         if aspeed_boot_emmc_ufs == "yes":
             print("Deploy mmc image...")
