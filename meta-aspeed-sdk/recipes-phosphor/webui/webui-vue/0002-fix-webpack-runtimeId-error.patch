@@ -1,9 +1,9 @@
-From 2e2218a83d375b92b5f3224ae05be4353c234c20 Mon Sep 17 00:00:00 2001
-From: Vince Chang <vince_chang@aspeedtech.com>
-Date: Tue, 17 Mar 2026 11:12:06 -0600
-Subject: [PATCH] fix webpack runtimeId error
+From 01a673fdf8943e529712c210dff88947b9c9fab2 Mon Sep 17 00:00:00 2001
+From: VinceChang6637 <vince_chang@aspeedtech.com>
+Date: Fri, 21 Jun 2024 16:56:52 +0800
+Subject: [PATCH] revert limit to on chunk
 
-After limit to one chunk commit.
+Revert limit to on chunk commit.
 https://github.com/openbmc/webui-vue/commit/740cbd525fa619e6a4190ec08c80f45ae72435eb
 
 Using "LimitChunkCountPlugin " causes the following build error:
@@ -13,28 +13,60 @@ Using "LimitChunkCountPlugin " causes the following build error:
 | RuntimeIdRuntimeModule must be in a single runtime
 ```
 
-Set optimization.runtimeChunk to 'single' to ensure all runtime modules
-are emitted into a single runtime.
+This patch is a workaround to avoid build failures.
+
+Another possible solution can be found at
+https://github.com/webpack/webpack/issues/11431.
 
 Upstream-Status: Inappropriate [ASPEED specific]
-Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
 ---
- vue.config.js | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ vue.config.js | 20 --------------------
+ 1 file changed, 20 deletions(-)
 
 diff --git a/vue.config.js b/vue.config.js
-index 1dfcc49..1598bdd 100644
+index aae65ff..730d7a0 100644
 --- a/vue.config.js
 +++ b/vue.config.js
-@@ -154,7 +154,7 @@ module.exports = {
-       maxAssetSize: 512000,
+@@ -1,6 +1,4 @@
+ const CompressionPlugin = require('compression-webpack-plugin');
+-const webpack = require('webpack');
+-const LimitChunkCountPlugin = webpack.optimize.LimitChunkCountPlugin;
+ 
+ module.exports = {
+   css: {
+@@ -69,16 +67,6 @@ module.exports = {
+     }
+   },
+   configureWebpack: (config) => {
+-    config.plugins.push(
+-      new LimitChunkCountPlugin({
+-        maxChunks: 1,
+-      }),
+-    );
+-    config.optimization.splitChunks = {
+-      cacheGroups: {
+-        default: false,
+-      },
+-    };
+     const crypto = require('crypto');
+     const crypto_orig_createHash = crypto.createHash;
+     crypto.createHash = (algorithm) =>
+@@ -123,14 +111,6 @@ module.exports = {
+     config.experiments = {
+       asyncWebAssembly: true,
      };
- 
+-
+-    config.performance = {
+-      hints: 'warning',
+-      maxEntrypointSize: 512000,
+-      maxAssetSize: 512000,
+-    };
+-
 -    config.optimization.runtimeChunk = false;
-+    config.optimization.runtimeChunk = 'single';
- 
-     // Define Vue 3 compile-time feature flags
-     // These flags must be explicitly defined to avoid Vue warnings and optimize bundle size
+   },
+   pluginOptions: {
+     i18n: {
 -- 
 2.43.0
 
