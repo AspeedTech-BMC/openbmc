@@ -26,7 +26,7 @@ CALIPTRA_MANIFEST_KEY_DIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast
 #FMC_ECC_KEY ?= "${FMC_KEY_DIR}/test_oem_dss_private_key_ecdsa384_1.pem"
 #FMC_ECC_KEY_INDEX ?= "1"
 #CALIPTRA_MANIFEST_CONFIG ?= "ast2700a1-default-ecc-manifest.toml"
-#CALIPTRA_MANIFEST_CONFIG:ast-rtos ?= "ast2700a1-irot-ecc-manifest.toml"
+#CALIPTRA_MANIFEST_CONFIG:ast-rtos ?= "ast2700a1-rtos-ecc-manifest.toml"
 
 # ecdsa384-lms
 OTPTOOL_CONFIGS ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/otp/2700A1_ECDSA384_LMS.json"
