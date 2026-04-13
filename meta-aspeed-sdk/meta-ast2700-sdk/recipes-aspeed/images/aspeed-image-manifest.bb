@@ -56,7 +56,7 @@ do_compile[depends] += " \
     virtual/bootloader:do_deploy \
     virtual/bootmcu:do_deploy \
     bmc-pb:do_deploy \
-    ${@bb.utils.contains('MACHINE', 'ast2700-irot', 'obmc-phosphor-image:do_image_complete', '', d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'obmc-phosphor-image:do_image_complete', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
     "
@@ -138,4 +138,3 @@ python do_deploy() {
 }
 
 addtask deploy before do_build after do_compile
-
