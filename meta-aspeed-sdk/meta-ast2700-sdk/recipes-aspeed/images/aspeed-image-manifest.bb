@@ -60,6 +60,7 @@ do_compile[depends] += " \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
     "
+do_compile[nostamp] = "1"
 
 do_deploy_image() {
     install -d ${DEPLOYDIR}
@@ -136,5 +137,6 @@ python do_deploy() {
 
     bb.build.exec_func("do_deploy_image", d)
 }
+do_deploy[nostamp] = "1"
 
 addtask deploy before do_build after do_compile

@@ -6,7 +6,6 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 PR = "r0"
 
 SRC_URI = " \
-    file://img.py \
     file://metadata-irot.json \
     "
 
@@ -29,7 +28,7 @@ do_compile() {
     install -d ${B}
     ln -sf ${CALIPTRA_MANIFEST_FLASH_IMAGE} ${DEPLOY_DIR_IMAGE}/image-bmc
 
-    ${PYTHON} ${UNPACKDIR}/img.py \
+    ${PYTHON} ${RECIPE_SYSROOT}${datadir}/pldm/pldm_fwup_pkg_creator.py \
         ${B}/${IROT_PKG_IMAGE} \
         ${UNPACKDIR}/${IROT_METADATA_FILE} \
         ${DEPLOY_DIR_IMAGE}/${CALIPTRA_MANIFEST_FLASH_IMAGE}
@@ -37,11 +36,14 @@ do_compile() {
 
 do_compile[depends] += " \
     aspeed-image-manifest:do_deploy \
+    pldm:do_populate_sysroot \
     "
+do_compile[nostamp] = "1"
 
 do_deploy() {
     install -d ${DEPLOYDIR}
     install -m 0644 ${B}/${IROT_PKG_IMAGE} ${DEPLOYDIR}/
 }
+do_deploy[nostamp] = "1"
 
 addtask deploy before do_build after do_compile
