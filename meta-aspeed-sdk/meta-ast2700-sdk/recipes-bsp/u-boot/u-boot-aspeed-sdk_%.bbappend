@@ -2,10 +2,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI:append:ast-mmc = " file://u-boot-env.txt"
 SRC_URI:append:ast-ufs = " file://u-boot-env-ufs.txt"
-SRC_URI:append:ast-irot = " \
-    file://u-boot-env-ast2700-irot.txt \
-    file://boot-ram.cfg \
-"
+SRC_URI:append:ast-irot = " file://boot-ram.cfg"
 
 # save unsigned binaries
 do_compile:append() {
