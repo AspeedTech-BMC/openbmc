@@ -25,9 +25,18 @@ do_install:append() {
         fi
     done
 
-    # Install the services in the multi-user.target
-    install -m 0644 -d ${D}${systemd_unitdir}/system/multi-user.target.wants
-    for port in ${CONSOLE_CLIENT}; do
-        ln -s ../obmc-console-ssh@.service ${D}${systemd_unitdir}/system/multi-user.target.wants/obmc-console-ssh@${port}.service
-    done
+    if [ "${SYSTEMD_AUTO_ENABLE}" != "disable" ]; then
+        # Install the obmc-console server instances in multi-user.target.
+        install -m 0644 -d ${D}${systemd_unitdir}/system/multi-user.target.wants
+        for tty in ${OBMC_CONSOLE_TTYS}; do
+            ln -s ../obmc-console@.service \
+              ${D}${systemd_unitdir}/system/multi-user.target.wants/obmc-console@${tty}.service
+        done
+
+        # Install the obmc-console ssh instances in multi-user.target.
+        for port in ${CONSOLE_CLIENT}; do
+            ln -s ../obmc-console-ssh@.service \
+              ${D}${systemd_unitdir}/system/multi-user.target.wants/obmc-console-ssh@${port}.service
+        done
+    fi
 }
