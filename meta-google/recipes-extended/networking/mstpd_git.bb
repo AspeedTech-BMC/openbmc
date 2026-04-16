@@ -5,7 +5,6 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=4325afd396febcb659c36b49533135d4"
 
 SRC_URI = "git://github.com/mstpd/mstpd;branch=master;protocol=https"
 SRCREV = "181c453fc1a00573e19f14960dcc54ad84beea7c"
-S = "${WORKDIR}/git"
 
 SRC_URI += "file://bridge-stp"
 SRC_URI += "file://mstpd.service"

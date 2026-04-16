@@ -13,10 +13,6 @@ inherit autotools-brokensep pkgconfig
 
 CFLAGS += "-D_DEFAULT_SOURCE"
 
-#S = "${UNPACKDIR}/suricata-${VER}/${BPN}"
-
-S = "${UNPACKDIR}/git"
-
 do_configure () {
     cd ${S}
     ./autogen.sh

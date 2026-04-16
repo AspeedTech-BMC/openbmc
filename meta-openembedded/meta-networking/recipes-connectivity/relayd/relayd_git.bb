@@ -12,8 +12,9 @@ PV = "0.0.1+git"
 
 UPSTREAM_CHECK_COMMITS = "1"
 
-S = "${WORKDIR}/git"
 
 inherit cmake
+
+EXTRA_OECMAKE += "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
 CFLAGS:append:toolchain-clang = " -Wno-error=gnu-variable-sized-type-not-at-end"

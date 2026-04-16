@@ -62,8 +62,6 @@ python __anonymous() {
             d.appendVar("RDEPENDS:%s" % pn, " %s" % ep)
 }
 
-S = "${WORKDIR}/git"
-
 inherit autotools pkgconfig update-rc.d update-alternatives systemd
 
 PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)} progress-bar fullscreen"

@@ -3,17 +3,16 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0-or-lat
 
 inherit pkgconfig meson
 
-SRC_URI = "git://github.com/AspeedTech-BMC/aspeed_app.git;protocol=https;branch=${BRANCH}"
+SRC_URI = "gitsm://github.com/AspeedTech-BMC/aspeed_app.git;protocol=https;branch=${BRANCH}"
 
 PV = "1.0+git"
 
-# Tag for v00.01.21
-SRCREV = "75295fb6001da348075e6d0e08335be5b785421b"
+# Tag for v00.01.22
+SRCREV = "4cb20ccffccb818e2458d069148329189368aaa0"
 BRANCH = "master"
 
-S = "${WORKDIR}/git"
 
-DEPENDS += "openssl"
+DEPENDS += "openssl python3-jsonschema-native python3-jinja2-native"
 RDEPENDS:${PN} += "openssl"
 
 EXTRA_OEMESON:append:aspeed-g7 = " \

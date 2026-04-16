@@ -10,7 +10,6 @@ SRC_URI:append:gbmc = " \
      file://platforms_bringup.pem \
 "
 
-
 FILES:${PN} += "${datadir}/google-bios-key/platforms_secure.pem"
 FILES:${PN} += "${datadir}/google-bios-key/platforms_bringup.pem"
 FILES:${PN} += "${datadir}/platforms_secure.pem"

@@ -5,13 +5,11 @@ PV = "1.0+git${SRCPV}"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=e3fc50a88d0a364313df4b21ef20c29e"
 
-S = "${WORKDIR}/git"
-
 inherit meson obmc-phosphor-utils pkgconfig
 inherit systemd
 
 SRC_URI = "git://github.com/openbmc/openpower-proc-control;branch=master;protocol=https"
-SRCREV = "8ced92d40b2ba81a2b29c751d2438356e403c84a"
+SRCREV = "685dc08516aab413e21c902c91b8e298185bd874"
 
 DEPENDS += " \
         phosphor-logging \

@@ -10,7 +10,6 @@ PR = "r1"
 SRC_URI += "git://github.com/jk-ozlabs/fbterm.git;branch=master;protocol=https"
 SRC_URI += "file://fb.modes"
 
-S = "${WORKDIR}/git"
 SYSTEMD_SERVICE:${PN} += "fbterm.service"
 SYSTEMD_ENVIRONMENT_FILE:${PN} += "fbterm"
 

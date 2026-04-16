@@ -14,8 +14,6 @@ PR = "r1"
 
 SRC_URI = "git://github.com/openbmc/phosphor-snmp;branch=master;protocol=https"
 
-S = "${WORKDIR}/git"
-
 inherit meson pkgconfig
 inherit python3native
 inherit obmc-phosphor-dbus-service

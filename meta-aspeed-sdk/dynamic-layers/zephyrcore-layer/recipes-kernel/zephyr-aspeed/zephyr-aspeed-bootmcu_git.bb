@@ -1,5 +1,6 @@
 require recipes-kernel/zephyr-kernel/zephyr-image.inc
 require zephyr-aspeed-src.inc
+require zephyr-aspeed-project-src.inc
 
 SUMMARY = "BootMCU runtime firmware"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -7,26 +8,9 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 PROVIDES += "virtual/bootmcu"
 PV = "1.0+git"
 
-# aspeed-zephyr-project bootmcu
-SRC_URI_ASPEED_ZEPHYR_PROJECT = "gitsm://github.com/AspeedTech-BMC/aspeed-zephyr-project;protocol=https"
-ASPEED_ZEPHYR_PROJECT_BRANCH = "aspeed-master"
-
-# Tag for v03.05
-SRCREV_bootmcu = "e27a46c16a643b6aed40cda0d9adfcc7054f5e1a"
-
-SRC_URI += "\
-    ${SRC_URI_ASPEED_ZEPHYR_PROJECT};name=bootmcu;branch=${ASPEED_ZEPHYR_PROJECT_BRANCH};destsuffix=git/aspeed-zephyr-project \
-"
-
-ZEPHYR_MODULES:append = "\
-${S}/aspeed-zephyr-project\;\
-"
-
 ZEPHYR_BOARD_BOOTMCU ??= "ast2700_evb/ast2700/bootmcu"
 ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
-ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FMC_BINARY} ${BOOTMCU_FW_BINARY}"
-
-ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
+ZEPHYR_ASPEED_OUTPUT = "${BOOTMCU_FMC_BINARY} ${BOOTMCU_FW_BINARY}"
 
 DEPENDS += "fmc-imgtool-native"
 DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native', '', d)}"
@@ -34,11 +18,8 @@ DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secur
 inherit otptool
 
 # Use fmc-imgtool to create fmc image since A1
-# export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
-# OpenSSL 3.0 legacy provider failed to load
-# https://github.com/pyca/cryptography/issues/10598
 do_create_fmc_image() {
-    export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
+    export OPENSSL_MODULES="${STAGING_LIBDIR_NATIVE}/ossl-modules"
 
     local ecc_key=""
     local ecc_key_index=""
@@ -88,3 +69,11 @@ do_create_fmc_image[depends] += " \
     bmc-pb:do_deploy \
     "
 
+# Deploy all files defined in ZEPHYR_ASPEED_OUTPUT
+do_deploy:append() {
+    for file in ${ZEPHYR_ASPEED_OUTPUT}; do
+        if [ -f "${B}/zephyr/${file}" ]; then
+            install -m 0644 ${B}/zephyr/${file} ${DEPLOYDIR}
+        fi
+    done
+}

@@ -1,4 +1,4 @@
-image: ${MIRROR_GHCR}/siemens/kas/kas:4.4
+image: ${MIRROR_GHCR}/siemens/kas/kas:4.7
 
 variables:
   # These are needed as the k8s executor doesn't respect the container

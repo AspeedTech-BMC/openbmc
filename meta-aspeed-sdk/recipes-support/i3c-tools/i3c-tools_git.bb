@@ -12,7 +12,6 @@ PV = "v00.01.00+git"
 SRCREV = "65f947d74e3a5d33992549a0a1900481bdef95b4"
 BRANCH = "master"
 
-S = "${WORKDIR}/git"
 
 inherit meson
 

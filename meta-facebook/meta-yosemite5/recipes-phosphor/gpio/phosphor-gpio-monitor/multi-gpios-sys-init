@@ -1,9 +1,17 @@
 #!/bin/bash
 
+# shellcheck source=meta-facebook/recipes-fb/obmc_functions/files/fb-common-functions
+source /usr/libexec/fb-common-functions
+
+CONF_RO_DIR="/usr/share/phosphor-gpio-monitor"
+GPIO_CONF_DEFAULT="${CONF_RO_DIR}/phosphor-multi-gpio-monitor.json"
+GPIO_CONF_EVT="${CONF_RO_DIR}/phosphor-multi-gpio-monitor-evt.json"
+GPIO_CONF_LINK="/var/lib/phosphor-gpio-monitor/phosphor-multi-gpio-monitor.json"
+
 host_os_status_init() {
   local status
 
-  if [ "$(get_gpio host0-ready)" -eq 0 ]; then
+  if [ "$(get_gpio FM_BIOS_POST_CMPLT_N)" -eq 0 ]; then
       status="Standby"
   else
       status="Inactive"
@@ -17,6 +25,43 @@ host_os_status_init() {
       "xyz.openbmc_project.State.OperatingSystem.Status.OSStatus.${status}"
 }
 
+prepare_config_link() {
+    local target="$1"
+    local link_name="${GPIO_CONF_LINK}"
+
+    mkdir -p "$(dirname "${link_name}")"
+    if [ -L "${link_name}" ] && [ "$(readlink -f "${link_name}")" = "${target}" ]; then
+        return 0
+    fi
+
+    ln -sf "${target}" "${link_name}"
+}
+
+e1s_pwr_init() {
+  reg0=$(i2ctransfer -fy 10 w1@0x21 0x0 r1)
+  reg1=$(i2ctransfer -fy 10 w1@0x21 0x1 r1)
+  E1S_0_PRSNT_N=$(( reg0 & 0x04 ))
+  E1S_1_PRSNT_N=$(( reg1 & 0x04 ))
+  if [[ "$E1S_0_PRSNT_N" = "0" && "$(get_gpio MASTER_PWR2_EN)" = "1" ]]; then
+    set_gpio P12V_E1S_EN_0 1
+  else
+    set_gpio P12V_E1S_EN_0 0
+  fi
+
+  if [[ "$E1S_1_PRSNT_N" = "0" && "$(get_gpio MASTER_PWR2_EN)" = "1" ]]; then
+    set_gpio P12V_E1S_EN_1 1
+  else
+    set_gpio P12V_E1S_EN_1 0
+  fi
+}
+
 host_os_status_init
+
+if get_gpio E1S_0_PRSNT_N >/dev/null 2>&1; then
+    prepare_config_link "${GPIO_CONF_EVT}"
+    e1s_pwr_init
+else
+    prepare_config_link "${GPIO_CONF_DEFAULT}"
+fi
 
 exit 0

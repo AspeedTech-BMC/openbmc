@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) ASPEED Technology Inc.
+#include "aspeed-bmc-amd-kenya.dts"
+
+&fmc {
+    flash@0 {
+        partitions {
+            image-stg@8000000 {
+                reg = <0x8000000 0x4000000>;
+                label = "img-stg";
+            };
+        };
+    };
+
+    flash@1 {
+        status = "disabled";
+    };
+};
+
+&i2c10 {
+    status = "okay";
+};
+

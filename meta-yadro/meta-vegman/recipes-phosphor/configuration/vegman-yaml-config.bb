@@ -9,8 +9,7 @@ SRC_URI = " \
     file://vegman-ipmi-sensors-static.yaml \
     "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}/sources"
 
 do_install() {
     install -m 0644 -D vegman-ipmi-sensors-static.yaml \

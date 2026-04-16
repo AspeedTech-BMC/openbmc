@@ -33,6 +33,5 @@ do_install() {
     install -m 0644 ${UNPACKDIR}/config-bios.json ${D}${datadir}/phosphor-ipmi-flash
 }
 
-
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE:${PN} = "phosphor-ipmi-flash-bios-verify.service phosphor-ipmi-flash-bios-update.service"

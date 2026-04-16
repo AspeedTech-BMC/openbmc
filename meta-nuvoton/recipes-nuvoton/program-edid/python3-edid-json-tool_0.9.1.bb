@@ -9,8 +9,6 @@ LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=dc64d2d7c140d9bd69045b5abaede3a7"
 SRC_URI = "git://github.com/rpavlik/edid-json-tools.git;branch=main;protocol=https"
 SRCREV = "1cb9416c10c8186b572fbbc98b51b67c00ec2e70"
 
-S = "${WORKDIR}/git"
-
 inherit setuptools3
 PIP_INSTALL_PACKAGE = "edid-json-tools"
 

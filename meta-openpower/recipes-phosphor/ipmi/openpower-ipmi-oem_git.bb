@@ -27,8 +27,6 @@ HOSTIPMI_PROVIDER_LIBRARY += "liboemhandler.so"
 INVSENSOR_YAML_GEN = "${STAGING_DIR_NATIVE}${datadir}/phosphor-ipmi-host/sensor/invsensor.yaml"
 EXTRA_OEMESON = "-Dinvsensor-yaml-gen=${INVSENSOR_YAML_GEN}"
 
-S = "${WORKDIR}/git"
-
 FILES:${PN}:append = " ${libdir}/ipmid-providers/lib*${SOLIBS}"
 FILES:${PN}:append = " ${libdir}/host-ipmid/lib*${SOLIBS}"
 FILES:${PN}-dev:append = " ${libdir}/ipmid-providers/lib*${SOLIBSDEV} ${libdir}/ipmid-providers/*.la"

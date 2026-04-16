@@ -5,14 +5,13 @@ PR = "r1"
 
 SRC_URI = "file://events.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 inherit phosphor-fan
 
 do_install() {
-    install -D events.yaml ${D}${control_datadir}/events.yaml
+    install -D ${S}/events.yaml ${D}${control_datadir}/events.yaml
 }
 
 FILES:${PN} += "${control_datadir}/events.yaml"

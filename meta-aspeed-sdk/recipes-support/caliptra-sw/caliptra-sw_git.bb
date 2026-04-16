@@ -8,11 +8,10 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 BRANCH = "aspeed-rt-1.2.0"
 SRC_URI = "gitsm://github.com/AspeedTech-BMC/caliptra-sw;protocol=https;branch=${BRANCH};"
 
-# Tag for v01.02.04
-SRCREV = "40f4dce10e5eda01efc5b3f5e0b03d63886bed62"
+# Tag for v01.02.05
+SRCREV = "4a2fd14773e8ddcc7750346c47be7638a5dd4da2"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"
 
 CARGO_SRC_DIR = "auth-manifest/app/"
 

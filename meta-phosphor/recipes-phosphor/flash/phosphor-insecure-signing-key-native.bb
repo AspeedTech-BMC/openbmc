@@ -6,8 +6,7 @@ PR = "r1"
 
 SRC_URI += "file://OpenBMC.priv"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 inherit native

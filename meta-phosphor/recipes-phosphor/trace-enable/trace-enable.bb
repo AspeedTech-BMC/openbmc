@@ -5,8 +5,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 SRC_URI += " file://trace-enable"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 SYSTEMD_SERVICE:${PN} = "trace-enable.service"
 
 inherit obmc-phosphor-systemd

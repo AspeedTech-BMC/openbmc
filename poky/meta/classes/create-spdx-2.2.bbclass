@@ -23,6 +23,8 @@ def get_namespace(d, name):
     namespace_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, d.getVar("SPDX_UUID_NAMESPACE"))
     return "%s/%s-%s" % (d.getVar("SPDX_NAMESPACE_PREFIX"), name, str(uuid.uuid5(namespace_uuid, name)))
 
+SPDX_PACKAGE_VERSION ??= "${PV}"
+SPDX_PACKAGE_VERSION[doc] = "The version of a package, versionInfo in recipe, package and image"
 
 def create_annotation(d, comment):
     from datetime import datetime, timezone
@@ -137,6 +139,11 @@ def add_package_files(d, doc, spdx_pkg, topdir, get_spdxid, get_types, *, archiv
     spdx_files = []
 
     file_counter = 1
+
+    check_compiled_sources = d.getVar("SPDX_INCLUDE_COMPILED_SOURCES") == "1"
+    if check_compiled_sources:
+        compiled_sources, types = oe.spdx_common.get_compiled_sources(d)
+        bb.debug(1, f"Total compiled files: {len(compiled_sources)}")
     for subdir, dirs, files in os.walk(topdir):
         dirs[:] = [d for d in dirs if d not in ignore_dirs]
         if subdir == str(topdir):
@@ -147,6 +154,10 @@ def add_package_files(d, doc, spdx_pkg, topdir, get_spdxid, get_types, *, archiv
             filename = str(filepath.relative_to(topdir))
 
             if not filepath.is_symlink() and filepath.is_file():
+                # Check if file is compiled
+                if check_compiled_sources:
+                     if not oe.spdx_common.is_compiled_source(filename, compiled_sources, types):
+                          continue
                 spdx_file = oe.spdx.SPDXFile()
                 spdx_file.SPDXID = get_spdxid(file_counter)
                 for t in get_types(filepath):
@@ -438,7 +449,7 @@ python do_create_spdx() {
 
     recipe = oe.spdx.SPDXPackage()
     recipe.name = d.getVar("PN")
-    recipe.versionInfo = d.getVar("PV")
+    recipe.versionInfo = d.getVar("SPDX_PACKAGE_VERSION")
     recipe.SPDXID = oe.sbom.get_recipe_spdxid(d)
     recipe.supplier = d.getVar("SPDX_SUPPLIER")
     if bb.data.inherits_class("native", d) or bb.data.inherits_class("cross", d):
@@ -547,7 +558,7 @@ python do_create_spdx() {
 
             spdx_package.SPDXID = oe.sbom.get_package_spdxid(pkg_name)
             spdx_package.name = pkg_name
-            spdx_package.versionInfo = d.getVar("PV")
+            spdx_package.versionInfo = d.getVar("SPDX_PACKAGE_VERSION")
             spdx_package.licenseDeclared = convert_license_to_spdx(package_license, license_data, package_doc, d, found_licenses)
             spdx_package.supplier = d.getVar("SPDX_SUPPLIER")
 
@@ -823,7 +834,7 @@ def combine_spdx(d, rootfs_name, rootfs_deploydir, rootfs_spdxid, packages, spdx
 
     image = oe.spdx.SPDXPackage()
     image.name = d.getVar("PN")
-    image.versionInfo = d.getVar("PV")
+    image.versionInfo = d.getVar("SPDX_PACKAGE_VERSION")
     image.SPDXID = rootfs_spdxid
     image.supplier = d.getVar("SPDX_SUPPLIER")
 

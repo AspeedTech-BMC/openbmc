@@ -16,10 +16,11 @@ SRC_URI += "file://CVE-2020-15117.patch"
 SRCREV ?= "1b4c076127687aceac931d269e898beaac1cad9f"
 PV = "1.10.1+git"
 
-S = "${WORKDIR}/git"
 
 inherit cmake features_check
 
-EXTRA_OECMAKE += "-DSYNERGY_BUILD_LEGACY_GUI=OFF"
+EXTRA_OECMAKE += "-DSYNERGY_BUILD_LEGACY_GUI=OFF \
+                  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+"
 
 FILES:${PN} += "${datadir}/icons/hicolor"

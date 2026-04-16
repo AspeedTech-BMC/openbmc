@@ -9,11 +9,10 @@ PE = "1"
 BRANCH = "aspeed-master-v2023.10"
 SRC_URI = "git://github.com/AspeedTech-BMC/u-boot.git;protocol=https;branch=${BRANCH}"
 
-# Tag for v00.05.11
-SRCREV = "a155d1c48228aa3dbac097266381bf02b7179f33"
+# Tag for v00.05.12
+SRCREV = "b139e0526e716721e1d1be3ed0ea019aaaf079ed"
 
-S = "${WORKDIR}/git"
-B = "${WORKDIR}/build"
+B = "${UNPACKDIR}/build"
 do_configure[cleandirs] = "${B}"
 
 # We don't have 'u-boot-initial-env' target in our u-boot version

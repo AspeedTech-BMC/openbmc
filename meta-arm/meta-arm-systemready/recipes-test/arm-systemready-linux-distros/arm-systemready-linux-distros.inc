@@ -27,7 +27,7 @@ ARM_SYSTEMREADY_LINUX_DISTRO_ISO_IMAGE = \
 # Size of installation disk in MB
 ARM_SYSTEMREADY_LINUX_DISTRO_INSTALL_SIZE ?= "4096"
 
-S = "${WORKDIR}/sources-unpack"
+S = "${UNPACKDIR}"
 
 do_image() {
     dd if=/dev/zero of=${WORKDIR}/${IMAGE_LINK_NAME}.wic \

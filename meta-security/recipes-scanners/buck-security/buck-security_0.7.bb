@@ -42,5 +42,4 @@ RDEPENDS:${PN}:class-native = "coreutils net-tools perl perl-module-data-dumper 
                                perl-module-time-localtime perl-module-file-glob\
                               "
 
-
 BBCLASSEXTEND = "native"

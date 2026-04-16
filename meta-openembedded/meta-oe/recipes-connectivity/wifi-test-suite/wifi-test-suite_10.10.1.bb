@@ -7,7 +7,6 @@ LICENSE  = "ISC"
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=0542427ed5c315ca34aa09ae7a85ed32"
 SECTION = "test"
 
-S = "${WORKDIR}/git"
 SRCREV = "12e85fbeca8ca21a632d18e55089a8a7606d64aa"
 SRC_URI = "git://github.com/Wi-FiTestSuite/Wi-FiTestSuite-Linux-DUT.git;branch=master;protocol=https \
 	file://0001-Use-toolchain-from-environment-variables.patch \
@@ -15,7 +14,8 @@ SRC_URI = "git://github.com/Wi-FiTestSuite/Wi-FiTestSuite-Linux-DUT.git;branch=m
 	file://0003-fix-path-to-usr-sbin-for-script-and-make-script-for-.patch \
 	file://0004-run-ranlib-per-library-and-use-AR.patch \
         file://fno-common.patch \
-        file://0001-wfa_cmdproc-Store-return-value-into-location.patch \
+        file://0005-wfa_cmdproc-Store-return-value-into-location.patch \
+        file://0006-make-CFLAGS-appendable.patch \
 "
 
 # to avoid host path QA error
@@ -42,4 +42,6 @@ RDEPENDS:${PN} = "wpa-supplicant"
 # http://errors.yoctoproject.org/Errors/Details/766893/
 # wfa_cmdproc.c:467:68: error: passing argument 3 of 'strtok_r' from incompatible pointer type [-Wincompatible-pointer-types]
 # wfa_cs.c:4175:57: error: initialization of 'caStaGetEventDetails_t *' {aka 'struct ca_sta_get_event_details *'} from incompatible pointer type 'caStaMngServ_t *' {aka 'struct ca_sta_manage_service *'} [-Wincompatible-pointer-types]
-CC += "-Wno-error=incompatible-pointer-types"
+CFLAGS += "-Wno-error=incompatible-pointer-types"
+
+export EXTRA_CFLAGS = "${CFLAGS}"

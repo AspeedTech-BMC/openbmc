@@ -40,9 +40,6 @@ local_conf_header:
     CORE_IMAGE_EXTRA_INSTALL += "packagegroup-ts-tests-psa"
     CORE_IMAGE_EXTRA_INSTALL:firmware += "packagegroup-ts-tests-psa"
 
-    # external system firmware
-    CORE_IMAGE_EXTRA_INSTALL:firmware += "external-system-elf"
-
   capsule: |
     CAPSULE_EXTENSION = "uefi.capsule"
     CAPSULE_FW_VERSION = "6"

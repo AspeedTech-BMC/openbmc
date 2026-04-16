@@ -21,6 +21,7 @@ source /usr/share/gbmc-net-lib.sh || exit
 : "${RA_IF:?No RA interface set}"
 : "${IP_OFFSET=?1}"
 : "${ROUTE_METRIC:?No Metric set}"
+ROUTE_METRIC_LO="$((ROUTE_METRIC+1000))"
 
 # We would prefer empty string but it's easier for associative array handling
 # to use invalid
@@ -28,6 +29,57 @@ old_rtr=invalid
 old_mac=invalid
 old_pfx=invalid
 old_fqdn=invalid
+
+add_rtr() {
+  local rtr="$1"
+  local mac="$2"
+  local new="$3"
+
+  local route_table
+  route_table="$(gbmc_net_route_table_for_intf "$RA_IF")" || return
+
+  # Override any existing gateway information within files
+  # Make sure we cover `00-*` and `-*` files
+  for file in /run/systemd/network/{00,}-bmc-$RA_IF.network; do
+    mkdir -p "$file.d"
+    printf '[Neighbor]\nMACAddress=%s\nAddress=%s\n' \
+      "$mac" "$rtr" >"$file.d"/10-gateway.conf
+    printf '[Route]\nGateway=%s\nGatewayOnLink=true\nMetric=512\nTable=%d\n' \
+      "$rtr" "$route_table" >>"$file.d"/10-gateway.conf
+    printf '[Route]\nGateway=%s\nGatewayOnLink=true\nMetric=%d\n' \
+      "$rtr" "$ROUTE_METRIC_LO" >>"$file.d"/10-gateway.conf
+    if (( new == 1 )); then
+      printf '[Route]\nGateway=%s\nGatewayOnLink=true\nMetric=%d\n' \
+        "$rtr" "$ROUTE_METRIC" >"$file.d"/10-gateway-dyn.conf
+      mkdir -p /var/google/last-ra
+      printf '%s\n%s\n' "$rtr" "$mac" >"/var/google/last-ra/$RA_IF"
+    fi
+  done
+
+  # Don't force networkd to reload as this can break phosphor-networkd
+  # Fall back to reload only if ip link commands fail
+  local st=0
+  ip -6 neigh replace "$rtr" dev "$RA_IF" lladdr "$mac" || st=$?
+  ip -6 route replace default via "$rtr" onlink dev "$RA_IF" metric 512 table "$route_table" || st=$?
+  ip -6 route replace default via "$rtr" onlink dev "$RA_IF" metric "$ROUTE_METRIC_LO" || st=$?
+  if (( new == 1 )); then
+    ip -6 route replace default via "$rtr" onlink dev "$RA_IF" metric "$ROUTE_METRIC" || st=$?
+  fi
+  if (( st != 0 )); then
+    gbmc_net_networkd_reload "$RA_IF" || true
+  fi
+}
+
+# Read the old info from persistent storage in case ToR is updating
+rafile="/var/google/last-ra/$RA_IF"
+if [ -e "$rafile" ]; then
+  exec {rafd}<"$rafile"
+  read -r -u "$rafd" rtr
+  read -r -u "$rafd" mac
+  exec {rafd}<&-
+  echo "Loading old router $rtr($mac)" >&2
+  add_rtr "$rtr" "$mac" 0
+fi
 
 default_update_rtr() {
   local rtr="$1"
@@ -39,51 +91,19 @@ default_update_rtr() {
     return 0
   fi
 
-  local route_table
-  route_table="$(gbmc_net_route_table_for_intf "$RA_IF")" || return
-
-  # It's important that this happens before the main table default router is configured.
-  # Otherwise, the IP source determination logic won't be able to pick the best route.
-  # Also we don't need to remove the route per table.
-  if [[ ${op} == "add" ]]; then
-    # Add additional gateway information
-    for file in /run/systemd/network/{00,}-bmc-$RA_IF.network; do
-      mkdir -p "$file.d"
-      printf '[Route]\nGateway=%s\nGatewayOnLink=true\nMetric=512\nTable=%d' \
-        "$rtr" "$route_table" >"$file.d"/10-gateway-table.conf
-    done
-
-    ip -6 route replace default via "$rtr" onlink dev "$RA_IF" metric 512 table "$route_table" || \
-      gbmc_net_networkd_reload "$RA_IF"
-  fi
 
   if [[ ${op} = "add" ]]; then
-
-    # Override any existing gateway information within files
-    # Make sure we cover `00-*` and `-*` files
-    for file in /run/systemd/network/{00,}-bmc-$RA_IF.network; do
-      mkdir -p "$file.d"
-      printf '[Route]\nGateway=%s\nGatewayOnLink=true\nMetric=%d\n[Neighbor]\nMACAddress=%s\nAddress=%s' \
-        "$rtr" "$ROUTE_METRIC" "$mac" "$rtr" >"$file.d"/10-gateway.conf
-    done
-
-    # Don't force networkd to reload as this can break phosphor-networkd
-    # Fall back to reload only if ip link commands fail
-    (ip -6 route replace default via "$rtr" onlink dev "$RA_IF" metric "$ROUTE_METRIC" && \
-      ip -6 neigh replace "$rtr" dev "$RA_IF" lladdr "$mac") || \
-      gbmc_net_networkd_reload "$RA_IF" || true
-
+    add_rtr "$rtr" "$mac" 1
     echo "Set router $rtr on $RA_IF" >&2
   elif [[ ${op} = "remove" ]]; then
     # Override any existing gateway information within files
     # Make sure we cover `00-*` and `-*` files
-    for file in /run/systemd/network/{00,}-bmc-$RA_IF.network.d/10-gateway.conf; do
+    for file in /run/systemd/network/{00,}-bmc-$RA_IF.network.d/10-gateway-dyn.conf; do
       rm -rf "$file"
     done
 
     # Fall back to reload if remove failed
-    (ip -6 route del default via "$rtr" onlink dev "$RA_IF" metric "$ROUTE_METRIC" && \
-      ip -6 neigh del "$rtr" dev "$RA_IF" lladdr "$mac") || \
+    ip -6 route del default via "$rtr" onlink dev "$RA_IF" metric "$ROUTE_METRIC" || \
       gbmc_net_networkd_reload "$RA_IF" || true
 
     echo "Del router $rtr on $RA_IF" >&2

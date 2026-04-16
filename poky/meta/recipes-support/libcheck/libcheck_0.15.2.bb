@@ -12,21 +12,23 @@ LIC_FILES_CHKSUM = "file://COPYING.LESSER;md5=2d5025d4aa3495befef8f17206a5b0a1"
 
 SRC_URI = "${GITHUB_BASE_URI}/download/${PV}/check-${PV}.tar.gz \
            file://automake-output.patch \
-           file://not-echo-compiler-info-to-check_stdint.h.patch"
+           file://subunit.patch"
 SRC_URI[sha256sum] = "a8de4e0bacfb4d76dd1c618ded263523b53b85d92a146d8835eb1a52932fa20a"
 GITHUB_BASE_URI = "https://github.com/libcheck/check/releases/"
 
-S = "${WORKDIR}/check-${PV}"
+S = "${UNPACKDIR}/check-${PV}"
 
-inherit autotools pkgconfig texinfo github-releases
-
-CACHED_CONFIGUREVARS += "ac_cv_path_AWK_PATH=${bindir}/gawk"
+inherit cmake pkgconfig texinfo github-releases
 
 RREPLACES:${PN} = "check (<= 0.9.5)"
+
+EXTRA_OECMAKE:append:class-target = " -DAWK_PATH=${bindir}/awk"
+EXTRA_OECMAKE = "-DENABLE_SUBUNIT_EXT=OFF"
 
 do_install:append:class-native() {
     create_cmdline_shebang_wrapper ${D}${bindir}/checkmk
 }
+
 BBCLASSEXTEND = "native nativesdk"
 
 PACKAGES =+ "checkmk"

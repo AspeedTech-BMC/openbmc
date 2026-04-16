@@ -20,9 +20,7 @@ EXTRA_OEMAKE += "TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
                  OUTPUT_DIR=${B} \
                "
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
-
 
 do_compile() {
     oe_runmake -C ${S}

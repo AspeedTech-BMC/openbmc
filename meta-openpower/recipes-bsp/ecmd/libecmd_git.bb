@@ -9,8 +9,6 @@ SRCREV = "15e382180d49f7ea4117ccc341ca91e361721fd4"
 inherit python3native
 DEPENDS = "zlib"
 
-S = "${WORKDIR}/git"
-
 export LD = "${CXX}"
 export SLDFLAGS = "${LDFLAGS}"
 

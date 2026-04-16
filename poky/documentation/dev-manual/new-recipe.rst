@@ -188,13 +188,14 @@ the recipe.
    Use lower-cased characters and do not include the reserved suffixes
    ``-native``, ``-cross``, ``-initial``, or ``-dev`` casually (i.e. do not use
    them as part of your recipe name unless the string applies). Here are some
-   examples:
+   examples (which includes the use of the string "git" as a special case of a
+   version identifier):
 
    .. code-block:: none
 
-      cups_1.7.0.bb
-      gawk_4.0.2.bb
-      irssi_0.8.16-rc1.bb
+      cups_2.4.12.bb
+      gawk_5.3.2.bb
+      psplash_git.bb
 
 Running a Build on the Recipe
 =============================
@@ -276,11 +277,11 @@ upgrading the recipe to a future version is as simple as renaming the
 recipe to match the new version.
 
 Here is a simple example from the
-``meta/recipes-devtools/strace/strace_5.5.bb`` recipe where the source
-comes from a single tarball. Notice the use of the
+:oe_git:`strace recipe </openembedded-core/tree/meta/recipes-devtools/strace>`
+where the source comes from a single tarball. Notice the use of the
 :term:`PV` variable::
 
-   SRC_URI = "https://strace.io/files/${PV}/strace-${PV}.tar.xz \
+   SRC_URI = "${GITHUB_BASE_URI}/download/v${PV}/strace-${PV}.tar.xz \
 
 Files mentioned in :term:`SRC_URI` whose names end in a typical archive
 extension (e.g. ``.tar``, ``.tar.gz``, ``.tar.bz2``, ``.zip``, and so
@@ -292,7 +293,7 @@ another example that specifies these types of files, see the
 Another way of specifying source is from an SCM. For Git repositories,
 you must specify :term:`SRCREV` and you should specify :term:`PV` to include
 a ``+`` sign in its definition. Here is an example from the recipe
-:oe_git:`meta/recipes-sato/l3afpad/l3afpad_git.bb </openembedded-core/tree/meta/recipes-sato/l3afpad/l3afpad_git.bb>`::
+:oe_git:`l3afpad_git.bb </openembedded-core/tree/meta/recipes-sato/l3afpad/l3afpad_git.bb>`::
 
    SRC_URI = "git://github.com/stevenhoneyman/l3afpad.git;branch=master;protocol=https"
 
@@ -347,8 +348,8 @@ paste them into your recipe and then run the build again to continue.
    continuing with the build.
 
 This final example is a bit more complicated and is from the
-``meta/recipes-sato/rxvt-unicode/rxvt-unicode_9.20.bb`` recipe. The
-example's :term:`SRC_URI` statement identifies multiple files as the source
+:oe_git:`rxvt-unicode </openembedded-core/tree/meta/recipes-sato/rxvt-unicode>`
+recipe. The example's :term:`SRC_URI` statement identifies multiple files as the source
 files for the recipe: a tarball, a patch file, a desktop file, and an icon::
 
    SRC_URI = "http://dist.schmorp.de/rxvt-unicode/Attic/rxvt-unicode-${PV}.tar.bz2 \
@@ -706,7 +707,7 @@ hierarchy to locations that would mirror their locations on the target
 device. The installation process copies files from the
 ``${``\ :term:`S`\ ``}``,
 ``${``\ :term:`B`\ ``}``, and
-``${``\ :term:`WORKDIR`\ ``}``
+``${``\ :term:`UNPACKDIR`\ ``}``
 directories to the ``${``\ :term:`D`\ ``}``
 directory to create the structure as it should appear on the target
 system.
@@ -1145,7 +1146,7 @@ Building an application from a single file that is stored locally (e.g. under
 ``files``) requires a recipe that has the file listed in the :term:`SRC_URI`
 variable. Additionally, you need to manually write the :ref:`ref-tasks-compile`
 and :ref:`ref-tasks-install` tasks. The :term:`S` variable defines the
-directory containing the source code, which is set to :term:`WORKDIR` in this
+directory containing the source code, which is set to :term:`UNPACKDIR` in this
 case --- the directory BitBake uses for the build::
 
    SUMMARY = "Simple helloworld application"
@@ -1155,7 +1156,7 @@ case --- the directory BitBake uses for the build::
 
    SRC_URI = "file://helloworld.c"
 
-   S = "${WORKDIR}"
+   S = "${UNPACKDIR}"
 
    do_compile() {
        ${CC} ${LDFLAGS} helloworld.c -o helloworld
@@ -1210,8 +1211,6 @@ In the following example, ``lz4`` is a makefile-based package::
               file://CVE-2021-3520.patch \
               "
    UPSTREAM_CHECK_GITTAGREGEX = "v(?P<pver>.*)"
-
-   S = "${WORKDIR}/git"
 
    CVE_STATUS[CVE-2014-4715] = "fixed-version: Fixed in r118, which is larger than the current version"
 
@@ -1270,8 +1269,6 @@ is a simple example of an application without dependencies::
 
    SRC_URI = "git://gitlab.com/ipcalc/ipcalc.git;protocol=https;branch=master"
    SRCREV = "4c4261a47f355946ee74013d4f5d0494487cc2d6"
-
-   S = "${WORKDIR}/git"
 
    inherit meson
 
@@ -1397,11 +1394,31 @@ doing the following:
    where you have installed them and whether those files are in
    different locations than the defaults.
 
+As a basic example of a :ref:`ref-classes-bin-package`-style recipe, consider
+this snippet from the
+:oe_git:`wireless-regdb </openembedded-core/tree/meta/recipes-kernel/wireless-regdb>`
+recipe file, which fetches a single tarball of binary content and manually
+installs with no need for any configuration or compilation::
+
+   SRC_URI = "https://www.kernel.org/pub/software/network/${BPN}/${BP}.tar.xz"
+   SRC_URI[sha256sum] = "57f8e7721cf5a880c13ae0c202edbb21092a060d45f9e9c59bcd2a8272bfa456"
+
+   inherit bin_package allarch
+
+   do_install() {
+       install -d -m0755 ${D}${nonarch_libdir}/crda
+       install -d -m0755 ${D}${sysconfdir}/wireless-regdb/pubkeys
+       install -m 0644 regulatory.bin ${D}${nonarch_libdir}/crda/regulatory.bin
+       install -m 0644 wens.key.pub.pem ${D}${sysconfdir}/wireless-regdb/pubkeys/wens.key.pub.pem
+       install -m 0644 -D regulatory.db ${D}${nonarch_base_libdir}/firmware/regulatory.db
+       install -m 0644 regulatory.db.p7s ${D}${nonarch_base_libdir}/firmware/regulatory.db.p7s
+   }
+
 Following Recipe Style Guidelines
 =================================
 
 When writing recipes, it is good to conform to existing style guidelines.
-See the ":doc:`../contributor-guide/recipe-style-guide`" in the Yocto Project
+See the ":doc:`/contributor-guide/recipe-style-guide`" in the Yocto Project
 and OpenEmbedded Contributor Guide for reference.
 
 It is common for existing recipes to deviate a bit from this style.
@@ -1428,7 +1445,7 @@ chapter of the BitBake User Manual.
    The following example shows some of the ways you can use variables in
    recipes::
 
-      S = "${WORKDIR}/postfix-${PV}"
+      S = "${UNPACKDIR}/postfix-${PV}"
       CFLAGS += "-DNO_ASM"
       CFLAGS:append = " --enable-important-feature"
 

@@ -121,7 +121,7 @@ EXTRA_OECONF = " \
 EXTRA_OECONF:append:class-target = " --cross-prefix=${HOST_PREFIX}"
 EXTRA_OECONF:append:class-nativesdk = " --cross-prefix=${HOST_PREFIX}"
 
-B = "${WORKDIR}/build"
+B = "${UNPACKDIR}/build"
 
 #EXTRA_OECONF:append = " --python=${HOSTTOOLS_DIR}/python3"
 

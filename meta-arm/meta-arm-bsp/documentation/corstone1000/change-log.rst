@@ -1,5 +1,5 @@
 ..
- # Copyright (c) 2022-2024, Arm Limited.
+ # Copyright (c) 2022-2025, Arm Limited.
  #
  # SPDX-License-Identifier: MIT
 
@@ -9,6 +9,70 @@ Change Log
 
 This document contains a summary of the new features, changes and
 fixes in each release of Corstone-1000 software stack.
+
+***************
+Version 2025.05
+***************
+
+Changes
+=======
+
+- OP-TEE OS: Added support for v4.4
+- Trusted Services: PSA-Crypto structures aligned with TF-M, added protobuf interface to crypto-sp
+- Documentation: fixed typos, added host-level authentication section, enabled fly-out sidebar menu
+- Das U-Boot: Reserved memory for RSS communication-pointer access protocol
+- Linux Kernel: Upgraded kernel to v6.12, updated Upstream-Status notes for remoteproc patches
+- Corstone-1000 image: Implemented IMAGE_ROOTFS_EXTRA_SPACE workaround
+
+Corstone-1000 components versions
+=================================
+
++-------------------------------------------+-------------------+
+| linux-yocto                               | 6.12.30           |
++-------------------------------------------+-------------------+
+| u-boot                                    | 2023.07.02        |
++-------------------------------------------+-------------------+
+| external-system                           | 0.1.0             |
++-------------------------------------------+-------------------+
+| optee-client                              | 4.4.0             |
++-------------------------------------------+-------------------+
+| optee-os                                  | 4.4.0             |
++-------------------------------------------+-------------------+
+| trusted-firmware-a                        | 2.11.0            |
++-------------------------------------------+-------------------+
+| trusted-firmware-m                        | 2.1.1             |
++-------------------------------------------+-------------------+
+| libts                                     | 602be60719        |
++-------------------------------------------+-------------------+
+| ts-newlib                                 | 4.1.0             |
++-------------------------------------------+-------------------+
+| ts-psa-{crypto, iat, its. ps}-api-test    | 74dc6646ff        |
++-------------------------------------------+-------------------+
+| ts-sp-{se-proxy, smm-gateway}             | 602be60719        |
++-------------------------------------------+-------------------+
+
+Yocto distribution components versions
+======================================
+
++-------------------------------------------+----------------+
+| meta-arm                                  | walnascar      |
++-------------------------------------------+----------------+
+| poky                                      | ee0d8d8a61     |
++-------------------------------------------+----------------+
+| meta-openembedded                         | 2169c9afcc     |
++-------------------------------------------+----------------+
+| meta-secure-core                          | 423bc85b05     |
++-------------------------------------------+----------------+
+| busybox                                   | 1.37.0         |
++-------------------------------------------+----------------+
+| musl                                      | 1.2.5          |
++-------------------------------------------+----------------+
+| gcc-arm-none-eabi                         | 13.3.rel1      |
++-------------------------------------------+----------------+
+| gcc-cross-aarch64                         | 14.2.0         |
++-------------------------------------------+----------------+
+| openssl                                   | 3.4.1          |
++-------------------------------------------+----------------+
 
 
 ***************

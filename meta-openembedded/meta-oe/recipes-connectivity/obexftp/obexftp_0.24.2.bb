@@ -27,11 +27,12 @@ PACKAGECONFIG[swig] = "-DENABLE_SWIG=ON,-DENABLE_SWIG=OFF,swig"
 
 DEPENDS:remove:class-native = "fuse-native"
 
-S = "${WORKDIR}/${BP}-Source"
+S = "${UNPACKDIR}/${BP}-Source"
 
 EXTRA_OECMAKE += "-DCMAKE_SKIP_RPATH=ON \
                   -DENABLE_PERL=OFF -DENABLE_PYTHON=OFF \
                   -DENABLE_RUBY=OFF -DENABLE_TCL=OFF \
+                  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 "
 
 do_compile:class-native () {

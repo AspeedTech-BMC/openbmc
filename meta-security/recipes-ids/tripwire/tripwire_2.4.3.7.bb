@@ -19,8 +19,6 @@ SRC_URI = "\
 	file://run-ptest \
        "
 
-S = "${UNPACKDIR}/git"
-
 inherit autotools-brokensep update-rc.d ptest
 
 INITSCRIPT_NAME = "tripwire"

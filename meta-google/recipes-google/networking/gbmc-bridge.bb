@@ -27,14 +27,17 @@ SRC_URI += " \
   file://50-gbmc-psu-hardreset.sh.in \
   file://51-gbmc-reboot.sh \
   file://gbmc-br-dhcp@.service \
+  file://l2-br-dhcp4.service \
+  file://l2-br-dhcp6.service \
   file://gbmc-br-dhcp-term.sh \
   file://gbmc-br-dhcp-term.service \
   file://gbmc-br-lib.sh \
   file://gbmc-br-load-ip.service \
   file://gbmc-start-dhcp.sh \
   file://50-gbmc-br-cn-redirect.rules \
-  ${@'' if d.getVar('GBMC_DHCP_RELAY') != '1' else 'file://gbmc-br-dhcrelay@.service'} \
+  ${@'' if d.getVar('GBMC_DHCP_RELAY') != '1' else 'file://gbmc-br-dhcrelay.service'} \
   ${@'' if d.getVar('GBMC_DHCP_RELAY') != '1' else 'file://gbmc-br-dhcrelay.sh'} \
+  ${@'' if d.getVar('GBMC_DHCP_RELAY') != '1' else 'file://gbmc-br-dhcrelay'} \
   ${@'' if d.getVar('GBMC_DHCP_RELAY') != '1' else 'file://50-gbmc-br-dhcp.rules'} \
   ${@'' if d.getVar('GBMC_DHCP_RELAY') != '1' else 'file://-bmc-gbmcdhcp.netdev'} \
   ${@'' if d.getVar('GBMC_DHCP_RELAY') != '1' else 'file://-bmc-gbmcdhcp.network'} \
@@ -46,6 +49,7 @@ FILES:${PN}:append = " \
   ${datadir}/gbmc-ip-monitor \
   ${datadir}/gbmc-br-dhcp \
   ${datadir}/gbmc-br-lib.sh \
+  ${datadir}/br-dhcp-env \
   ${systemd_system_unitdir} \
   ${systemd_unitdir}/network \
   ${sysconfdir}/nftables \
@@ -104,7 +108,27 @@ def mac_to_eui64(mac):
 def macs_to_eui64(macs):
   return ' '.join([mac_to_eui64(mac) for mac in macs.split(' ')])
 
+def build_vendor_option(is_v4, dhcp_type, machine, version):
+  OPTION_CODE = 16
+  ENTERPRISE_ID = 11129
+  vendor_data_string = "gbmc:" + dhcp_type + ":" + machine + ":" + version
+  vendor_data_bytes = vendor_data_string.encode('ascii')
+  vendor_data_len = len(vendor_data_bytes)
+  if is_v4:
+    return vendor_data_string
+  # v6 Option Code
+  option_code = "16:"
+  # Field 2: Enterprise ID (4 bytes)
+  enterprise_id_hex = f'{ENTERPRISE_ID:08x}'
+  # Field 3: Vendor Data Length (2 bytes)
+  vendor_data_len_hex = f'{vendor_data_len:04x}'
+  # Field 4: Vendor Data (n bytes)
+  vendor_data_hex = vendor_data_bytes.hex()
+  return option_code + enterprise_id_hex + vendor_data_len_hex + vendor_data_hex
+
 GBMC_BRIDGE_INTFS ?= ""
+
+L2BR_DHCP_TYPE ?= ""
 
 ethernet_bridge_install() {
   # install udev rules if any
@@ -137,6 +161,24 @@ do_install() {
   else
     sed -i '/@ADDR@/d' ${UNPACKDIR}/-bmc-gbmcbr.network.in
   fi
+
+  gbmcbr_vc_opt_v4="${@build_vendor_option(1, "prod", d.getVar("MACHINE"), d.getVar("GBMC_VERSION"))}"
+  gbmcbr_vc_opt_v6="${@build_vendor_option(0, "prod", d.getVar("MACHINE"), d.getVar("GBMC_VERSION"))}"
+  gbmcbr_env_v4="GBMCBR_VENDOR_CLASS_V4='-V $gbmcbr_vc_opt_v4'"
+  gbmcbr_env_v6="GBMCBR_VENDOR_CLASS_V6='-x $gbmcbr_vc_opt_v6'"
+
+  l2br_env_v4=""
+  l2br_env_v6=""
+  if [ ! -z "${L2BR_DHCP_TYPE}" ]; then
+    l2br_vc_opt_v4="${@build_vendor_option(1, d.getVar("L2BR_DHCP_TYPE"), d.getVar("MACHINE"), d.getVar("GBMC_VERSION"))}"
+    l2br_vc_opt_v6="${@build_vendor_option(0, d.getVar("L2BR_DHCP_TYPE"), d.getVar("MACHINE"), d.getVar("GBMC_VERSION"))}"
+    l2br_env_v4="L2BR_VENDOR_CLASS_V4='-V $l2br_vc_opt_v4'"
+    l2br_env_v6="L2BR_VENDOR_CLASS_V6='-x $l2br_vc_opt_v6'"
+  fi
+  printf "%s\n%s\n%s\n%s\n" "$gbmcbr_env_v4" "$gbmcbr_env_v6" "$l2br_env_v4" "$l2br_env_v6" > ${UNPACKDIR}/br-dhcp-env
+
+  install -d ${D}/${datadir}
+  install -m0644 ${UNPACKDIR}/br-dhcp-env ${D}/${datadir}/
 
   ethernet_bridge_install
 
@@ -188,7 +230,9 @@ do_install() {
   install -m0644 ${UNPACKDIR}/gbmc-br-ra.service ${D}${systemd_system_unitdir}/
 
   if [ "${GBMC_DHCP_RELAY}" = 1 ]; then
-    install -m0644 ${UNPACKDIR}/gbmc-br-dhcrelay@.service ${D}${systemd_system_unitdir}/
+    install -m0644 ${UNPACKDIR}/gbmc-br-dhcrelay.service ${D}${systemd_system_unitdir}/
+    ln -sv ../gbmc-br-dhcrelay.service $wantdir/
+    install -m0755 ${UNPACKDIR}/gbmc-br-dhcrelay ${D}${libexecdir}/
     install -m0644 ${UNPACKDIR}/gbmc-br-dhcrelay.sh "$mondir"/
     install -m0644 ${UNPACKDIR}/50-gbmc-br-dhcp.rules $nftables_dir/
     install -m0644 ${UNPACKDIR}/-bmc-gbmcdhcp.netdev $netdir/
@@ -196,6 +240,16 @@ do_install() {
     install -m0644 ${UNPACKDIR}/-bmc-gbmcbrdhcp.netdev $netdir/
     install -m0644 ${UNPACKDIR}/-bmc-gbmcbrdhcp.network $netdir/
   fi
+}
+
+SYSTEMD_SERVICE:${PN}:append:mfg = " \
+    l2-br-dhcp4.service \
+    l2-br-dhcp6.service \
+  "
+
+do_install:append:mfg() {
+  install -m0644 ${UNPACKDIR}/l2-br-dhcp4.service ${D}${systemd_system_unitdir}/
+  install -m0644 ${UNPACKDIR}/l2-br-dhcp6.service ${D}${systemd_system_unitdir}/
 }
 
 do_rm_work:prepend() {

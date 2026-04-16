@@ -23,7 +23,6 @@ DEPENDS += "phosphor-dbus-interfaces"
 DEPENDS += "phosphor-logging"
 DEPENDS += "libcereal"
 
-S = "${WORKDIR}/git"
 SRC_URI += "file://merge_settings.py"
 
 # 'boot_type' configuration parameter is used to add support for

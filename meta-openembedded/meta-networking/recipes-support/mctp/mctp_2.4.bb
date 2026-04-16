@@ -9,7 +9,6 @@ SRCREV = "8b019a3e4d335c7d31099762762dfee2e4705d37"
 
 SRC_URI = "git://github.com/CodeConstruct/mctp;branch=main;protocol=https;tag=v${PV}"
 
-S = "${WORKDIR}/git"
 
 inherit meson pkgconfig systemd
 

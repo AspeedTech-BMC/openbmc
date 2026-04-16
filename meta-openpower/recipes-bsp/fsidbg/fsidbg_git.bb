@@ -8,8 +8,6 @@ SRC_URI = "git://github.com/eddiejames/fsidbg.git;branch=master;protocol=https"
 SRCREV = "dfe278065c877724242dfae15a4c627fd2e3611c"
 PV = "git${SRCREV}"
 
-S = "${WORKDIR}/git"
-
 do_install() {
     install -d ${D}${bindir}
     install -m 0755 fsidbg ${D}${bindir}

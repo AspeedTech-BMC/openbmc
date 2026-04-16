@@ -23,4 +23,3 @@ PACKAGECONFIG:append_df-openpower = "openpower-support"
 
 SRC_URI = "git://github.com/YADRO-KNS/obmc-yadro-fwupdate;branch=master;protocol=https"
 SRCREV = "eea7cadf0a5b49b3b9eb304b67494516469e96af"
-S = "${WORKDIR}/git"

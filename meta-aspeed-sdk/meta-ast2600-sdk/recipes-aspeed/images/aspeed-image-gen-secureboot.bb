@@ -80,8 +80,7 @@ install_unsigned_image() {
 
     # kernel unsigned image, dtb and its
     install -m 0644 ${DEPLOY_DIR_IMAGE}/${KERNEL_FITIMAGE_ITS_NAME} ${S}/${GEN_IMAGE_MODE}
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/fitImage-linux.bin-${MACHINE} ${S}/${GEN_IMAGE_MODE}
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/fitImage-linux.bin-${MACHINE} ${S}/${GEN_IMAGE_MODE}/linux.bin
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/linux.bin ${S}/${GEN_IMAGE_MODE}/linux.bin
     for kernel_dtb in ${KERNEL_DEVICETREE}; do
         kernel_dtb_basename=$(basename ${kernel_dtb})
         install -m 0644 ${DEPLOY_DIR_IMAGE}/${kernel_dtb_basename} ${S}/${GEN_IMAGE_MODE}
@@ -124,11 +123,8 @@ make_otp_image() {
     fi
 }
 
-# export CRYPTOGRAPHY_OPENSSL_NO_LEGACY variable to fix the following errors.
-# OpenSSL 3.0 legacy provider failed to load
-# https://github.com/pyca/cryptography/issues/10598
 socsec_sign_spl_and_verify() {
-    export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
+    export OPENSSL_MODULES="${STAGING_LIBDIR_NATIVE}/ossl-modules"
     socsec_sign_key_dir="${OTP_SOCSEC_KEY_DIR}"
     socsec_sign_key="${socsec_sign_key_dir}/${ROT_SIGN_KEY_NAME}"
     signing_extra_default_opts="--stack_intersects_verification_region=false --rsa_key_order=big"
@@ -754,8 +750,8 @@ def verify_uboot_kernel_image_status(d):
     if not spl_binary:
         bb.fatal("Only support SPL")
 
-    kernel_imagetype = d.getVar('KERNEL_IMAGETYPE', True)
-    if "fitImage" not in kernel_imagetype:
+    kernel_imagetype = d.getVar('KERNEL_CLASSES', True)
+    if "kernel-fit-extra-artifacts" not in kernel_imagetype:
         bb.fatal("Only support Kernel FIT image")
 
     uboot_fitimage_enable = d.getVar('UBOOT_FITIMAGE_ENABLE', True)
@@ -957,6 +953,7 @@ addtask deploy before do_build after do_compile
 
 do_deploy[depends] += " \
     virtual/kernel:do_deploy \
+    linux-yocto-fitimage:do_deploy \
     virtual/bootloader:do_deploy \
     obmc-phosphor-image:do_image_complete \
     "

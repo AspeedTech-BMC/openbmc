@@ -69,7 +69,6 @@ require conf/distro/include/yocto-uninative.inc
 DISTRO_NAME ?= "Phosphor OpenBMC (Phosphor OpenBMC Project Reference Distro)"
 TARGET_VENDOR = "-openbmc"
 
-
 VIRTUAL-RUNTIME_keymaps = ""
 VIRTUAL-RUNTIME_dbus = "dbus-broker"
 

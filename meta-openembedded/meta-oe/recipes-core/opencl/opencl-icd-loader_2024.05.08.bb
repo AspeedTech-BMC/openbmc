@@ -11,13 +11,13 @@ DEPENDS += "opencl-headers"
 PROVIDES = "virtual/opencl-icd"
 RPROVIDES:${PN} = "virtual-opencl-icd"
 
-S = "${WORKDIR}/git"
 
 SRCREV = "861b68b290e76d08e7241608479c16431f529945"
 SRC_URI = "git://github.com/KhronosGroup/OpenCL-ICD-Loader.git;branch=main;protocol=https"
 
 EXTRA_OECMAKE:append = " \
     -DOPENCL_ICD_LOADER_HEADERS_DIR=${STAGING_INCDIR} \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 "
 
 do_install() {

@@ -20,6 +20,4 @@ SRC_URI += " \
     file://iana-enterprise-numbers \
     "
 
-S = "${WORKDIR}/git"
-
 EXTRA_OECONF:append = " --disable-ipmishell --enable-intf-dbus DEFAULT_INTF=dbus "

@@ -19,8 +19,6 @@ PACKAGECONFIG[associations] = "-Dassociations=enabled, -Dassociations=disabled"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
-S = "${WORKDIR}/git"
-
 inherit meson \
         pkgconfig \
         python3native \

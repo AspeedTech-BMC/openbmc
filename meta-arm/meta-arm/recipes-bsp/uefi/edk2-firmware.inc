@@ -57,7 +57,7 @@ DEPENDS += "util-linux-native iasl-native"
 
 inherit deploy
 
-S = "${WORKDIR}/edk2"
+S = "${UNPACKDIR}/edk2"
 B = "${WORKDIR}/build"
 
 LDFLAGS[unexport] = "1"
@@ -81,17 +81,6 @@ EDK_COMPILER:toolchain-clang = "CLANG38"
 export CLANG38_AARCH64_PREFIX = "${TARGET_PREFIX}"
 export CLANG38_ARM_PREFIX = "${TARGET_PREFIX}"
 
-# These variables were changed in edk2 commit
-# 206168e83f0901cbc1815ef5df4ac6598ad9721b, which was part of edk2-202305
-export CC = "${BUILD_CC}"
-export CXX = "${BUILD_CXX}"
-export AS = "${BUILD_AS}"
-export AR = "${BUILD_AR}"
-export LD = "${BUILD_LD}"
-export CFLAGS = "${BUILD_CFLAGS}"
-export CPPFLAGS = "${BUILD_CPPFLAGS}"
-export LDFLAGS = "${BUILD_LFLAGS}"
-
 #FIXME - arm32 doesn't work with clang due to a linker issue
 TOOLCHAIN:arm = "gcc"
 
@@ -108,8 +97,13 @@ do_compile() {
     cp ${EDK_TOOLS_PATH}/Conf/tools_def.template ${S}/Conf/tools_def.txt
     cp ${EDK_TOOLS_PATH}/Conf/target.template ${S}/Conf/target.txt
 
-    # Build basetools
-    oe_runmake -C ${S}/BaseTools
+    # Build basetools for the build host
+    oe_runmake -C ${S}/BaseTools \
+        CC="${BUILD_CC}" \
+        CXX="${BUILD_CXX}" \
+        AS="${BUILD_AS}" \
+        AR="${BUILD_AR}" \
+        LD="${BUILD_LD}"
 
     PATH="${WORKSPACE}:${BTOOLS_PATH}:$PATH" \
     build \

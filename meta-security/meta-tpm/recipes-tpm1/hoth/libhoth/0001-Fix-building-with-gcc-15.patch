@@ -1,0 +1,151 @@
+From 59dfffdb03654e004d848e8f6639ba066f7786a1 Mon Sep 17 00:00:00 2001
+From: Scott Murray <scott.murray@konsulko.com>
+Date: Thu, 3 Jul 2025 17:41:16 -0400
+Subject: [PATCH 1/2] Fix building with gcc 15
+
+Correct function signatures of a few of the htool command functions
+to fix gcc 15 errors from incompatible function pointer types.
+
+Upstream-Status: Pending
+Signed-off-by: Scott Murray <scott.murray@konsulko.com>
+---
+ examples/htool_key_rotation.c   | 6 +++---
+ examples/htool_key_rotation.h   | 6 +++---
+ examples/htool_payload.c        | 2 +-
+ examples/htool_payload.h        | 2 +-
+ examples/htool_payload_update.c | 2 +-
+ examples/htool_payload_update.h | 2 +-
+ examples/htool_statistics.c     | 2 +-
+ examples/htool_statistics.h     | 3 ++-
+ 8 files changed, 13 insertions(+), 12 deletions(-)
+
+diff --git a/examples/htool_key_rotation.c b/examples/htool_key_rotation.c
+index af7ef59..3b938cd 100644
+--- a/examples/htool_key_rotation.c
++++ b/examples/htool_key_rotation.c
+@@ -43,7 +43,7 @@ static const char *get_validation_method_string(uint32_t validation_method) {
+   }
+ }
+ 
+-int htool_key_rotation_get_status(void) {
++int htool_key_rotation_get_status(const struct htool_invocation* inv) {
+   struct libhoth_device *dev = htool_libhoth_device();
+   if (!dev) {
+     return -1;
+@@ -65,7 +65,7 @@ int htool_key_rotation_get_status(void) {
+   return 0;
+ }
+ 
+-int htool_key_rotation_get_version(void) {
++int htool_key_rotation_get_version(const struct htool_invocation* inv) {
+   struct libhoth_device *dev = htool_libhoth_device();
+   if (!dev) {
+     return -1;
+@@ -161,7 +161,7 @@ int htool_key_rotation_update(const struct htool_invocation *inv) {
+   return result;
+ }
+ 
+-int htool_key_rotation_payload_status() {
++int htool_key_rotation_payload_status(const struct htool_invocation* inv) {
+   struct libhoth_device *dev = htool_libhoth_device();
+   if (!dev) {
+     return -1;
+diff --git a/examples/htool_key_rotation.h b/examples/htool_key_rotation.h
+index 1dbfc02..cbcde98 100644
+--- a/examples/htool_key_rotation.h
++++ b/examples/htool_key_rotation.h
+@@ -23,9 +23,9 @@ extern "C" {
+ #endif
+ 
+ struct htool_invocation;
+-int htool_key_rotation_get_status();
+-int htool_key_rotation_get_version();
+-int htool_key_rotation_payload_status();
++int htool_key_rotation_get_status(const struct htool_invocation* inv);
++int htool_key_rotation_get_version(const struct htool_invocation* inv);
++int htool_key_rotation_payload_status(const struct htool_invocation* inv);
+ int htool_key_rotation_read(const struct htool_invocation* inv);
+ int htool_key_rotation_read_chunk_type(const struct htool_invocation* inv);
+ int htool_key_rotation_update(const struct htool_invocation* inv);
+diff --git a/examples/htool_payload.c b/examples/htool_payload.c
+index cada560..5a87660 100644
+--- a/examples/htool_payload.c
++++ b/examples/htool_payload.c
+@@ -29,7 +29,7 @@
+ #include "protocol/payload_info.h"
+ #include "protocol/payload_status.h"
+ 
+-int htool_payload_status() {
++int htool_payload_status(const struct htool_invocation* inv) {
+   struct libhoth_device* dev = htool_libhoth_device();
+   if (!dev) {
+     return -1;
+diff --git a/examples/htool_payload.h b/examples/htool_payload.h
+index f218034..82c77ac 100644
+--- a/examples/htool_payload.h
++++ b/examples/htool_payload.h
+@@ -24,7 +24,7 @@
+ extern "C" {
+ #endif
+ 
+-int htool_payload_status();
++int htool_payload_status(const struct htool_invocation* inv);
+ int htool_payload_info(const struct htool_invocation* inv);
+ 
+ #ifdef __cplusplus
+diff --git a/examples/htool_payload_update.c b/examples/htool_payload_update.c
+index 8e3beb3..6cf44f1 100644
+--- a/examples/htool_payload_update.c
++++ b/examples/htool_payload_update.c
+@@ -125,7 +125,7 @@ const char *payload_update_getstatus_half_string(uint8_t h) {
+   }
+ }
+ 
+-int htool_payload_update_getstatus() {
++int htool_payload_update_getstatus(const struct htool_invocation* inv) {
+   struct libhoth_device *dev = htool_libhoth_device();
+   if (!dev) {
+     return -1;
+diff --git a/examples/htool_payload_update.h b/examples/htool_payload_update.h
+index f87c5e7..55c6b44 100644
+--- a/examples/htool_payload_update.h
++++ b/examples/htool_payload_update.h
+@@ -24,7 +24,7 @@ extern "C" {
+ 
+ struct htool_invocation;
+ int htool_payload_update(const struct htool_invocation* inv);
+-int htool_payload_update_getstatus();
++int htool_payload_update_getstatus(const struct htool_invocation* inv);
+ 
+ #ifdef __cplusplus
+ }
+diff --git a/examples/htool_statistics.c b/examples/htool_statistics.c
+index 4c5b536..6bca31a 100644
+--- a/examples/htool_statistics.c
++++ b/examples/htool_statistics.c
+@@ -178,7 +178,7 @@ const char* PayloadUpdateErrorToString(uint16_t reason) {
+   }
+ }
+ 
+-int htool_statistics() {
++int htool_statistics(const struct htool_invocation* inv) {
+   struct libhoth_device* dev = htool_libhoth_device();
+   if (!dev) {
+     return -1;
+diff --git a/examples/htool_statistics.h b/examples/htool_statistics.h
+index 2dd59b6..fe54eda 100644
+--- a/examples/htool_statistics.h
++++ b/examples/htool_statistics.h
+@@ -19,7 +19,8 @@
+ extern "C" {
+ #endif
+ 
+-int htool_statistics();
++struct htool_invocation;
++int htool_statistics(const struct htool_invocation* inv);
+ 
+ #ifdef __cplusplus
+ }
+-- 
+2.50.0
+

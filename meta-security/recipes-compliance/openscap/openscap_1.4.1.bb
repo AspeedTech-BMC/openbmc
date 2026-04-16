@@ -15,8 +15,6 @@ SRC_URI = "git://github.com/OpenSCAP/openscap.git;branch=main;protocol=https \
 
 SRCREV = "23a8ea3de3c4fd6017db4067675a81287177166e"
 
-S = "${UNPACKDIR}/git"
-
 inherit cmake pkgconfig python3native python3targetconfig perlnative systemd
 
 PACKAGECONFIG ?= "python3 rpm perl gcrypt ${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'selinux', '', d)}"
@@ -56,14 +54,11 @@ do_install:append:class-native () {
     cp -a ${D}/${STAGING_DATADIR_NATIVE}/openscap $oscapdir
 }
 
-
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE:${PN} = "${@bb.utils.contains('PACKAGECONFIG','remediate_service', 'oscap-remediate.service', '',d)}"
 SYSTEMD_AUTO_ENABLE = "disable"
 
-
 FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}"
-
 
 RDEPENDS:${PN} = "libxml2 python3-core libgcc bash"
 RDEPENDS:${PN}-class-target = "libxml2 python3-core libgcc bash os-release"

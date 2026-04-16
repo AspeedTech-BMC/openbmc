@@ -265,7 +265,7 @@ system and gives an overview of their function and contents.
       build process. By default, this directory is the same as the
       :term:`S` directory, which is defined as::
 
-         S = "${WORKDIR}/${BP}"
+         S = "${UNPACKDIR}/${BP}"
 
       You can separate the (:term:`S`) directory and the directory pointed to
       by the :term:`B` variable. Most Autotools-based recipes support
@@ -560,6 +560,13 @@ system and gives an overview of their function and contents.
    :term:`BB_GENERATE_SHALLOW_TARBALLS`
       See :term:`bitbake:BB_GENERATE_SHALLOW_TARBALLS` in the BitBake manual.
 
+   :term:`BB_GIT_DEFAULT_DESTSUFFIX`
+      See :term:`bitbake:BB_GIT_DEFAULT_DESTSUFFIX` in the BitBake manual.
+
+      In :term:`OpenEmbedded-Core (OE-Core)`, this variable is set to
+      :term:`BP` by default in :oe_git:`bitbake.conf
+      </openembedded-core/tree/meta/conf/bitbake.conf>`.
+
    :term:`BB_GIT_SHALLOW`
       See :term:`bitbake:BB_GIT_SHALLOW` in the BitBake manual.
 
@@ -582,8 +589,12 @@ system and gives an overview of their function and contents.
       See :term:`bitbake:BB_INVALIDCONF` in the BitBake manual.
 
    :term:`BB_LOADFACTOR_MAX`
-      The system load threshold above which BitBake will stop runnig extra
-      tasks.
+      The system load threshold above which :term:`BitBake` will stop running
+      extra tasks.
+
+      For more information on how to limit the resources used during builds, see
+      the :doc:`/dev-manual/limiting-resources` section of the Yocto Project
+      Development Tasks Manual.
 
    :term:`BB_LOGCONFIG`
       See :term:`bitbake:BB_LOGCONFIG` in the BitBake manual.
@@ -642,11 +653,9 @@ system and gives an overview of their function and contents.
       An alternative to using :term:`BB_NUMBER_THREADS` to keep the usage
       of build system resources under control is to use the smarter
       :term:`BB_PRESSURE_MAX_CPU`, :term:`BB_PRESSURE_MAX_IO` or
-      :term:`BB_PRESSURE_MAX_MEMORY` controls. They will prevent BitBake
-      from starting new tasks as long as thresholds are exceeded. Anyway,
-      as with :term:`BB_NUMBER_THREADS`, such controls won't prevent the
-      tasks already being run from using all CPU threads on the system
-      if :term:`PARALLEL_MAKE` is not set to a low value.
+      :term:`BB_PRESSURE_MAX_MEMORY` controls. See the
+      :doc:`/dev-manual/limiting-resources` section of the Yocto Project
+      Development Tasks Manual.
 
    :term:`BB_ORIGENV`
       See :term:`bitbake:BB_ORIGENV` in the BitBake manual.
@@ -657,11 +666,23 @@ system and gives an overview of their function and contents.
    :term:`BB_PRESSURE_MAX_CPU`
       See :term:`bitbake:BB_PRESSURE_MAX_CPU` in the BitBake manual.
 
+      For more information on how to limit the resources used during builds, see
+      the :doc:`/dev-manual/limiting-resources` section of the Yocto Project
+      Development Tasks Manual.
+
    :term:`BB_PRESSURE_MAX_IO`
       See :term:`bitbake:BB_PRESSURE_MAX_IO` in the BitBake manual.
 
+      For more information on how to limit the resources used during builds, see
+      the :doc:`/dev-manual/limiting-resources` section of the Yocto Project
+      Development Tasks Manual.
+
    :term:`BB_PRESSURE_MAX_MEMORY`
       See :term:`bitbake:BB_PRESSURE_MAX_MEMORY` in the BitBake manual.
+
+      For more information on how to limit the resources used during builds, see
+      the :doc:`/dev-manual/limiting-resources` section of the Yocto Project
+      Development Tasks Manual.
 
    :term:`BB_RUNFMT`
       See :term:`bitbake:BB_RUNFMT` in the BitBake manual.
@@ -2576,7 +2597,7 @@ system and gives an overview of their function and contents.
       You can safely share this directory between multiple builds on the
       same development machine. For additional information on how the build
       process gets source files when working behind a firewall or proxy
-      server, see this specific question in the ":doc:`faq`"
+      server, see this specific question in the ":doc:`/ref-manual/faq`"
       chapter. You can also refer to the
       ":yocto_wiki:`Working Behind a Network Proxy </Working_Behind_a_Network_Proxy>`"
       Wiki page.
@@ -2790,7 +2811,7 @@ system and gives an overview of their function and contents.
       ``meta/classes-recipe`` to see how the variable is used.
 
    :term:`EXTERNAL_KERNEL_DEVICETREE`
-      When inheriting :ref:`ref-classes-kernel-fitimage` and a
+      When inheriting :ref:`ref-classes-kernel-fit-image` and a
       :term:`PREFERRED_PROVIDER` for ``virtual/dtb`` set to ``devicetree``, the
       variable :term:`EXTERNAL_KERNEL_DEVICETREE` can be used to specify a
       directory containing one or more compiled device tree or device tree
@@ -3318,7 +3339,7 @@ system and gives an overview of their function and contents.
       Specifies the value of the ``#address-cells`` value for the
       description of the FIT image.
 
-      The default value is set to "1" by the :ref:`ref-classes-kernel-fitimage`
+      The default value is set to "1" by the :ref:`ref-classes-kernel-fit-image`
       class, which corresponds to 32 bit addresses.
 
       For platforms that need to set 64 bit addresses, for example in
@@ -3337,11 +3358,11 @@ system and gives an overview of their function and contents.
       Specifies the default device tree binary (dtb) file for a FIT image
       when multiple ones are provided.
 
-      This variable is used in the :ref:`ref-classes-kernel-fitimage` class.
+      This variable is used in the :ref:`ref-classes-kernel-fit-image` class.
 
    :term:`FIT_DESC`
       Specifies the description string encoded into a FIT image. The
-      default value is set by the :ref:`ref-classes-kernel-fitimage` class as
+      default value is set by the :ref:`ref-classes-kernel-fit-image` class as
       follows::
 
          FIT_DESC ?= "U-Boot fitImage for ${DISTRO_NAME}/${PV}/${MACHINE}"
@@ -3350,12 +3371,12 @@ system and gives an overview of their function and contents.
       Decides whether to generate the keys for signing the FIT image if
       they don't already exist. The keys are created in
       :term:`UBOOT_SIGN_KEYDIR`. The default value is set to "0"
-      by the :ref:`ref-classes-kernel-fitimage` class.
+      by the :ref:`ref-classes-kernel-fit-image` class.
 
    :term:`FIT_HASH_ALG`
       Specifies the hash algorithm used in creating the FIT Image.
       This variable is set by default to "sha256" by the
-      :ref:`ref-classes-kernel-fitimage` class.
+      :ref:`ref-classes-kernel-fit-image` class.
 
    :term:`FIT_KERNEL_COMP_ALG`
       The compression algorithm to use for the kernel image inside the FIT Image.
@@ -3374,31 +3395,31 @@ system and gives an overview of their function and contents.
    :term:`FIT_KEY_GENRSA_ARGS`
       Arguments to ``openssl genrsa`` for generating a RSA private key for
       signing the FIT image. The default value is set to "-F4" by the
-      :ref:`ref-classes-kernel-fitimage` class.
+      :ref:`ref-classes-kernel-fit-image` class.
 
    :term:`FIT_KEY_REQ_ARGS`
       Arguments to ``openssl req`` for generating a certificate for signing
       the FIT image. The default value is "-batch -new" by the
-      :ref:`ref-classes-kernel-fitimage` class, "batch" for
+      :ref:`ref-classes-kernel-fit-image` class, "batch" for
       non interactive mode and "new" for generating new keys.
 
    :term:`FIT_KEY_SIGN_PKCS`
       Format for the public key certificate used for signing the FIT image.
       The default value is set to "x509" by the
-      :ref:`ref-classes-kernel-fitimage` class.
+      :ref:`ref-classes-kernel-fit-image` class.
 
    :term:`FIT_SIGN_ALG`
       Specifies the signature algorithm used in creating the FIT Image.
       This variable is set by default to "rsa2048" by the
-      :ref:`ref-classes-kernel-fitimage` class.
+      :ref:`ref-classes-kernel-fit-image` class.
 
    :term:`FIT_PAD_ALG`
       Specifies the padding algorithm used in creating the FIT Image.
       The default value is set to "pkcs-1.5" by the
-      :ref:`ref-classes-kernel-fitimage` class.
+      :ref:`ref-classes-kernel-fit-image` class.
 
    :term:`FIT_SIGN_INDIVIDUAL`
-      If set to "1", the :ref:`ref-classes-kernel-fitimage` class signs each
+      If set to "1", the :ref:`ref-classes-kernel-fit-image` class signs each
       image node individually, including the kernel, DTB, RAM disk, and any
       other image types present in the FIT image, in addition to signing the
       configuration nodes.
@@ -3431,13 +3452,13 @@ system and gives an overview of their function and contents.
    :term:`FIT_SIGN_NUMBITS`
       Size of the private key used in the FIT image, in number of bits.
       The default value for this variable is set to "2048"
-      by the :ref:`ref-classes-kernel-fitimage` class.
+      by the :ref:`ref-classes-kernel-fit-image` class.
 
    :term:`FIT_UBOOT_ENV`
       This variable allows to add a U-Boot script as a text file to the
       FIT image. Such a script can be sourced from the U-Boot shell.
 
-      When inheriting the :ref:`ref-classes-kernel-fitimage` class a
+      When inheriting the :ref:`ref-classes-kernel-fit-image` class a
       script file should be included in the :term:`SRC_URI` of the Linux
       kernel recipe.
 
@@ -5036,15 +5057,8 @@ system and gives an overview of their function and contents.
       options not explicitly specified will be disabled in the kernel
       config.
 
-      In case :term:`KCONFIG_MODE` is not set the behaviour will depend on where
-      the ``defconfig`` file is coming from. An "in-tree" ``defconfig`` file
-      will be handled in ``alldefconfig`` mode, a ``defconfig`` file placed
-      in ``${WORKDIR}`` through a meta-layer will be handled in
-      ``allnoconfig`` mode.
-
-      An "in-tree" ``defconfig`` file can be selected via the
-      :term:`KBUILD_DEFCONFIG` variable. :term:`KCONFIG_MODE` does not need to
-      be explicitly set.
+      In case :term:`KCONFIG_MODE` is not set the ``defconfig`` file
+      will be handled in ``allnoconfig`` mode.
 
       A ``defconfig`` file compatible with ``allnoconfig`` mode can be
       generated by copying the ``.config`` file from a working Linux kernel
@@ -5082,9 +5096,7 @@ system and gives an overview of their function and contents.
    :term:`KERNEL_CLASSES`
       A list of classes defining kernel image types that the
       :ref:`ref-classes-kernel` class should inherit. You typically
-      append this variable to enable extended image types. An example is
-      ":ref:`ref-classes-kernel-fitimage`", which enables
-      FIT image support and resides in ``meta/classes-recipe/kernel-fitimage.bbclass``.
+      append this variable to enable extended image types.
       You can register custom kernel image types with the
       :ref:`ref-classes-kernel` class using this variable.
 
@@ -5358,6 +5370,27 @@ system and gives an overview of their function and contents.
       :term:`KERNEL_SRC` variable, which is identical to
       the :term:`KERNEL_PATH` variable. Both variables are common variables
       used by external Makefiles to point to the kernel source directory.
+
+   :term:`KERNEL_SPLIT_MODULES`
+      When inheriting the :ref:`ref-classes-kernel-module-split` class, this
+      variable controls whether kernel modules are split into separate packages
+      or bundled into a single package.
+
+      For some use cases, a monolithic kernel module package
+      :term:`KERNEL_PACKAGE_NAME` that contains all modules built from the
+      kernel sources may be preferred to speed up the installation.
+
+      By default, this variable is set to ``1``, resulting in one package per
+      module. Setting it to any other value will generate a single monolithic
+      package containing all kernel modules.
+
+      .. note::
+
+         If :term:`KERNEL_SPLIT_MODULES` is set to 0, it is still possible to
+         install all kernel modules at once by adding ``kernel-modules`` (assuming
+         :term:`KERNEL_PACKAGE_NAME` is ``kernel-modules``) to :term:`IMAGE_INSTALL`.
+         The way it works is that a placeholder "kernel-modules" package will be
+         created and will depend on every other individual kernel module packages.
 
    :term:`KERNEL_SRC`
       The location of the kernel sources. This variable is set to the value
@@ -6987,6 +7020,10 @@ system and gives an overview of their function and contents.
       ":ref:`dev-manual/speeding-up-build:speeding up a build`"
       section in the Yocto Project Development Tasks Manual.
 
+      For more information on how to limit the resources used during builds, see
+      the :doc:`/dev-manual/limiting-resources` section of the Yocto Project
+      Development Tasks Manual.
+
    :term:`PARALLEL_MAKEINST`
       Extra options passed to the build tool install command
       (``make install``, ``ninja install`` or more specific ones)
@@ -8048,7 +8085,7 @@ system and gives an overview of their function and contents.
    :term:`S`
       The location in the :term:`Build Directory` where
       unpacked recipe source code resides. By default, this directory is
-      ``${``\ :term:`WORKDIR`\ ``}/${``\ :term:`BPN`\ ``}-${``\ :term:`PV`\ ``}``,
+      ``${``\ :term:`UNPACKDIR`\ ``}/${``\ :term:`BPN`\ ``}-${``\ :term:`PV`\ ``}``,
       where ``${BPN}`` is the base recipe name and ``${PV}`` is the recipe
       version. If the source tarball extracts the code to a directory named
       anything other than ``${BPN}-${PV}``, or if the source code is
@@ -8061,18 +8098,9 @@ system and gives an overview of their function and contents.
       ``poky/build``. In this case, the work directory the build system
       uses to keep the unpacked recipe for ``db`` is the following::
 
-         poky/build/tmp/work/qemux86-poky-linux/db/5.1.19-r3/db-5.1.19
+         poky/build/tmp/work/qemux86-poky-linux/db/5.1.19-r3/sources/db-5.1.19
 
       The unpacked source code resides in the ``db-5.1.19`` folder.
-
-      This next example assumes a Git repository. By default, Git
-      repositories are cloned to ``${WORKDIR}/git`` during
-      :ref:`ref-tasks-fetch`. Since this path is different
-      from the default value of :term:`S`, you must set it specifically so the
-      source can be located::
-
-         SRC_URI = "git://path/to/repo.git;branch=main"
-         S = "${WORKDIR}/git"
 
    :term:`SANITY_REQUIRED_UTILITIES`
       Specifies a list of command-line utilities that should be checked for
@@ -8448,7 +8476,6 @@ system and gives an overview of their function and contents.
       sources are fetched from a Git repository and ``setup.py`` is in a
       ``python/pythonmodule`` subdirectory, you would have this::
 
-         S = "${WORKDIR}/git"
          SETUPTOOLS_SETUP_PATH = "${S}/python/pythonmodule"
 
    :term:`SIGGEN_EXCLUDE_SAFE_RECIPE_DEPS`
@@ -8770,6 +8797,28 @@ system and gives an overview of their function and contents.
       ``tmp/deploy/images/MACHINE`` by a factor of 130 (+15 MiB for this
       image), compared to just using the :ref:`ref-classes-create-spdx` class
       with no option.
+
+   :term:`SPDX_INCLUDE_COMPILED_SOURCES`
+      This option allows the same as :term:`SPDX_INCLUDE_SOURCES` but including
+      only the sources used to compile the host tools and the target packages.
+      While :term:`SPDX_INCLUDE_SOURCES` includes all files in the source
+      directory as source file descriptions, :term:`SPDX_INCLUDE_COMPILED_SOURCES`
+      includes only the sources that are used to produce the binaries delivered
+      as packages. The source files that are not used during compilation are not
+      included in the SBOM. It uses debugsource information generated during
+      ``do_package`` to filter out source files.
+
+      This enables an external tool to use the SPDX information to disregard
+      vulnerabilities that are not compiled in the packages.
+
+      Enable this option as follows::
+
+         SPDX_INCLUDE_COMPILED_SOURCES = "1"
+
+      According to our tests, building ``core-image-minimal`` for the
+      ``qemux86-64`` machine, enabling this option compared with the
+      :term:`SPDX_INCLUDE_SOURCES` reduces the size of the  ``tmp/deploy/spdx``
+      directory from 2GB to 1.6GB.
 
    :term:`SPDX_NAMESPACE_PREFIX`
       This option could be used in order to change the prefix of ``spdxDocument``
@@ -10328,13 +10377,13 @@ system and gives an overview of their function and contents.
    :term:`UBOOT_DTB_LOADADDRESS`
       Specifies the load address for the dtb image used by U-Boot. During FIT
       image creation, the :term:`UBOOT_DTB_LOADADDRESS` variable is used in
-      :ref:`ref-classes-kernel-fitimage` class to specify the load address to be
+      :ref:`ref-classes-kernel-fit-image` class to specify the load address to be
       used in creating the dtb sections of Image Tree Source for the FIT image.
 
    :term:`UBOOT_DTBO_LOADADDRESS`
       Specifies the load address for the dtbo image used by U-Boot.  During FIT
       image creation, the :term:`UBOOT_DTBO_LOADADDRESS` variable is used in
-      :ref:`ref-classes-kernel-fitimage` class to specify the load address to be
+      :ref:`ref-classes-kernel-fit-image` class to specify the load address to be
       used in creating the dtbo sections of Image Tree Source for the FIT image.
 
    :term:`UBOOT_ENTRYPOINT`
@@ -10346,7 +10395,7 @@ system and gives an overview of their function and contents.
       -  The :term:`FIT_ADDRESS_CELLS` variable for FIT image creation.
       -  The :term:`UBOOT_FIT_ADDRESS_CELLS` variable for U-Boot FIT image creation.
 
-      This variable is used by the :ref:`ref-classes-kernel-fitimage`,
+      This variable is used by the :ref:`ref-classes-kernel-fit-image`,
       :ref:`ref-classes-kernel-uimage`, :ref:`ref-classes-kernel`,
       :ref:`ref-classes-uboot-config` and :ref:`ref-classes-uboot-sign`
       classes.
@@ -10623,7 +10672,7 @@ system and gives an overview of their function and contents.
       -  The :term:`FIT_ADDRESS_CELLS` variable for FIT image creation.
       -  The :term:`UBOOT_FIT_ADDRESS_CELLS` variable for U-Boot FIT image creation.
 
-      This variable is used by the :ref:`ref-classes-kernel-fitimage`,
+      This variable is used by the :ref:`ref-classes-kernel-fit-image`,
       :ref:`ref-classes-kernel-uimage`, :ref:`ref-classes-kernel`,
       :ref:`ref-classes-uboot-config` and :ref:`ref-classes-uboot-sign`
       classes.
@@ -10651,15 +10700,15 @@ system and gives an overview of their function and contents.
 
    :term:`UBOOT_MKIMAGE`
       Specifies the name of the mkimage command as used by the
-      :ref:`ref-classes-kernel-fitimage` class to assemble
+      :ref:`ref-classes-kernel-fit-image` class to assemble
       the FIT image. This can be used to substitute an alternative command, wrapper
       script or function if desired. The default is "uboot-mkimage".
 
    :term:`UBOOT_MKIMAGE_DTCOPTS`
       Options for the device tree compiler passed to ``mkimage -D`` feature
-      while creating a FIT image with the :ref:`ref-classes-kernel-fitimage`
+      while creating a FIT image with the :ref:`ref-classes-kernel-fit-image`
       class. If :term:`UBOOT_MKIMAGE_DTCOPTS` is not set then the
-      :ref:`ref-classes-kernel-fitimage` class will not pass the ``-D`` option
+      :ref:`ref-classes-kernel-fit-image` class will not pass the ``-D`` option
       to ``mkimage``.
 
       This variable is also used by the :ref:`ref-classes-uboot-sign` class.
@@ -10670,42 +10719,42 @@ system and gives an overview of their function and contents.
 
    :term:`UBOOT_MKIMAGE_SIGN`
       Specifies the name of the mkimage command as used by the
-      :ref:`ref-classes-kernel-fitimage` class to sign
+      :ref:`ref-classes-kernel-fit-image` class to sign
       the FIT image after it has been assembled (if enabled). This can be used
       to substitute an alternative command, wrapper script or function if
       desired. The default is "${:term:`UBOOT_MKIMAGE`}".
 
    :term:`UBOOT_MKIMAGE_SIGN_ARGS`
       Optionally specifies additional arguments for the
-      :ref:`ref-classes-kernel-fitimage` class to pass to the
+      :ref:`ref-classes-kernel-fit-image` class to pass to the
       mkimage command when signing the FIT image.
 
    :term:`UBOOT_RD_ENTRYPOINT`
       Specifies the entrypoint for the RAM disk image. During FIT image
       creation, the :term:`UBOOT_RD_ENTRYPOINT` variable is used in
-      :ref:`ref-classes-kernel-fitimage` class to specify the entrypoint to be
+      :ref:`ref-classes-kernel-fit-image` class to specify the entrypoint to be
       used in creating the Image Tree Source for the FIT image.
 
    :term:`UBOOT_RD_LOADADDRESS`
       Specifies the load address for the RAM disk image. During FIT image
       creation, the :term:`UBOOT_RD_LOADADDRESS` variable is used in
-      :ref:`ref-classes-kernel-fitimage` class to specify the load address to
+      :ref:`ref-classes-kernel-fit-image` class to specify the load address to
       be used in creating the Image Tree Source for the FIT image.
 
    :term:`UBOOT_SIGN_ENABLE`
       Enable signing of FIT image. The default value is "0".
 
-      This variable is used by the :ref:`ref-classes-kernel-fitimage`,
+      This variable is used by the :ref:`ref-classes-kernel-fit-image`,
       :ref:`ref-classes-uboot-config` and :ref:`ref-classes-uboot-sign`
       classes.
 
    :term:`UBOOT_SIGN_KEYDIR`
       Location of the directory containing the RSA key and certificate used for
-      signing FIT image, used by the :ref:`ref-classes-kernel-fitimage` and
+      signing FIT image, used by the :ref:`ref-classes-kernel-fit-image` and
       :ref:`ref-classes-uboot-sign` classes.
 
    :term:`UBOOT_SIGN_KEYNAME`
-      The name of keys used by the :ref:`ref-classes-kernel-fitimage` class
+      The name of keys used by the :ref:`ref-classes-kernel-fit-image` class
       for signing U-Boot FIT image stored in the :term:`UBOOT_SIGN_KEYDIR`
       directory. If we have for example a ``dev.key`` key and a ``dev.crt``
       certificate stored in the :term:`UBOOT_SIGN_KEYDIR` directory, you will

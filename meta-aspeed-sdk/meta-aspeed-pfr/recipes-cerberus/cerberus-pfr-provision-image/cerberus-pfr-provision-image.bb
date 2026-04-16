@@ -6,14 +6,14 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit python3native setuptools3
 
+S = "${UNPACKDIR}"
+
 DEPENDS:append = " ${PYTHON_PN}-pycryptodome-native \
                    cerberus-pfr-signing-utility-native \
                  "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-SRC_URI = " file://provision_tools;subdir=${S} "
-SRC_URI += " file://key_management_tools;subdir=${S} "
+SRC_URI = " file://provision_tools "
+SRC_URI += " file://key_management_tools "
 
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"
@@ -40,7 +40,11 @@ do_install() {
     install -m 0644 ${S}/provision_tools/*.* ${PFR_PROVISION_TOOLS_DIR}/.
 
     cd ${PFR_PROVISION_TOOLS_DIR}
-    python3 provisioning_image_generator.py provisioning_image_generator_rootkey.ini
+    if [ "${SOC_FAMILY}" = "aspeed-g7" ]; then
+        python3 provisioning_image_generator.py "provisioning_image_generator_rootkey_2700.ini"
+    else
+        python3 provisioning_image_generator.py "provisioning_image_generator_rootkey.ini"
+    fi
 
     dd if=/dev/zero bs=1k count=${PROVISION_IMAGE_SIZE} | tr '\000' '\377' > \
         ${PFR_PROVISION_TOOLS_DIR}/final_provision.bin

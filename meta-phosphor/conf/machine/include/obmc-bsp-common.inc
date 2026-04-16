@@ -2,8 +2,10 @@
 #@NAME: OpenBMC
 #@DESCRIPTION: Common machine configuration for OpenBMC chips
 
-KERNEL_CLASSES ?= "kernel-fitimage"
-KERNEL_IMAGETYPES ?= "fitImage vmlinux"
+# FIT images are now built by the linux-yocto-fitimage recipe
+KERNEL_CLASSES ?= "kernel-fit-extra-artifacts"
+KERNEL_IMAGETYPE ?= "zImage"
+KERNEL_IMAGETYPES ?= "zImage"
 
 FLASH_SIZE ?= "32768"
 

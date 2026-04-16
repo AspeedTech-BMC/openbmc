@@ -20,14 +20,16 @@ CVE_STATUS[CVE-2009-1147] = "cpe-incorrect: this CVE is for vmware ace"
 
 COMPATIBLE_HOST:libc-musl = "null"
 
-S = "${WORKDIR}/ACE_wrappers"
-B = "${WORKDIR}/ACE_wrappers/ace"
-export ACE_ROOT = "${WORKDIR}/ACE_wrappers"
+S = "${UNPACKDIR}/ACE_wrappers"
+B = "${UNPACKDIR}/ACE_wrappers/ace"
+export ACE_ROOT = "${UNPACKDIR}/ACE_wrappers"
 
 inherit pkgconfig
 
-CXXFLAGS:append = " -fpermissive -Wnodeprecated-declarations"
-CXX:append = " -ffile-prefix-map=${WORKDIR}= "
+CXXFLAGS:append = " -fpermissive -Wno-deprecated-declarations"
+CXX:append = " -ffile-prefix-map=${UNPACKDIR}= "
+export CCFLAGS = "${CXXFLAGS}"
+
 EXTRA_OEMAKE += "INSTALL_LIB=${baselib} install_rpath=0"
 
 do_install() {

@@ -14,8 +14,7 @@ RPROVIDES:${PN} += 'virtual-obmc-host-ctl'
 RDEPENDS:${PN} += "op-proc-control \
                    op-proc-control-systemd-links"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 TMPL = "start_host@.service"
 INSTFMT = "start_host@{0}.service"

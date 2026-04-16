@@ -5,15 +5,14 @@ PR = "r1"
 
 SRC_URI = "file://monitor.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 inherit phosphor-fan
 
 do_install() {
     DEST=${D}${monitor_datadir}
-    install -D monitor.yaml ${D}${monitor_datadir}/monitor.yaml
+    install -D ${S}/monitor.yaml ${D}${monitor_datadir}/monitor.yaml
 }
 
 FILES:${PN} += "${monitor_datadir}/monitor.yaml"

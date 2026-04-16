@@ -15,7 +15,7 @@ SRC_URI = "https://developer.arm.com/-/media/Files/downloads/gnu/${PV}/binrel/ar
 SRC_URI[gcc-aarch64.sha256sum] = "c8824bffd057afce2259f7618254e840715f33523a3d4e4294f471208f976764"
 SRC_URI[gcc-x86_64.sha256sum] = "95c011cee430e64dd6087c75c800f04b9c49832cc1000127a92a97f9c8d83af4"
 
-S = "${WORKDIR}/arm-gnu-toolchain-${PV}-${HOST_ARCH}-${BINNAME}"
+S = "${UNPACKDIR}/arm-gnu-toolchain-${PV}-${HOST_ARCH}-${BINNAME}"
 
 UPSTREAM_CHECK_URI = "https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads"
 UPSTREAM_CHECK_REGEX = "arm-gnu-toolchain-(?P<pver>\d+\.\d*\.[A-z]*\d*).*-${HOST_ARCH}-${BINNAME}\.tar\.\w+"

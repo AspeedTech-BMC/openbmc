@@ -85,27 +85,27 @@
             "ignoreDbusMinMax": true
         },
         {
-            "name": "PDB_HSC1_TEMP_C",
+            "name": "PDB_MAX_VR_TEMP_C",
             "type": "temp",
-            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_HSC1_TEMP_C",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_MAX_VR_TEMP_C",
             "timeout": 0,
             "ignoreDbusMinMax": true
         },
         {
-            "name": "PDB_HSC2_TEMP_C",
+            "name": "HGX_PROCESSORMODULE0_EXHAUST_TEMP_C",
             "type": "temp",
-            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_HSC2_TEMP_C",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/HGX_PROCESSORMODULE0_EXHAUST_TEMP_C",
             "timeout": 0,
             "ignoreDbusMinMax": true
         },
         {
-            "name": "PDB_INLET_TEMP_C",
+            "name": "HGX_PROCESSORMODULE1_EXHAUST_TEMP_C",
             "type": "temp",
-            "readPath": "/xyz/openbmc_project/sensors/temperature/PDB_INLET_TEMP_C",
+            "readPath": "/xyz/openbmc_project/sensors/temperature/HGX_PROCESSORMODULE1_EXHAUST_TEMP_C",
             "timeout": 0,
             "ignoreDbusMinMax": true
         },
-        {
+       {
             "name": "FAN0_TACH_IL_SPEED_RPM",
             "type": "fan",
             "readPath": "/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM",
@@ -375,7 +375,7 @@
                         "slewPos": 0.0,
                         "positiveHysteresis": 0,
                         "negativeHysteresis": 2,
-                        "checkHysterWithSetpt": true
+                        "checkHysteresisWithSetpoint": true
                     }
                 },
                 {
@@ -432,7 +432,7 @@
                         "slewPos": 0.0,
                         "positiveHysteresis": 0,
                         "negativeHysteresis": 2,
-                        "checkHysterWithSetpt": true
+                        "checkHysteresisWithSetpoint": true
                     }
                 },
                 {
@@ -443,9 +443,7 @@
                         "PDB_VR_P12V_N1_1_TEMP_C",
                         "PDB_VR_P12V_N2_0_TEMP_C",
                         "PDB_VR_P12V_N2_1_TEMP_C",
-                        "PDB_HSC1_TEMP_C",
-                        "PDB_HSC2_TEMP_C",
-                        "PDB_INLET_TEMP_C"
+                        "PDB_MAX_VR_TEMP_C"
                     ],
                     "setpoint": 0.0,
                     "pid": {
@@ -473,9 +471,7 @@
                         "PDB_VR_P12V_N1_1_TEMP_C",
                         "PDB_VR_P12V_N2_0_TEMP_C",
                         "PDB_VR_P12V_N2_1_TEMP_C",
-                        "PDB_HSC1_TEMP_C",
-                        "PDB_HSC2_TEMP_C",
-                        "PDB_INLET_TEMP_C"
+                        "PDB_MAX_VR_TEMP_C"
                     ],
                     "setpoint": 92.0,
                     "pid": {
@@ -493,7 +489,58 @@
                         "slewPos": 0.0,
                         "positiveHysteresis": 0,
                         "negativeHysteresis": 2,
-                        "checkHysterWithSetpt": true
+                        "checkHysteresisWithSetpoint": true
+                    }
+                },
+                {
+                    "name": "STEPWISE_HGX_PROCESSORMODULE_EXHAUST",
+                    "type": "stepwise",
+                    "inputs": [
+                        "HGX_PROCESSORMODULE0_EXHAUST_TEMP_C",
+                        "HGX_PROCESSORMODULE1_EXHAUST_TEMP_C"
+                    ],
+                    "setpoint": 0.0,
+                    "pid": {
+                        "samplePeriod": 1,
+                        "isCeiling": false,
+                        "reading": {
+                            "0": 78,
+                            "1": 80,
+                            "2": 85
+                        },
+                        "output": {
+                            "0": 30,
+                            "1": 40,
+                            "2": 70
+                        },
+                        "positiveHysteresis": 0,
+                        "negativeHysteresis": 2
+                    }
+                },
+                {
+                    "name": "PID_HGX_PROCESSORMODULE_EXHAUST",
+                    "type": "temp",
+                    "inputs": [
+                        "HGX_PROCESSORMODULE0_EXHAUST_TEMP_C",
+                        "HGX_PROCESSORMODULE1_EXHAUST_TEMP_C"
+                    ],
+                    "setpoint": 82.0,
+                    "pid": {
+                        "samplePeriod": 1,
+                        "proportionalCoeff": -3.0,
+                        "integralCoeff": -0.0035,
+                        "derivativeCoeff": 0.0,
+                        "feedFwdOffsetCoeff": 0.0,
+                        "feedFwdGainCoeff": 0.0,
+                        "integralLimit_min": -50.0,
+                        "integralLimit_max": 100.0,
+                        "outLim_min": 0.0,
+                        "outLim_max": 100.0,
+                        "slewNeg": 0.0,
+                        "slewPos": 0.0,
+                        "positiveHysteresis": 0,
+                        "negativeHysteresis": 2,
+                        "checkHysteresisWithSetpoint": true
                     }
                 }
             ]

@@ -14,7 +14,7 @@ inherit ${FIT_IMAGE_INHERIT}
 
 # Image composition
 FLASH_KERNEL_IMAGE ?= "fitImage-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE}"
-FLASH_KERNEL_IMAGE:df-obmc-ubi-fs ?= "fitImage-${MACHINE}.bin"
+FLASH_KERNEL_IMAGE:df-obmc-ubi-fs ?= "zImage-${MACHINE}.bin"
 
 IMAGE_BASETYPE ?= "squashfs-xz"
 IMAGE_BASETYPE:df-obmc-static-norootfs ?= "cpio"
@@ -352,6 +352,7 @@ do_generate_static[depends] += " \
         ${PN}:do_image_${@d.getVar('IMAGE_BASETYPE', True).replace('-', '_')} \
         virtual/kernel:do_deploy \
         u-boot:do_deploy \
+        ${@'linux-yocto-fitimage:do_deploy' if d.getVar('INITRAMFS_IMAGE') else ''} \
         "
 
 make_signatures() {

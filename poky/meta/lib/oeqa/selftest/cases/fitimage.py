@@ -4,13 +4,36 @@
 # SPDX-License-Identifier: MIT
 #
 
-from oeqa.selftest.case import OESelftestTestCase
-from oeqa.utils.commands import runCmd, bitbake, get_bb_vars
 import os
 import re
 import shlex
 import logging
 import pprint
+import tempfile
+
+import oe.fitimage
+
+from oeqa.selftest.case import OESelftestTestCase
+from oeqa.utils.commands import runCmd, bitbake, get_bb_vars, get_bb_var
+
+
+class BbVarsMockGenKeys:
+    def __init__(self, keydir, gen_keys="0", sign_enabled="0", keyname="", sign_ind="0", img_keyname=""):
+        self.bb_vars = {
+            'FIT_GENERATE_KEYS': gen_keys,
+            'FIT_KEY_GENRSA_ARGS': "-F4",
+            'FIT_KEY_REQ_ARGS': "-batch -new",
+            'FIT_KEY_SIGN_PKCS': "-x509",
+            'FIT_SIGN_INDIVIDUAL': sign_ind,
+            'FIT_SIGN_NUMBITS': "2048",
+            'UBOOT_SIGN_ENABLE': sign_enabled,
+            'UBOOT_SIGN_IMG_KEYNAME': img_keyname,
+            'UBOOT_SIGN_KEYDIR': keydir,
+            'UBOOT_SIGN_KEYNAME': keyname,
+        }
+
+    def getVar(self, var):
+        return self.bb_vars[var]
 
 class FitImageTestCase(OESelftestTestCase):
     """Test functions usable for testing kernel-fitimage.bbclass and uboot-sign.bbclass
@@ -161,10 +184,23 @@ class FitImageTestCase(OESelftestTestCase):
 
     @staticmethod
     def _get_dtb_files(bb_vars):
+        """Return a list of devicetree names
+
+        The list should be used to check the dtb and conf nodes in the FIT image or its file.
+        In addition to the entries from KERNEL_DEVICETREE, the external devicetree and the
+        external devicetree overlay added by the test recipe bbb-dtbs-as-ext are handled as well.
+        """
         kernel_devicetree = bb_vars.get('KERNEL_DEVICETREE')
+        all_dtbs = []
+        dtb_symlinks = []
         if kernel_devicetree:
-            return [os.path.basename(dtb) for dtb in kernel_devicetree.split()]
-        return []
+            all_dtbs += [os.path.basename(dtb) for dtb in kernel_devicetree.split()]
+        # Support only the test recipe which provides 1 devicetree and 1 devicetree overlay
+        pref_prov_dtb = bb_vars.get('PREFERRED_PROVIDER_virtual/dtb')
+        if pref_prov_dtb == "bbb-dtbs-as-ext":
+            all_dtbs += ["am335x-bonegreen-ext.dtb", "BBORG_RELAY-00A2.dtbo"]
+            dtb_symlinks.append("am335x-bonegreen-ext-alias.dtb")
+        return (all_dtbs, dtb_symlinks)
 
     def _is_req_dict_in_dict(self, found_dict, req_dict):
         """
@@ -243,7 +279,7 @@ class FitImageTestCase(OESelftestTestCase):
         self.logger.debug("sigs:\n%s\n" % pprint.pformat(sigs, indent=4))
         if req_sigvalues_config or req_sigvalues_image:
             for its_path, values in sigs.items():
-                if 'conf-' in its_path:
+                if bb_vars.get('FIT_CONF_PREFIX', "conf-") in its_path:
                     reqsigvalues = req_sigvalues_config
                 else:
                     reqsigvalues = req_sigvalues_image
@@ -356,9 +392,8 @@ class FitImageTestCase(OESelftestTestCase):
         # Verify the FIT image
         self._check_fitimage(bb_vars, fitimage_path, uboot_tools_bindir)
 
-
-class KernelFitImageTests(FitImageTestCase):
-    """Test cases for the kernel-fitimage bbclass"""
+class KernelFitImageBase(FitImageTestCase):
+    """Test cases for the linux-yocto-fitimage recipe"""
 
     def _fit_get_bb_vars(self, additional_vars=[]):
         """Retrieve BitBake variables specific to the test case.
@@ -367,6 +402,8 @@ class KernelFitImageTests(FitImageTestCase):
         """
         internal_used = {
             'DEPLOY_DIR_IMAGE',
+            'FIT_CONF_DEFAULT_DTB',
+            'FIT_CONF_PREFIX',
             'FIT_DESC',
             'FIT_HASH_ALG',
             'FIT_KERNEL_COMP_ALG',
@@ -376,9 +413,11 @@ class KernelFitImageTests(FitImageTestCase):
             'INITRAMFS_IMAGE_BUNDLE',
             'INITRAMFS_IMAGE_NAME',
             'INITRAMFS_IMAGE',
+            'KERNEL_DEPLOYSUBDIR',
             'KERNEL_DEVICETREE',
             'KERNEL_FIT_LINK_NAME',
             'MACHINE',
+            'PREFERRED_PROVIDER_virtual/dtb',
             'UBOOT_ARCH',
             'UBOOT_ENTRYPOINT',
             'UBOOT_LOADADDRESS',
@@ -391,9 +430,18 @@ class KernelFitImageTests(FitImageTestCase):
             'UBOOT_SIGN_KEYDIR',
             'UBOOT_SIGN_KEYNAME',
         }
-        bb_vars = get_bb_vars(list(internal_used | set(additional_vars)), "virtual/kernel")
+        bb_vars = get_bb_vars(list(internal_used | set(additional_vars)), self.kernel_recipe)
         self.logger.debug("bb_vars: %s" % pprint.pformat(bb_vars, indent=4))
         return bb_vars
+
+    def _config_add_kernel_classes(self, config):
+        config += '# Use kernel-fit-extra-artifacts.bbclass for the creation of the vmlinux artifact' + os.linesep
+        config += 'KERNEL_CLASSES = "kernel-fit-extra-artifacts"' + os.linesep
+        return config
+
+    @property
+    def kernel_recipe(self):
+        return "linux-yocto-fitimage"
 
     def _config_add_uboot_env(self, config):
         """Generate an u-boot environment
@@ -408,7 +456,7 @@ class KernelFitImageTests(FitImageTestCase):
         config += '# Add an u-boot script to the fitImage' + os.linesep
         config += 'FIT_UBOOT_ENV = "%s"' % fit_uenv_file + os.linesep
         config += 'FILESEXTRAPATHS:prepend := "${TOPDIR}/%s:"' % test_files_dir + os.linesep
-        config += 'SRC_URI:append:pn-linux-yocto = " file://${FIT_UBOOT_ENV}"' + os.linesep
+        config += 'SRC_URI:append:pn-%s = " file://${FIT_UBOOT_ENV}"' % self.kernel_recipe + os.linesep
 
         if not os.path.isdir(test_files_dir):
             os.makedirs(test_files_dir)
@@ -420,7 +468,7 @@ class KernelFitImageTests(FitImageTestCase):
 
     def _bitbake_fit_image(self, bb_vars):
         """Bitbake the kernel and return the paths to the its file and the FIT image"""
-        bitbake("virtual/kernel")
+        bitbake(self.kernel_recipe)
 
         # Find the right its file and the final fitImage and check if both files are available
         deploy_dir_image = bb_vars['DEPLOY_DIR_IMAGE']
@@ -439,8 +487,13 @@ class KernelFitImageTests(FitImageTestCase):
             fitimage_name = "fitImage"  # or fitImage-${KERNEL_IMAGE_LINK_NAME}${KERNEL_IMAGE_BIN_EXT}
         else:
             self.fail('Invalid configuration: INITRAMFS_IMAGE_BUNDLE = "1" and not INITRAMFS_IMAGE')
-        fitimage_its_path = os.path.realpath(os.path.join(deploy_dir_image, fitimage_its_name))
-        fitimage_path = os.path.realpath(os.path.join(deploy_dir_image, fitimage_name))
+        kernel_deploysubdir = bb_vars['KERNEL_DEPLOYSUBDIR']
+        if kernel_deploysubdir:
+            fitimage_its_path = os.path.realpath(os.path.join(deploy_dir_image, kernel_deploysubdir, fitimage_its_name))
+            fitimage_path = os.path.realpath(os.path.join(deploy_dir_image, kernel_deploysubdir, fitimage_name))
+        else:
+            fitimage_its_path = os.path.realpath(os.path.join(deploy_dir_image, fitimage_its_name))
+            fitimage_path = os.path.realpath(os.path.join(deploy_dir_image, fitimage_name))
         return (fitimage_its_path, fitimage_path)
 
     def _get_req_its_paths(self, bb_vars):
@@ -452,7 +505,7 @@ class KernelFitImageTests(FitImageTestCase):
                 ['/', 'images', 'kernel-1', 'signature-1'],
             ]
         """
-        dtb_files = FitImageTestCase._get_dtb_files(bb_vars)
+        dtb_files, dtb_symlinks = FitImageTestCase._get_dtb_files(bb_vars)
         fit_sign_individual = bb_vars['FIT_SIGN_INDIVIDUAL']
         fit_uboot_env = bb_vars['FIT_UBOOT_ENV']
         initramfs_image = bb_vars['INITRAMFS_IMAGE']
@@ -470,11 +523,11 @@ class KernelFitImageTests(FitImageTestCase):
         if initramfs_image and initramfs_image_bundle != "1":
             images.append('ramdisk-1')
 
-        # configuration nodes
+        # configuration nodes (one per DTB and also one per symlink)
         if dtb_files:
-            configurations = [ 'conf-' + conf for conf in dtb_files ]
+            configurations = [bb_vars['FIT_CONF_PREFIX'] + conf for conf in dtb_files + dtb_symlinks]
         else:
-            configurations = [ 'conf-1' ]
+            configurations = [bb_vars['FIT_CONF_PREFIX'] + '1']
 
         # Create a list of paths for all image and configuration nodes
         req_its_paths = []
@@ -497,11 +550,11 @@ class KernelFitImageTests(FitImageTestCase):
         its_field_check = [
             'description = "%s";' % bb_vars['FIT_DESC'],
             'description = "Linux kernel";',
-            'data = /incbin/("linux.bin");',
             'type = "' + str(bb_vars['UBOOT_MKIMAGE_KERNEL_TYPE']) + '";',
+            # 'compression = "' + str(bb_vars['FIT_KERNEL_COMP_ALG']) + '";', defined based on files in TMPDIR, not ideal...
+            'data = /incbin/("linux.bin");',
             'arch = "' + str(bb_vars['UBOOT_ARCH']) + '";',
             'os = "linux";',
-            # 'compression = "' + str(bb_vars['FIT_KERNEL_COMP_ALG']) + '";', defined based on files in TMPDIR, not ideal...
             'load = <' + str(bb_vars['UBOOT_LOADADDRESS']) + '>;',
             'entry = <' + str(bb_vars['UBOOT_ENTRYPOINT']) + '>;',
         ]
@@ -511,10 +564,14 @@ class KernelFitImageTests(FitImageTestCase):
                 its_field_check.append("load = <%s>;" % uboot_rd_loadaddress)
             if uboot_rd_entrypoint:
                 its_field_check.append("entry = <%s>;" % uboot_rd_entrypoint)
-        its_field_check += [
-            # 'default = "conf-1";', needs more work
-            'kernel = "kernel-1";',
-        ]
+
+        fit_conf_default_dtb = bb_vars.get('FIT_CONF_DEFAULT_DTB')
+        if fit_conf_default_dtb:
+            fit_conf_prefix = bb_vars.get('FIT_CONF_PREFIX', "conf-")
+            its_field_check.append('default = "' + fit_conf_prefix + fit_conf_default_dtb + '";')
+
+        its_field_check.append('kernel = "kernel-1";')
+
         if initramfs_image and initramfs_image_bundle != "1":
             its_field_check.append('ramdisk = "ramdisk-1";')
 
@@ -548,7 +605,7 @@ class KernelFitImageTests(FitImageTestCase):
 
     def _get_req_sections(self, bb_vars):
         """Generate a dictionary of expected sections in the output of dumpimage"""
-        dtb_files = FitImageTestCase._get_dtb_files(bb_vars)
+        dtb_files, dtb_symlinks = FitImageTestCase._get_dtb_files(bb_vars)
         fit_hash_alg = bb_vars['FIT_HASH_ALG']
         fit_sign_alg = bb_vars['FIT_SIGN_ALG']
         fit_sign_individual = bb_vars['FIT_SIGN_INDIVIDUAL']
@@ -584,25 +641,36 @@ class KernelFitImageTests(FitImageTestCase):
             }
         # Create a configuration section for each DTB
         if dtb_files:
-            for dtb in dtb_files:
-                req_sections['conf-' + dtb] = {
-                    "Kernel": "kernel-1",
-                    "FDT": 'fdt-' + dtb,
-                }
+            for dtb in dtb_files + dtb_symlinks:
+                conf_name = bb_vars['FIT_CONF_PREFIX'] + dtb
+                # Assume that DTBs with an "-alias" in its name are symlink DTBs created e.g. by the
+                # bbb-dtbs-as-ext test recipe. Make the configuration node pointing to the real DTB.
+                real_dtb = dtb.replace("-alias", "")
+                # dtb overlays do not refer to a kernel (yet?)
+                if dtb.endswith('.dtbo'):
+                    req_sections[conf_name] = {
+                        "FDT": 'fdt-' + real_dtb,
+                    }
+                else:
+                    req_sections[conf_name] = {
+                        "Kernel": "kernel-1",
+                        "FDT": 'fdt-' + real_dtb,
+                    }
                 if initramfs_image and initramfs_image_bundle != "1":
-                    req_sections['conf-' + dtb]['Init Ramdisk'] = "ramdisk-1"
+                    req_sections[conf_name]['Init Ramdisk'] = "ramdisk-1"
         else:
-            req_sections['conf-1'] = {
+            conf_name = bb_vars['FIT_CONF_PREFIX'] +  '1'
+            req_sections[conf_name] = {
                 "Kernel": "kernel-1"
             }
             if initramfs_image and initramfs_image_bundle != "1":
-                req_sections['conf-1']['Init Ramdisk'] = "ramdisk-1"
+                req_sections[conf_name]['Init Ramdisk'] = "ramdisk-1"
 
         # Add signing related properties if needed
         if uboot_sign_enable == "1":
             for section in req_sections:
                 req_sections[section]['Hash algo'] = fit_hash_alg
-                if section.startswith('conf-'):
+                if section.startswith(bb_vars['FIT_CONF_PREFIX']):
                     req_sections[section]['Hash value'] = "unavailable"
                     req_sections[section]['Sign algo'] = "%s,%s:%s" % (fit_hash_alg, fit_sign_alg, uboot_sign_keyname)
                     num_signatures += 1
@@ -624,18 +692,26 @@ class KernelFitImageTests(FitImageTestCase):
         uboot_sign_keyname = bb_vars['UBOOT_SIGN_KEYNAME']
         uboot_sign_img_keyname = bb_vars['UBOOT_SIGN_IMG_KEYNAME']
         deploy_dir_image = bb_vars['DEPLOY_DIR_IMAGE']
+        kernel_deploysubdir = bb_vars['KERNEL_DEPLOYSUBDIR']
         fit_sign_individual = bb_vars['FIT_SIGN_INDIVIDUAL']
         fit_hash_alg_len = FitImageTestCase.MKIMAGE_HASH_LENGTHS[fit_hash_alg]
         fit_sign_alg_len = FitImageTestCase.MKIMAGE_SIGNATURE_LENGTHS[fit_sign_alg]
         for section, values in sections.items():
             # Configuration nodes are always signed with UBOOT_SIGN_KEYNAME (if UBOOT_SIGN_ENABLE = "1")
-            if section.startswith("conf"):
+            if section.startswith(bb_vars['FIT_CONF_PREFIX']):
                 sign_algo = values.get('Sign algo', None)
                 req_sign_algo = "%s,%s:%s" % (fit_hash_alg, fit_sign_alg, uboot_sign_keyname)
                 self.assertEqual(sign_algo, req_sign_algo, 'Signature algorithm for %s not expected value' % section)
                 sign_value = values.get('Sign value', None)
                 self.assertEqual(len(sign_value), fit_sign_alg_len, 'Signature value for section %s not expected length' % section)
-                dtb_path = os.path.join(deploy_dir_image, section.replace('conf-', ''))
+                dtb_file_name = section.replace(bb_vars['FIT_CONF_PREFIX'], '')
+                dtb_path = os.path.join(deploy_dir_image, dtb_file_name)
+                if kernel_deploysubdir:
+                    dtb_path = os.path.join(deploy_dir_image, kernel_deploysubdir, dtb_file_name)
+                # External devicetrees created by devicetree.bbclass are in a subfolder and have priority
+                dtb_path_ext = os.path.join(deploy_dir_image, "devicetree", dtb_file_name)
+                if os.path.exists(dtb_path_ext):
+                    dtb_path = dtb_path_ext
                 self._verify_fit_image_signature(uboot_tools_bindir, fitimage_path, dtb_path, section)
             else:
                 # Image nodes always need a hash which gets indirectly signed by the config signature
@@ -660,6 +736,8 @@ class KernelFitImageTests(FitImageTestCase):
             self.assertEqual(found_comments, num_signatures, "Expected %d signed and commented (%s) sections in the fitImage." %
                              (num_signatures, a_comment))
 
+class KernelFitImageRecipeTests(KernelFitImageBase):
+    """Test cases for the kernel-fitimage bbclass"""
 
     def test_fit_image(self):
         """
@@ -675,10 +753,7 @@ class KernelFitImageTests(FitImageTestCase):
         Author:      Usama Arif <usama.arif@arm.com>
         """
         config = """
-# Enable creation of fitImage
 KERNEL_IMAGETYPE = "Image"
-KERNEL_IMAGETYPES += " fitImage "
-KERNEL_CLASSES = " kernel-fitimage "
 
 # RAM disk variables including load address and entrypoint for kernel and RAM disk
 IMAGE_FSTYPES += "cpio.gz"
@@ -690,7 +765,75 @@ UBOOT_RD_ENTRYPOINT = "0x88000000"
 UBOOT_LOADADDRESS = "0x80080000"
 UBOOT_ENTRYPOINT = "0x80080000"
 FIT_DESC = "A model description"
+FIT_CONF_PREFIX = "foo-"
 """
+        config = self._config_add_kernel_classes(config)
+        self.write_config(config)
+        bb_vars = self._fit_get_bb_vars()
+        self._test_fitimage(bb_vars)
+
+    def test_get_compatible_from_dtb(self):
+        """Test the oe.fitimage.get_compatible_from_dtb function
+
+        1. bitbake bbb-dtbs-as-ext
+        2. Check if symlink_points_below returns the path to the DTB
+        3. Check if the expected compatible string is found by get_compatible_from_dtb()
+        """
+        DTB_RECIPE = "bbb-dtbs-as-ext"
+        DTB_FILE = "am335x-bonegreen-ext.dtb"
+        DTB_SYMLINK = "am335x-bonegreen-ext-alias.dtb"
+        DTBO_FILE = "BBORG_RELAY-00A2.dtbo"
+        EXPECTED_COMP = ["ti,am335x-bone-green", "ti,am335x-bone-black", "ti,am335x-bone", "ti,am33xx"]
+
+        config = """
+DISTRO = "poky"
+MACHINE = "beaglebone-yocto"
+"""
+        self.write_config(config)
+
+        # Provide the fdtget command called by get_compatible_from_dtb
+        dtc_bindir = FitImageTestCase._setup_native('dtc-native')
+        fdtget_path = os.path.join(dtc_bindir, "fdtget")
+        self.assertExists(fdtget_path)
+
+        # bitbake an external DTB with a symlink to it and a DTB overlay
+        bitbake(DTB_RECIPE)
+        deploy_dir_image = get_bb_var("DEPLOY_DIR_IMAGE", DTB_RECIPE)
+        devicetree_dir = os.path.join(deploy_dir_image, "devicetree")
+        dtb_path = os.path.join(devicetree_dir, DTB_FILE)
+        dtb_alias_path = os.path.join(devicetree_dir, DTB_SYMLINK)
+        dtbo_file = os.path.join(devicetree_dir, DTBO_FILE)
+        self.assertExists(dtb_path)
+        self.assertExists(dtb_alias_path)
+        self.assertExists(dtbo_file)
+
+        # Test symlink_points_below
+        linked_dtb = oe.fitimage.symlink_points_below(dtb_alias_path, devicetree_dir)
+        self.assertEqual(linked_dtb, DTB_FILE)
+
+        # Check if get_compatible_from_dtb finds the expected compatible string in the DTBs
+        comp = oe.fitimage.get_compatible_from_dtb(dtb_path, fdtget_path)
+        self.assertEqual(comp, EXPECTED_COMP)
+        comp_alias = oe.fitimage.get_compatible_from_dtb(dtb_alias_path, fdtget_path)
+        self.assertEqual(comp_alias, EXPECTED_COMP)
+        # The alias is a symlink, therefore the compatible string is equal
+        self.assertEqual(comp_alias, comp)
+
+    def test_fit_image_ext_dtb_dtbo(self):
+        """
+        Summary:     Check if FIT image and Image Tree Source (its) are created correctly.
+        Expected:    1) its and FIT image are built successfully
+                     2) The its file contains also the external devicetree overlay
+                     3) Dumping the FIT image indicates the devicetree overlay
+        """
+        config = """
+# Enable creation of fitImage
+MACHINE = "beaglebone-yocto"
+# Add a devicetree overlay which does not need kernel sources
+PREFERRED_PROVIDER_virtual/dtb = "bbb-dtbs-as-ext"
+"""
+        config = self._config_add_kernel_classes(config)
+        config = self._config_add_uboot_env(config)
         self.write_config(config)
         bb_vars = self._fit_get_bb_vars()
         self._test_fitimage(bb_vars)
@@ -702,8 +845,7 @@ FIT_DESC = "A model description"
                      and the configuration nodes are signed correctly.
         Expected:    1) its and FIT image are built successfully
                      2) Scanning the its file indicates signing is enabled
-                        as requested by UBOOT_SIGN_ENABLE (using 1 key
-                        generated by the test not via FIT_GENERATE_KEYS)
+                        as requested by UBOOT_SIGN_ENABLE
                      3) Dumping the FIT image indicates signature values
                         are present (only for the configuration nodes as
                         FIT_SIGN_INDIVIDUAL is disabled)
@@ -714,13 +856,13 @@ FIT_DESC = "A model description"
         config = """
 # Enable creation of fitImage
 MACHINE = "beaglebone-yocto"
-KERNEL_IMAGETYPES += " fitImage "
-KERNEL_CLASSES = " kernel-fitimage "
 UBOOT_SIGN_ENABLE = "1"
 UBOOT_SIGN_KEYDIR = "${TOPDIR}/signing-keys"
 UBOOT_SIGN_KEYNAME = "dev"
 UBOOT_MKIMAGE_SIGN_ARGS = "-c 'a smart comment'"
+FIT_CONF_DEFAULT_DTB = "am335x-bonegreen.dtb"
 """
+        config = self._config_add_kernel_classes(config)
         config = self._config_add_uboot_env(config)
         self.write_config(config)
 
@@ -733,10 +875,7 @@ UBOOT_MKIMAGE_SIGN_ARGS = "-c 'a smart comment'"
             'UBOOT_SIGN_KEYDIR',
         ])
 
-        # Do not use the random keys generated by FIT_GENERATE_KEYS.
-        # Using a static key is probably a more realistic scenario.
         self._gen_signing_key(bb_vars)
-
         self._test_fitimage(bb_vars)
 
     def test_sign_fit_image_individual(self):
@@ -745,11 +884,11 @@ UBOOT_MKIMAGE_SIGN_ARGS = "-c 'a smart comment'"
                      and all nodes are signed correctly.
         Expected:    1) its and FIT image are built successfully
                      2) Scanning the its file indicates signing is enabled
-                        as requested by UBOOT_SIGN_ENABLE (using 2 keys
-                        generated via FIT_GENERATE_KEYS)
+                        as requested by UBOOT_SIGN_ENABLE
                      3) Dumping the FIT image indicates signature values
                         are present (including for images as enabled via
                         FIT_SIGN_INDIVIDUAL)
+                        This also implies that FIT_GENERATE_KEYS = "1" works.
                      4) Verify the FIT image contains the comments passed via
                         UBOOT_MKIMAGE_SIGN_ARGS once per image and per
                         configuration node.
@@ -765,8 +904,6 @@ UBOOT_MKIMAGE_SIGN_ARGS = "-c 'a smart comment'"
         config = """
 # Enable creation of fitImage
 MACHINE = "beaglebone-yocto"
-KERNEL_IMAGETYPES += " fitImage "
-KERNEL_CLASSES = " kernel-fitimage "
 UBOOT_SIGN_ENABLE = "1"
 FIT_GENERATE_KEYS = "1"
 UBOOT_SIGN_KEYDIR = "${TOPDIR}/signing-keys"
@@ -775,9 +912,14 @@ UBOOT_SIGN_KEYNAME = "cfg-oe-selftest"
 FIT_SIGN_INDIVIDUAL = "1"
 UBOOT_MKIMAGE_SIGN_ARGS = "-c 'a smart comment'"
 """
+        config = self._config_add_kernel_classes(config)
         config = self._config_add_uboot_env(config)
         self.write_config(config)
         bb_vars = self._fit_get_bb_vars()
+
+        # Ensure new keys are generated and FIT_GENERATE_KEYS = "1" is tested
+        bitbake("kernel-signing-keys-native -c compile -f")
+
         self._test_fitimage(bb_vars)
 
     def test_fit_image_sign_initramfs(self):
@@ -796,13 +938,11 @@ UBOOT_MKIMAGE_SIGN_ARGS = "-c 'a smart comment'"
         """
 
         config = """
-DISTRO="poky"
+DISTRO = "poky"
 MACHINE = "beaglebone-yocto"
 INITRAMFS_IMAGE = "core-image-minimal-initramfs"
 INITRAMFS_SCRIPTS = ""
 UBOOT_MACHINE = "am335x_evm_defconfig"
-KERNEL_CLASSES = " kernel-fitimage "
-KERNEL_IMAGETYPES = "fitImage"
 UBOOT_SIGN_ENABLE = "1"
 UBOOT_SIGN_KEYNAME = "beaglebonekey"
 UBOOT_SIGN_KEYDIR ?= "${DEPLOY_DIR_IMAGE}"
@@ -816,11 +956,11 @@ UBOOT_ARCH = "arm"
 UBOOT_MKIMAGE_DTCOPTS = "-I dts -O dtb -p 2000"
 UBOOT_MKIMAGE_KERNEL_TYPE = "kernel"
 UBOOT_EXTLINUX = "0"
-FIT_GENERATE_KEYS = "1"
 KERNEL_IMAGETYPE_REPLACEMENT = "zImage"
 FIT_KERNEL_COMP_ALG = "none"
 FIT_HASH_ALG = "sha256"
 """
+        config = self._config_add_kernel_classes(config)
         config = self._config_add_uboot_env(config)
         self.write_config(config)
 
@@ -833,10 +973,7 @@ FIT_HASH_ALG = "sha256"
             'UBOOT_SIGN_KEYDIR',
         ])
 
-        # Do not use the random keys generated by FIT_GENERATE_KEYS.
-        # Using a static key is probably a more realistic scenario.
         self._gen_signing_key(bb_vars)
-
         self._test_fitimage(bb_vars)
 
     def test_fit_image_sign_initramfs_bundle(self):
@@ -855,14 +992,12 @@ FIT_HASH_ALG = "sha256"
         """
 
         config = """
-DISTRO="poky"
+DISTRO = "poky"
 MACHINE = "beaglebone-yocto"
 INITRAMFS_IMAGE_BUNDLE = "1"
 INITRAMFS_IMAGE = "core-image-minimal-initramfs"
 INITRAMFS_SCRIPTS = ""
 UBOOT_MACHINE = "am335x_evm_defconfig"
-KERNEL_CLASSES = " kernel-fitimage "
-KERNEL_IMAGETYPES = "fitImage"
 UBOOT_SIGN_ENABLE = "1"
 UBOOT_SIGN_KEYNAME = "beaglebonekey"
 UBOOT_SIGN_KEYDIR ?= "${DEPLOY_DIR_IMAGE}"
@@ -874,19 +1009,123 @@ UBOOT_ARCH = "arm"
 UBOOT_MKIMAGE_DTCOPTS = "-I dts -O dtb -p 2000"
 UBOOT_MKIMAGE_KERNEL_TYPE = "kernel"
 UBOOT_EXTLINUX = "0"
-FIT_GENERATE_KEYS = "1"
 KERNEL_IMAGETYPE_REPLACEMENT = "zImage"
 FIT_KERNEL_COMP_ALG = "none"
 FIT_HASH_ALG = "sha256"
 """
+        config = self._config_add_kernel_classes(config)
         config = self._config_add_uboot_env(config)
         self.write_config(config)
         bb_vars = self._fit_get_bb_vars()
+        self._gen_signing_key(bb_vars)
         self._test_fitimage(bb_vars)
+
+class FitImagePyTests(KernelFitImageBase):
+    """Test cases for the fitimage.py module without calling bitbake"""
+
+    def _test_fitimage_py(self, bb_vars_overrides=None):
+        topdir = os.path.join(os.environ['BUILDDIR'])
+        fitimage_its_path = os.path.join(topdir, self._testMethodName + '.its')
+
+        # Provide variables without calling bitbake
+        bb_vars = {
+            # image-fitimage.conf
+            'FIT_DESC': "Kernel fitImage for a dummy distro",
+            'FIT_HASH_ALG': "sha256",
+            'FIT_SIGN_ALG': "rsa2048",
+            'FIT_PAD_ALG': "pkcs-1.5",
+            'FIT_GENERATE_KEYS': "0",
+            'FIT_SIGN_NUMBITS': "2048",
+            'FIT_KEY_GENRSA_ARGS': "-F4",
+            'FIT_KEY_REQ_ARGS': "-batch -new",
+            'FIT_KEY_SIGN_PKCS': "-x509",
+            'FIT_SIGN_INDIVIDUAL': "0",
+            'FIT_CONF_PREFIX': "conf-",
+            'FIT_SUPPORTED_INITRAMFS_FSTYPES': "cpio.lz4 cpio.lzo cpio.lzma cpio.xz cpio.zst cpio.gz ext2.gz cpio",
+            'FIT_CONF_DEFAULT_DTB': "",
+            'FIT_ADDRESS_CELLS': "1",
+            'FIT_UBOOT_ENV': "",
+            # kernel.bbclass
+            'UBOOT_ENTRYPOINT': "0x20008000",
+            'UBOOT_LOADADDRESS': "0x20008000",
+            'INITRAMFS_IMAGE': "",
+            'INITRAMFS_IMAGE_BUNDLE': "",
+            # kernel-uboot.bbclass
+            'FIT_KERNEL_COMP_ALG': "gzip",
+            'FIT_KERNEL_COMP_ALG_EXTENSION': ".gz",
+            'UBOOT_MKIMAGE_KERNEL_TYPE': "kernel",
+            # uboot-config.bbclass
+            'UBOOT_MKIMAGE_DTCOPTS': "",
+            'UBOOT_MKIMAGE': "uboot-mkimage",
+            'UBOOT_MKIMAGE_SIGN': "uboot-mkimage",
+            'UBOOT_MKIMAGE_SIGN_ARGS': "",
+            'UBOOT_SIGN_ENABLE': "0",
+            'UBOOT_SIGN_KEYDIR': None,
+            'UBOOT_SIGN_KEYNAME': None,
+            'UBOOT_SIGN_IMG_KEYNAME': None,
+            # others
+            'MACHINE': "qemux86-64",
+            'UBOOT_ARCH': "x86",
+            'HOST_PREFIX': "x86_64-poky-linux-"
+        }
+        if bb_vars_overrides:
+            bb_vars.update(bb_vars_overrides)
+
+        root_node = oe.fitimage.ItsNodeRootKernel(
+            bb_vars["FIT_DESC"], bb_vars["FIT_ADDRESS_CELLS"],
+            bb_vars['HOST_PREFIX'], bb_vars['UBOOT_ARCH'],  bb_vars["FIT_CONF_PREFIX"],
+            oe.types.boolean(bb_vars['UBOOT_SIGN_ENABLE']), bb_vars["UBOOT_SIGN_KEYDIR"],
+            bb_vars["UBOOT_MKIMAGE"], bb_vars["UBOOT_MKIMAGE_DTCOPTS"],
+            bb_vars["UBOOT_MKIMAGE_SIGN"], bb_vars["UBOOT_MKIMAGE_SIGN_ARGS"],
+            bb_vars['FIT_HASH_ALG'], bb_vars['FIT_SIGN_ALG'], bb_vars['FIT_PAD_ALG'],
+            bb_vars['UBOOT_SIGN_KEYNAME'],
+            oe.types.boolean(bb_vars['FIT_SIGN_INDIVIDUAL']), bb_vars['UBOOT_SIGN_IMG_KEYNAME']
+        )
+
+        root_node.fitimage_emit_section_kernel("kernel-1", "linux.bin", "none",
+            bb_vars.get('UBOOT_LOADADDRESS'), bb_vars.get('UBOOT_ENTRYPOINT'),
+            bb_vars.get('UBOOT_MKIMAGE_KERNEL_TYPE'), bb_vars.get("UBOOT_ENTRYSYMBOL")
+        )
+
+        dtb_files, _ = FitImageTestCase._get_dtb_files(bb_vars)
+        for dtb in dtb_files:
+            root_node.fitimage_emit_section_dtb(dtb, os.path.join("a-dir", dtb),
+                bb_vars.get("UBOOT_DTB_LOADADDRESS"), bb_vars.get("UBOOT_DTBO_LOADADDRESS"))
+
+        if bb_vars.get('FIT_UBOOT_ENV'):
+            root_node.fitimage_emit_section_boot_script(
+                "bootscr-" + bb_vars['FIT_UBOOT_ENV'], bb_vars['FIT_UBOOT_ENV'])
+
+        if bb_vars['MACHINE'] == "qemux86-64": # Not really the right if
+            root_node.fitimage_emit_section_setup("setup-1", "setup1.bin")
+
+        if bb_vars.get('INITRAMFS_IMAGE') and bb_vars.get("INITRAMFS_IMAGE_BUNDLE") != "1":
+            root_node.fitimage_emit_section_ramdisk("ramdisk-1", "a-dir/a-initramfs-1",
+                "core-image-minimal-initramfs",
+                bb_vars.get("UBOOT_RD_LOADADDRESS"), bb_vars.get("UBOOT_RD_ENTRYPOINT"))
+
+        root_node.fitimage_emit_section_config(bb_vars['FIT_CONF_DEFAULT_DTB'])
+        root_node.write_its_file(fitimage_its_path)
+
+        self.assertExists(fitimage_its_path, "%s image tree source doesn't exist" % (fitimage_its_path))
+        self.logger.debug("Checking its: %s" % fitimage_its_path)
+        self._check_its_file(bb_vars, fitimage_its_path)
+
+    def test_fitimage_py_default(self):
+        self._test_fitimage_py()
+
+    def test_fitimage_py_default_dtb(self):
+        bb_vars_overrides = {
+            'KERNEL_DEVICETREE': "one.dtb two.dtb three.dtb",
+            'FIT_CONF_DEFAULT_DTB': "two.dtb"
+        }
+        self._test_fitimage_py(bb_vars_overrides)
 
 
 class UBootFitImageTests(FitImageTestCase):
     """Test cases for the uboot-sign bbclass"""
+
+    BOOTLOADER_RECIPE = "virtual/bootloader"
 
     def _fit_get_bb_vars(self, additional_vars=[]):
         """Get bb_vars as needed by _test_sign_fit_image
@@ -929,13 +1168,13 @@ class UBootFitImageTests(FitImageTestCase):
             'UBOOT_SIGN_KEYDIR',
             'UBOOT_SIGN_KEYNAME',
         }
-        bb_vars = get_bb_vars(list(internal_used | set(additional_vars)), "virtual/bootloader")
+        bb_vars = get_bb_vars(list(internal_used | set(additional_vars)), UBootFitImageTests.BOOTLOADER_RECIPE)
         self.logger.debug("bb_vars: %s" % pprint.pformat(bb_vars, indent=4))
         return bb_vars
 
     def _bitbake_fit_image(self, bb_vars):
         """Bitbake the bootloader and return the paths to the its file and the FIT image"""
-        bitbake("virtual/bootloader")
+        bitbake(UBootFitImageTests.BOOTLOADER_RECIPE)
 
         deploy_dir_image = bb_vars['DEPLOY_DIR_IMAGE']
         machine = bb_vars['MACHINE']
@@ -1286,9 +1525,7 @@ UBOOT_SIGN_KEYNAME = "cfg-oe-selftest"
         self.write_config(config)
         bb_vars = self._fit_get_bb_vars()
 
-        # Using a static key. FIT_GENERATE_KEYS = "1" does not work without kernel-fitimage.bbclass
         self._gen_signing_key(bb_vars)
-
         self._test_fitimage(bb_vars)
         self._check_kernel_dtb(bb_vars)
 
@@ -1449,11 +1686,46 @@ FIT_SIGN_INDIVIDUAL = "1"
 """
         self.write_config(config)
         bb_vars = self._fit_get_bb_vars()
-
-        # Using a static key. FIT_GENERATE_KEYS = "1" does not work without kernel-fitimage.bbclass
         self._gen_signing_key(bb_vars)
 
-        bitbake("virtual/bootloader")
+        bitbake(UBootFitImageTests.BOOTLOADER_RECIPE)
 
         # Just check the DTB of u-boot since there is no u-boot FIT image
         self._check_kernel_dtb(bb_vars)
+
+
+    def test_sign_uboot_fit_image_without_spl(self):
+        """
+        Summary:     Check if U-Boot FIT image and Image Tree Source (its) are
+                     created and signed correctly for the scenario where only
+                     the U-Boot proper fitImage is being created and signed
+                     (no SPL included).
+        Expected:    1) U-Boot its and FIT image are built successfully
+                     2) Scanning the its file indicates signing is enabled
+                        as requested by SPL_SIGN_ENABLE (using keys generated
+                        via UBOOT_FIT_GENERATE_KEYS)
+                     3) Dumping the FIT image indicates signature values
+                        are present
+                     4) Examination of the do_uboot_assemble_fitimage
+                     runfile/logfile indicate that UBOOT_MKIMAGE and
+                     UBOOT_MKIMAGE_SIGN are working as expected.
+        Product:     oe-core
+        Author:      Jamin Lin <jamin_lin@aspeedtech.com>
+        """
+        config = """
+# There's no U-boot defconfig with CONFIG_FIT_SIGNATURE yet, so we need at
+# least CONFIG_SPL_LOAD_FIT and CONFIG_SPL_OF_CONTROL set
+MACHINE = "qemuarm"
+UBOOT_MACHINE = "am57xx_evm_defconfig"
+# Enable creation and signing of the U-Boot fitImage (no SPL)
+UBOOT_FITIMAGE_ENABLE = "1"
+SPL_DTB_BINARY = ""
+SPL_SIGN_ENABLE = "1"
+SPL_SIGN_KEYNAME = "spl-oe-selftest"
+SPL_SIGN_KEYDIR = "${TOPDIR}/signing-keys"
+UBOOT_FIT_GENERATE_KEYS = "1"
+"""
+        self.write_config(config)
+        bb_vars = self._fit_get_bb_vars()
+        self._test_fitimage(bb_vars)
+

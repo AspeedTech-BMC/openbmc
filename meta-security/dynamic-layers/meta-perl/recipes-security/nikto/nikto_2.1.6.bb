@@ -10,7 +10,7 @@ SRCREV = "f1bbd1a8756c076c8fd4f4dd0bc34a8ef215ae79"
 SRC_URI = "git://github.com/sullo/nikto.git;branch=master;protocol=https \
            file://location.patch"
 
-S = "${WORKDIR}/git/program"
+S = "${UNPACKDIR}/${BP}/program"
 
 do_install() {
     install -d ${D}${bindir}

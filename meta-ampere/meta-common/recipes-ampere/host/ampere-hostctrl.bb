@@ -8,8 +8,7 @@ inherit systemd
 inherit obmc-phosphor-systemd
 
 RDEPENDS:${PN} = "bash"
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}/sources"
 
 SRC_URI = " \
            file://ampere-host-force-reset@.service \

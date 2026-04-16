@@ -14,18 +14,17 @@ PV = "20221209"
 
 DEPENDS = "mtd-utils"
 
-# Source is the HEAD of master branch at the time of writing this recipe
-SRC_URI = "git://www.aleph1.co.uk/yaffs2;protocol=git;branch=master \
-           file://makefile-add-ldflags.patch \
-           file://0001-define-loff_t-if-not-already-defined.patch \
-           file://0001-yaffs_guts.h-define-YTIME_T-if-not-already-defined.patch \
+SRC_URI = "git://github.com/Aleph-One-Ltd/yaffs2;protocol=https;branch=master \
+           file://0001-Makefile-add-LDFLAGS.patch \
+           file://0002-define-loff_t-if-not-already-defined.patch \
+           file://0003-yaffs_guts.h-define-YTIME_T-if-not-already-defined.patch \
+           file://0004-utils-Makefile-fix-symbolic-links.patch \
            "
 
-SRCREV = "613a901a229e8a701c18f003dd0aee18453e0670"
+SRCREV = "68030683543cccb4d942e3fedbcad1dc267e261c"
 
 UPSTREAM_CHECK_COMMITS = "1"
 
-S = "${WORKDIR}/git"
 
 CFLAGS:append = " -I.. -DCONFIG_YAFFS_UTIL -DCONFIG_YAFFS_DEFINES_TYPES"
 EXTRA_OEMAKE = "-e MAKEFLAGS="

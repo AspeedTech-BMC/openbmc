@@ -3,8 +3,6 @@ PROVIDES += "virtual/phosphor-ipmi-fru-read-inventory"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
-S = "${WORKDIR}/git"
-
 inherit phosphor-ipmi-host
 inherit native
 

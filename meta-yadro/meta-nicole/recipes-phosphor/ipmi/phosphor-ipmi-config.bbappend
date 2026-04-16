@@ -9,8 +9,7 @@ SRC_URI:append = " \
     file://${BPN}.service \
 "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}/sources"
 do_install:append() {
     install -d ${D}${bindir} ${D}${systemd_system_unitdir}
     install ${BPN}-set-device-id.sh ${D}${bindir}/

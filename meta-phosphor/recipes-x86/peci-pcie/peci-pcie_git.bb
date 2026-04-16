@@ -13,7 +13,6 @@ PACKAGECONFIG[use-rdendpointcfg] = "-Duse-rdendpointcfg=enabled,-Duse-rdendpoint
 
 SRC_URI = "git://github.com/openbmc/peci-pcie;branch=master;protocol=https"
 
-S = "${WORKDIR}/git"
 SYSTEMD_SERVICE:${PN} += "xyz.openbmc_project.PCIe.service"
 
 inherit meson pkgconfig systemd

@@ -98,9 +98,7 @@ SRC_URI = "git://github.com/xrmx/bootchart.git;branch=master;protocol=https \
            file://0002-Makefile-Add-n-to-gzip.patch \
           "
 
-S = "${WORKDIR}/git"
 SRCREV = "868a2afab9da34f32c007d773b77253c93104636"
-
 
 inherit systemd update-rc.d python3native update-alternatives
 

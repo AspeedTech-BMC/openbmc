@@ -285,7 +285,20 @@ def get_bb_vars(variables=None, target=None, postconfig=None):
     return values
 
 def get_bb_var(var, target=None, postconfig=None):
-    return get_bb_vars([var], target, postconfig)[var]
+    if postconfig:
+        return bitbake("-e %s" % target or "", postconfig=postconfig).output
+    else:
+        # Fast-path for the non-postconfig case
+        cmd = ["bitbake-getvar", "--quiet", "--value", var]
+        if target:
+            cmd.extend(["--recipe", target])
+        try:
+            return subprocess.run(cmd, check=True, text=True, stdout=subprocess.PIPE).stdout.strip()
+        except subprocess.CalledProcessError as e:
+            # We need to return None not the empty string if the variable hasn't been set.
+            if e.returncode == 1:
+                return None
+            raise
 
 def get_test_layer(bblayers=None):
     if bblayers is None:
@@ -387,6 +400,20 @@ def runqemu(pn, ssh=True, runqemuparams='', image_fstype=None, launch_cmd=None, 
     finally:
         targetlogger.removeHandler(handler)
         qemu.stop()
+
+def runqemu_check_taps():
+    """Check if tap devices for runqemu are available"""
+    if not os.path.exists('/etc/runqemu-nosudo'):
+        return False
+    result = runCmd('PATH="$PATH:/sbin:/usr/sbin" ip tuntap show mode tap', ignore_status=True)
+    if result.status != 0:
+        return False
+    for line in result.output.splitlines():
+        if 'tap' in line:
+            break
+    else:
+        return False
+    return True
 
 def updateEnv(env_file):
     """

@@ -180,8 +180,6 @@ list(APPEND CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES ${includedir})
 
 EOF
         cat > ${WORKDIR}/toolchain-native.cmake <<EOF
-set( CMAKE_SYSTEM_NAME ${@map_host_os_to_system_name(d.getVar('BUILD_OS'))} )
-set( CMAKE_SYSTEM_PROCESSOR ${@map_host_arch_to_uname_arch(d.getVar('BUILD_ARCH'))} )
 set( CMAKE_C_COMPILER ${OECMAKE_NATIVE_C_COMPILER} )
 set( CMAKE_CXX_COMPILER ${OECMAKE_NATIVE_CXX_COMPILER} )
 set( CMAKE_ASM_COMPILER ${OECMAKE_NATIVE_C_COMPILER} )
@@ -213,6 +211,12 @@ set( CMAKE_LIBRARY_PATH ${STAGING_BASE_LIBDIR_NATIVE} ${STAGING_LIBDIR_NATIVE})
 list(APPEND CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES ${STAGING_INCDIR_NATIVE})
 list(APPEND CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES ${STAGING_INCDIR_NATIVE})
 
+EOF
+}
+
+cmake_do_generate_toolchain_file:append:toolchain-clang() {
+	cat >> ${WORKDIR}/toolchain.cmake <<EOF
+set( CMAKE_CLANG_TIDY ${HOST_PREFIX}clang-tidy )
 EOF
 }
 

@@ -5,14 +5,13 @@ PR = "r1"
 
 SRC_URI = "file://zone_conditions.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 inherit phosphor-fan
 
 do_install() {
-    install -D zone_conditions.yaml ${D}${control_datadir}/zone_conditions.yaml
+    install -D ${S}/zone_conditions.yaml ${D}${control_datadir}/zone_conditions.yaml
 }
 
 FILES:${PN} += "${control_datadir}/zone_conditions.yaml"

@@ -6,8 +6,7 @@ PR = "r1"
 
 SRC_URI += "file://extra-properties.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit phosphor-ipmi-fru
 inherit native

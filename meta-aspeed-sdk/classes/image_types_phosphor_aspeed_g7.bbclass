@@ -4,7 +4,8 @@
 # If UBOOT_FITIMAGE_ENABLE is enabled, it means the build uses a U-Boot FIT image
 # instead of a Caliptra Manifest Flash image. In this case, the U-Boot binary is u-boot.bin;
 # otherwise, the U-Boot binary is the Caliptra Manifest Flash image.
-UBOOT_BINARY := "${@oe.utils.conditional('UBOOT_FITIMAGE_ENABLE', '1', 'u-boot.${UBOOT_SUFFIX}', '${CALIPTRA_MANIFEST_FLASH_IMAGE}', d)}"
+USE_UBOOT_IMAGE ?= "${UBOOT_FITIMAGE_ENABLE}"
+UBOOT_BINARY := "${@oe.utils.conditional('USE_UBOOT_IMAGE', '1', 'u-boot.${UBOOT_SUFFIX}', '${CALIPTRA_MANIFEST_FLASH_IMAGE}', d)}"
 UBOOT_SUFFIX:append = ".merged"
 
 # Install the image-u-boot to deploy folder when building the emmc image.
@@ -68,13 +69,13 @@ do_merge_uboot() {
     dd bs=1k seek=${uboot_offset} if=${DEPLOY_DIR_IMAGE}/${UBOOT_BINARY} of=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}
 }
 
-# If UBOOT_FITIMAGE_ENABLE is enabled, it means the build uses a U-Boot FIT image
+# If USE_UBOOT_IMAGE is enabled, it means the build uses a original U-Boot image
 # instead of a SoC manifest image. In this case, skip adding aspeed-image-manifest
 # to the deploy task dependencies; otherwise, include it to generate the SoC manifest image.
 do_merge_uboot[depends] += " \
     u-boot:do_deploy \
     virtual/bootmcu:do_deploy \
-    ${@oe.utils.conditional('UBOOT_FITIMAGE_ENABLE', '1', '', 'aspeed-image-manifest:do_deploy', d)} \
+    ${@oe.utils.conditional('USE_UBOOT_IMAGE', '1', '', 'aspeed-image-manifest:do_deploy', d)} \
     "
 
 addtask do_merge_uboot before do_generate_static after do_generate_rwfs_static

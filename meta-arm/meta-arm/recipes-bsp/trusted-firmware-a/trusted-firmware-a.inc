@@ -39,7 +39,6 @@ TFA_ARM_SPMC_MANIFEST_DTS ?= ""
 # Build for debug (set TFA_DEBUG to 1 to activate)
 TFA_DEBUG ?= "0"
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 # mbed TLS support (set TFA_MBEDTLS to 1 to activate)

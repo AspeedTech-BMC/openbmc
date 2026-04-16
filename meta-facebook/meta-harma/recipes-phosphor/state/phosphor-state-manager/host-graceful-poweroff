@@ -2,5 +2,12 @@
 
 # shellcheck source=meta-facebook/meta-harma/recipes-phosphor/state/phosphor-state-manager/power-cmd
 source /usr/libexec/phosphor-state-manager/power-cmd
+trap '/usr/libexec/fb-common-functions set_gpio power-host-control 1' EXIT SIGTERM
 
-graceful_power_off
+if graceful_power_off ; then
+    echo "Graceful power off command executed successfully."
+else
+    echo "Graceful power off command failed."
+    exit 1
+fi
+exit 0

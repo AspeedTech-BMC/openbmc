@@ -18,7 +18,6 @@ SRC_URI = "git://github.com/esnet/iperf.git;protocol=https;branch=${BRANCH} \
 BRANCH = "3.1-STABLE"
 SRCREV = "7b96c08f82b868c809827bb116976b01ae0b93c2"
 
-S = "${WORKDIR}/git"
 
 inherit autotools
 

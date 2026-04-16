@@ -1,7 +1,7 @@
-From d810df85464c1b8c9dd07a3463df1d7095d0b9b4 Mon Sep 17 00:00:00 2001
+From c5a6aa5f9f189c18b1204062b11b9f40cda8c412 Mon Sep 17 00:00:00 2001
 From: Jammy Huang <jammy_huang@aspeedtech.com>
 Date: Thu, 12 Jun 2025 10:13:41 +0800
-Subject: [PATCH] Improve video quality
+Subject: [PATCH 4/4] Improve video quality
 
 With current default quality, mosquito effect could be observed on
 text. To fix this issue, set default quality to 4
@@ -15,7 +15,7 @@ Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
  3 files changed, 22 insertions(+), 2 deletions(-)
 
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index c8ddcb7..66d05cb 100644
+index 5f102f2..d180d29 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
 @@ -187,7 +187,7 @@ void Server::sendFrame()
@@ -28,7 +28,7 @@ index c8ddcb7..66d05cb 100644
                  rfbSendCompressedDataTight(cl, data, video.getFrameSize(i));
                  if (cl->enableLastRectEncoding)
 diff --git a/ikvm_video.cpp b/ikvm_video.cpp
-index 49e7c00..0c3a12a 100644
+index e96247f..8e10a4a 100644
 --- a/ikvm_video.cpp
 +++ b/ikvm_video.cpp
 @@ -32,7 +32,7 @@ using namespace sdbusplus::xyz::openbmc_project::Common::Device::Error;
@@ -40,8 +40,8 @@ index 49e7c00..0c3a12a 100644
      path(p), pixelformat(V4L2_PIX_FMT_JPEG), pixelformatflags(0)
  {
      switch (fmt)
-@@ -518,6 +518,15 @@ void Video::start()
-                             entry("ERROR=%s", strerror(errno)));
+@@ -516,6 +516,15 @@ void Video::start()
+                      strerror(errno));
      }
  
 +    ctrl.id = V4L2_CID_JPEG_COMPRESSION_QUALITY;
@@ -49,15 +49,15 @@ index 49e7c00..0c3a12a 100644
 +    rc = ioctl(fd, VIDIOC_S_CTRL, &ctrl);
 +    if (rc < 0)
 +    {
-+        log<level::WARNING>("Failed to set video jpeg quality",
-+                            entry("ERROR=%s", strerror(errno)));
++        lg2::warning("Failed to set video jpeg quality {ERROR}", "ERROR",
++                     strerror(errno));
 +    }
 +
      ctrl.id = V4L2_CID_JPEG_CHROMA_SUBSAMPLING;
      ctrl.value = subSampling ? V4L2_JPEG_CHROMA_SUBSAMPLING_420
                               : V4L2_JPEG_CHROMA_SUBSAMPLING_444;
 diff --git a/ikvm_video.hpp b/ikvm_video.hpp
-index 4255f87..7f2662b 100644
+index e38a2d3..1aea7d4 100644
 --- a/ikvm_video.hpp
 +++ b/ikvm_video.hpp
 @@ -161,6 +161,15 @@ class Video
@@ -86,5 +86,5 @@ index 4255f87..7f2662b 100644
      Input& input;
      /* @brief Path to the V4L2 video device */
 -- 
-2.34.1
+2.43.0
 

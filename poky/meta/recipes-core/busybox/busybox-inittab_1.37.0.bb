@@ -4,8 +4,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0-only;m
 
 SRC_URI = "file://inittab"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 INHIBIT_DEFAULT_DEPS = "1"
 
@@ -48,7 +47,6 @@ EOF
 	fi
 
 }
-
 
 # SERIAL_CONSOLES is generally defined by the MACHINE .conf.
 # Set PACKAGE_ARCH appropriately.

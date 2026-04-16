@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# shellcheck source=meta-facebook/meta-anacapa/recipes-phosphor/state/phosphor-state-manager/power-cmd
+source /usr/libexec/phosphor-state-manager/power-cmd
+
+#Sled cycle
+echo "Starting Chassis Power Cycle"
+
+chassis-power-cycle() {
+
+    set_gpio SYSTEM_Force_Run_AC_Cycle 1
+
+    return 0
+}
+
+ChassisNumber=$1
+
+if [ "$ChassisNumber" == 0 ]
+then
+  echo "Starting Chassis Power Cycle"
+  chassis-power-cycle
+fi

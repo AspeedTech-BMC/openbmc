@@ -6,8 +6,7 @@ PR = "r1"
 
 SRC_URI += "file://callouts.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit phosphor-logging
 inherit native
@@ -15,5 +14,5 @@ inherit native
 do_install() {
         DEST=${D}${callouts_datadir}
         install -d ${DEST}
-        install callouts.yaml ${DEST}
+        install ${S}/callouts.yaml ${DEST}
 }

@@ -1,5 +1,5 @@
 From 9dadeee9dee5a87df3ab31595b819f246335690f Mon Sep 17 00:00:00 2001
-From: VinceChang6637 <vince_chang@aspeedtech.com>
+From: Vince Chang <vince_chang@aspeedtech.com>
 Date: Tue, 9 Jul 2024 13:14:14 +0800
 Subject: [PATCH] add pfr last event properties
 
@@ -7,7 +7,7 @@ Add PFR LastEvents for pfr-manager.
 
 Upstream-Status: Pending
 
-Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  .../PFR/LastEvents/meson.build                | 40 +++++++++++++++++++
  gen/xyz/openbmc_project/PFR/meson.build       | 25 ++++++++++++

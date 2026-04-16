@@ -19,11 +19,12 @@ SRC_URI = "git://github.com/KDE/heaptrack.git;protocol=https;branch=master \
 
 SRCREV = "bc9e3744bcc47de978673d1e382f4125a1ab5fa8"
 
-S = "${WORKDIR}/git"
 
 inherit cmake
 
-EXTRA_OECMAKE += "-DHEAPTRACK_BUILD_GUI=OFF"
+EXTRA_OECMAKE += "-DHEAPTRACK_BUILD_GUI=OFF \
+                  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+"
 
 # libunwind is not yet ported to RISCV
 COMPATIBLE_HOST:riscv32 = "null"

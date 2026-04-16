@@ -1,5 +1,5 @@
 From b1d5b2aa3965759aeee7edbe403e24e87d4d46bc Mon Sep 17 00:00:00 2001
-From: VinceChang6637 <vince_chang@aspeedtech.com>
+From: Vince Chang <vince_chang@aspeedtech.com>
 Date: Tue, 12 Dec 2023 18:22:39 +0800
 Subject: [PATCH 3/3] fansensor update regular expression to find pwm
 
@@ -7,7 +7,7 @@ Update the regular expression to only find pwm* while excluding
 pwm*_enable.
 
 Upstream-Status: Pending
-Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  src/fan/FanMain.cpp | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

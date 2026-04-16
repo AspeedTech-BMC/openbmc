@@ -14,8 +14,6 @@ PR = "r1"
 
 SRC_URI = "git://github.com/openbmc/phosphor-time-manager;branch=master;protocol=https"
 
-S = "${WORKDIR}/git"
-
 inherit meson pkgconfig python3native
 inherit obmc-phosphor-dbus-service
 

@@ -11,8 +11,7 @@ RDEPENDS:${PN} += "libgpiod-tools"
 RDEPENDS:${PN} += "mdio-tools"
 RDEPENDS:${PN} += "bletchley-common-functions"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 SRC_URI += " \
     file://motor-ctrl \

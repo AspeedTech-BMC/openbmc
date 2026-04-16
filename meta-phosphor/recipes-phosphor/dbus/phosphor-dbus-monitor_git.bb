@@ -16,7 +16,7 @@ DEPENDS += " \
         ${PYTHON_PN}-setuptools-native \
         ${PYTHON_PN}-mako-native \
         "
-SRCREV = "9c2f94e155b86ef234f2cc8aa39d4e18a15a0561"
+SRCREV = "e6d08896d4292945c628bde176dae70734ca7e91"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
@@ -25,7 +25,6 @@ SRC_URI = "git://github.com/openbmc/phosphor-dbus-monitor;branch=master;protocol
 SYSTEMD_PACKAGES = "${PN} phosphor-msl-verify"
 SYSTEMD_SERVICE:${PN} = "phosphor-dbus-monitor.service"
 SYSTEMD_SERVICE:phosphor-msl-verify = "phosphor-msl-verify.service"
-S = "${WORKDIR}/git"
 
 inherit meson \
         pkgconfig \

@@ -9,7 +9,9 @@ KERNEL_OUTPUT_DIR = "${DEPLOY_DIR_IMAGE}"
 FIT_KERNEL_COMP_ALG ?= "none"
 FIT_KERNEL_COMP_ALG_EXTENSION ?= ""
 
-do_image_cpio[depends] += "virtual/kernel:do_deploy"
+# Only depend on kernel if we're not being bundled into the kernel
+# (to avoid circular dependency)
+do_image_cpio[depends] += "${@'' if d.getVar('IMAGE_BASENAME') in d.getVar('INITRAMFS_IMAGE') else 'virtual/kernel:do_deploy'}"
 
 run_assemble_fitimage() {
     export linux_comp="${FIT_KERNEL_COMP_ALG}"
@@ -33,6 +35,8 @@ uboot_prep_kimage() {
             gzip -9 linux.bin
         elif [ "${linux_comp}" = "lzo" ] ; then
             lzop -9 linux.bin
+        elif [ "${linux_comp}" = "lzma" ] ; then
+            xz --format=lzma -f -6 linux.bin
         fi
         mv -f "linux.bin${linux_suffix}" linux.bin
     fi

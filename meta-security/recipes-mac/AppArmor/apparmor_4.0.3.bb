@@ -23,7 +23,6 @@ SRC_URI = " \
     "
 
 SRCREV = "b4dfdf50f50ed1d64161424d036a2453645f0cfe"
-S = "${UNPACKDIR}/git"
 
 PARALLEL_MAKE = ""
 

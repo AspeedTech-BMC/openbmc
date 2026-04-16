@@ -9,12 +9,11 @@ inherit obmc-phosphor-systemd
 DEPENDS = "systemd"
 RDEPENDS:${PN} = "bash"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 SRC_URI = " file://platform-init.sh \
             file://amd-platform-init.service \
           "
+
+S = "${UNPACKDIR}"
 
 SYSTEMD_SERVICE:${PN} = "amd-platform-init.service"
 

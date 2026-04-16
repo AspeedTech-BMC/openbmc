@@ -9,8 +9,6 @@ PR = "r1"
 
 SRC_URI += "${MRW_TOOLS_SRC_URI}"
 
-S = "${WORKDIR}/git"
-
 inherit mrw-rev
 inherit native
 

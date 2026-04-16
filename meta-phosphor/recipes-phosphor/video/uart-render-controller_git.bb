@@ -10,7 +10,6 @@ PR = "r1"
 SRC_URI = "git://github.com/jk-ozlabs/uart-render-controller;branch=master;protocol=https"
 SRC_URI += "file://uart-render-controller.service"
 
-S = "${WORKDIR}/git"
 SYSTEMD_SERVICE:${PN} += "uart-render-controller.service"
 
 inherit autotools

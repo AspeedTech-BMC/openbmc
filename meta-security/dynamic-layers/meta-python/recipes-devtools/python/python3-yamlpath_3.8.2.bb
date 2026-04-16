@@ -15,4 +15,5 @@ RDEPENDS:${PN} += "\
    python3-datetime \
    python3-ruamel-yaml \
    python3-dateutil \
+   python3-json \
 "

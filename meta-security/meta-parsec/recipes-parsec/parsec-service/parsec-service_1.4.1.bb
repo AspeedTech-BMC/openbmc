@@ -21,15 +21,12 @@ PACKAGECONFIG ??= "PKCS11 MBED-CRYPTO"
 have_TPM = "${@bb.utils.contains('DISTRO_FEATURES', 'tpm2', 'TPM', '', d)}"
 PACKAGECONFIG:append = " ${@bb.utils.contains('BBFILE_COLLECTIONS', 'tpm-layer', '${have_TPM}', '', d)}"
 
-PACKAGECONFIG[ALL] = "all-providers cryptoki/generate-bindings tss-esapi/generate-bindings,,tpm2-tss libts,tpm2-tss libtss2-tcti-device libts"
-PACKAGECONFIG[TPM] = "tpm-provider tss-esapi/generate-bindings,,tpm2-tss,tpm2-tss libtss2-tcti-device"
-PACKAGECONFIG[PKCS11] = "pkcs11-provider cryptoki/generate-bindings,"
-PACKAGECONFIG[MBED-CRYPTO] = "mbed-crypto-provider,"
-PACKAGECONFIG[CRYPTOAUTHLIB] = "cryptoauthlib-provider,"
-PACKAGECONFIG[TS] = "trusted-service-provider,,libts,libts"
-
-PARSEC_FEATURES = "${@d.getVar('PACKAGECONFIG_CONFARGS').strip().replace(' ', ',')}"
-CARGO_BUILD_FLAGS += " --features ${PARSEC_FEATURES}"
+PACKAGECONFIG[ALL] = "-F all-providers -F cryptoki/generate-bindings -F tss-esapi/generate-bindings,,tpm2-tss libts,tpm2-tss libtss2-tcti-device libts"
+PACKAGECONFIG[TPM] = "-F tpm-provider -F tss-esapi/generate-bindings,,tpm2-tss,tpm2-tss libtss2-tcti-device"
+PACKAGECONFIG[PKCS11] = "-F pkcs11-provider -F cryptoki/generate-bindings,"
+PACKAGECONFIG[MBED-CRYPTO] = "-F mbed-crypto-provider,"
+PACKAGECONFIG[CRYPTOAUTHLIB] = "-F cryptoauthlib-provider,"
+PACKAGECONFIG[TS] = "-F trusted-service-provider,,libts,libts"
 
 export BINDGEN_EXTRA_CLANG_ARGS
 target = "${@d.getVar('TARGET_SYS').replace('-', ' ')}"
@@ -47,7 +44,6 @@ INITSCRIPT_NAME = "parsec"
 # A local file can be defined in build/local.conf
 # The file should also be included into SRC_URI then
 PARSEC_CONFIG ?= "${S}/config.toml"
-
 
 do_install () {
     # Binaries

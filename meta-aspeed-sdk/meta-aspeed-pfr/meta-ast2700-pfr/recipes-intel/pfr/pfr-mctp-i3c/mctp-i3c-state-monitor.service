@@ -1,0 +1,13 @@
+[Unit]
+Description=Monitor Host Power State for PFR MCTP I3C
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/mctp-i3c-state-monitor.sh
+Restart=on-failure
+RestartSec=5
+SyslogIdentifier=mctp-i3c-state-monitor
+
+[Install]
+WantedBy=multi-user.target

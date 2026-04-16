@@ -14,8 +14,6 @@ SRCREV = "0241b08f069f0fdb3612f5c1b938144dbe9be811"
 
 UPSTREAM_CHECK_URI = "https://github.com/tpm2-software/${BPN}/releases"
 
-S = "${WORKDIR}/git"
-
 inherit autotools pkgconfig
 
 EFIDIR ?= "/EFI/BOOT"
