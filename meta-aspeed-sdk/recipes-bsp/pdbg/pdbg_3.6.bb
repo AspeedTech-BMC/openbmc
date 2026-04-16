@@ -8,7 +8,6 @@ SRCREV = "3a21a79267bc5faa9e4bc56dc3124be610e9d475"
 
 DEPENDS += "dtc-native"
 
-S = "${WORKDIR}/git"
 
 inherit autotools
 

@@ -4,8 +4,7 @@ LIC_FILES_CHKSUM = "file://pacbti.c;beginline=2;endline=2;md5=6ec41034e04432ee37
 
 SRC_URI = "file://pacbti.c"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_compile() {
     # Compile with -zforce-bti with fatal warnings, so the link fails if PAC/BTI

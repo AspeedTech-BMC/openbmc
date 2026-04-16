@@ -4,10 +4,7 @@ Built with --with-arch=rv32gc --with-abi=ilp32"
 LICENSE = "GPL-3.0-with-GCC-exception & GPL-3.0-only"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
-SRC_URI = "https://github.com/AspeedTech-BMC/riscv-gnu-toolchain/releases/download/v${PV}/${BPN}.tar.gz;subdir=${S}"
+SRC_URI = "https://github.com/AspeedTech-BMC/riscv-gnu-toolchain/releases/download/v${PV}/${BPN}.tar.gz;subdir=${BP}"
 
 SRC_URI[md5sum] = "61a85f30dcf2d9b6a3ced3065d7dd090"
 SRC_URI[sha256sum] = "05dec6cc815372f1f82284d2f829858c5361916e902cb0988fdfc0eaf7e38680"

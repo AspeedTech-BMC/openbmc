@@ -9,8 +9,7 @@ SRC_URI += "file://obmc-shutdown.sh"
 SRC_URI += "file://obmc-update.sh"
 SRC_URI += "file://whitelist"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 

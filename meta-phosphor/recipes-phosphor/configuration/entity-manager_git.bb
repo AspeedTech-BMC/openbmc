@@ -3,15 +3,18 @@ DESCRIPTION = "Entity Manager provides d-bus configuration data \
 and configures system sensors"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENCE;md5=a6a4edad4aed50f39a66d098d74b265b"
-DEPENDS = "boost \
-           dbus \
-           nlohmann-json \
-           phosphor-logging \
-           sdbusplus \
-           valijson \
-           phosphor-dbus-interfaces \
+DEPENDS = " \
+    boost \
+    dbus \
+    libxml2 \
+    nlohmann-json \
+    phosphor-dbus-interfaces \
+    phosphor-logging \
+    sdbusplus \
+    valijson \
+    zlib \
 "
-SRCREV = "0671d3cebc799ea5f20208b033daefe53e54092f"
+SRCREV = "52f835bf897f73735341c4dd85e443812dbb10da"
 PACKAGECONFIG ??= "ipmi-fru gpio-presence"
 
 PACKAGECONFIG[dts-vpd] = "-Ddevicetree-vpd=true, -Ddevicetree-vpd=false"
@@ -27,7 +30,6 @@ SRC_URI = "git://github.com/openbmc/entity-manager.git;branch=master;protocol=ht
            file://blocklist.json \
           "
 
-S = "${WORKDIR}/git"
 SYSTEMD_PACKAGES = "${PN} ${EXTRA_ENTITY_MANAGER_PACKAGES}"
 SYSTEMD_SERVICE:${PN} = "xyz.openbmc_project.EntityManager.service"
 SYSTEMD_SERVICE:fru-device = "xyz.openbmc_project.FruDevice.service"

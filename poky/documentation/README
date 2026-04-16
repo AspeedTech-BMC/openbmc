@@ -314,6 +314,16 @@ See https://stackoverflow.com/questions/27420317/restructured-text-rst-http-link
 Anchor (<#link>) links are forbidden as they are not checked by Sphinx during
 the build and may be broken without knowing about it.
 
+It is also possible to refer to another document within yocto-docs with the
+:doc: directive (c.f.
+https://www.sphinx-doc.org/en/master/usage/referencing.html#role-doc), e.g.:
+
+  For more information, read :doc:`/bsp-guide/index`.
+
+Note that only "absolute" paths (starting with a '/') are allowed. The root
+directory of that path is documentation/, that is, :doc:`/bsp-guide/index`
+points at documentation/bsp-guide/index.rst.
+
 References
 ==========
 
@@ -406,5 +416,22 @@ both the Yocto Project and BitBake manuals:
 Submitting documentation changes
 ================================
 
-Please see the top level README file in this repository for details of where
-to send patches.
+Please refer to our contributor guide here: https://docs.yoctoproject.org/contributor-guide/
+for full details on how to submit changes.
+
+As a quick guide, patches should be sent to docs@lists.yoctoproject.org
+The git command to do that would be:
+
+     git send-email -M -1 --to docs@lists.yoctoproject.org
+
+The 'To' header can be set as default for this repository:
+
+     git config sendemail.to docs@lists.yoctoproject.org
+
+Now you can just do 'git send-email origin/master..' to send all local patches.
+
+Read the other sections in this document and documentation/standards.md for
+rules to follow when contributing to the documentation.
+
+Git repository: https://git.yoctoproject.org/yocto-docs
+Mailing list: docs@lists.yoctoproject.org

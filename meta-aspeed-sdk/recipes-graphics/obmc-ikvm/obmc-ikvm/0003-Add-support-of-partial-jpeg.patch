@@ -1,4 +1,4 @@
-From 677623904c61d8c1c7cd08a819777d031cf35d19 Mon Sep 17 00:00:00 2001
+From 74f90a5cfcd87bf9895759805f3af97556240eb3 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 15:34:35 +0800
 Subject: [PATCH 3/4] Add support of partial jpeg
@@ -22,20 +22,20 @@ Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
  4 files changed, 53 insertions(+), 7 deletions(-)
 
 diff --git a/ikvm_args.cpp b/ikvm_args.cpp
-index b3a95fc..8747518 100644
+index d702c15..1dfd1e7 100644
 --- a/ikvm_args.cpp
 +++ b/ikvm_args.cpp
-@@ -40,7 +40,7 @@ Args::Args(int argc, char* argv[]) :
+@@ -36,7 +36,7 @@ Args::Args(int argc, char* argv[]) :
                  break;
              case 'm':
-                 format = (int)strtol(optarg, NULL, 0);
+                 format = (int)strtol(optarg, nullptr, 0);
 -                if (format < 0 || format > 2)
 +                if (format < 0 || format > 3)
                      format = 0;
                  break;
              case 'h':
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index b775e3c..c8ddcb7 100644
+index af24fa5..5f102f2 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
 @@ -157,8 +157,13 @@ void Server::sendFrame()
@@ -55,7 +55,7 @@ index b775e3c..c8ddcb7 100644
                  rfbSendCompressedDataTight(cl, data, video.getFrameSize(i));
                  if (cl->enableLastRectEncoding)
 diff --git a/ikvm_video.cpp b/ikvm_video.cpp
-index 6bce429..49e7c00 100644
+index cf8fe0a..e96247f 100644
 --- a/ikvm_video.cpp
 +++ b/ikvm_video.cpp
 @@ -33,17 +33,21 @@ using namespace sdbusplus::xyz::openbmc_project::Common::Device::Error;
@@ -98,8 +98,8 @@ index 6bce429..49e7c00 100644
 +                    if (pixelformatflags == V4L2_PIX_FMT_FLAG_PARTIAL_JPG) {
 +                        rc = ioctl(fd, VIDIOC_G_SELECTION, &comp);
 +                        if (rc) {
-+                            log<level::ERR>("Failed to get selection box",
-+                                            entry("ERROR=%s", strerror(errno)));
++                            lg2::error("Failed to get selection box {ERROR}", "ERROR",
++                                        strerror(errno));
 +                            comp.r.left = 0;
 +                            comp.r.top = 0;
 +                            comp.r.width = width;
@@ -110,7 +110,7 @@ index 6bce429..49e7c00 100644
                      buffersDone.push_back(buf.index);
                  }
                  else
-@@ -475,7 +492,8 @@ void Video::start()
+@@ -473,7 +490,8 @@ void Video::start()
                  CALLOUT_DEVICE_PATH(path.c_str()));
      }
  
@@ -121,7 +121,7 @@ index 6bce429..49e7c00 100644
      if (rc < 0)
      {
 diff --git a/ikvm_video.hpp b/ikvm_video.hpp
-index 1197b08..4255f87 100644
+index c7ad916..e38a2d3 100644
 --- a/ikvm_video.hpp
 +++ b/ikvm_video.hpp
 @@ -6,6 +6,7 @@
@@ -183,5 +183,5 @@ index 1197b08..4255f87 100644
  
  } // namespace ikvm
 -- 
-2.25.1
+2.43.0
 

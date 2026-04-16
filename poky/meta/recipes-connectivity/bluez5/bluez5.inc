@@ -10,8 +10,6 @@ DEPENDS = "dbus glib-2.0"
 PROVIDES += "bluez-hcidump"
 RPROVIDES:${PN} += "bluez-hcidump"
 
-RCONFLICTS:${PN} = "bluez4"
-
 PACKAGECONFIG ??= "obex-profiles \
     readline \
     ${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)} \
@@ -69,7 +67,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/bluetooth/bluez-${PV}.tar.xz \
            file://0001-tests-add-a-target-for-building-tests-without-runnin.patch \
            file://0001-bluez5-disable-aics-tests.patch \
            "
-S = "${WORKDIR}/bluez-${PV}"
+S = "${UNPACKDIR}/bluez-${PV}"
 
 CVE_PRODUCT = "bluez"
 

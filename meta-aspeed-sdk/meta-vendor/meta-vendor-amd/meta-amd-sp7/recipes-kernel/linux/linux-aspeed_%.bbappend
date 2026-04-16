@@ -3,6 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI:append = " \
         file://ast2700-amd-dcscm.cfg \
         file://aspeed-bmc-amd-kenya.dts \
+        file://ast2700-dcscm-amd.dts \
 "
 
 do_prepare_dts() {

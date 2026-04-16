@@ -11,7 +11,7 @@ e.g. PWRGD_COMPUTE_TRAY1_N
 
 source="$2"
 device_path="/xyz/openbmc_project/inventory/system/board/Ventura_PDB/$source"
-stash_file="/run/${source}.log_entry"
+stash_file="/var/lib/phosphor-gpio-monitor/${source}.log_entry"
 
 get_failure_data() {
     if [[ $1 =~ ^PWRGD_TRAY_LEAK_PORT([0-9]+)_N$ ]]; then
@@ -27,16 +27,14 @@ case "$1" in
     ;;
 
 "assert")
-    if [ ! -s "$stash_file" ]; then
-        log-create "xyz.openbmc_project.State.Power.PowerRailFault" --json \
-            "{ \"POWER_RAIL\": \"${device_path}\", \"FAILURE_DATA\": \"$(get_failure_data "$source")\"}" \
-            >"${stash_file}"
-    fi
+    log-create "xyz.openbmc_project.State.Power.PowerRailFault" --json \
+        "{ \"POWER_RAIL\": \"${device_path}\", \"FAILURE_DATA\": \"$(get_failure_data "$source")\"}" \
+        >"${stash_file}"
     ;;
 
 "deassert")
     if [ -s "${stash_file}" ]; then
-        log-resolve -p "$(<"${stash_file}")" && rm "${stash_file}"
+        log-resolve -p "$(<"${stash_file}")" ; rm "${stash_file}"
         log-create "xyz.openbmc_project.State.Power.PowerRailFaultRecovered" --json \
             "{ \"POWER_RAIL\": \"${device_path}\"}"
     fi

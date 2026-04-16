@@ -2,7 +2,6 @@ SUMMARY = "A full platform to monitor and control your systems"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=d625d1520b5e38faefb81cf9772badc9"
 
-
 DEPENDS = "openssl libpcre2 zlib libevent"
 SRC_URI = "git://github.com/ossec/ossec-hids;branch=master;protocol=https \
            file://0001-Makefile-drop-running-scrips-install.patch  \
@@ -14,9 +13,6 @@ SRCREV = "bf797c759994015274f3bc31fe2bed278cce67ee"
 UPSTREAM_CHECK_COMMITS = "1"
 
 inherit autotools-brokensep  useradd
-
-S = "${UNPACKDIR}/git"
-
 
 OSSEC_DIR = "/var/ossec"
 OSSEC_UID ?= "ossec"

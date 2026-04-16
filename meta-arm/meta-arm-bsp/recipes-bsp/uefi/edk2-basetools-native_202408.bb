@@ -14,13 +14,11 @@ SRCREV = "b158dad150bf02879668f72ce306445250838201"
 
 UPSTREAM_CHECK_GITTAGREGEX = "^edk2-stable(?P<pver>\d+)$"
 
-S = "${WORKDIR}/git"
-
 inherit native
 
 RDEPENDS:${PN} += "python3-core"
 
 do_install () {
     mkdir -p ${D}${bindir}/edk2-BaseTools
-    cp -r ${WORKDIR}/git/BaseTools/* ${D}${bindir}/edk2-BaseTools/
+    cp -r ${S}/BaseTools/* ${D}${bindir}/edk2-BaseTools/
 }

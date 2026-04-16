@@ -9,8 +9,7 @@ PFR_SHA ?= "1"
 
 PFR_MANIFEST ?= "pfr_manifest_ast2600_dcscm.json"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 SRC_URI = " \
            file://pfr_image.py \

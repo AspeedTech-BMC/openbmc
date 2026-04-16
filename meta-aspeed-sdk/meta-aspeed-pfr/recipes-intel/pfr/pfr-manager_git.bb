@@ -13,7 +13,8 @@ SRC_URI = "git://github.com/openbmc/pfr-manager;branch=master;protocol=https \
 PV = "0.1+git"
 SRCREV = "eedbae776db69b033de23629310692aa3b780b41"
 
-S = "${WORKDIR}/git"
+# Fix CMake Error: Compatibility with CMake < 3.5 has been removed from CMake
+EXTRA_OECMAKE += " -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
 SYSTEMD_SERVICE:${PN} = "xyz.openbmc_project.PFR.Manager.service"
 

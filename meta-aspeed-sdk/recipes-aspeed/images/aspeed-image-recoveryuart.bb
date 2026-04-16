@@ -93,6 +93,7 @@ do_deploy () {
 
 do_deploy[depends] += " \
     virtual/kernel:do_deploy \
+    linux-yocto-fitimage:do_deploy \
     virtual/bootloader:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-bootmcu', 'virtual/bootmcu:do_deploy', '', d)} \
     ${@oe.utils.conditional('SOC_FAMILY', 'aspeed-g7', \

@@ -21,7 +21,7 @@ SRC_URI = "git://github.com/ARM-software/gator.git;protocol=http;branch=main;pro
            file://0001-Include-missing-cstdint.patch;striplevel=2 \
           "
 
-S = "${WORKDIR}/git/daemon"
+S = "${UNPACKDIR}/${BP}/daemon"
 
 COMPATIBLE_HOST = "aarch64.*-linux"
 

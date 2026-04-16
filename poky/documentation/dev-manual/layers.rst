@@ -80,7 +80,7 @@ Follow these general steps to create your layer without using tools:
       BBFILE_PATTERN_yoctobsp = "^${LAYERDIR}/"
       BBFILE_PRIORITY_yoctobsp = "5"
       LAYERVERSION_yoctobsp = "4"
-      LAYERSERIES_COMPAT_yoctobsp = "dunfell"
+      LAYERSERIES_COMPAT_yoctobsp = "walnascar"
 
    Here is an explanation of the layer configuration file:
 
@@ -306,7 +306,7 @@ The Yocto Project Compatibility Program consists of a layer application
 process that requests permission to use the Yocto Project Compatibility
 Logo for your layer and application. The process consists of two parts:
 
-#. Successfully passing a script (``yocto-check-layer``) that when run
+#. Successfully passing a script (``yocto-check-layer``) that, when run
    against your layer, tests it against constraints based on experiences
    of how layers have worked in the real world and where pitfalls have
    been found. Getting a "PASS" result from the script is required for
@@ -478,7 +478,7 @@ name. To handle these errors, the best practice is to rename the ``.bbappend``
 to match the original recipe version. This also gives you the opportunity to see
 if the ``.bbappend`` is still relevant for the new version of the recipe.
 
-Another method it to use the character ``%`` in the ``.bbappend`` filename. For
+Another method is to use the character ``%`` in the ``.bbappend`` filename. For
 example, to append information to every ``6.*`` minor versions of the recipe
 ``someapp``, the ``someapp_6.%.bbappend`` file can be created. This way, an
 error will only be triggered if the ``someapp`` recipe has a major version
@@ -504,10 +504,9 @@ the "meta" layer at ``meta/recipes-bsp/formfactor``::
    SECTION = "base"
    LICENSE = "MIT"
    LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
-   PR = "r45"
 
    SRC_URI = "file://config file://machconfig"
-   S = "${WORKDIR}"
+   S = "${UNPACKDIR}"
 
    PACKAGE_ARCH = "${MACHINE_ARCH}"
    INHIBIT_DEFAULT_DEPS = "1"
@@ -582,11 +581,10 @@ Directory`.  Here is the main ``xserver-xf86-config`` recipe, which is named
    SECTION = "x11/base"
    LICENSE = "MIT"
    LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
-   PR = "r33"
 
    SRC_URI = "file://xorg.conf"
 
-   S = "${WORKDIR}"
+   S = "${UNPACKDIR}"
 
    CONFFILES:${PN} = "${sysconfdir}/X11/xorg.conf"
 
@@ -594,9 +592,9 @@ Directory`.  Here is the main ``xserver-xf86-config`` recipe, which is named
    ALLOW_EMPTY:${PN} = "1"
 
    do_install () {
-        if test -s ${WORKDIR}/xorg.conf; then
+        if test -s ${UNPACKDIR}/xorg.conf; then
                 install -d ${D}/${sysconfdir}/X11
-                install -m 0644 ${WORKDIR}/xorg.conf ${D}/${sysconfdir}/X11/
+                install -m 0644 ${UNPACKDIR}/xorg.conf ${D}/${sysconfdir}/X11/
         fi
    }
 
@@ -614,8 +612,8 @@ file is in the layer at ``recipes-graphics/xorg-xserver``::
        PITFT="${@bb.utils.contains("MACHINE_FEATURES", "pitft", "1", "0", d)}"
        if [ "${PITFT}" = "1" ]; then
            install -d ${D}/${sysconfdir}/X11/xorg.conf.d/
-           install -m 0644 ${WORKDIR}/xorg.conf.d/98-pitft.conf ${D}/${sysconfdir}/X11/xorg.conf.d/
-           install -m 0644 ${WORKDIR}/xorg.conf.d/99-calibration.conf ${D}/${sysconfdir}/X11/xorg.conf.d/
+           install -m 0644 ${UNPACKDIR}/xorg.conf.d/98-pitft.conf ${D}/${sysconfdir}/X11/xorg.conf.d/
+           install -m 0644 ${UNPACKDIR}/xorg.conf.d/99-calibration.conf ${D}/${sysconfdir}/X11/xorg.conf.d/
        fi
    }
 

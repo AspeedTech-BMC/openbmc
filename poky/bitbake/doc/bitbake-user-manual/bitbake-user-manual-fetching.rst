@@ -39,10 +39,10 @@ variable and then calls the ``download`` method to download the files.
 
 The instantiation of the fetch class is usually followed by::
 
-   rootdir = l.getVar('WORKDIR')
+   rootdir = l.getVar('UNPACKDIR')
    fetcher.unpack(rootdir)
 
-This code unpacks the downloaded files to the specified by ``WORKDIR``.
+This code unpacks the downloaded files to the specified by ``UNPACKDIR``.
 
 .. note::
 
@@ -51,7 +51,7 @@ This code unpacks the downloaded files to the specified by ``WORKDIR``.
    examine the OpenEmbedded class file ``base.bbclass``
    .
 
-The :term:`SRC_URI` and ``WORKDIR`` variables are not hardcoded into the
+The :term:`SRC_URI` and ``UNPACKDIR`` variables are not hardcoded into the
 fetcher, since those fetcher methods can be (and are) called with
 different variable names. In OpenEmbedded for example, the shared state
 (sstate) code uses the fetch module to fetch the sstate files.
@@ -436,13 +436,15 @@ This fetcher supports the following parameters:
    "nobranch" is set to "1", this is a mandatory parameter. The number of
    branch parameters must match the number of name parameters.
 
--  *"rev":* The revision to use for the checkout. The default is
-   "master".
+-  *"rev":* The revision to use for the checkout. If :term:`SRCREV` is also set,
+   this parameter must match its value.
 
--  *"tag":* Specifies a tag to use for the checkout. To correctly
-   resolve tags, BitBake must access the network. For that reason, tags
-   are often not used. As far as Git is concerned, the "tag" parameter
-   behaves effectively the same as the "rev" parameter.
+-  *"tag":* Specifies a tag to use when fetching. To correctly resolve
+   tags, BitBake must access the network. If a ``rev`` parameter or
+   :term:`SRCREV` is also specified, network access is not necessary to resolve
+   the tag and instead, it is verified that they both resolve to the same commit
+   SHA at unpack time.  The ``tag`` parameter is optional, but strongly
+   recommended if the checked out revision is a tag.
 
 -  *"subpath":* Limits the checkout to a specific subpath of the tree.
    By default, the whole tree is checked out.
@@ -460,13 +462,6 @@ Here are some example URLs::
    SRC_URI = "git://github.com/fronteed/icheck.git;protocol=https;branch=${PV};tag=${PV}"
    SRC_URI = "git://github.com/asciidoc/asciidoc-py;protocol=https;branch=main"
    SRC_URI = "git://git@gitlab.freedesktop.org/mesa/mesa.git;branch=main;protocol=ssh;..."
-
-.. note::
-
-   When using ``git`` as the fetcher of the main source code of your software,
-   ``S`` should be set accordingly::
-
-       S = "${WORKDIR}/git"
 
 .. note::
 
@@ -598,7 +593,7 @@ and port, username, and password, and fetches the Head Revision::
    SRC_URI = "p4://example-depot/main/source/..."
    SRCREV = "${AUTOREV}"
    PV = "p4-${SRCPV}"
-   S = "${WORKDIR}/p4"
+   S = "${UNPACKDIR}/p4"
 
 Here is an example that specifies the server URL and port, username, and
 password, and fetches a Revision based on a Label::
@@ -607,15 +602,15 @@ password, and fetches a Revision based on a Label::
    SRC_URI = "p4://user:passwd@example-depot/main/source/..."
    SRCREV = "release-1.0"
    PV = "p4-${SRCPV}"
-   S = "${WORKDIR}/p4"
+   S = "${UNPACKDIR}/p4"
 
 .. note::
 
-   You should always set S to "${WORKDIR}/p4" in your recipe.
+   You should always set S to "${UNPACKDIR}/p4" in your recipe.
 
 By default, the fetcher strips the depot location from the local file paths. In
 the above example, the content of ``example-depot/main/source/`` will be placed
-in ``${WORKDIR}/p4``.  For situations where preserving parts of the remote depot
+in ``${UNPACKDIR}/p4``.  For situations where preserving parts of the remote depot
 paths locally is desirable, the fetcher supports two parameters:
 
 - *"module":*
@@ -686,9 +681,9 @@ Such functionality is set by the variable:
    delegate access to resources, if this variable is set, the Az Fetcher will
    use it when fetching artifacts from the cloud.
 
-You can specify the AZ_SAS variable as shown below::
+You can specify the AZ_SAS variable prefixed with a ? as shown below::
 
-   AZ_SAS = "se=2021-01-01&sp=r&sv=2018-11-09&sr=c&skoid=<skoid>&sig=<signature>"
+   AZ_SAS = "?se=2021-01-01&sp=r&sv=2018-11-09&sr=c&skoid=<skoid>&sig=<signature>"
 
 Here is an example URL::
 

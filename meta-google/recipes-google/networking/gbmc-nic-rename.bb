@@ -7,8 +7,7 @@ GBMC_ETHER_MAP ?= ""
 
 inherit systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 FILES:${PN} += "${systemd_unitdir}"
 

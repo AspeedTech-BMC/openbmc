@@ -1,7 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/optee-os/corstone1000:"
 SRC_URI:append = " \
-                  file://0001-Handle-logging-syscall.patch \
-                  file://0002-plat-corstone1000-increase-CFG_TZDRAM_SIZE.patch \
+                  file://0001-plat-corstone1000-increase-CFG_TZDRAM_SIZE.patch \
 		  "
 
 COMPATIBLE_MACHINE = "corstone1000"

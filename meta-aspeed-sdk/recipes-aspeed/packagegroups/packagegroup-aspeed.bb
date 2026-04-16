@@ -53,11 +53,14 @@ RRECOMMENDS:${PN}-mtdtest = " \
     "
 
 # The size of perf is 6MB
+# Skip perf for Linux-5.15 due to build failure: missing 'install_headers' target
+# in tools/lib/api/Makefile. To build perf on Linux 5.15,
+# users can backport the install_headers target from Linux-6.6.
 SUMMARY:${PN}-ktools = "kernel tools"
 RDEPENDS:${PN}-ktools = " \
     "
 RRECOMMENDS:${PN}-ktools = " \
-    perf \
+    ${@'' if (d.getVar('PREFERRED_VERSION_linux-aspeed') or '').startswith('5.15') else 'perf'} \
     "
 
 SUMMARY:${PN}-usbtools = "USB test tools"

@@ -2,11 +2,12 @@
 
 # shellcheck source=meta-facebook/meta-harma/recipes-phosphor/state/phosphor-state-manager/power-cmd
 source /usr/libexec/phosphor-state-manager/power-cmd
+trap '/usr/libexec/fb-common-functions set_gpio power-host-control 1' EXIT SIGTERM
 
-power_on
-st=$?
-
-if [ "$st" -ne 0 ]; then
-   exit 1
+if power_on; then
+    echo "Power on command executed successfully."
+else
+    echo "Power on command failed."
+    exit 1
 fi
 exit 0

@@ -18,7 +18,6 @@ SRC_URI = "git://github.com/Intel-BMC/intel-pfr-signing-utility;protocol=https;b
 
 SRCREV = "2c6f15434db57e5f51e3b1a4817f0e621a5bad25"
 
-S = "${WORKDIR}/git"
 
 do_install:append() {
    install -d ${D}/${bindir}
@@ -26,3 +25,5 @@ do_install:append() {
 }
 
 EXTRA_OECMAKE:append = ' -DYOCTO_STAGING_INCDIR_NATIVE="${STAGING_INCDIR_NATIVE}" '
+# Fix CMake Error: Compatibility with CMake < 3.5 has been removed from CMake
+EXTRA_OECMAKE:append = " -DCMAKE_POLICY_VERSION_MINIMUM=3.5"

@@ -15,7 +15,6 @@ DEPENDS += "nlohmann-json"
 DEPENDS += "cli11"
 DEPENDS += "mbedtls"
 
-S = "${WORKDIR}/git"
 
 # libmctp-externals.h is from https://github.com/NVIDIA/libmctp
 SRC_URI += "file://libmctp-externals.h"

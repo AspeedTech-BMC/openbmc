@@ -10,8 +10,6 @@ SRC_URI = "git://github.com/ozbenh/cf-fsi.git;branch=master;protocol=https"
 PR = "r1"
 PV = "1.0+git${SRCPV}"
 
-S = "${WORKDIR}/git"
-
 inherit allarch
 
 do_compile() {

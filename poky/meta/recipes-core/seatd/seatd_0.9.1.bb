@@ -9,7 +9,6 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=715a99d2dd552e6188e74d4ed2914d5a"
 SRC_URI = "git://git.sr.ht/~kennylevinsen/seatd;protocol=https;branch=master \
            file://init"
 SRCREV = "566ffeb032af42865dc1210e48cec08368059bb9"
-S = "${WORKDIR}/git"
 
 inherit meson pkgconfig systemd update-rc.d useradd
 
@@ -35,9 +34,8 @@ PACKAGECONFIG[systemd] = "-Dlibseat-logind=systemd,,systemd"
 do_install:append() {
         if [ "${VIRTUAL-RUNTIME_init_manager}" != "systemd" ]; then
                 install -Dm755 ${UNPACKDIR}/init ${D}/${sysconfdir}/init.d/seatd
-        else
-                install -Dm644 ${S}/contrib/systemd/seatd.service ${D}${systemd_unitdir}/system/seatd.service
         fi
+        install -Dm644 ${S}/contrib/systemd/seatd.service ${D}${systemd_unitdir}/system/seatd.service
 }
 
 USERADD_PACKAGES = "${PN}"

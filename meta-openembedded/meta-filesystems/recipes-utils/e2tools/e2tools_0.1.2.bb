@@ -18,7 +18,6 @@ SRC_URI = " \
 
 SRCREV = "46da6c398e70635a296245851fcedbc56c35e824"
 
-S = "${WORKDIR}/git"
 
 inherit autotools pkgconfig ptest
 
@@ -36,8 +35,10 @@ do_install_ptest() {
     cp -r ../build "${D}${PTEST_PATH}"
     cp -r "${S}/build-aux" "${D}${PTEST_PATH}/build"
     cp -r "${S}" "${D}${PTEST_PATH}"
-    rm -rf ${D}${PTEST_PATH}/build/config.log ${D}${PTEST_PATH}/build/autom4te.cache \
-        ${D}${PTEST_PATH}/git/.git ${D}${PTEST_PATH}/git/autom4te.cache
+    rm -rf ${D}${PTEST_PATH}/build/config.log \
+        ${D}${PTEST_PATH}/build/autom4te.cache \
+        ${D}${PTEST_PATH}/*/.git ${D}${PTEST_PATH}/*/.github \
+        ${D}${PTEST_PATH}/*/autom4te.cache
     sed -i -e 's;${TMPDIR};;g' ${D}${PTEST_PATH}/build/config.status
 }
 

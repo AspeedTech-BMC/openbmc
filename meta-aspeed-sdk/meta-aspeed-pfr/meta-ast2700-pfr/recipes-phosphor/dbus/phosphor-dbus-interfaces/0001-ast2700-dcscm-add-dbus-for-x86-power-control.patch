@@ -1,5 +1,5 @@
 From 1166da4087add9c17d379234671ec1d6d7b7453e Mon Sep 17 00:00:00 2001
-From: VinceChang6637 <vince_chang@aspeedtech.com>
+From: Vince Chang <vince_chang@aspeedtech.com>
 Date: Fri, 15 Mar 2024 13:50:42 +0800
 Subject: [PATCH] ast2700-dcscm: add dbus for x86-power-control
 
@@ -7,7 +7,7 @@ Add PostComplete dbus property for x86-power-control.
 
 Upstream-Status: Inappropriate [ASPEED specific]
 
-Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  .../openbmc_project/State/Host.interface.yaml | 21 +++++++++++++++++++
  1 file changed, 21 insertions(+)

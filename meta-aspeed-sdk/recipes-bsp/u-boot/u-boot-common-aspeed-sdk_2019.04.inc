@@ -12,8 +12,7 @@ SRC_URI = "git://github.com/AspeedTech-BMC/u-boot.git;protocol=https;branch=${BR
 # Tag for v00.04.25
 SRCREV = "8b4033aa36f4db0444606b31c63538641c285099"
 
-S = "${WORKDIR}/git"
-B = "${WORKDIR}/build"
+B = "${UNPACKDIR}/build"
 do_configure[cleandirs] = "${B}"
 
 # We don't have 'u-boot-initial-env' target in our u-boot version

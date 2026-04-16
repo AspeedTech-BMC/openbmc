@@ -1,0 +1,102 @@
+From 065813e5ec274942c4e8803d813ae863fb17313f Mon Sep 17 00:00:00 2001
+From: Haixiao Yan <haixiao.yan.cn@windriver.com>
+Date: Sun, 6 Jul 2025 14:34:08 +0800
+Subject: [PATCH] Format test output to match Automake standards
+
+Upstream-Status: Pending
+
+Signed-off-by: Haixiao Yan <haixiao.yan.cn@windriver.com>
+---
+ src/CuTest.c      | 63 +++++++++++++++--------------------------------
+ src/make-tests.sh |  1 -
+ 2 files changed, 20 insertions(+), 44 deletions(-)
+
+diff --git a/src/CuTest.c b/src/CuTest.c
+index c1884daedbd8..44007fdb97ff 100644
+--- a/src/CuTest.c
++++ b/src/CuTest.c
+@@ -302,49 +302,26 @@ void CuSuiteRun(CuSuite* testSuite)
+ 	}
+ }
+ 
+-void CuSuiteSummary(CuSuite* testSuite, CuString* summary)
+-{
+-	int i;
+-	for (i = 0 ; i < testSuite->count ; ++i)
+-	{
+-		CuTest* testCase = testSuite->list[i];
+-		CuStringAppend(summary, testCase->failed ? "F" : ".");
+-	}
+-	CuStringAppend(summary, "\n\n");
+-}
+-
+ void CuSuiteDetails(CuSuite* testSuite, CuString* details)
+ {
+-	int i;
+-	int failCount = 0;
+-
+-	if (testSuite->failCount == 0)
+-	{
+-		int passCount = testSuite->count - testSuite->failCount;
+-		const char* testWord = passCount == 1 ? "test" : "tests";
+-		CuStringAppendFormat(details, "OK (%d %s)\n", passCount, testWord);
+-	}
+-	else
+-	{
+-		if (testSuite->failCount == 1)
+-			CuStringAppend(details, "There was 1 failure:\n");
+-		else
+-			CuStringAppendFormat(details, "There were %d failures:\n", testSuite->failCount);
+-
+-		for (i = 0 ; i < testSuite->count ; ++i)
+-		{
+-			CuTest* testCase = testSuite->list[i];
+-			if (testCase->failed)
+-			{
+-				failCount++;
+-				CuStringAppendFormat(details, "%d) %s: %s\n",
+-					failCount, testCase->name, testCase->message);
+-			}
+-		}
+-		CuStringAppend(details, "\n!!!FAILURES!!!\n");
+-
+-		CuStringAppendFormat(details, "Runs: %d ",   testSuite->count);
+-		CuStringAppendFormat(details, "Passes: %d ", testSuite->count - testSuite->failCount);
+-		CuStringAppendFormat(details, "Fails: %d\n",  testSuite->failCount);
+-	}
++    int i;
++
++    for (i = 0; i < testSuite->count; ++i)
++    {
++        CuTest* testCase = testSuite->list[i];
++        if (testCase->failed)
++        {
++            CuStringAppendFormat(details, "FAIL: %s\n", testCase->name);
++        }
++        else
++        {
++            CuStringAppendFormat(details, "PASS: %s\n", testCase->name);
++        }
++    }
++
++    CuStringAppend(details, "\n");
++    CuStringAppendFormat(details, "# TOTAL: %d\n", testSuite->count);
++    CuStringAppendFormat(details, "# PASS:  %d\n", testSuite->count - testSuite->failCount);
++    CuStringAppendFormat(details, "# FAIL:  %d\n", testSuite->failCount);
+ }
++
+diff --git a/src/make-tests.sh b/src/make-tests.sh
+index b6cf814e7030..01399ca75775 100755
+--- a/src/make-tests.sh
++++ b/src/make-tests.sh
+@@ -45,7 +45,6 @@ cat $FILES | grep '^void Test' |
+ echo \
+ '
+     CuSuiteRun(suite);
+-    CuSuiteSummary(suite, output);
+     CuSuiteDetails(suite, output);
+     if (suite->failCount > 0)
+       fprintf(stderr, "%s%c", output->buffer, 0x0A);
+-- 
+2.34.1
+

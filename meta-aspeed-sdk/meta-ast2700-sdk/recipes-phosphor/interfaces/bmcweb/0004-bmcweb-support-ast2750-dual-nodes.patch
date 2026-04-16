@@ -1,5 +1,5 @@
 From b6024a9a05e2e12b8bb792936ccbe88c9098a4ec Mon Sep 17 00:00:00 2001
-From: VinceChang6637 <vince_chang@aspeedtech.com>
+From: Vince Chang <vince_chang@aspeedtech.com>
 Date: Thu, 13 Jun 2024 10:44:20 +0800
 Subject: [PATCH] bmcweb: support ast2750 dual nodes.
 
@@ -19,7 +19,7 @@ VM:
     Use media=8
 
 Upstream-Status: Pending
-Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
  features/kvm/kvm_websocket.hpp |  35 +-
  include/vm1_websocket.hpp      | 635 +++++++++++++++++++++++++++++++++

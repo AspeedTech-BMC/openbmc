@@ -9,8 +9,6 @@ SRC_URI = "git://github.com/arduino/BOSSA.git;protocol=https;branch=nrf"
 PV = "1.9.1+git${SRCPV}"
 SRCREV = "89f3556a761833522cd93c199581265ad689310b"
 
-S = "${WORKDIR}/git"
-
 inherit native
 
 do_compile() {

@@ -15,8 +15,6 @@ SRC_URI = "\
     file://0001-add-LDFLAGS-in-OUTCMD-to-fix-QA-issues.patch \
 "
 
-S = "${WORKDIR}/git"
-
 do_compile() {
     rm -rf ${S}/output
     install -d ${S}/output

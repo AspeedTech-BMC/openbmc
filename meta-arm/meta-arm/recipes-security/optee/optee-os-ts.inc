@@ -86,7 +86,6 @@ DEPENDS:append  = "${@bb.utils.contains('MACHINE_FEATURES', 'ts-logging', \
 SP_PATHS:append = "${@bb.utils.contains('MACHINE_FEATURES', 'ts-logging', \
                                         ' ${TS_BIN}/${LOGGING_SP_UUID}${SP_EXT}', '', d)}"
 
-
 EXTRA_OEMAKE:append = "${@oe.utils.conditional('SP_PATHS', '', '', \
                         ' CFG_MAP_EXT_DT_SECURE=y CFG_SECURE_PARTITION=y \
                          SP_PATHS="${SP_PATHS}" ', d)}"

@@ -12,7 +12,7 @@ import enum
 import sys, os, glob, os.path, re, time
 import itertools
 import logging
-import multiprocessing
+from bb import multiprocessing
 import threading
 from io import StringIO, UnsupportedOperation
 from contextlib import closing
@@ -26,6 +26,7 @@ import json
 import pickle
 import codecs
 import hashserv
+import ctypes
 
 logger      = logging.getLogger("BitBake")
 collectlog  = logging.getLogger("BitBake.Collection")
@@ -1998,8 +1999,9 @@ class ParsingFailure(Exception):
         Exception.__init__(self, realexception, recipe)
 
 class Parser(multiprocessing.Process):
-    def __init__(self, jobs, results, quit, profile):
+    def __init__(self, jobs, next_job_id, results, quit, profile):
         self.jobs = jobs
+        self.next_job_id = next_job_id
         self.results = results
         self.quit = quit
         multiprocessing.Process.__init__(self)
@@ -2009,6 +2011,7 @@ class Parser(multiprocessing.Process):
         self.queue_signals = False
         self.signal_received = []
         self.signal_threadlock = threading.Lock()
+        self.exit = False
 
     def catch_sig(self, signum, frame):
         if self.queue_signals:
@@ -2021,24 +2024,10 @@ class Parser(multiprocessing.Process):
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
             os.kill(os.getpid(), signal.SIGTERM)
         elif signum == signal.SIGINT:
-            signal.default_int_handler(signum, frame)
+            self.exit = True
 
     def run(self):
-
-        if not self.profile:
-            self.realrun()
-            return
-
-        try:
-            import cProfile as profile
-        except:
-            import profile
-        prof = profile.Profile()
-        try:
-            profile.Profile.runcall(prof, self.realrun)
-        finally:
-            logfile = "profile-parse-%s.log" % multiprocessing.current_process().name
-            prof.dump_stats(logfile)
+        bb.utils.profile_function("parsing" in self.profile, self.realrun, "profile-parse-%s.log" % multiprocessing.current_process().name, process=False)
 
     def realrun(self):
         # Signal handling here is hard. We must not terminate any process or thread holding the write
@@ -2059,15 +2048,19 @@ class Parser(multiprocessing.Process):
         pending = []
         havejobs = True
         try:
-            while havejobs or pending:
+            while (havejobs or pending) and not self.exit:
                 if self.quit.is_set():
                     break
 
                 job = None
-                try:
-                    job = self.jobs.pop()
-                except IndexError:
-                    havejobs = False
+                if havejobs:
+                    with self.next_job_id.get_lock():
+                        if self.next_job_id.value < len(self.jobs):
+                            job = self.jobs[self.next_job_id.value]
+                            self.next_job_id.value += 1
+                        else:
+                            havejobs = False
+
                 if job:
                     result = self.parse(*job)
                     # Clear the siggen cache after parsing to control memory usage, its huge
@@ -2133,13 +2126,13 @@ class CookerParser(object):
 
         self.bb_caches = bb.cache.MulticonfigCache(self.cfgbuilder, self.cfghash, cooker.caches_array)
         self.fromcache = set()
-        self.willparse = set()
+        self.willparse = []
         for mc in self.cooker.multiconfigs:
             for filename in self.mcfilelist[mc]:
                 appends = self.cooker.collections[mc].get_file_appends(filename)
                 layername = self.cooker.collections[mc].calc_bbfile_priority(filename)[2]
                 if not self.bb_caches[mc].cacheValid(filename, appends):
-                    self.willparse.add((mc, self.bb_caches[mc], filename, appends, layername))
+                    self.willparse.append((mc, self.bb_caches[mc], filename, appends, layername))
                 else:
                     self.fromcache.add((mc, self.bb_caches[mc], filename, appends, layername))
 
@@ -2158,18 +2151,18 @@ class CookerParser(object):
     def start(self):
         self.results = self.load_cached()
         self.processes = []
+
         if self.toparse:
             bb.event.fire(bb.event.ParseStarted(self.toparse), self.cfgdata)
 
+            next_job_id = multiprocessing.Value(ctypes.c_int, 0)
             self.parser_quit = multiprocessing.Event()
             self.result_queue = multiprocessing.Queue()
 
-            def chunkify(lst,n):
-                return [lst[i::n] for i in range(n)]
-            self.jobs = chunkify(list(self.willparse), self.num_processes)
-
+            # Have to pass in willparse at fork time so all parsing processes have the unpickleable data
+            # then access it by index from the parse queue.
             for i in range(0, self.num_processes):
-                parser = Parser(self.jobs[i], self.result_queue, self.parser_quit, self.cooker.configuration.profile)
+                parser = Parser(self.willparse, next_job_id, self.result_queue, self.parser_quit, self.cooker.configuration.profile)
                 parser.start()
                 self.process_names.append(parser.name)
                 self.processes.append(parser)
@@ -2196,11 +2189,12 @@ class CookerParser(object):
 
         # Cleanup the queue before call process.join(), otherwise there might be
         # deadlocks.
-        while True:
-            try:
-               self.result_queue.get(timeout=0.25)
-            except queue.Empty:
-                break
+        def read_results():
+            while True:
+                try:
+                   self.result_queue.get(timeout=0.25)
+                except queue.Empty:
+                    break
 
         def sync_caches():
             for c in self.bb_caches.values():
@@ -2212,15 +2206,19 @@ class CookerParser(object):
 
         self.parser_quit.set()
 
+        read_results()
+
         for process in self.processes:
-            process.join(0.5)
+            process.join(2)
 
         for process in self.processes:
             if process.exitcode is None:
                 os.kill(process.pid, signal.SIGINT)
 
+        read_results()
+
         for process in self.processes:
-            process.join(0.5)
+            process.join(2)
 
         for process in self.processes:
             if process.exitcode is None:
@@ -2243,9 +2241,9 @@ class CookerParser(object):
                     profiles.append(logfile)
 
             if profiles:
-                pout = "profile-parse.log.processed"
-                bb.utils.process_profilelog(profiles, pout = pout)
-                print("Processed parsing statistics saved to %s" % (pout))
+                fn_out = "profile-parse.log.report"
+                bb.utils.process_profilelog(profiles, fn_out=fn_out)
+                print("Processed parsing statistics saved to %s" % (fn_out))
 
     def final_cleanup(self):
         if self.syncthread:
@@ -2277,7 +2275,7 @@ class CookerParser(object):
                 yield result
 
         if not (self.parsed >= self.toparse):
-            raise bb.parse.ParseError("Not all recipes parsed, parser thread killed/died? Exiting.", None)
+            raise bb.parse.ParseError("Not all recipes parsed, parser thread killed/died? (%s %s of %s) Exiting." % (len(self.processes), self.parsed, self.toparse), None)
 
 
     def parse_next(self):

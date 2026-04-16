@@ -1,7 +1,6 @@
 # This include file is aim to pass variables to bb/bb.apppend files,
 # such as sysguid tool, and easily maintain platform settings
 
-
 ##################### Configure default EEPROM setting #####################
 ### The I2C bus is "0 based, decimal"
 ### The address and offset are "hexcimal"

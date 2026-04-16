@@ -8,8 +8,6 @@ inherit native
 
 require openpower-ipmi-oem.inc
 
-S = "${WORKDIR}/git"
-
 do_install:append() {
     SRC=${S}/org/open_power/OCC
     DEST=${D}${yaml_dir}/org/open_power/OCC

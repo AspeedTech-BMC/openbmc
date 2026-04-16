@@ -1,15 +1,14 @@
 KBRANCH = "aspeed-master-v5.15"
 LINUX_VERSION ?= "5.15"
 
-# Tag for v00.05.19
-SRCREV = "521b08ac9870c32644234c79b48b3a938a124f7d"
+# Tag for v00.05.20
+SRCREV = "5f97d495ae1a9518277a9f1d3016047567a50f45"
 
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 require linux-aspeed.inc
 
 DEPENDS += "lzop-native"
-DEPENDS += "${@bb.utils.contains('MACHINE_FEATURES', 'ast-secure', 'aspeed-secure-config-native', '', d)}"
 
 SRC_URI:append = " file://ipmi_ssif.cfg "
 SRC_URI:append = " file://mtd_test.cfg "

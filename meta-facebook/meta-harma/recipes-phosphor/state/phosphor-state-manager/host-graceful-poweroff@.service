@@ -1,5 +1,6 @@
 [Unit]
 Description=power off host:%i
+After=obmc-host-start@%i.target
 Wants=obmc-host-stop-pre@%i.target
 Before=obmc-host-stop-pre@%i.target
 Conflicts=obmc-host-start@%i.target
@@ -10,7 +11,7 @@ Restart=no
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/libexec/phosphor-state-manager/host-graceful-poweroff %i
-ExecStop=/usr/libexec/fb-common-functions set_gpio power-host-control 1
+ExecStop=-/usr/libexec/fb-common-functions set_gpio power-host-control 1
 
 [Install]
 WantedBy=obmc-host-shutdown@%i.target

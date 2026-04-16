@@ -102,7 +102,6 @@ SYSTEMD_SERVICE:${PN} += "xyz.openbmc_project.Ipmi.Internal.SoftPowerOff.service
 
 RRECOMMENDS:${PN} += "phosphor-settings-manager"
 
-
 require ${BPN}.inc
 
 # Setup IPMI Whitelist Conf files
@@ -116,7 +115,6 @@ EXTRA_OEMESON = " \
         -Dfru-yaml-gen=${STAGING_DIR_NATIVE}${config_datadir}/fru_config.yaml \
         "
 
-S = "${WORKDIR}/git"
 SRC_URI += "file://merge_yamls.py "
 
 HOSTIPMI_PROVIDER_LIBRARY += "libipmi20.so"

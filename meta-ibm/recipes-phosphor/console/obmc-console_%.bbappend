@@ -2,6 +2,10 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:remove:df-openpower = "file://${BPN}.conf"
 SRC_URI:append:df-openpower = " file://server.ttyVUART0.conf"
+SRC_URI:append:mf-redundant-bmc = " file://obmc-console-server-start-pre.conf"
+SRC_URI:append:mf-redundant-bmc = " file://obmc-console-prep-log-name"
+
+RDEPENDS:${PN} += "bash"
 
 install_concurrent_console_config() {
         # Install configuration for the servers and clients. Keep commandline
@@ -25,23 +29,40 @@ install_concurrent_console_config() {
         # Install configuration for remaining servers - the base recipe
         # installs the configuration for the first.
         install -m 0644 ${UNPACKDIR}/server.ttyVUART1.conf ${D}${sysconfdir}/${BPN}/
+
+        # Install the services in the multi-user.target
+        install -m 0644 -d ${D}${systemd_unitdir}/system/multi-user.target.wants
+        ln -s ../obmc-console-ssh@.service ${D}${systemd_unitdir}/system/multi-user.target.wants/obmc-console-ssh@2200.service
+        ln -s ../obmc-console-ssh@.service ${D}${systemd_unitdir}/system/multi-user.target.wants/obmc-console-ssh@2201.service
 }
 
-SRC_URI:append:p10bmc = " file://client.2201.conf"
-SRC_URI:append:p10bmc = " file://server.ttyVUART1.conf"
+do_install:append:mf-redundant-bmc() {
+        # patch the obmc-console server service
+        override_dir=${D}${systemd_system_unitdir}/obmc-console@.service.d
+        install -d ${override_dir}
+        install -m 0644 ${UNPACKDIR}/obmc-console-server-start-pre.conf \
+                ${override_dir}/obmc-console-server-start-pre.conf
 
-REGISTERED_SERVICES:${PN}:append:p10bmc = " obmc_console_hypervisor:tcp:2201:"
+        # Added script to insert bmc position in the log file name
+        install -d ${D}${libexecdir}
+        install -m 0755 ${UNPACKDIR}/obmc-console-prep-log-name ${D}${libexecdir}/
+}
 
-SYSTEMD_SERVICE:${PN}:append:p10bmc = " obmc-console-ssh@2200.service \
+SRC_URI:append:ibm-enterprise = " file://client.2201.conf"
+SRC_URI:append:ibm-enterprise = " file://server.ttyVUART1.conf"
+
+REGISTERED_SERVICES:${PN}:append:ibm-enterprise = " obmc_console_hypervisor:tcp:2201:"
+
+SYSTEMD_SERVICE:${PN}:append:ibm-enterprise = " obmc-console-ssh@2200.service \
 		obmc-console-ssh@2201.service \
                 "
-SYSTEMD_SERVICE:${PN}:remove:p10bmc = "obmc-console-ssh.socket"
+SYSTEMD_SERVICE:${PN}:remove:ibm-enterprise = "obmc-console-ssh.socket"
 
-FILES:${PN}:remove:p10bmc = "${systemd_system_unitdir}/obmc-console-ssh@.service.d/use-socket.conf"
+FILES:${PN}:remove:ibm-enterprise = "${systemd_system_unitdir}/obmc-console-ssh@.service.d/use-socket.conf"
 
-PACKAGECONFIG:append:p10bmc = " concurrent-servers"
+PACKAGECONFIG:append:ibm-enterprise = " concurrent-servers"
 
-do_install:append:p10bmc() {
+do_install:append:ibm-enterprise() {
         install_concurrent_console_config
 }
 

@@ -7,10 +7,12 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0-with-LLVM-exception;
 SECTION = "devel"
 
 PN = "clang-crosssdk-${SDK_SYS}"
+BPN = "clang"
 
 require common-clang.inc
 require common-source.inc
 inherit crosssdk
+TOOLCHAIN = "clang"
 DEPENDS += "clang-native nativesdk-clang-glue virtual/nativesdk-cross-binutils virtual/nativesdk-libc"
 
 do_install() {

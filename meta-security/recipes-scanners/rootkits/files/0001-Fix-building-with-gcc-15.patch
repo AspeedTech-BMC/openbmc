@@ -1,0 +1,39 @@
+From 9834ad9f0b8a10de22512772222a9c51014c750d Mon Sep 17 00:00:00 2001
+From: Scott Murray <scott.murray@konsulko.com>
+Date: Thu, 3 Jul 2025 18:11:24 -0400
+Subject: [PATCH] Fix building with gcc 15
+
+Fix read_status signature to avoid incompatible function pointer
+error with gcc 15.
+
+Upstream-Status: Inactive-Upstream [lastrelease: July 5, 2024]
+Signed-off-by: Scott Murray <scott.murray@konsulko.com>
+---
+ chklastlog.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/chklastlog.c b/chklastlog.c
+index 2fffd9e..1566c76 100644
+--- a/chklastlog.c
++++ b/chklastlog.c
+@@ -78,7 +78,7 @@ int main () { return 0; }
+ long total_wtmp_bytes_read=0;
+ size_t wtmp_file_size;
+ uid_t *uid;
+-void read_status();
++void read_status(int signum);
+ 
+ struct s_localpwd {
+      int numentries;
+@@ -214,7 +214,7 @@ int nonuser(struct utmp utmp_ent)
+ }
+ #endif
+ 
+-void read_status() {
++void read_status(int signum) {
+    double remaining_time;
+    static long last_total_bytes_read=0;
+    int diff;
+-- 
+2.50.0
+

@@ -165,21 +165,21 @@ StartMCTPBridgeMode()
 		echo "Using aspeed-espi-pltrstn0 to ensure CPU I3C device is ready"
 		SetupCpuI3cDevice
 		MonitorPltrstn
-	fi	
+	fi
 
 	#ls /sys/bus/i3c/devices/
 	#mctp-client net 4 eid 0x1d type control data 80 05
 }
 
-if [ -f /tmp/.mctp_i3c_done ];then
-	exit 0
-fi
-
 if [ "$PFR_MCTP_I3C_MODE" = "CPU_EMULATION" ]; then
+	if [ -f /tmp/.mctp_i3c_done ];then
+		echo "CPU emulation mode already started"
+		exit 0
+	fi
 	StartCpuEmulationMode
+	touch /tmp/.mctp_i3c_done
 else
 	echo "Running MCTP I3C Bridge Mode"
 	StartMCTPBridgeMode
 fi
 
-touch /tmp/.mctp_i3c_done

@@ -9,8 +9,7 @@ SRC_URI = " file://cpld_version.sh \
             file://cpld-version.service \
           "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 DEPENDS = "systemd"
 RDEPENDS:${PN} = "bash"

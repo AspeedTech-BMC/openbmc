@@ -3,9 +3,12 @@ PREFERRED_PROVIDER_virtual/bootloader ?= "u-boot-aspeed-sdk"
 PREFERRED_PROVIDER_u-boot ?= "u-boot-aspeed-sdk"
 PREFERRED_PROVIDER_u-boot-fw-utils ?= "u-boot-fw-utils-aspeed-sdk"
 
-# Build a FIT image and stuff core-image-minimal in it by default.
-KERNEL_IMAGETYPE ?= "fitImage"
-KERNEL_CLASSES ?= "kernel-fitimage"
+# FIT images are now built by the linux-yocto-fitimage recipe
+# The kernel itself builds a standard image type (zImage for ARM, Image for ARM64)
+KERNEL_IMAGETYPE ?= "zImage"
+KERNEL_IMAGETYPE:aarch64 ?= "Image"
+KERNEL_IMAGETYPES:aarch64 ?= "Image"
+KERNEL_CLASSES ?= "kernel-fit-extra-artifacts"
 INITRAMFS_IMAGE ?= "aspeed-image-initramfs"
 INITRAMFS_FSTYPES ?= "cpio.xz"
 
@@ -14,6 +17,7 @@ WKS_FILE_DEPENDS ?= " \
     phosphor-hostfw-image \
     virtual/bootloader \
     virtual/kernel \
+    linux-yocto-fitimage \
 "
 WKS_HOSTFW_SIZE ?= "5G"
 IMAGE_BOOT_FILES ?= "fitImage-${INITRAMFS_IMAGE}-${MACHINE}-${MACHINE};fitImage"
@@ -25,8 +29,8 @@ MACHINEOVERRIDES =. "aspeed:"
 
 PREFERRED_VERSION_iperf3 ?= "3.1.4"
 
-# It should be removed if kernel 5.4 is no longer supported.
-require oldest-kernel-54.inc
+# Required to explicitly define the oldest kernel version supported by the ASPEED SDK.
+require oldest-kernel.inc
 
 # Installs static development packages, which are static libraries (i.e. *.a files), for all packages installed in a given SDK
 SDKIMAGE_FEATURES += "staticdev-pkgs"

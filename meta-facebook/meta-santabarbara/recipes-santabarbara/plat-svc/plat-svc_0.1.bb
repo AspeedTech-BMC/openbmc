@@ -3,8 +3,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit allarch systemd obmc-phosphor-systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} += "bash"
 
@@ -13,17 +12,22 @@ SRC_URI += "\
     file://santabarbara-eid-init.service \
     file://santabarbara-eid-init \
     file://santabarbara-sys-init.service \
+    file://santabarbara-tray-location-init \
+    file://santabarbara-tray-location-init.service \
     "
 
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE:${PN} = " \
     santabarbara-eid-init.service \
     santabarbara-sys-init.service \
+    santabarbara-tray-location-init.service \
     "
 
 do_install() {
     install -d ${D}${libexecdir}
-    install -m 0755 ${UNPACKDIR}/santabarbara-early-sys-init ${D}${libexecdir}
-    install -m 0755 ${UNPACKDIR}/santabarbara-eid-init ${D}${libexecdir}
+    install -d ${D}${libexecdir}/plat-svc
+    install -m 0755 ${UNPACKDIR}/santabarbara-early-sys-init ${D}${libexecdir}/plat-svc
+    install -m 0755 ${UNPACKDIR}/santabarbara-eid-init ${D}${libexecdir}/plat-svc
+    install -m 0755 ${UNPACKDIR}/santabarbara-tray-location-init ${D}${libexecdir}/plat-svc
 }
 

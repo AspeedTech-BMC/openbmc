@@ -5,7 +5,6 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 SRC_URI = "git://github.com/quanta-bmc/read-margin-temp.git;branch=master;protocol=https"
 SRCREV = "7a9eec77ec9b90eb5ec5de294f3d9a0363193ef8"
-S = "${WORKDIR}/git"
 
 inherit autotools pkgconfig
 inherit meson

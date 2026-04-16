@@ -11,14 +11,13 @@ PR = "r1"
 
 SRC_URI = "file://config.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 inherit phosphor-fan
 
 do_install() {
-        install -D config.yaml ${D}${presence_datadir}/config.yaml
+        install -D ${S}/config.yaml ${D}${presence_datadir}/config.yaml
 }
 
 FILES:${PN} += "${presence_datadir}/config.yaml"

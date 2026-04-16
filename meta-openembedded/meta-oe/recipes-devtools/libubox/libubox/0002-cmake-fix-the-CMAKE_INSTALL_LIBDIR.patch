@@ -1,0 +1,41 @@
+From ff1f1c6c67ca9c955385a967b1b6609da76c5944 Mon Sep 17 00:00:00 2001
+From: Roy Li <rongqing.li@windriver.com>
+Date: Fri, 30 Oct 2015 13:06:03 +0800
+Subject: [PATCH 2/3] cmake: fix the CMAKE_INSTALL_LIBDIR
+
+Upstream-Status: Pending
+
+libdir maybe /usr/lib64 for 64bit machine
+
+Signed-off-by: Roy Li <rongqing.li@windriver.com>
+Signed-off-by: Moritz Haase <Moritz.Haase@bmw.de>
+---
+ CMakeLists.txt | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index cb089a2..783fa0a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -42,8 +42,8 @@ INSTALL(FILES ${headers}
+ 	DESTINATION include/libubox
+ )
+ INSTALL(TARGETS ubox ubox-static
+-	ARCHIVE DESTINATION lib
+-	LIBRARY DESTINATION lib
++	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ 
+ ADD_SUBDIRECTORY(lua)
+@@ -84,8 +84,8 @@ IF(EXISTS ${json})
+ 	TARGET_LINK_LIBRARIES(json_script ubox)
+ 
+ 	INSTALL(TARGETS blobmsg_json blobmsg_json-static jshn json_script
+-		ARCHIVE DESTINATION lib
+-		LIBRARY DESTINATION lib
++		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 		RUNTIME DESTINATION bin
+ 	)
+ 

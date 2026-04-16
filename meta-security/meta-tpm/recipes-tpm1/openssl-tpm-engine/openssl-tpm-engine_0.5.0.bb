@@ -17,8 +17,6 @@ SRC_URI = "\
 "
 SRCREV = "b28de5065e6eb9aa5d5afe2276904f7624c2cbaf"
 
-S = "${WORKDIR}/git"
-
 inherit autotools-brokensep pkgconfig
 
 # The definitions below are used to decrypt the srk password.

@@ -10,7 +10,6 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=59530bdf33659b29e73d4adb9f9f6552 \
                     file://src/init.c;beginline=2;endline=17;md5=f01cdfcf747af5380590cfd9bbfeaaf7 \
                     "
 
-
 SECTION = "libs"
 
 UPSTREAM_CHECK_URI = "https://gnupg.org/download/index.html"
@@ -25,6 +24,8 @@ SRC_URI[sha256sum] = "95b178148863f07d45df0cea67e880a79b9ef71f5d230baddc00711285
 BINCONFIG = "${bindir}/gpg-error-config"
 
 inherit autotools binconfig-disabled pkgconfig gettext multilib_header multilib_script ptest
+
+require recipes-support/gnupg/drop-unknown-suffix.inc
 
 RDEPENDS:${PN}-ptest:append = " make bash"
 

@@ -7,15 +7,15 @@ PREFERRED_VERSION_trusted-firmware-m ?= "2.1.%"
 
 # TF-A
 TFA_PLATFORM = "corstone1000"
-PREFERRED_VERSION_trusted-firmware-a ?= "2.11.%"
-PREFERRED_VERSION_tf-a-tests ?= "2.10.%"
+PREFERRED_VERSION_trusted-firmware-a ?= "2.12.%"
+PREFERRED_VERSION_tf-a-tests ?= "2.12.%"
 
 TFA_BL2_BINARY = "bl2-corstone1000.bin"
 TFA_FIP_BINARY = "fip-corstone1000.bin"
 
 # optee
-PREFERRED_VERSION_optee-os ?= "4.4.%"
-PREFERRED_VERSION_optee-client ?= "4.4.%"
+PREFERRED_VERSION_optee-os ?= "4.6.%"
+PREFERRED_VERSION_optee-client ?= "4.6.%"
 
 # Trusted Services
 TS_PLATFORM = "arm/corstone1000"

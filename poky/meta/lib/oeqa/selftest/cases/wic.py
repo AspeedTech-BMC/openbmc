@@ -153,7 +153,7 @@ class Wic(WicTestCase):
         # create a temporary file for the WKS content
         with NamedTemporaryFile("w", suffix=".wks") as wks:
             wks.write(
-                'part --source bootimg-efi '
+                'part --source bootimg_efi '
                 '--sourceparams="loader=grub-efi,install-kernel-into-boot-dir=false" '
                 '--label boot --active\n'
             )
@@ -186,7 +186,7 @@ class Wic(WicTestCase):
         # create a temporary file for the WKS content
         with NamedTemporaryFile("w", suffix=".wks") as wks:
             wks.write(
-                'part --source bootimg-efi '
+                'part --source bootimg_efi '
                 '--sourceparams="loader=grub-efi,install-kernel-into-boot-dir=true" '
                 '--label boot --active\n'
             )
@@ -1021,6 +1021,18 @@ class Wic2(WicTestCase):
         """Test building wic images by bitbake"""
         config = 'IMAGE_FSTYPES += "wic"\nWKS_FILE = "wic-image-minimal"\n'\
                  'MACHINE_FEATURES:append = " efi"\n'
+        image_recipe_append = """
+do_image_wic[postfuncs] += "run_wic_cmd"
+run_wic_cmd() {
+    echo "test" >> ${WORKDIR}/test.wic-cp
+    wic cp --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" ${WORKDIR}/test.wic-cp  ${IMGDEPLOYDIR}/${IMAGE_NAME}.wic:1/
+    wic ls --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" ${IMGDEPLOYDIR}/${IMAGE_NAME}.wic:1/
+    wic rm --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" ${IMGDEPLOYDIR}/${IMAGE_NAME}.wic:1/test.wic-cp
+    wic cp --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" ${WORKDIR}/test.wic-cp  ${IMGDEPLOYDIR}/${IMAGE_NAME}.wic:1/
+}
+"""
+        self.write_recipeinc('images', image_recipe_append)
+
         self.append_config(config)
         image = 'wic-image-minimal'
         bitbake(image)
@@ -1028,6 +1040,11 @@ class Wic2(WicTestCase):
 
         bb_vars = get_bb_vars(['DEPLOY_DIR_IMAGE', 'IMAGE_LINK_NAME'], image)
         prefix = os.path.join(bb_vars['DEPLOY_DIR_IMAGE'], '%s.' % bb_vars['IMAGE_LINK_NAME'])
+
+        sysroot = get_bb_var('RECIPE_SYSROOT_NATIVE', 'wic-tools')
+        # check if file is there
+        result = runCmd("wic ls %s:1/ -n %s" % (prefix+"wic", sysroot))
+        self.assertIn("test.wic-cp", result.output)
 
         # check if we have result image and manifests symlinks
         # pointing to existing files
@@ -1044,7 +1061,25 @@ class Wic2(WicTestCase):
         config = 'IMAGE_FSTYPES += "wic"\nWKS_FILE = "wic-image-minimal"\n'\
                  'MACHINE_FEATURES:append = " efi"\n'
         self.append_config(config)
+        image_recipe_append = """
+do_image_wic[postfuncs] += "run_wic_cmd"
+run_wic_cmd() {
+    echo "test" >> ${WORKDIR}/test.wic-cp
+    wic cp --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" ${WORKDIR}/test.wic-cp  ${IMGDEPLOYDIR}/${IMAGE_NAME}.wic:1/
+    wic ls --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" ${IMGDEPLOYDIR}/${IMAGE_NAME}.wic:1/
+    wic rm --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" ${IMGDEPLOYDIR}/${IMAGE_NAME}.wic:1/test.wic-cp
+    wic cp --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" ${WORKDIR}/test.wic-cp  ${IMGDEPLOYDIR}/${IMAGE_NAME}.wic:1/
+}
+"""
+        self.write_recipeinc('images', image_recipe_append)
         bitbake('wic-image-minimal')
+
+        sysroot = get_bb_var('RECIPE_SYSROOT_NATIVE', 'wic-tools')
+        bb_vars = get_bb_vars(['DEPLOY_DIR_IMAGE', 'IMAGE_LINK_NAME'], "wic-image-minimal")
+        image_path = os.path.join(bb_vars['DEPLOY_DIR_IMAGE'], bb_vars['IMAGE_LINK_NAME'])
+        # check if file is there
+        result = runCmd("wic ls %s:1/ -n %s" % (image_path+".wic", sysroot))
+        self.assertIn("test.wic-cp", result.output)
         self.remove_config(config)
 
         runqemu_params = get_bb_var('TEST_RUNQEMUPARAMS', 'wic-image-minimal') or ""
@@ -1358,7 +1393,7 @@ class Wic2(WicTestCase):
     def test_biosplusefi_plugin(self):
         """Test biosplusefi plugin"""
         # Wic generation below may fail depending on the order of the unittests
-        # This is because bootimg-pcbios (that bootimg-biosplusefi uses) generate its MBR inside STAGING_DATADIR directory
+        # This is because bootimg_pcbios (that bootimg_biosplusefi uses) generate its MBR inside STAGING_DATADIR directory
         #    which may or may not exists depending on what was built already
         # If an image hasn't been built yet, directory ${STAGING_DATADIR}/syslinux won't exists and _get_bootimg_dir()
         #   will raise with "Couldn't find correct bootimg_dir"
@@ -1370,7 +1405,7 @@ class Wic2(WicTestCase):
 
         img = 'core-image-minimal'
         with NamedTemporaryFile("w", suffix=".wks") as wks:
-            wks.writelines(['part /boot --active --source bootimg-biosplusefi --sourceparams="loader=grub-efi"\n',
+            wks.writelines(['part /boot --active --source bootimg_biosplusefi --sourceparams="loader=grub-efi"\n',
                             'part / --source rootfs --fstype=ext4 --align 1024 --use-uuid\n'\
                             'bootloader --timeout=0 --append="console=ttyS0,115200n8"\n'])
             wks.flush()
@@ -1390,7 +1425,7 @@ class Wic2(WicTestCase):
 
         img = 'core-image-minimal'
         with NamedTemporaryFile("w", suffix=".wks") as wks:
-            wks.writelines(['part /boot --source bootimg-efi --sourceparams="loader=uefi-kernel"\n'
+            wks.writelines(['part /boot --source bootimg_efi --sourceparams="loader=uefi-kernel"\n'
                             'part / --source rootfs --fstype=ext4 --align 1024 --use-uuid\n'\
                             'bootloader --timeout=0 --append="console=ttyS0,115200n8"\n'])
             wks.flush()

@@ -10,7 +10,6 @@ SRC_URI = "gitsm://github.com/chipsalliance/caliptra-mcu-sw;protocol=https;branc
 SRCREV = "2b7837402328ab611968d40243075082469df7ae"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"
 
 inherit cargo
 

@@ -10,8 +10,6 @@ SRCREV = "54f4bb1e702a8b80d990ca00b6f72d5031dd131a"
 SRC_URI = "git://github.com/stefanberger/swtpm.git;branch=stable-0.10;protocol=https"
 PE = "2"
 
-S = "${WORKDIR}/git"
-
 PARALLEL_MAKE = ""
 inherit autotools pkgconfig perlnative
 
@@ -37,7 +35,6 @@ USERADD_PACKAGES = "${PN}"
 GROUPADD_PARAM:${PN} = "--system ${TSS_USER}"
 USERADD_PARAM:${PN} = "--system -g ${TSS_GROUP} --home-dir / \
     --no-create-home  --shell /bin/false ${BPN}"
-
 
 PACKAGE_BEFORE_PN = "${PN}-cuse"
 FILES:${PN}-cuse = "${bindir}/swtpm_cuse"

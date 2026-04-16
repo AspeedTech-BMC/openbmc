@@ -1,0 +1,16 @@
+[Unit]
+Description=MCTP Mailbox Service
+After=mctpd.service
+BindTo=mctpd.service
+
+[Service]
+Type=oneshot
+ExecStart=mctp link set mctpmbox0 up
+ExecStart=mctp addr add 11 dev mctpmbox0
+ExecStart=mctp route add 10 via mctpmbox0
+ExecStart=ip link set dev mctpmbox0 mtu 32768
+ExecStart=busctl call au.com.codeconstruct.MCTP1 /au/com/codeconstruct/mctp1/interfaces/mctpmbox0 au.com.codeconstruct.MCTP.BusOwner1 LearnEndpoint ay 0
+RemainAfterExit=true
+
+[Install]
+WantedBy=mctpd.service

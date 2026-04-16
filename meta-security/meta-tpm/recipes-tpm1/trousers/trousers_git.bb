@@ -18,8 +18,6 @@ SRC_URI = " \
         file://0001-build-don-t-override-localstatedir-mandir-sysconfdir.patch \
     	"
 
-S = "${WORKDIR}/git"
-
 inherit autotools pkgconfig useradd update-rc.d ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','systemd','systemd','', d)}
 
 PACKAGECONFIG ?= "gmp "

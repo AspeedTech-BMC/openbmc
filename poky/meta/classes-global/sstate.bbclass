@@ -726,7 +726,6 @@ def pstaging_fetch(sstatefetch, d):
     localdata = bb.data.createCopy(d)
 
     dldir = localdata.expand("${SSTATE_DIR}")
-    bb.utils.mkdirhier(dldir)
 
     localdata.delVar('MIRRORS')
     localdata.setVar('FILESPATH', dldir)
@@ -746,16 +745,19 @@ def pstaging_fetch(sstatefetch, d):
     if bb.utils.to_boolean(d.getVar("SSTATE_VERIFY_SIG"), False):
         uris += ['file://{0}.sig;downloadfilename={0}.sig'.format(sstatefetch)]
 
-    for srcuri in uris:
-        localdata.delVar('SRC_URI')
-        localdata.setVar('SRC_URI', srcuri)
-        try:
-            fetcher = bb.fetch2.Fetch([srcuri], localdata, cache=False)
-            fetcher.checkstatus()
-            fetcher.download()
+    with bb.utils.umask(bb.utils.to_filemode(d.getVar("OE_SHARED_UMASK"))):
+        bb.utils.mkdirhier(dldir)
 
-        except bb.fetch2.BBFetchException:
-            pass
+        for srcuri in uris:
+            localdata.delVar('SRC_URI')
+            localdata.setVar('SRC_URI', srcuri)
+            try:
+                fetcher = bb.fetch2.Fetch([srcuri], localdata, cache=False)
+                fetcher.checkstatus()
+                fetcher.download()
+
+            except bb.fetch2.BBFetchException:
+                pass
 
 def sstate_setscene(d):
     shared_state = sstate_state_fromvars(d)
@@ -774,9 +776,10 @@ sstate_task_prefunc[dirs] = "${WORKDIR}"
 python sstate_task_postfunc () {
     shared_state = sstate_state_fromvars(d)
 
-    omask = os.umask(0o002)
-    if omask != 0o002:
-       bb.note("Using umask 0o002 (not %0o) for sstate packaging" % omask)
+    shared_umask = bb.utils.to_filemode(d.getVar("OE_SHARED_UMASK"))
+    omask = os.umask(shared_umask)
+    if omask != shared_umask:
+       bb.note("Using umask %0o (not %0o) for sstate packaging" % (shared_umask, omask))
     sstate_package(shared_state, d)
     os.umask(omask)
 
@@ -841,7 +844,8 @@ python sstate_create_and_sign_package () {
 
     # Create the required sstate directory if it is not present.
     if not sstate_pkg.parent.is_dir():
-        with bb.utils.umask(0o002):
+        shared_umask = bb.utils.to_filemode(d.getVar("OE_SHARED_UMASK"))
+        with bb.utils.umask(shared_umask):
             bb.utils.mkdirhier(str(sstate_pkg.parent))
 
     if sign_pkg:

@@ -7,7 +7,6 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=782b40c14bad5294672c500501edc103"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-
 CLANGNATIVE = ""
 CLANGNATIVE:runtime-llvm = "clang-native"
 
@@ -18,7 +17,6 @@ SRC_URI = "gitsm://git.trustedfirmware.org/hafnium/hafnium.git;protocol=https;br
            file://0001-Use-pkg-config-native-to-find-the-libssl-headers.patch;patchdir=third_party/linux \
           "
 SRCREV = "2cf2ca7c4b81ab18e9cd363d9a5c8288e2a94fda"
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 COMPATIBLE_MACHINE ?= "invalid"

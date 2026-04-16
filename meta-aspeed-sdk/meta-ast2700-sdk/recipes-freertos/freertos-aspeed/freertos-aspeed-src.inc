@@ -8,11 +8,10 @@ DEPENDS = "gcc-arm-none-eabi-native"
 BRANCH = "main"
 SRC_URI = "gitsm://github.com/AspeedTech-BMC/freertos-project;branch=${BRANCH};protocol=https"
 
-# Tag for v00.01.06
-SRCREV = "a47f88ba5bfa9d1bd98adedf55d3391227143f5c"
+# Tag for v00.01.07
+SRCREV = "62e5b928b6e994da2f49fa08721a7e9f5f407c0e"
 PV = "1.0+git"
 
-S = "${WORKDIR}/git"
 
 inherit deploy
 

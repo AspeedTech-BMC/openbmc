@@ -14,28 +14,3 @@ SRC_URI += " \
              file://override-ttyS2.conf \
              file://override-ttyS7.conf \
            "
-
-SYSTEMD_SERVICE:${PN}:append = " \
-                                  ${@compose_list(d, 'CONSOLE_CLIENT_SERVICE_FMT', 'CONSOLE_CLIENT')} \
-                                "
-SYSTEMD_SERVICE:${PN}:remove = "obmc-console-ssh.socket"
-
-FILES:${PN}:remove = "${systemd_system_unitdir}/obmc-console-ssh@.service.d/use-socket.conf"
-
-PACKAGECONFIG:append = " concurrent-servers"
-
-do_install:append() {
-    # Remove OpenBMC obmc-console default rules
-    rm -rf ${D}${nonarch_base_libdir}/udev/rules.d/80-obmc-console-uart.rules
-    # Install the console client configurations
-    install -m 0644 ${UNPACKDIR}/client.*.conf ${D}${sysconfdir}/${BPN}/
-
-    # Add obmc-console service override to customize service behavior for each tty.
-    for tty in ${OBMC_CONSOLE_TTYS}; do
-        if [ -f ${UNPACKDIR}/override-${tty}.conf ]; then
-            install -d ${D}${systemd_unitdir}/system/obmc-console@${tty}.service.d
-            install -m 0644 ${UNPACKDIR}/override-${tty}.conf \
-              ${D}${systemd_unitdir}/system/obmc-console@${tty}.service.d/override.conf
-        fi
-    done
-}

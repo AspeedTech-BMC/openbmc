@@ -5,7 +5,6 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
 SRC_URI = "git://github.com/yrutschle/sslh;branch=master;protocol=https"
 SRCREV = "7e3f723699764a9d000902af55e15e0eb151281f"
-S = "${WORKDIR}/git"
 
 inherit perlnative
 

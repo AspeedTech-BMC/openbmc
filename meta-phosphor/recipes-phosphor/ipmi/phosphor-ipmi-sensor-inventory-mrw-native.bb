@@ -18,8 +18,7 @@ DEPENDS += " \
 
 PROVIDES += "virtual/phosphor-ipmi-sensor-inventory"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 SRC_URI += "file://merge_sensor_config.py"
 
 do_install() {

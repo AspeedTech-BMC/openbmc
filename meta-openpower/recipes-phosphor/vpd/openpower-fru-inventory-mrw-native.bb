@@ -15,8 +15,7 @@ DEPENDS += " \
 
 PROVIDES += "virtual/openpower-fru-inventory"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_install() {
         DEST=${D}${inventory_datadir_native}

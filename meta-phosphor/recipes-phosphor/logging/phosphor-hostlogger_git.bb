@@ -16,7 +16,6 @@ PR = "r1"
 SRC_URI = "git://github.com/openbmc/phosphor-hostlogger;branch=master;protocol=https"
 
 # Source code repository
-S = "${WORKDIR}/git"
 # Systemd service template
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE:${PN} = "hostlogger@.service"

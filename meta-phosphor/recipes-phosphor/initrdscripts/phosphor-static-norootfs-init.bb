@@ -5,21 +5,30 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 PR = "r1"
 
 SOURCE_FILES = "\
-    10-early-mounts \
-    20-udev \
-    21-factory-reset \
-    30-ubiattach-or-format \
-    50-mount-persistent \
+    001-disable-boot-watchdog \
+    010-early-mounts \
+    011-detect-nor-bank \
+    020-udev \
+    025-factory-reset \
+    030-ubiattach-or-format \
+    100-mount-persistent \
+    999-enable-debug-sh \
     "
+
+INIT_HELPERS = "\
+    enable-devmem \
+    umount-filesystem \
+    "
+
 SRC_URI += "\
     file://init \
-    file://remount-filesystem-readonly \
+    ${@' '.join(\
+        [ 'file://' + x for x in d.getVar('INIT_HELPERS', True).split()])} \
     ${@' '.join(\
         [ 'file://' + x for x in d.getVar('SOURCE_FILES', True).split()])} \
     "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 NOROOTFS_PERSISTENT_DIRS = "\
     var \
@@ -37,7 +46,10 @@ FILES:${PN} += "${PKG_INSTALL_DIR}"
 do_install() {
     install -d ${D}${PKG_INSTALL_DIR}/initfiles
     install -m 0755 ${S}/init ${D}${PKG_INSTALL_DIR}/init
-    install -m 0755 ${S}/remount-filesystem-readonly ${D}${PKG_INSTALL_DIR}/remount-filesystem-readonly
+
+    for f in ${INIT_HELPERS} ; do
+        install -m 0755 ${S}/$f ${D}${PKG_INSTALL_DIR}/$f
+    done
 
     for f in ${SOURCE_FILES} ; do
         install -m 0755 ${S}/$f ${D}${PKG_INSTALL_DIR}/initfiles/$f
@@ -49,7 +61,7 @@ do_install() {
         touch ${D}/$mountpoint/.keep.mount-persistent
     done
     sed -i "s#@NOROOTFS_PERSISTENT_DIRS@#${NOROOTFS_PERSISTENT_DIRS}#" \
-        ${D}${PKG_INSTALL_DIR}/initfiles/50-mount-persistent
+        ${D}${PKG_INSTALL_DIR}/initfiles/100-mount-persistent
 }
 
 RDEPENDS:${PN} += " \

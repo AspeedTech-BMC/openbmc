@@ -10,8 +10,7 @@ PR = "r1"
 
 SRC_URI += "file://config.yaml"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit phosphor-ipmi-host
 inherit mrw-xml

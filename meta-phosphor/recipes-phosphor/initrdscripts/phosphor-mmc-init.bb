@@ -6,8 +6,7 @@ PR = "r1"
 
 SRC_URI += "file://mmc-init.sh"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 

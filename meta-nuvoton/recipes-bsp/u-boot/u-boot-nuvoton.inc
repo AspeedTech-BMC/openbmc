@@ -287,7 +287,6 @@ do_deploy () {
         fi
     fi
 
-
      if [ -n "${SPL_BINARY}" ]
      then
         if [ -n "${UBOOT_CONFIG}" ]
@@ -316,7 +315,6 @@ do_deploy () {
             ln -sf ${SPL_IMAGE} ${DEPLOYDIR}/${SPL_SYMLINK}
         fi
     fi
-
 
     if [ -n "${UBOOT_ENV}" ]
     then

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+sync
+mount_point="/run/mnt-persist"
+retries=3
+
+echo "Attempting to unmount $mount_point with $retries retries"
+
+while [ "$retries" -gt 0 ]; do
+    if umount --lazy "$mount_point"; then
+        exit 0
+    fi
+    retries=$((retries - 1))
+    sleep 1
+done
+
+exit 1

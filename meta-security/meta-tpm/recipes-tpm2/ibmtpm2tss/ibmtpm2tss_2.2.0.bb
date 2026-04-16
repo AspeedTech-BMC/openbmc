@@ -25,5 +25,3 @@ SRCREV = "0b9d77e304f68228b13b20ff0d72b0c16ffd2651"
 UPSTREAM_CHECK_GITTAGREGEX = "v(?P<pver>\d+(\.\d+)+)"
 
 EXTRA_OECONF = "--disable-tpm-1.2"
-
-S = "${WORKDIR}/git"

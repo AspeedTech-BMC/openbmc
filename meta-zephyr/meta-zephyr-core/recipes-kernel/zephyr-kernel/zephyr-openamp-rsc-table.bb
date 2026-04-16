@@ -1,4 +1,4 @@
-include zephyr-sample.inc
+inherit zephyr-sample
 
 
 ZEPHYR_MAKE_OUTPUT ?= " \

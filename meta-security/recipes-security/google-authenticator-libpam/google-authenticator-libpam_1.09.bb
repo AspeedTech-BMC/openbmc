@@ -8,8 +8,6 @@ SRCREV = "962f353aac6cfc7b804547319db40f8b804f0b6c"
 
 DEPENDS = "libpam"
 
-S = "${UNPACKDIR}/git"
-
 inherit autotools features_check
 
 REQUIRED_DISTRO_FEATURES = "pam"

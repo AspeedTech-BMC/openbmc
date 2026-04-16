@@ -15,8 +15,6 @@ SRC_URI = "git://gitlab.freedesktop.org/virgl/virglrenderer.git;branch=main;prot
            file://0001-vrend-Fix-int-conversion-fatal-build-error-with-GCC-.patch \
            "
 
-S = "${WORKDIR}/git"
-
 inherit meson pkgconfig features_check
 
 PACKAGECONFIG ?= "${@bb.utils.contains('DISTRO_FEATURES', 'vulkan', 'venus', '', d)}"

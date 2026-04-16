@@ -8,8 +8,6 @@ inherit native
 
 PROVIDES += "virtual/openpower-occ-control-config-native"
 
-S = "${WORKDIR}/git"
-
 # Copies example occ sensor ID yaml file
 do_install() {
     SRC=${S}

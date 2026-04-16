@@ -12,8 +12,7 @@ SRC_URI = " \
     file://g220a-ipmi-sensors.yaml \
     "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}/sources"
 
 do_install() {
     install -m 0644 -D g220a-ipmi-fru-properties.yaml \

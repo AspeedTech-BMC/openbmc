@@ -7,15 +7,13 @@ SRC_URI = "git://github.com/openbmc/debug-trigger;branch=master;protocol=https"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=e3fc50a88d0a364313df4b21ef20c29e"
 
-S = "${WORKDIR}/git"
-
 inherit meson
 inherit pkgconfig
 inherit systemd
 
 PR = "r1"
 PV = "0.1+git${SRCPV}"
-SRCREV = "92eb22223d414940cc09af7c029192473d1d385e"
+SRCREV = "90550631988b41092812560a967d0ebb1cbd1fa8"
 
 PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}"
 

@@ -10,8 +10,7 @@ SRC_URI = " \
     file://system1-ipmi-fru-properties.yaml \
     "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 do_install() {
     install -m 0644 -D system1-ipmi-fru.yaml \

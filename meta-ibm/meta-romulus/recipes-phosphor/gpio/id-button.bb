@@ -8,8 +8,7 @@ inherit obmc-phosphor-systemd
 DEPENDS += "phosphor-gpio-monitor"
 RDEPENDS:${PN} += "phosphor-gpio-monitor-monitor"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 SRC_URI += "file://toggle_identify_led.sh"
 
 do_install() {

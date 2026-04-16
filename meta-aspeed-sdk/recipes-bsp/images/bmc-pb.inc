@@ -7,8 +7,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ad
 BRANCH = "master"
 SRC_URI = "git://github.com/AspeedTech-BMC/bmc-pb.git;protocol=https;branch=${BRANCH}"
 
-# Tag for v00.01.00
-SRCREV = "5531ad74a717b5e62c0f1648a608637786b5b3fa"
+# Tag for v00.01.01
+SRCREV = "d469df016bbf2412209f02ef8def9a208395b56f"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"

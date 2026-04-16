@@ -15,8 +15,7 @@ SRC_URI = " \
     file://cs_privilege_levels.json \
     "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 

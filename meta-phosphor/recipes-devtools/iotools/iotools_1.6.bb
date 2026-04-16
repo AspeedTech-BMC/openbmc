@@ -7,7 +7,6 @@ PV = "v1.6+git${SRCPV}"
 
 SRC_URI = "git://git@github.com/jonmayergoogle/iotools.git;protocol=https;branch=master"
 
-S = "${WORKDIR}/git"
 SYSTEMD_SERVICE:${PN} += "iotools-setup.service"
 
 inherit obmc-phosphor-systemd

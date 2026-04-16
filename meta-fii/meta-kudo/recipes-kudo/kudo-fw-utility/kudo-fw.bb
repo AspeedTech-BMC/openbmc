@@ -13,7 +13,6 @@ DEPENDS += "phosphor-ipmi-flash"
 RDEPENDS:${PN} += "libsystemd"
 RDEPENDS:${PN} += "bash"
 
-
 SRC_URI = " \
     file://kudo-fw.sh \
     file://kudo-fw-ver.service \

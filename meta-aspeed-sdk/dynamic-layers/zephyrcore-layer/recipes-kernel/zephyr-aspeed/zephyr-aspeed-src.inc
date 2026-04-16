@@ -1,8 +1,8 @@
 # Refer to meta-zephyr/meta-zephyr-core/recipes-kernel/zephyr-kernel/zephyr-kernel-src-x.x.x.inc
 # creating this file
 
-# Tag for v00.03.06
-SRCREV_zephyr = "e2f01b0581f8ea62b68b93924ef35c48031d5f7e"
+# Tag for v00.03.07
+SRCREV_zephyr = "cfe94dc149ffa0af7e1af668a27f57eecf0cd1e9"
 ZEPHYR_BRANCH = "aspeed-main-v3.7.0"
 
 SRCREV_mbedtls = "a78176c6ff0733ba08018cba4447bd3f20de7978"
@@ -13,15 +13,18 @@ SRC_URI_ZEPHYR_MBEDTLS = "git://github.com/zephyrproject-rtos/mbedtls;protocol=h
 SRC_URI_ZEPHYR_CMSIS = "git://github.com/zephyrproject-rtos/cmsis;protocol=https"
 
 SRC_URI = "\
-    ${SRC_URI_ZEPHYR};name=zephyr;branch=${ZEPHYR_BRANCH};destsuffix=git/zephyr \
-    ${SRC_URI_ZEPHYR_MBEDTLS};name=mbedtls;nobranch=1;destsuffix=git/modules/crypto/mbedtls \
-    ${SRC_URI_ZEPHYR_CMSIS};name=cmsis;nobranch=1;destsuffix=git/modules/hal/cmsis \
+    ${SRC_URI_ZEPHYR};name=zephyr;branch=${ZEPHYR_BRANCH};destsuffix=${S}/zephyr \
+    ${SRC_URI_ZEPHYR_MBEDTLS};name=mbedtls;nobranch=1;destsuffix=${S}/modules/crypto/mbedtls \
+    ${SRC_URI_ZEPHYR_CMSIS};name=cmsis;nobranch=1;destsuffix=${S}/modules/hal/cmsis \
 "
 
 ZEPHYR_MODULES = "\
 ${S}/modules/crypto/mbedtls\;\
 ${S}/modules/hal/cmsis\;\
 "
+
+# Override meta-zephyr default image naming
+ZEPHYR_IMAGE_LINK_NAME = "${PN}"
 
 INSANE_SKIP:${PN} += "arch"
 

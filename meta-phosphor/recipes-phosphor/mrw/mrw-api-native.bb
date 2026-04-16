@@ -8,8 +8,6 @@ PR = "r1"
 
 SRC_URI += "${MRW_API_SRC_URI}"
 
-S = "${WORKDIR}/git"
-
 inherit cpan-base
 inherit mrw-rev
 inherit perlnative

@@ -7,11 +7,10 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 BRANCH = "master"
 SRC_URI = "git://github.com/AspeedTech-BMC/cptra_imgtool;protocol=https;branch=${BRANCH};"
 
-# Tag for v00.01.03
-SRCREV = "da251f015fc0ce8d514eeac853325017fe55bc8c"
+# Tag for v00.01.04
+SRCREV = "27d312fb99cc8f1eab7a89ed866c9595dd6e0e9b"
 
 PV = "1.0+git"
-S = "${WORKDIR}/git"
 
 DEPENDS += "caliptra-sw caliptra-mcu-sw"
 RDEPENDS:${PN} += "caliptra-sw caliptra-mcu-sw"

@@ -17,7 +17,7 @@ PV = "1.0"
 
 PYPI_PACKAGE = "sdbusplus"
 
-S = "${WORKDIR}/git/tools"
+S = "${UNPACKDIR}/${BP}/tools"
 
 inherit python_setuptools_build_meta
 

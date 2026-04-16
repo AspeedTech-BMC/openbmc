@@ -16,13 +16,15 @@ USERADD_PACKAGES = "${PN}"
 # add a special user asdbg
 USERADD_PARAM:${PN} = "-u 9999 asdbg"
 
-S = "${WORKDIR}/git"
 
 SYSTEMD_SERVICE:${PN} += "com.intel.AtScaleDebug.service"
 SYSTEMD_AUTO_ENABLE:${PN} = "disable"
 
 # Specify any options you want to pass to cmake using EXTRA_OECMAKE:
 EXTRA_OECMAKE = "-DBUILD_UT=OFF"
+
+# Fix CMake Error: Compatibility with CMake < 3.5 has been removed from CMake
+EXTRA_OECMAKE:append = " -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
 # Copying the depricated header from kernel as a temporary fix to resolve build breaks.
 # It should be removed later after fixing the header dependency in this repository.

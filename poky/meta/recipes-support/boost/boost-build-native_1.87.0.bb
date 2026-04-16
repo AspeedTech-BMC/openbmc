@@ -14,8 +14,6 @@ UPSTREAM_CHECK_GITTAGREGEX = "boost-(?P<pver>(\d+(\.\d+)+))"
 
 inherit native
 
-S = "${WORKDIR}/git"
-
 do_compile() {
     ./bootstrap.sh
 }
