@@ -8,7 +8,6 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 PROVIDES += "virtual/ssp"
 PV = "1.0+git"
 
-ASPEED_ZEPHYR_PROJECT_BRANCH ?= "aspeed-dev"
 ZEPHYR_BOARD_SSP ?= "ast2700_evb/ast2700/ssp"
 ZEPHYR_BOARD = "${ZEPHYR_BOARD_SSP}"
 
