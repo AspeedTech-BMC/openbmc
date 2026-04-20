@@ -10,8 +10,8 @@ SRCREV = "${AUTOREV}"
 
 PV = "1.0+git"
 
-DEPENDS += "caliptra-sw caliptra-mcu-sw"
-RDEPENDS:${PN} += "caliptra-sw caliptra-mcu-sw"
+DEPENDS += "caliptra-mcu-sw"
+RDEPENDS:${PN} += "caliptra-mcu-sw"
 
 inherit cargo
 
@@ -23,6 +23,9 @@ do_compile[network] = "1"
 
 do_compile() {
     cd ${S}
+    # Build caliptra-auth-manifest-app
+    cargo build -p caliptra-auth-manifest-app --release
+
     # Build cptra_imgtool
     cargo build -p cptra-imgtool --release
     cd -
@@ -31,6 +34,7 @@ do_compile() {
 do_install() {
     install -d ${D}${bindir}
 
+    install -m 0755 ${B}/target/release/caliptra-auth-manifest-app ${D}${bindir}
     install -m 0755 ${B}/target/release/cptra-imgtool ${D}${bindir}
 }
 
