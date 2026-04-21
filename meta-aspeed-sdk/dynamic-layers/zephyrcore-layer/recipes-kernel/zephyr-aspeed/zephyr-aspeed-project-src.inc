@@ -1,6 +1,6 @@
 # aspeed-zephyr-project bootmcu
 SRC_URI_ASPEED_ZEPHYR_PROJECT = "gitsm://gerrit.aspeed.com:29418/aspeed-zephyr-project;protocol=ssh"
-ASPEED_ZEPHYR_PROJECT_BRANCH ??= "mcu-runtime"
+ASPEED_ZEPHYR_PROJECT_BRANCH ??= "aspeed-dev"
 ASPEED_ZEPHYR_PROJECT_NOBRANCH ??= "0"
 SRCREV_app ??= "${AUTOREV}"
 
