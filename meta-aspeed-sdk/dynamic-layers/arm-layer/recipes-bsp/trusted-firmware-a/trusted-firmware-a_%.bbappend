@@ -1,5 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
+FILES:${PN} += " \
+    /firmware/*.map \
+    /firmware/*.dump \
+"
+
 do_install:append() {
     for atfbin in ${TFA_INSTALL_TARGET}; do
         if [ -f ${BUILD_DIR}/$atfbin/$atfbin.map ]; then
