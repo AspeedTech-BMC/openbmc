@@ -104,7 +104,8 @@ install_unsigned_image() {
     fi
 
     # trusted-firmware-a
-    install -m 0644 ${DEPLOY_DIR_IMAGE}/bl31.* ${S}/${GEN_IMAGE_MODE}
+    install -d ${S}/${GEN_IMAGE_MODE}/trusted-firmware-a
+    install -m 0644 ${DEPLOY_DIR_IMAGE}/trusted-firmware-a/bl31.* ${S}/${GEN_IMAGE_MODE}/trusted-firmware-a/
 
     # optee-os
     if [ -f ${DEPLOY_DIR_IMAGE}/optee/tee-raw.bin ]; then
@@ -304,7 +305,9 @@ deploy_static_image_helper() {
     fi
 
     # trusted-firmware-a
-    install -m 0644 ${S}/${GEN_IMAGE_MODE}/bl31.* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    if [ -f ${S}/${GEN_IMAGE_MODE}/trusted-firmware-a/bl31.bin ]; then
+        cp --no-preserve=ownership -rf ${S}/${GEN_IMAGE_MODE}/trusted-firmware-a ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    fi
 
     # optee-os
     if [ -f ${S}/${GEN_IMAGE_MODE}/optee/tee-raw.bin ]; then
@@ -333,7 +336,9 @@ deploy_mmc_image_helper() {
     fi
 
     # trusted-firmware-a
-    install -m 0644 ${S}/${GEN_IMAGE_MODE}/bl31.* ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    if [ -f ${S}/${GEN_IMAGE_MODE}/trusted-firmware-a/bl31.bin ]; then
+        cp --no-preserve=ownership -rf ${S}/${GEN_IMAGE_MODE}/trusted-firmware-a ${DEPLOYDIR}/${GEN_IMAGE_MODE}
+    fi
 
     # optee-os
     if [ -f ${S}/${GEN_IMAGE_MODE}/optee/tee-raw.bin ]; then
@@ -1048,4 +1053,3 @@ python do_cleanall:prepend() {
             print(cmd)
             subprocess.check_call(cmd, shell=True)
 }
-

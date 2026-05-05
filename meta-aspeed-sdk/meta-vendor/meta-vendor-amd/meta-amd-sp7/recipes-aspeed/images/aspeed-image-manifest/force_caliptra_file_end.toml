@@ -98,7 +98,7 @@ ignore_auth_check = false
 load_stage = 0
 
 [[image_metadata_list]]
-file = "bl31.bin"
+file = "trusted-firmware-a/bl31.bin"
 source = 1
 fw_id = 10
 ignore_auth_check = false
