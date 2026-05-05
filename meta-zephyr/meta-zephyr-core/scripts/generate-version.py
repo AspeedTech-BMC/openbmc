@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import pathlib
 import re
 import subprocess
@@ -11,10 +12,26 @@ import urllib.request
 import jinja2
 import west.manifest
 
-# This script takes one argument - the Zephyr version in the form x.y.z
-version = sys.argv[1]
-if not re.match(r'\d+.\d+.\d+', version):
-    raise ValueError("Please provide a valid Zephyr version")
+# Set up argument parser
+parser = argparse.ArgumentParser(
+    description='Generate Zephyr kernel source include file for a specific version',
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    epilog='''
+Example:
+  %(prog)s -v 3.7.0
+  %(prog)s --version 4.3.0
+    ''')
+parser.add_argument('-v', '--version',
+                    required=True,
+                    metavar='VERSION',
+                    help='Zephyr version in the form x.y.z (e.g., 3.7.0, 4.3.0)')
+
+args = parser.parse_args()
+version = args.version
+
+# Validate version format
+if not re.match(r'\d+\.\d+\.\d+', version):
+    parser.error(f"Invalid version format: '{version}'. Please provide a valid Zephyr version (e.g., 3.7.0)")
 
 # Obtain the West manifest and decode using west as a library
 manifest_url = f'https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/v{version}/west.yml'
