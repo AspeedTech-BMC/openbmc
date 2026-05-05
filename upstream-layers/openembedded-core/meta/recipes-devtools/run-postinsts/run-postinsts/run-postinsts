@@ -1,0 +1,111 @@
+#!/bin/sh
+#
+# Copyright 2007 Openedhand Ltd.
+#
+# Author: Richard Purdie <rpurdie@openedhand.com>
+#
+
+# The following script will run all the scriptlets found in #SYSCONFDIR#/deb-postinsts,
+# #SYSCONFDIR#/ipk-postinsts or #SYSCONFDIR#/rpm-postinsts or the package manager in
+# case available.
+
+# the order of this list is important, do not change!
+backend_list="rpm deb ipk"
+
+pm_installed=false
+
+for pm in $backend_list; do
+	# found the package manager, it has postinsts
+	case $pm in
+		"deb")
+			if [ -s "#LOCALSTATEDIR#/lib/dpkg/status" ]; then
+				pm_installed=true
+				break
+			fi
+			;;
+
+		"ipk")
+			if [ -s "#LOCALSTATEDIR#/lib/opkg/status" ]; then
+				pm_installed=true
+				break
+			fi
+			;;
+	esac
+
+	pi_dir="#SYSCONFDIR#/$pm-postinsts"
+
+	# found postinsts directory
+	if [ -d $pi_dir ]; then
+		break
+	fi
+done
+
+remove_rcsd_link () {
+	if command -v update-rc.d >/dev/null; then
+		update-rc.d -f run-postinsts remove
+	fi
+}
+
+if ! [ -d $pi_dir ] && ! $pm_installed; then
+	remove_rcsd_link
+	exit 0
+fi
+
+echo "Configuring packages on first boot...."
+echo " (This may take several minutes. Please do not power off the machine.)"
+
+[ -e #SYSCONFDIR#/default/postinst ] && . #SYSCONFDIR#/default/postinst
+
+if [ "$POSTINST_LOGGING" = "1" ]; then
+	rm -f $LOGFILE
+	append_log=">>$LOGFILE 2>&1"
+fi
+
+exec_postinst_scriptlets() {
+	ret=0
+	for i in "$pi_dir"/*; do
+		echo "Running postinst $i..."
+		[ "$POSTINST_LOGGING" = "1" ] && eval echo "Running postinst $i..." $append_log
+		if [ -x "$i" ]; then
+			(sh -c "$i $append_log")
+			status=$?
+			if [ $status -ne 0 ]; then
+				echo "ERROR: postinst $i failed with exit code $status."
+				[ "$POSTINST_LOGGING" = "1" ] && eval echo "ERROR: postinst $i failed with exit code $status." $append_log
+				ret=1
+			else
+				rm -f "$i"
+			fi
+		else
+			echo "ERROR: postinst $i is not executable."
+			[ "$POSTINST_LOGGING" = "1" ] && eval echo "ERROR: postinst $i is not executable." $append_log
+			ret=1
+		fi
+	done
+	return $ret
+}
+
+if $pm_installed; then
+	case $pm in
+		"ipk")
+			if ! `flock --fcntl --wait 30 /run/opkg.lock true`; then
+				eval echo "Unable to obtain the opkg lock, deadlock?" $append_log
+			fi
+			if ! eval "opkg configure $append_log"; then
+			    exit 1
+			fi
+			;;
+
+		"deb")
+			if ! eval "eval dpkg --configure -a $append_log"; then
+			    exit 1
+			fi
+			;;
+	esac
+else
+	if ! exec_postinst_scriptlets; then
+		exit 1
+	fi
+	# since all postinstalls executed successfully, remove the rcS.d link
+	remove_rcsd_link
+fi

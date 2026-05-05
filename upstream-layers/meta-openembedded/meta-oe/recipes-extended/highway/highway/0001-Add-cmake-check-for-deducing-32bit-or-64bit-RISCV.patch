@@ -1,0 +1,57 @@
+From b06541a75043c9a8213187fca942a0270783bd0e Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Tue, 17 Sep 2024 18:22:36 +0000
+Subject: [PATCH] Add cmake check for deducing 32bit or 64bit RISCV
+
+Currently its only compilable for RV64 when RVV is
+enabled, this will extend it to build for RV32 with
+RVV as well
+
+Upstream-Status: Submitted [https://github.com/google/highway/pull/2330]
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+
+---
+ CMakeLists.txt | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 795408c5..9ddd92cd 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -59,6 +59,33 @@ if(CHECK_PIE_SUPPORTED)
+   endif()
+ endif()
+ 
++if (CMAKE_CXX_COMPILER_ARCHITECTURE_ID MATCHES "RISCV32|RISCV64|RISCV128" OR CMAKE_SYSTEM_PROCESSOR MATCHES "riscv32|riscv64|riscv128")
++  include(CheckCSourceCompiles)
++  check_c_source_compiles("
++  #if __riscv_xlen == 64
++  int main() { return 0; }
++  #else
++  #error Not RISCV-64
++  #endif
++  " IS_RISCV_XLEN_64)
++
++  check_c_source_compiles("
++  #if __riscv_xlen == 32
++  int main() { return 0; }
++  #else
++  #error Not RISCV-32
++  #endif
++  " IS_RISCV_XLEN_32)
++
++  if(IS_RISCV_XLEN_32)
++    set(RISCV_XLEN 32)
++  elseif(IS_RISCV_XLEN_64)
++    set(RISCV_XLEN 64)
++  else()
++    message(WARNING "Unable to determine RISC-V XLEN")
++  endif()
++endif()
++
+ include(GNUInstallDirs)
+ 
+ if (NOT CMAKE_BUILD_TYPE)
+-- 
+2.43.0
+

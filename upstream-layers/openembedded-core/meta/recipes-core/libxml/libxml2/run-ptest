@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -e
+
+export LC_ALL=en_US.UTF-8
+
+# testModule isn't that useful and hard-codes buildtree, so we don't run that
+TESTS="runtest runsuite testrecurse testchar testdict runxmlconf testapi testparser"
+
+for T in $TESTS; do
+    echo Running $T
+    ./$T && echo PASS: $T || echo FAIL: $T
+done
+
+echo Running testlimits with -timeout 5
+./testlimits -timeout 5 && echo PASS: testlimits || echo FAIL: testlimits

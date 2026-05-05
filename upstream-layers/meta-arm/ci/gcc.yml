@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+
+header:
+  version: 14
+
+#NOTE: This is the default.  This is only being added for completeness/clarity
+local_conf_header:
+  toolchain: |
+    PREFERRED_TOOLCHAIN_TARGET = "gcc"

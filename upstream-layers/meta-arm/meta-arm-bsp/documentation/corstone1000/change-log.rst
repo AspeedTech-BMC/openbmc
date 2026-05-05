@@ -1,0 +1,567 @@
+..
+ # Copyright (c) 2022-2026, Arm Limited.
+ #
+ # SPDX-License-Identifier: MIT
+
+##########
+Change Log
+##########
+
+This document contains a summary of the new features, changes and
+fixes in each release of Corstone-1000 software stack.
+
+***************
+Version 2025.12
+***************
+
+Changes
+=======
+
+- Delivered end-to-end Cortex-A320 enablement across U-Boot, TF-A, TF-M, OP-TEE, Yocto machine layers, and documentation, including device-tree updates, MPIDR handling, and FVP model renaming.
+- Rolled out the PSA Firmware Update (DEN0118) pipeline: U-Boot capsule parsing, Bootloader Abstraction Layer in TF-M, ESRT exposure, and Trusted Services IPC bridges replacing legacy capsule code.
+- Hardened the new firmware update flow with EFI self-tests, metadata restructuring for partial and multi-image acceptance, and RSE-COMMS gating refinements.
+- Upgraded key firmware components (TF-A 2.13.0, TF-M 2.2.1, Trusted Services 1.2.0, OP-TEE OS 4.7.0) and introduced targeted test skips plus integer-only build modes to keep validation green.
+- Cleaned and renumbered downstream patch series across Trusted Services and TF-M while removing obsolete integrations to align with upstream baselines.
+- Refreshed release material and architecture guides to describe the A320 profile, PSA FWU behavior, and updated software stack.
+- Added KAS profiles, machine includes, and automated FVP selection logic to streamline developer workflows for the refreshed platform configuration.
+
+Corstone-1000 components versions
+=================================
+
++-------------------------------------------+-------------------+
+| linux-yocto                               | 6.12.60           |
++-------------------------------------------+-------------------+
+| u-boot                                    | 2025.04           |
++-------------------------------------------+-------------------+
+| external-system                           | 0.1.0             |
++-------------------------------------------+-------------------+
+| optee-client                              | 4.7.0             |
++-------------------------------------------+-------------------+
+| optee-os                                  | 4.7.0             |
++-------------------------------------------+-------------------+
+| trusted-firmware-a                        | 2.13.0            |
++-------------------------------------------+-------------------+
+| trusted-firmware-m                        | 2.2.1             |
++-------------------------------------------+-------------------+
+| libts                                     | v1.2.0            |
++-------------------------------------------+-------------------+
+| ts-sp-{se-proxy, smm-gateway}             | v1.2.0            |
++-------------------------------------------+-------------------+
+| ts-psa-{crypto, iat, its. ps}-api-test    | 74dc6646ff        |
++-------------------------------------------+-------------------+
+
+Yocto distribution components versions
+======================================
+
++-------------------------------------------+----------------+
+| meta-arm                                  | whinlatter     |
++-------------------------------------------+----------------+
+| bitbake                                   | 0dde1a3ff8     |
++-------------------------------------------+----------------+
+| meta-openembedded                         | fc0152e434     |
++-------------------------------------------+----------------+
+| openembedded-core                         | 4bd920ad7d     |
++-------------------------------------------+----------------+
+| meta-yocto                                | b3b6592635     |
++-------------------------------------------+----------------+
+| meta-secure-core                          | 63209fb150     |
++-------------------------------------------+----------------+
+| busybox                                   | 1.37.0         |
++-------------------------------------------+----------------+
+| musl                                      | 1.2.5          |
++-------------------------------------------+----------------+
+| gcc-arm-none-eabi                         | 13.3.rel1      |
++-------------------------------------------+----------------+
+| gcc-cross-aarch64                         | 15.2.0         |
++-------------------------------------------+----------------+
+| openssl                                   | 3.5.4          |
++-------------------------------------------+----------------+
+
+***************
+Version 2025.05
+***************
+
+Changes
+=======
+
+- OP-TEE OS: Added support for v4.4
+- Trusted Services: PSA-Crypto structures aligned with TF-M, added protobuf interface to crypto-sp
+- Documentation: fixed typos, added host-level authentication section, enabled fly-out sidebar menu
+- Das U-Boot: Reserved memory for RSS communication-pointer access protocol
+- Linux Kernel: Upgraded kernel to v6.12, updated Upstream-Status notes for remoteproc patches
+- Corstone-1000 image: Implemented IMAGE_ROOTFS_EXTRA_SPACE workaround
+
+Corstone-1000 components versions
+=================================
+
++-------------------------------------------+-------------------+
+| linux-yocto                               | 6.12.30           |
++-------------------------------------------+-------------------+
+| u-boot                                    | 2023.07.02        |
++-------------------------------------------+-------------------+
+| external-system                           | 0.1.0             |
++-------------------------------------------+-------------------+
+| optee-client                              | 4.4.0             |
++-------------------------------------------+-------------------+
+| optee-os                                  | 4.4.0             |
++-------------------------------------------+-------------------+
+| trusted-firmware-a                        | 2.11.0            |
++-------------------------------------------+-------------------+
+| trusted-firmware-m                        | 2.1.1             |
++-------------------------------------------+-------------------+
+| libts                                     | 602be60719        |
++-------------------------------------------+-------------------+
+| ts-newlib                                 | 4.1.0             |
++-------------------------------------------+-------------------+
+| ts-psa-{crypto, iat, its. ps}-api-test    | 74dc6646ff        |
++-------------------------------------------+-------------------+
+| ts-sp-{se-proxy, smm-gateway}             | 602be60719        |
++-------------------------------------------+-------------------+
+
+Yocto distribution components versions
+======================================
+
++-------------------------------------------+----------------+
+| meta-arm                                  | walnascar      |
++-------------------------------------------+----------------+
+| poky                                      | ee0d8d8a61     |
++-------------------------------------------+----------------+
+| meta-openembedded                         | 2169c9afcc     |
++-------------------------------------------+----------------+
+| meta-secure-core                          | 423bc85b05     |
++-------------------------------------------+----------------+
+| busybox                                   | 1.37.0         |
++-------------------------------------------+----------------+
+| musl                                      | 1.2.5          |
++-------------------------------------------+----------------+
+| gcc-arm-none-eabi                         | 13.3.rel1      |
++-------------------------------------------+----------------+
+| gcc-cross-aarch64                         | 14.2.0         |
++-------------------------------------------+----------------+
+| openssl                                   | 3.4.1          |
++-------------------------------------------+----------------+
+
+
+***************
+Version 2024.11
+***************
+
+Changes
+=======
+
+- Implementation of a replication strategy for FWU metadata in TF-M according to the FWU specification.
+- Upgrade to metadata version 2 in TF-M.
+- Increase the ITS and PS memory size in Secure Flash for TF-M.
+- SW components upgrades.
+- Bug fixes.
+
+Corstone-1000 components versions
+=================================
+
++-------------------------------------------+-----------------------------------------------------+
+| linux-yocto                               |                   6.10.14                           |
++-------------------------------------------+-----------------------------------------------------+
+| u-boot                                    |                   2023.07.02                        |
++-------------------------------------------+-----------------------------------------------------+
+| external-system                           |                   0.1.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| optee-client                              |                   4.2.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| optee-os                                  |                   4.2.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| trusted-firmware-a                        |                   2.11.0                            |
++-------------------------------------------+-----------------------------------------------------+
+| trusted-firmware-m                        |                   2.1.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| libts                                     |                   602be60719                        |
++-------------------------------------------+-----------------------------------------------------+
+| ts-newlib                                 |                   4.1.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| ts-psa-{crypto, iat, its. ps}-api-test    |                   74dc6646ff                        |
++-------------------------------------------+-----------------------------------------------------+
+| ts-sp-{se-proxy, smm-gateway}             |                   602be60719                        |
++-------------------------------------------+-----------------------------------------------------+
+
+Yocto distribution components versions
+======================================
+
++-------------------------------------------+------------------------------+
+| meta-arm                                  | styhead                      |
++-------------------------------------------+------------------------------+
+| poky                                      | 5465094be9                   |
++-------------------------------------------+------------------------------+
+| meta-openembedded                         | 461d85a183                   |
++-------------------------------------------+------------------------------+
+| meta-secure-core                          | 59d7e90542                   |
++-------------------------------------------+------------------------------+
+| busybox                                   |                   1.36.1     |
++-------------------------------------------+------------------------------+
+| musl                                      |                   1.2.5      |
++-------------------------------------------+------------------------------+
+| gcc-arm-none-eabi                         |          13.3.rel1           |
++-------------------------------------------+------------------------------+
+| gcc-cross-aarch64                         |                   14.2.0     |
++-------------------------------------------+------------------------------+
+| openssl                                   |                   3.3.1      |
++-------------------------------------------+------------------------------+
+
+***************
+Version 2024.06
+***************
+
+Changes
+=======
+
+- Re-enabling support for the External System using linux remoteproc (only supporting switching on and off the External System)
+- UEFI Secure Boot and Authenticated Variable support
+- RSE Comms replaces OpenAMP
+- The EFI System partition image is now created by the meta-arm build system.
+  This image is mounted on the second MMC card by default in the FVP.
+- The capsule generation script is now part of the meta-arm build system.
+  Corstone1000-flash-firmware-image recipe generates a capsule binary using the U-Boot capsule generation tool that includes
+  all the firmware binaries and recovery kernel image.
+- SW components upgrades
+- Bug fixes
+
+
+Corstone-1000 components versions
+=================================
+
++-------------------------------------------+-----------------------------------------------------+
+| arm-tstee                                 |                   2.0.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| linux-yocto                               |                   6.6.23                            |
++-------------------------------------------+-----------------------------------------------------+
+| u-boot                                    |                   2023.07.02                        |
++-------------------------------------------+-----------------------------------------------------+
+| external-system                           |                   0.1.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| optee-client                              |                   4.1.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| optee-os                                  |                   4.1.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| trusted-firmware-a                        |                   2.10.4                            |
++-------------------------------------------+-----------------------------------------------------+
+| trusted-firmware-m                        |                   2.0.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| libts                                     |                   602be60719                        |
++-------------------------------------------+-----------------------------------------------------+
+| ts-newlib                                 |                   4.1.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| ts-psa-{crypto, iat, its. ps}-api-test    |                   602be60719                        |
++-------------------------------------------+-----------------------------------------------------+
+| ts-sp-{se-proxy, smm-gateway}             |                   602be60719                        |
++-------------------------------------------+-----------------------------------------------------+
+
+Yocto distribution components versions
+======================================
+
++-------------------------------------------+------------------------------+
+| meta-arm                                  | scarthgap                    |
++-------------------------------------------+------------------------------+
+| poky                                      | scarthgap                    |
++-------------------------------------------+------------------------------+
+| meta-openembedded                         | scarthgap                    |
++-------------------------------------------+------------------------------+
+| meta-secure-core                          | scarthgap                    |
++-------------------------------------------+------------------------------+
+| busybox                                   |                   1.36.1     |
++-------------------------------------------+------------------------------+
+| musl                                      |                   1.2.4      |
++-------------------------------------------+------------------------------+
+| gcc-arm-none-eabi                         |          13.2.Rel1           |
++-------------------------------------------+------------------------------+
+| gcc-cross-aarch64                         |                   13.2.0     |
++-------------------------------------------+------------------------------+
+| openssl                                   |                   3.2.1      |
++-------------------------------------------+------------------------------+
+
+***************
+Version 2023.11
+***************
+
+Changes
+=======
+
+- Making Corstone-1000  SystemReady IR 2.0 certifiable
+- Allow booting Debian & OpenSUSE on FVP
+- Add support for two MMC cards for the FVP
+- Add signed capsule update support
+- Enable on-disk capsule update
+- Add the feature of purging specific DT nodes in U-Boot before Linux
+- Add Ethernet over VirtIO support in U-Boot
+- Add support for unaligned MMC card images
+- Reducing the out-of-tree patches by upstreaming them to the corresponding open-source projects
+- SW components upgrades
+- Bug fixes
+
+Corstone-1000 components versions
+=================================
+
++-------------------------------------------+-----------------------------------------------------+
+| arm-ffa-tee                               |                   1.1.2-r0                          |
++-------------------------------------------+-----------------------------------------------------+
+| linux-yocto                               |                   6.5.7                             |
++-------------------------------------------+-----------------------------------------------------+
+| u-boot                                    |                   2023.07                           |
++-------------------------------------------+-----------------------------------------------------+
+| external-system                           |    0.1.0+gitAUTOINC+8c9dca74b1-r0                   |
++-------------------------------------------+-----------------------------------------------------+
+| optee-client                              |                   3.22.0                            |
++-------------------------------------------+-----------------------------------------------------+
+| optee-os                                  |                   3.22.0                            |
++-------------------------------------------+-----------------------------------------------------+
+| trusted-firmware-a                        |                   2.9.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| trusted-firmware-m                        |                   1.8.1                             |
++-------------------------------------------+-----------------------------------------------------+
+| libts                                     |                       08b3d39471                    |
++-------------------------------------------+-----------------------------------------------------+
+| ts-newlib                                 |                   4.1.0                             |
++-------------------------------------------+-----------------------------------------------------+
+| ts-psa-{crypto, iat, its. ps}-api-test    |                   38cb53a4d9                        |
++-------------------------------------------+-----------------------------------------------------+
+| ts-sp-{se-proxy, smm-gateway}             |                   08b3d39471                        |
++-------------------------------------------+-----------------------------------------------------+
+
+Yocto distribution components versions
+======================================
+
++-------------------------------------------+------------------------------+
+| meta-arm                                  | nanbield                     |
++-------------------------------------------+------------------------------+
+| poky                                      | nanbield                     |
++-------------------------------------------+------------------------------+
+| meta-openembedded                         | nanbield                     |
++-------------------------------------------+------------------------------+
+| meta-secure-core                          | nanbield                     |
++-------------------------------------------+------------------------------+
+| busybox                                   |                   1.36.1     |
++-------------------------------------------+------------------------------+
+| musl                                      |                   1.2.4      |
++-------------------------------------------+------------------------------+
+| gcc-arm-none-eabi                         |          11.2-2022.02        |
++-------------------------------------------+------------------------------+
+| gcc-cross-aarch64                         |                   13.2.0     |
++-------------------------------------------+------------------------------+
+| openssl                                   |                   3.1.3      |
++-------------------------------------------+------------------------------+
+
+***************
+Version 2023.06
+***************
+
+Changes
+=======
+
+- GPT support (in TF-M, TF-A, U-boot)
+- Use TF-M BL1 code as the ROM code instead of MCUboot (the next stage bootloader BL2 remains to be MCUboot)
+- Secure Enclave uses CC312 OTP as the provisioning backend in FVP and FPGA
+- NVMXIP block storage support in U-Boot
+- Upgrading the SW stack recipes
+- Upgrades for the U-Boot FF-A driver and MM communication
+
+Corstone-1000 components versions
+=================================
+
++-------------------------------------------+--------------------------------------------+
+| arm-ffa-tee                               | 1.1.2-r0                                   |
++-------------------------------------------+--------------------------------------------+
+| arm-ffa-user                              | 5.0.1-r0                                   |
++-------------------------------------------+--------------------------------------------+
+| corstone1000-external-sys-tests           | 1.0+gitAUTOINC+2945cd92f7-r0               |
++-------------------------------------------+--------------------------------------------+
+| external-system                           | 0.1.0+gitAUTOINC+8c9dca74b1-r0             |
++-------------------------------------------+--------------------------------------------+
+| linux-yocto                               | 6.1.25+gitAUTOINC+36901b5b29_581dc1aa2f-r0 |
++-------------------------------------------+--------------------------------------------+
+| u-boot                                    | 2023.01-r0                                 |
++-------------------------------------------+--------------------------------------------+
+| optee-client                              | 3.18.0-r0                                  |
++-------------------------------------------+--------------------------------------------+
+| optee-os                                  | 3.20.0-r0                                  |
++-------------------------------------------+--------------------------------------------+
+| trusted-firmware-a                        | 2.8.0-r0                                   |
++-------------------------------------------+--------------------------------------------+
+| trusted-firmware-m                        | 1.7.0-r0                                   |
++-------------------------------------------+--------------------------------------------+
+| ts-newlib                                 | 4.1.0-r0                                   |
++-------------------------------------------+--------------------------------------------+
+| ts-psa-{crypto, iat, its. ps}-api-test    | 38cb53a4d9                                 |
++-------------------------------------------+--------------------------------------------+
+| ts-sp-{se-proxy, smm-gateway}             | 08b3d39471                                 |
++-------------------------------------------+--------------------------------------------+
+
+Yocto distribution components versions
+======================================
+
++-------------------------------------------+--------------------------------+
+| meta-arm                                  | mickledore                     |
++-------------------------------------------+--------------------------------+
+| poky                                      | mickledore                     |
++-------------------------------------------+--------------------------------+
+| meta-openembedded                         | mickledore                     |
++-------------------------------------------+--------------------------------+
+| busybox                                   | 1.36.0-r0                      |
++-------------------------------------------+--------------------------------+
+| musl                                      | 1.2.3+gitAUTOINC+7d756e1c04-r0 |
++-------------------------------------------+--------------------------------+
+| gcc-arm-none-eabi-native                  | 11.2-2022.02                   |
++-------------------------------------------+--------------------------------+
+| gcc-cross-aarch64                         | 12.2.rel1-r0                   |
++-------------------------------------------+--------------------------------+
+| openssl                                   | 3.1.0-r0                       |
++-------------------------------------------+--------------------------------+
+
+******************
+Version 2022.11.23
+******************
+
+Changes
+=======
+
+- Booting the External System (Cortex-M3) with RTX RTOS
+- Adding MHU communication between the HOST (Cortex-A35) and the External System
+- Adding a Linux application to test the External System
+- Adding ESRT (EFI System Resource Table) support
+- Upgrading the SW stack recipes
+- Upgrades for the U-Boot FF-A driver and MM communication
+
+Corstone-1000 components versions
+=================================
+
++-------------------------------------------+------------+
+| arm-ffa-tee                               | 1.1.1      |
++-------------------------------------------+------------+
+| arm-ffa-user                              | 5.0.0      |
++-------------------------------------------+------------+
+| corstone1000-external-sys-tests           | 1.0        |
++-------------------------------------------+------------+
+| external-system                           | 0.1.0      |
++-------------------------------------------+------------+
+| linux-yocto                               | 5.19       |
++-------------------------------------------+------------+
+| u-boot                                    | 2022.07    |
++-------------------------------------------+------------+
+| optee-client                              | 3.18.0     |
++-------------------------------------------+------------+
+| optee-os                                  | 3.18.0     |
++-------------------------------------------+------------+
+| trusted-firmware-a                        | 2.7.0      |
++-------------------------------------------+------------+
+| trusted-firmware-m                        | 1.6.0      |
++-------------------------------------------+------------+
+| ts-newlib                                 | 4.1.0      |
++-------------------------------------------+------------+
+| ts-psa-{crypto, iat, its. ps}-api-test    | 451aa087a4 |
++-------------------------------------------+------------+
+| ts-sp-{se-proxy, smm-gateway}             | 3d4956770f |
++-------------------------------------------+------------+
+
+Yocto distribution components versions
+======================================
+
++-------------------------------------------+---------------------+
+| meta-arm                                  | langdale            |
++-------------------------------------------+---------------------+
+| poky                                      | langdale            |
++-------------------------------------------+---------------------+
+| meta-openembedded                         | langdale            |
++-------------------------------------------+---------------------+
+| busybox                                   | 1.35.0              |
++-------------------------------------------+---------------------+
+| musl                                      | 1.2.3+git37e18b7bf3 |
++-------------------------------------------+---------------------+
+| gcc-arm-none-eabi-native                  | 11.2-2022.02        |
++-------------------------------------------+---------------------+
+| gcc-cross-aarch64                         | 12.2                |
++-------------------------------------------+---------------------+
+| openssl                                   | 3.0.5               |
++-------------------------------------------+---------------------+
+
+******************
+Version 2022.04.04
+******************
+
+Changes
+=======
+- Linux distro openSUSE, raw image installation and boot in the FVP.
+- SCT test support in FVP.
+- Manual capsule update support in FVP.
+
+******************
+Version 2022.02.25
+******************
+
+Changes
+=======
+- Building and running psa-arch-tests on Corstone-1000 FVP
+- Enabled smm-gateway partition in Trusted Service on Corstone-1000 FVP
+- Enabled MHU driver in Trusted Service on Corstone-1000 FVP
+- Enabled OpenAMP support in SE proxy SP on Corstone-1000 FVP
+
+******************
+Version 2022.02.21
+******************
+
+Changes
+=======
+- psa-arch-tests: recipe is dropped and merged into the secure-partitons recipe.
+- psa-arch-tests: The tests are align with latest tfm version for psa-crypto-api suite.
+
+******************
+Version 2022.01.18
+******************
+
+Changes
+=======
+- psa-arch-tests: change master to main for psa-arch-tests
+- U-Boot: fix null pointer exception for get_image_info
+- TF-M: fix capsule instability issue for Corstone-1000
+
+******************
+Version 2022.01.07
+******************
+
+Changes
+=======
+- Corstone-1000: fix SystemReady-IR ACS test (SCT, FWTS) failures.
+- U-Boot: send bootcomplete event to secure enclave.
+- U-Boot: support populating Corstone-1000 image_info to ESRT table.
+- U-Boot: add ethernet device and enable configs to support bootfromnetwork SCT.
+
+******************
+Version 2021.12.15
+******************
+
+Changes
+=======
+- Enabling Corstone-1000 FPGA support on:
+  - Linux 5.10
+  - OP-TEE 3.14
+  - Trusted Firmware-A 2.5
+  - Trusted Firmware-M 1.5
+- Building and running psa-arch-tests
+- Adding openamp support in SE proxy SP
+- OP-TEE: adding smm-gateway partition
+- U-Boot: introducing Arm FF-A and MM support
+
+******************
+Version 2021.10.29
+******************
+
+Changes
+=======
+- Enabling Corstone-1000 FVP support on:
+  - Linux 5.10
+  - OP-TEE 3.14
+  - Trusted Firmware-A 2.5
+  - Trusted Firmware-M 1.4
+- Linux kernel: enabling EFI, adding FF-A debugfs driver, integrating ARM_FFA_TRANSPORT.
+- U-Boot: Extending EFI support
+- python3-imgtool: adding recipe for Trusted-firmware-m
+- python3-imgtool: adding the Yocto recipe used in signing host images (based on MCUBOOT format)
+
+--------------
+
+*Copyright (c) 2022-2026, Arm Limited. All rights reserved.*

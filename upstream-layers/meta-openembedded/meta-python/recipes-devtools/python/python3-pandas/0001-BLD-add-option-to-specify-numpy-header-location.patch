@@ -1,0 +1,69 @@
+From 65db03f03dbb61172c6eea8b34d11ea9eb0c6d77 Mon Sep 17 00:00:00 2001
+From: Gyorgy Sarvari <skandigraun@gmail.com>
+Date: Mon, 10 Mar 2025 13:52:11 +0100
+Subject: [PATCH] BLD: add option to specify numpy header location
+
+In some cases the numpy module might not be usable during build-time,
+especially when cross-compiling. (E.g. when compiling for arm32 on a
+x86-64 machine, the arm32 module is not usable at build time).
+
+This makes meson fail, as it isn't able to figure out the location of
+numpy headers.
+
+To allow an alternative way to find these headers, introduce a meson
+build option, where the location of the numpy headers can be specified.
+
+In case numpy module cannot be loaded for some reason to query the
+include folder location, fall back to the value of this meson option.
+
+Upstream-Status: Submitted [https://github.com/pandas-dev/pandas/pull/61095]
+
+Signed-off-by: Gyorgy Sarvari <skandigraun@gmail.com>
+Signed-off-by: Leon Anavi <leon.anavi@konsulko.com>
+---
+ meson.options      |  1 +
+ pandas/meson.build | 12 +++++++++---
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+ create mode 100644 meson.options
+
+diff --git a/meson.options b/meson.options
+new file mode 100644
+index 0000000..3d3a18d
+--- /dev/null
++++ b/meson.options
+@@ -0,0 +1 @@
++option('numpy_inc_dir', type : 'string', description : 'The absolute path to the numpy headers')
+diff --git a/pandas/meson.build b/pandas/meson.build
+index 840ac25..2c3423e 100644
+--- a/pandas/meson.build
++++ b/pandas/meson.build
+@@ -4,17 +4,23 @@ incdir_numpy = run_command(
+         '-c',
+         '''
+ import os
+-import numpy as np
++try:
++    import numpy as np
++    base_incdir = np.get_include()
++except Exception:
++    base_incdir = os.getenv('NUMPY_INC_DIR')
++
+ try:
+     # Check if include directory is inside the pandas dir
+     # e.g. a venv created inside the pandas dir
+     # If so, convert it to a relative path
+-    incdir = os.path.relpath(np.get_include())
++    incdir = os.path.relpath(base_incdir)
+ except Exception:
+-    incdir = np.get_include()
++    incdir = base_incdir
+ print(incdir)
+      ''',
+     ],
++    env: {'NUMPY_INC_DIR': get_option('numpy_inc_dir')},
+     check: true,
+ ).stdout().strip()
+ 
+-- 
+2.47.3
+

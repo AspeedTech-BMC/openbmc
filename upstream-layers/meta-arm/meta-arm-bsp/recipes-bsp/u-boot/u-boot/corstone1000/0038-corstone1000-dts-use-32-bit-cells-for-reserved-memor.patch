@@ -1,0 +1,37 @@
+From df01111a866a37fcf875b3c2e2394414d27c89da Mon Sep 17 00:00:00 2001
+From: Harsimran Singh Tungal <harsimransingh.tungal@arm.com>
+Date: Wed, 24 Sep 2025 13:42:25 +0000
+Subject: [PATCH] corstone1000: dts: use 32-bit cells for
+ /reserved-memory node
+
+Switch the *reserved-memory* node from two-cell (64-bit) encoding to
+one-cell (32-bit) encoding and adjust the `reg` property accordingly
+to make reserved-memory node format compatible with rest of the dts.
+
+Upstream-Status: Pending
+Signed-off-by: Harsimran Singh Tungal <harsimransingh.tungal@arm.com>
+---
+ arch/arm/dts/corstone1000-u-boot.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/dts/corstone1000-u-boot.dtsi b/arch/arm/dts/corstone1000-u-boot.dtsi
+index a75bc7016aa..4ea6f1d9724 100644
+--- a/arch/arm/dts/corstone1000-u-boot.dtsi
++++ b/arch/arm/dts/corstone1000-u-boot.dtsi
+@@ -18,12 +18,12 @@
+ 	};
+ 
+ 	reserved-memory {
+-		#address-cells = <2>;
+-		#size-cells = <2>;
++		#address-cells = <1>;
++		#size-cells = <1>;
+ 		ranges;
+ 
+ 		smem_mem: smem_region@88000000 {
+-			reg = <0x0 0x88000000 0x0 0x100000>;
++			reg = <0x88000000 0x100000>;
+ 			no-map;
+ 		};
+ 	};
+

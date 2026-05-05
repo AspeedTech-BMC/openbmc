@@ -1,0 +1,164 @@
+From 9908274a3555fe2abb3596d917cecfafcb4fbf7a Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Sat, 30 Oct 2021 02:11:49 -0700
+Subject: [PATCH] Fix a lot of -Werror=format-security errors with
+
+ mvprintw/mvwprintw
+
+In all these places a non-constant is used as a format string which
+compiler complains about. Fix by using "%s" as format.
+
+Upstream-Status: Pending
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+---
+ lmon16n.c | 88 +++++++++++++++++++++++++++----------------------------
+ 1 file changed, 44 insertions(+), 44 deletions(-)
+
+diff --git a/lmon16n.c b/lmon16n.c
+index 8a5d35c..cec409a 100644
+--- a/lmon16n.c
++++ b/lmon16n.c
+@@ -5489,20 +5489,20 @@ int main(int argc, char **argv)
+ 		    /*
+ 		     *mvwprintw(padsmp,2, 0, "CPU  User%%  Sys%% Wait%% Idle|0          |25         |50          |75       100|");
+ 		     */
+-		    mvwprintw(padsmp, 1, 0, cpu_line);
+-		    mvwprintw(padsmp, 2, 0, "CPU  ");
++		    mvwprintw(padsmp, 1, 0, "%s", cpu_line);
++		    mvwprintw(padsmp, 2, 0, "%s", "CPU  ");
+ 		    COLOUR wattrset(padsmp, COLOR_PAIR(2));	/* Green */
+-		    mvwprintw(padsmp, 2, 4, "User%%");
++		    mvwprintw(padsmp, 2, 4, "%s", "User%%");
+ 		    COLOUR wattrset(padsmp, COLOR_PAIR(1));	/* Red */
+-		    mvwprintw(padsmp, 2, 9, "  Sys%%");
++		    mvwprintw(padsmp, 2, 9, "%s", "  Sys%%");
+ 		    COLOUR wattrset(padsmp, COLOR_PAIR(4));	/* Blue */
+-		    mvwprintw(padsmp, 2, 15, " Wait%%");
++		    mvwprintw(padsmp, 2, 15, "%s", " Wait%%");
+ 		    if (p->cpu_total.steal != q->cpu_total.steal) {
+ 			COLOUR wattrset(padsmp, COLOR_PAIR(5));
+-			mvwprintw(padsmp, 2, 22, "Steal");
++			mvwprintw(padsmp, 2, 22, "%s", "Steal");
+ 		    } else {
+ 			COLOUR wattrset(padsmp, COLOR_PAIR(0));
+-			mvwprintw(padsmp, 2, 22, " Idle");
++			mvwprintw(padsmp, 2, 22, "%s", " Idle");
+ 		    }
+ 		    COLOUR wattrset(padsmp, COLOR_PAIR(0));
+ 		    mvwprintw(padsmp, 2, 27,
+@@ -5593,8 +5593,8 @@ int main(int argc, char **argv)
+ 			/* lparcfg gathered above */
+ 			if (lparcfg.smt_mode > 1
+ 			    && i % lparcfg.smt_mode == 0) {
+-			    mvwprintw(padsmp, 3 + i, 27, "*");
+-			    mvwprintw(padsmp, 3 + i, 77, "*");
++			    mvwprintw(padsmp, 3 + i, 27, "%s", "*");
++			    mvwprintw(padsmp, 3 + i, 77, "%s", "*");
+ 			}
+ #endif
+ 
+@@ -5611,7 +5611,7 @@ int main(int argc, char **argv)
+ 				    100.0);
+ 		    }
+ 		}		/* for (i = 0; i < cpus; i++) */
+-		CURSE mvwprintw(padsmp, i + 3, 0, cpu_line);
++		CURSE mvwprintw(padsmp, i + 3, 0, "%s", cpu_line);
+ #ifdef POWER
+ 		/* proc_lparcfg called above in previous ifdef
+ 		 */
+@@ -5687,7 +5687,7 @@ int main(int argc, char **argv)
+ 				 100.0);
+ 		    }
+ 
+-		    CURSE mvwprintw(padsmp, i + 5, 0, cpu_line);
++		    CURSE mvwprintw(padsmp, i + 5, 0, "%s", cpu_line);
+ 		    i = i + 2;
+ 		}		/* if (cpus > 1 || !cursed) */
+ 		smp_first_time = 0;
+@@ -5697,17 +5697,17 @@ int main(int argc, char **argv)
+ 		if (cursed) {
+ 		    int rows = 0;
+ 		    BANNER(padwide, "CPU Utilisation Wide View");
+-		    mvwprintw(padwide, 1, 0, wide1);
+-		    mvwprintw(padwide, 2, 0, wide2);
+-		    mvwprintw(padwide, 3, 0, wide3);
+-		    mvwprintw(padwide, 4, 0, wide4);
+-		    mvwprintw(padwide, 5, 0, wide5);
+-		    mvwprintw(padwide, 6, 0, wide6);
+-		    mvwprintw(padwide, 7, 0, wide7);
+-		    mvwprintw(padwide, 8, 0, wide8);
+-		    mvwprintw(padwide, 9, 0, wide9);
+-		    mvwprintw(padwide, 10, 0, wide10);
+-		    mvwprintw(padwide, 11, 0, wide_1_64);
++		    mvwprintw(padwide, 1, 0, "%s", wide1);
++		    mvwprintw(padwide, 2, 0, "%s", wide2);
++		    mvwprintw(padwide, 3, 0, "%s", wide3);
++		    mvwprintw(padwide, 4, 0, "%s", wide4);
++		    mvwprintw(padwide, 5, 0, "%s", wide5);
++		    mvwprintw(padwide, 6, 0, "%s", wide6);
++		    mvwprintw(padwide, 7, 0, "%s", wide7);
++		    mvwprintw(padwide, 8, 0, "%s", wide8);
++		    mvwprintw(padwide, 9, 0, "%s", wide9);
++		    mvwprintw(padwide, 10, 0, "%s", wide10);
++		    mvwprintw(padwide, 11, 0, "%s", wide_1_64);
+ 		    mvwprintw(padwide, 1, 6, "CPU(s)=%d", cpus);
+ 		    if (wide_first_time) {
+ 			mvwprintw(padwide, 3, 7,
+@@ -5747,17 +5747,17 @@ int main(int argc, char **argv)
+ 			rows = 12;
+ 		    }
+ 		    if (cpus > 63) {
+-			mvwprintw(padwide, rows + 0, 0, wide1);
+-			mvwprintw(padwide, rows + 1, 0, wide2);
+-			mvwprintw(padwide, rows + 2, 0, wide3);
+-			mvwprintw(padwide, rows + 3, 0, wide4);
+-			mvwprintw(padwide, rows + 4, 0, wide5);
+-			mvwprintw(padwide, rows + 5, 0, wide6);
+-			mvwprintw(padwide, rows + 6, 0, wide7);
+-			mvwprintw(padwide, rows + 7, 0, wide8);
+-			mvwprintw(padwide, rows + 8, 0, wide9);
+-			mvwprintw(padwide, rows + 9, 0, wide10);
+-			mvwprintw(padwide, rows + 10, 0, wide_65_128);
++			mvwprintw(padwide, rows + 0, 0, "%s", wide1);
++			mvwprintw(padwide, rows + 1, 0, "%s", wide2);
++			mvwprintw(padwide, rows + 2, 0, "%s", wide3);
++			mvwprintw(padwide, rows + 3, 0, "%s", wide4);
++			mvwprintw(padwide, rows + 4, 0, "%s", wide5);
++			mvwprintw(padwide, rows + 5, 0, "%s", wide6);
++			mvwprintw(padwide, rows + 6, 0, "%s", wide7);
++			mvwprintw(padwide, rows + 7, 0, "%s", wide8);
++			mvwprintw(padwide, rows + 8, 0, "%s", wide9);
++			mvwprintw(padwide, rows + 9, 0, "%s", wide10);
++ 			mvwprintw(padwide, rows + 10, 0, "%s", wide_65_128);
+ 			if (wide_first_time) {
+ 			    mvwprintw(padwide, rows + 3, 7,
+ 				      " Please wait gathering CPU statistics");
+@@ -5804,17 +5804,17 @@ int main(int argc, char **argv)
+ 			rows = 23;
+ 		    }
+ 		    if (cpus > 127) {
+-			mvwprintw(padwide, rows + 0, 0, wide1);
+-			mvwprintw(padwide, rows + 1, 0, wide2);
+-			mvwprintw(padwide, rows + 2, 0, wide3);
+-			mvwprintw(padwide, rows + 3, 0, wide4);
+-			mvwprintw(padwide, rows + 4, 0, wide5);
+-			mvwprintw(padwide, rows + 5, 0, wide6);
+-			mvwprintw(padwide, rows + 6, 0, wide7);
+-			mvwprintw(padwide, rows + 7, 0, wide8);
+-			mvwprintw(padwide, rows + 8, 0, wide9);
+-			mvwprintw(padwide, rows + 9, 0, wide10);
+-			mvwprintw(padwide, rows + 10, 0,wide_129_192);
++			mvwprintw(padwide, rows + 0, 0, "%s", wide1);
++			mvwprintw(padwide, rows + 1, 0, "%s", wide2);
++			mvwprintw(padwide, rows + 2, 0, "%s", wide3);
++			mvwprintw(padwide, rows + 3, 0, "%s", wide4);
++			mvwprintw(padwide, rows + 4, 0, "%s", wide5);
++			mvwprintw(padwide, rows + 5, 0, "%s", wide6);
++			mvwprintw(padwide, rows + 6, 0, "%s", wide7);
++			mvwprintw(padwide, rows + 7, 0, "%s", wide8);
++			mvwprintw(padwide, rows + 8, 0, "%s", wide9);
++			mvwprintw(padwide, rows + 9, 0, "%s", wide10);
++			mvwprintw(padwide, rows + 10, 0, "%s", wide_129_192);
+ 			if (wide_first_time) {
+ 			    mvwprintw(padwide, rows + 3, 7,
+ 				      " Please wait gathering CPU statistics");

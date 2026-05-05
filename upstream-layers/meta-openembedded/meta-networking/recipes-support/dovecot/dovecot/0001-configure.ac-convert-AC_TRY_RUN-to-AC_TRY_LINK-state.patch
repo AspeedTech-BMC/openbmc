@@ -1,0 +1,40 @@
+From 07150f3a27681e034f18ab2ed2b68914c1e10af6 Mon Sep 17 00:00:00 2001
+From: Li xin <lixin.fnst@cn.fujitsu.com>
+Date: Sat, 18 Jul 2015 05:03:57 +0900
+Subject: [PATCH] configure.ac: convert AC_TRY_RUN to AC_TRY_LINK statements
+
+This is not completely safe, but it's the least invasive fix.
+
+Upstream-Status: Pending
+
+Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+Signed-off-by: Li Xin <lixin.fnst@cn.fujitsu.com>
+
+Signed-off-by: Wang Mingyu <wangmy@cn.fujitsu.com>
+---
+ m4/glibc.m4  | 6 ++----
+ m4/ioloop.m4 | 9 +++------
+ 2 files changed, 5 insertions(+), 10 deletions(-)
+
+--- ./m4/glibc.m4	2025-10-04 22:42:24.336965366 +0200
++++ ./m4/glibc.m4	2025-10-04 22:47:30.578745494 +0200
+@@ -2,7 +2,7 @@
+   dnl * Old glibcs have broken posix_fallocate(). Make sure not to use it.
+   dnl * It may also be broken in AIX.
+   AC_CACHE_CHECK([whether posix_fallocate() works],i_cv_posix_fallocate_works,[
+-    AC_RUN_IFELSE([AC_LANG_PROGRAM([[
++    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+       #define _XOPEN_SOURCE 600
+       #include <stdio.h>
+       #include <stdlib.h>
+--- ./m4/ioloop.m4.orig	2025-10-04 22:47:44.656705137 +0200
++++ ./m4/ioloop.m4	2025-10-04 22:48:32.379618966 +0200
+@@ -4,7 +4,7 @@
+   
+   AS_IF([test "$ioloop" = "best" || test "$ioloop" = "epoll"], [
+     AC_CACHE_CHECK([whether we can use epoll],i_cv_epoll_works,[
+-      AC_RUN_IFELSE([AC_LANG_PROGRAM([[
++      AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+         #include <sys/epoll.h>
+       ]], [[
+         return epoll_create(5) < 1;

@@ -1,0 +1,44 @@
+From 266090c3af1db8e43e5ee349f5dd515983e651f8 Mon Sep 17 00:00:00 2001
+From: Yi Fan Yu <yifan.yu@windriver.com>
+Date: Fri, 19 Feb 2021 15:21:18 -0500
+Subject: [PATCH] Add ptest for tcpdump
+
+Upstream-Status: Pending
+
+Signed-off-by: Hongjun.Yang <hongjun.yang@windriver.com>
+Signed-off-by: Peiran Hong <peiran.hong@windriver.com>
+
+remove perl script not required by ptest causing QA problems
+
+reference upstream issue/commit:
+https://github.com/the-tcpdump-group/tcpdump/issues/26
+
+Signed-off-by: Yi Fan Yu <yifan.yu@windriver.com>
+---
+ Makefile.in | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index 72dd01d..3f90901 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -448,9 +448,18 @@ distclean: clean
+ 	    tests/failure-outputs.txt
+ 	rm -rf autom4te.cache tests/DIFF tests/NEW
+ 
+-check: tcpdump
++buildtest-TESTS: tcpdump
++
++runtest-PTEST:
+ 	$(srcdir)/tests/TESTrun
+ 
++install-ptest:
++	cp -r tests                     $(DESTDIR)
++	rm $(DESTDIR)/tests/setkey2esp-secrets.pl
++	cp -r config.h                  $(DESTDIR)
++	install -m 0755 Makefile        $(DESTDIR)
++	ln -s /usr/bin/tcpdump          $(DESTDIR)/tcpdump
++
+ extags: $(TAGFILES)
+ 	ctags $(TAGFILES)
+ 

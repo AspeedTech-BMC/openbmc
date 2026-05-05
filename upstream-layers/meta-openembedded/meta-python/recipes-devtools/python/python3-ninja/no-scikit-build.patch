@@ -1,0 +1,22 @@
+We don't need to build ninja so there's no need to use scikit-build-core,
+as we just need the python module with its one ninja() function.
+
+Upstream-Status: Inappropriate
+Signed-off-by: Ross Burton <ross.burton@arm.com>
+Signed-off-by: Jiaying Song <jiaying.song.cn@windriver.com>
+
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,5 +1,4 @@
+ [build-system]
+-requires = ["scikit-build-core>=0.10"]
+-build-backend = "backend"
+-backend-path = ["_build_backend"]
++requires = ["setuptools", "setuptools-scm"]
++build-backend = "setuptools.build_meta"
+ 
+@@ -7,3 +6,3 @@
+ name = "ninja"
+-dynamic = ["version", "readme"]
++dynamic = ["version"]
+ description = "Ninja is a small build system with a focus on speed"

@@ -1,0 +1,90 @@
+From ef47f8f41722b90a86ace86f0f509b4775c2f725 Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Tue, 24 Jan 2023 21:40:43 -0800
+Subject: [PATCH] Add missing includes <cstdint> and <cstdio>
+
+This is needed with GCC 13 and newer [1]
+
+[1] https://www.gnu.org/software/gcc/gcc-13/porting_to.html
+
+Upstream-Status: Pending
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+Signed-off-by: Mingli Yu <mingli.yu@windriver.com>
+---
+ storage/rocksdb/rocksdb/include/rocksdb/utilities/checkpoint.h  | 1 +
+ .../rocksdb/rocksdb/table/block_based/data_block_hash_index.h   | 1 +
+ storage/rocksdb/rocksdb/util/slice.cc                           | 2 +-
+ storage/rocksdb/rocksdb/util/string_util.h                      | 1 +
+ 4 files changed, 4 insertions(+), 1 deletion(-)
+
+--- a/storage/rocksdb/rocksdb/include/rocksdb/utilities/checkpoint.h
++++ b/storage/rocksdb/rocksdb/include/rocksdb/utilities/checkpoint.h
+@@ -8,6 +8,7 @@
+ #pragma once
+ #ifndef ROCKSDB_LITE
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ #include "rocksdb/status.h"
+--- a/storage/rocksdb/rocksdb/table/block_based/data_block_hash_index.h
++++ b/storage/rocksdb/rocksdb/table/block_based/data_block_hash_index.h
+@@ -5,6 +5,7 @@
+ 
+ #pragma once
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+--- a/storage/rocksdb/rocksdb/util/slice.cc
++++ b/storage/rocksdb/rocksdb/util/slice.cc
+@@ -12,7 +12,7 @@
+ #include <stdio.h>
+ 
+ #include <algorithm>
+-
++#include <cstdint>
+ #include "rocksdb/convenience.h"
+ #include "rocksdb/slice_transform.h"
+ #include "rocksdb/utilities/object_registry.h"
+--- a/storage/rocksdb/rocksdb/util/string_util.h
++++ b/storage/rocksdb/rocksdb/util/string_util.h
+@@ -6,6 +6,7 @@
+ 
+ #pragma once
+ 
++#include <cstdint>
+ #include <sstream>
+ #include <string>
+ #include <unordered_map>
+--- a/storage/rocksdb/rocksdb/include/rocksdb/trace_record.h
++++ b/storage/rocksdb/rocksdb/include/rocksdb/trace_record.h
+@@ -5,6 +5,7 @@
+ 
+ #pragma once
+ 
++#include <cstdint>
+ #include <memory>
+ #include <string>
+ #include <vector>
+--- a/storage/rocksdb/rocksdb/db/blob/blob_file_meta.h
++++ b/storage/rocksdb/rocksdb/db/blob/blob_file_meta.h
+@@ -6,6 +6,7 @@
+ #pragma once
+ 
+ #include <cassert>
++#include <cstdint>
+ #include <iosfwd>
+ #include <memory>
+ #include <string>
+--- a/storage/rocksdb/rocksdb/include/rocksdb/utilities/transaction_db_mutex.h
++++ b/storage/rocksdb/rocksdb/include/rocksdb/utilities/transaction_db_mutex.h
+@@ -6,6 +6,7 @@
+ #pragma once
+ #ifndef ROCKSDB_LITE
+ 
++#include <cstdint>
+ #include <memory>
+ 
+ #include "rocksdb/status.h"

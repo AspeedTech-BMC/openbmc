@@ -1,0 +1,35 @@
+#! /bin/sh
+
+# Get a variable's value from a makefile:
+#
+# $ makefile-getvar Makefile VARIABLE VARIABLE ...
+#
+# If multiple variables are specified, they will be printed one per line.
+#
+# SPDX-FileCopyrightText: Copyright 2024 Arm Limited and/or its affiliates <open-source-office@arm.com>
+# SPDX-License-Identifier: GPL-2.0-only
+
+set -eu
+
+if [ $# -lt 2 ]; then
+	echo "Get a variable's value from a Makefile:"
+	echo "$ makefile-getvar Makefile VARIABLE VARIABLE ..."
+	exit 0
+fi
+
+MAKEFILE=$1
+shift
+
+if [ ! -f $MAKEFILE ]; then
+	echo $MAKEFILE is not a file
+	exit 1
+fi
+
+for VARIABLE in $*; do
+	make -f - $VARIABLE.var <<EOF
+include $MAKEFILE
+
+%.var:
+	@echo \$(\$*)
+EOF
+done

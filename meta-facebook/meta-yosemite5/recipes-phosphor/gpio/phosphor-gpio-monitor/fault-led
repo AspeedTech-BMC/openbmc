@@ -1,0 +1,53 @@
+#!/bin/bash
+
+sleep 1
+source_gpio=$1
+power_state=$2
+
+GPIO_NAME=( "ALERT_INA230_DIMM_0_N"
+            "ALERT_INA230_DIMM_1_N"
+            "ALERT_INA230_E1S_0_N"
+            "ALERT_INA230_E1S_1_N"
+            "ALERT_INA230_FAN0_N"
+            "ALERT_INA230_FAN1_N"
+            "ALERT_INA230_FAN2_N"
+            "ALERT_INA230_FAN3_N"
+            "ALERT_INA230_NIC_N"
+            "ALERT_INA230_SCM_N"
+            "ALERT_IRQ_PMBUS_PWR11_N"
+            "ALERT_OC_PADDLE2_N"
+            "ALERT_THERMALTRIP_MCIO4A_N"
+            "ALERT_UV_PADDLE2_N"
+            "ALERT_VR_SMB_N"
+            "FAULT_P3V3_E1S_0_N"
+            "FAULT_P3V3_E1S_1_N"
+            "FAULT_P3V3_NIC_N"
+            "FAULT_P12V_NIC_N"
+            "FAULT_P12V_SCM_N"
+            "ALERT_INLET_TEMP_N"
+            "FM_CPU_PROCHOT_R_N"
+            "FM_CPU_THERMTRIP_N"
+            "ALERT_OUTLET_TEMP_N"
+            "PVDDCR_SOC_P0_OCP_N"
+            "ALERT_IRQ_PMBUS_PWR2_N"
+            "Fault" )
+
+if [ "$power_state" == "assert" ]; then
+    busctl set-property "xyz.openbmc_project.LED.GroupManager" "/xyz/openbmc_project/led/groups/power_fault" "xyz.openbmc_project.Led.Group" "Asserted" "b" "true"
+elif [ "$power_state" == "deassert" ]; then
+    found=0
+
+    for name in "${GPIO_NAME[@]}"; do
+        [[ "$name" == "$source_gpio" ]] && continue
+        if [ -e "/run/$name.log_entry" ]; then
+            found=1
+            break
+        fi
+    done
+
+    if [ $found -eq 0 ]; then
+        busctl set-property "xyz.openbmc_project.LED.GroupManager" "/xyz/openbmc_project/led/groups/power_fault" "xyz.openbmc_project.Led.Group" "Asserted" "b" "false"
+    fi
+fi
+
+exit 0

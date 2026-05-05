@@ -1,0 +1,5 @@
+#!/bin/sh
+
+OPKG_PATH=$(which opkg)
+
+make -C tests DATADIR=/share SYSCONFDIR=/etc VARDIR=/var OPKG_PATH=$OPKG_PATH

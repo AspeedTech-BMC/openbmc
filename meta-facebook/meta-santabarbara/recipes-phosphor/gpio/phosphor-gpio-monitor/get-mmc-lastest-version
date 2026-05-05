@@ -1,0 +1,134 @@
+#!/bin/bash
+
+eids="10 20 30 40"
+retry_delay_sec=5
+lock_delay_sec=120
+
+eid_to_module() {
+    case "$1" in
+        10) echo 0 ;;
+        20) echo 1 ;;
+        30) echo 2 ;;
+        40) echo 3 ;;
+        *) return 1 ;;
+    esac
+}
+
+get_pldm_object_path() {
+    local eid=$1
+    local compid=$2
+    local module
+    local path
+
+    module=$(eid_to_module "$eid") || return 1
+
+    path=$(
+        busctl tree xyz.openbmc_project.PLDM |
+        grep -m1 "/xyz/openbmc_project/software/Santa_Barbara_Rainbow_module_${module}_MMC_Component_${compid}_" |
+        sed 's/^[^\/]*//'
+    )
+
+    echo "$path"
+}
+
+is_eid_idle() {
+    local eid=$1
+    local out
+    local cur_state
+    local reason
+
+    out=$(pldmtool fw_update GetStatus -m "$eid" 2>&1)
+
+    cur_state=$(
+        echo "$out" |
+        sed -n 's/.*"CurrentState":[[:space:]]*"\([^"]*\)".*/\1/p' |
+        head -n1
+    )
+
+    reason=$(
+        echo "$out" |
+        sed -n 's/.*"ReasonCode":[[:space:]]*"\([^"]*\)".*/\1/p' |
+        head -n1
+    )
+
+    if [ "$cur_state" = "IDLE" ]; then
+        return 0
+    fi
+
+    [ -z "$cur_state" ] && cur_state="NO_RESPONSE"
+    [ -z "$reason" ] && reason="N/A"
+
+    echo "EID $eid not IDLE: $cur_state($reason)"
+    return 1
+}
+
+declare -A processed
+declare -A locked_until
+
+remaining=0
+
+for eid in $eids; do
+    processed["$eid"]=0
+    locked_until["$eid"]=0
+    remaining=$((remaining + 1))
+done
+
+while [ "$remaining" -gt 0 ]; do
+    now=$(date +%s)
+
+    for eid in $eids; do
+        [ "${processed[$eid]}" -eq 1 ] && continue
+
+        if [ "$now" -lt "${locked_until[$eid]}" ]; then
+            continue
+        fi
+
+        if ! is_eid_idle "$eid"; then
+            locked_until["$eid"]=$((now + lock_delay_sec))
+            echo "EID $eid locked for ${lock_delay_sec}s"
+            continue
+        fi
+
+        output=$(
+            pldmtool fw_update GetFirmwareParameters -m "$eid" 2>/dev/null |
+            jq -r '
+                .ComponentParameterEntries[]
+                | select((.ActiveComponentVersionString // "") | startswith("flash hamsa BOOT0:"))
+                | (.ComponentIdentifier | tostring) + "#" + (.ActiveComponentVersionString // "")
+            '
+        )
+
+        if [ -z "$output" ]; then
+            continue
+        fi
+
+        IFS="#" read -r compId version <<< "$output"
+
+        if [[ "$version" == "flash hamsa BOOT0: 000000 00000000" || \
+              "$version" == "flash hamsa BOOT0: ffffff "* ]]; then
+            continue
+        fi
+
+        pldmObjPath=$(get_pldm_object_path "$eid" "$compId")
+
+        if [ -z "$pldmObjPath" ]; then
+            continue
+        fi
+
+        echo "EID $eid: path=$pldmObjPath"
+
+        if busctl set-property \
+            xyz.openbmc_project.PLDM \
+            "$pldmObjPath" \
+            xyz.openbmc_project.Software.Version \
+            Version s "$version"; then
+            echo "EID $eid updated: $version"
+            processed["$eid"]=1
+            remaining=$((remaining - 1))
+        else
+            echo "EID $eid failed to update"
+        fi
+    done
+
+    [ "$remaining" -gt 0 ] && sleep "$retry_delay_sec"
+done

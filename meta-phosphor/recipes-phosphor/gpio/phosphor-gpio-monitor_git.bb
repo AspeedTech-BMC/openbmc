@@ -12,7 +12,7 @@ DEPENDS += "boost"
 DEPENDS += "libgpiod"
 DEPENDS += "cli11"
 DEPENDS += "nlohmann-json"
-SRCREV = "31218315c16b2bb3b97b671fa5d262bc0ae49142"
+SRCREV = "63a4c8fa5e7e9443e346764098ddf44a1e9abdb1"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
@@ -21,8 +21,6 @@ SRC_URI += " file://phosphor-multi-gpio-presence.json"
 
 SYSTEMD_PACKAGES = "${GPIO_PACKAGES}"
 SYSTEMD_SERVICE:${PN}-monitor += "phosphor-multi-gpio-monitor.service"
-SYSTEMD_SERVICE:${PN}-monitor += "phosphor-gpio-monitor@.service"
-SYSTEMD_SERVICE:${PN}-presence += "phosphor-gpio-presence@.service"
 SYSTEMD_SERVICE:${PN}-presence += "phosphor-multi-gpio-presence.service"
 
 inherit meson pkgconfig
@@ -35,9 +33,11 @@ FILES:${PN}-monitor += "${bindir}/phosphor-multi-gpio-monitor"
 FILES:${PN}-monitor += "${bindir}/phosphor-gpio-util"
 FILES:${PN}-monitor += "${nonarch_base_libdir}/udev/rules.d/99-gpio-keys.rules"
 FILES:${PN}-monitor += "${datadir}/${PN}/phosphor-multi-gpio-monitor.json"
+FILES:${PN}-monitor += "${systemd_system_unitdir}/phosphor-gpio-monitor@.service"
 FILES:${PN}-presence += "${bindir}/phosphor-gpio-presence"
 FILES:${PN}-presence += "${bindir}/phosphor-multi-gpio-presence"
 FILES:${PN}-presence += "${datadir}/${PN}/phosphor-multi-gpio-presence.json"
+FILES:${PN}-presence += "${systemd_system_unitdir}/phosphor-gpio-presence@.service"
 
 ALLOW_EMPTY:${PN} = "1"
 
