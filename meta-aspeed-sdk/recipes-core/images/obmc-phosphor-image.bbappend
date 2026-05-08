@@ -15,9 +15,6 @@ IMAGE_INSTALL:append = " \
         packagegroup-aspeed-obmc-inband \
         packagegroup-aspeed-mtdtest \
         packagegroup-aspeed-usbtools \
-        ${@bb.utils.contains('DISTRO_FEATURES', 'tpm', \
-            bb.utils.contains('MACHINE_FEATURES', 'tpm2', 'packagegroup-security-tpm2', '', d), \
-            '', d)} \
         packagegroup-aspeed-ktools \
         "
 
