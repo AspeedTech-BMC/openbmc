@@ -17,4 +17,10 @@ EXTRA_OEMESON:append:aspeed-g7 = " \
     -Dotp-platform='ast2700' \
 "
 
+# mctp-i3c and i3c-test are not supported on AST2500, remove them after install
+do_install:append:aspeed-g5() {
+    rm -f ${D}${bindir}/mctp-i3c
+    rm -f ${D}${bindir}/i3c-test
+}
+
 FILES:${PN}:append = " /usr/share/* "
