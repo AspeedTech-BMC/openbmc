@@ -12,4 +12,4 @@ ZEPHYR_BOARD_SSP ?= "ast2700_evb/ast2700/ssp"
 ZEPHYR_BOARD = "${ZEPHYR_BOARD_SSP}"
 
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/aspeed-irot"
-
+ASPEED_ZEPHYR_PROJECT_SUBMODULE_LIBSPDM = "1"

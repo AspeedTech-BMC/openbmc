@@ -10,6 +10,8 @@ PV = "1.0+git"
 
 ZEPHYR_BOARD_BOOTMCU ??= "ast2700_evb/ast2700/bootmcu"
 ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
+ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
+ASPEED_ZEPHYR_PROJECT_SUBMODULE_DTC = "1"
 ZEPHYR_ASPEED_OUTPUT = "${BOOTMCU_FMC_BINARY} ${BOOTMCU_FW_BINARY}"
 
 DEPENDS += "fmc-imgtool-native"
