@@ -10,7 +10,7 @@ BRANCH = "aspeed-dev-v2023.10"
 SRC_URI = "git://gerrit.aspeed.com:29418/u-boot.git;protocol=ssh;branch=${BRANCH}"
 SRCREV = "${AUTOREV}"
 
-B = "${UNPACKDIR}/build"
+B = "${WORKDIR}/build"
 do_configure[cleandirs] = "${B}"
 
 # We don't have 'u-boot-initial-env' target in our u-boot version
