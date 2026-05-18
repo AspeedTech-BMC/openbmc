@@ -24,7 +24,7 @@ do_compile[network] = "1"
 do_compile() {
     cd ${S}
     # Build caliptra-auth-manifest-app
-    cargo build -p caliptra-auth-manifest-app --release
+    cargo build -p caliptra-auth-manifest-app-1x --release
 
     # Build cptra_imgtool
     cargo build -p cptra-imgtool --release
@@ -34,7 +34,7 @@ do_compile() {
 do_install() {
     install -d ${D}${bindir}
 
-    install -m 0755 ${B}/target/release/caliptra-auth-manifest-app ${D}${bindir}
+    install -m 0755 ${B}/target/release/caliptra-auth-manifest-app-1x ${D}${bindir}
     install -m 0755 ${B}/target/release/cptra-imgtool ${D}${bindir}
 }
 
