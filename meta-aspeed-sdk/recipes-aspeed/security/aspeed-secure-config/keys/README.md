@@ -54,18 +54,3 @@ $ openssl ec -in keys/dev.pem -pubout -text -noout
 This will display the public key as an uncompressed point in hexadecimal format
 `(04 || x || y)`, which is useful for FDT properties like **ecdsa,x-point** and
 **ecdsa,y-point**.
-
-### Note
-
-The U-Boot signing tool only requires a **.pem** key to sign images when using the ECDSA algorithm. However, OpenEmbedded-Core (**meta/lib/oe/fitimage.py**) expects the key files to have **.key** and **.crt** extensions.
-
-To satisfy this requirement, you can create **keys/dev.key** and **keys/dev.crt** from keys/dev.pem using:
-
-```
-$ cp keys/dev.pem keys/dev.key
-$ cp keys/dev.pem keys/dev.crt
-```
-
-The contents of **keys/dev.pem**, **keys/dev.key**, and **keys/dev.crt** are identical; only the filename extensions differ to meet the build system requirements.
-
-This is only needed to pass the OpenEmbedded build system's key validation. The U-Boot signing tool still uses the **.pem** file to sign the image. For details, refer to the U-Boot implementation (e.g., **lib/ecdsa**).
