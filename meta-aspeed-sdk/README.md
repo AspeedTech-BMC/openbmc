@@ -66,6 +66,7 @@ ast2700-a1-emmc
 ast2700-a1-ufs
 ast2700-a1-abr
 ast2700-a1-dcscm
+ast2705-a0-default
 ```
 
 1. **Kernel Version**
@@ -98,6 +99,12 @@ ast2700-a1-dcscm
 
   ```
   . setup ast2700-default [build_dir]
+  ```
+
+- AST2705
+
+  ```
+  . setup ast2705-a0-default [build_dir]
   ```
 
 - AST2600
@@ -182,4 +189,3 @@ COPYLEFT_LICENSE_INCLUDE = "*"
 ## AMI
 AMI firmware code supports ASPEED AST2700 and AST2600 demo boards.
 Please access [https://github.com/ocp-hm-openbmc-opf-ami](https://github.com/ocp-hm-openbmc-opf-ami) to download the code.
-

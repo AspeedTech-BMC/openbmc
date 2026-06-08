@@ -54,5 +54,12 @@ EXTRA_IMAGE_FEATURES:append = " \
 #OVERLAY_MKFS_OPTS:spi-nor-ecc = " -c 16 -e 262144 --pad=${RWFS_SIZE} "
 
 # ast-irot uses dedicated post-image artifacts and does not run the g7 do_merge_uboot flow.
-IMAGE_CLASSES:append:aspeed-g7 = " ${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', \
-        'image_types_phosphor_aspeed_irot', 'image_types_phosphor_aspeed_g7', d)} "
+# ast27x5 uses its own image_types_phosphor_aspeed_ast27x5 instead of the g7 one.
+def get_g7_image_class(d):
+    if bb.utils.contains('MACHINE_FEATURES', 'ast-irot', True, False, d):
+        return 'image_types_phosphor_aspeed_irot'
+    if bb.utils.contains('MACHINE_FEATURES', 'ast27x5', True, False, d):
+        return 'image_types_phosphor_aspeed_ast27x5'
+    return 'image_types_phosphor_aspeed_g7'
+
+IMAGE_CLASSES:append:aspeed-g7 = " ${@get_g7_image_class(d)} "
