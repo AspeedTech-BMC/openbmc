@@ -1,0 +1,103 @@
+# Licensed under the Apache-2.0 license
+
+[vendor]
+ecc_pub_keys = [
+  "vnd-fw-ecc-pub-key-0.pem",
+  "vnd-fw-ecc-pub-key-1.pem",
+  "vnd-fw-ecc-pub-key-2.pem",
+  "vnd-fw-ecc-pub-key-3.pem",
+]
+lms_pub_keys = [
+  "vnd-fw-lms-pub-key-0.pem",
+  "vnd-fw-lms-pub-key-1.pem",
+  "vnd-fw-lms-pub-key-2.pem",
+  "vnd-fw-lms-pub-key-3.pem",
+  # "vnd-fw-lms-pub-key-0.pem",
+  # "vnd-fw-lms-pub-key-1.pem",
+  # "vnd-fw-lms-pub-key-2.pem",
+  # "vnd-fw-lms-pub-key-3.pem",
+  # "vnd-fw-lms-pub-key-0.pem",
+  # "vnd-fw-lms-pub-key-1.pem",
+  # "vnd-fw-lms-pub-key-2.pem",
+  # "vnd-fw-lms-pub-key-3.pem",
+  # "vnd-fw-lms-pub-key-0.pem",
+  # "vnd-fw-lms-pub-key-1.pem",
+  # "vnd-fw-lms-pub-key-2.pem",
+  # "vnd-fw-lms-pub-key-3.pem",
+  # "vnd-fw-lms-pub-key-0.pem",
+  # "vnd-fw-lms-pub-key-1.pem",
+  # "vnd-fw-lms-pub-key-2.pem",
+  # "vnd-fw-lms-pub-key-3.pem",
+  # "vnd-fw-lms-pub-key-0.pem",
+  # "vnd-fw-lms-pub-key-1.pem",
+  # "vnd-fw-lms-pub-key-2.pem",
+  # "vnd-fw-lms-pub-key-3.pem",
+  # "vnd-fw-lms-pub-key-0.pem",
+  # "vnd-fw-lms-pub-key-1.pem",
+  # "vnd-fw-lms-pub-key-2.pem",
+  # "vnd-fw-lms-pub-key-3.pem",
+  # "vnd-fw-lms-pub-key-0.pem",
+  # "vnd-fw-lms-pub-key-1.pem",
+  # "vnd-fw-lms-pub-key-2.pem",
+  # "vnd-fw-lms-pub-key-3.pem",
+]
+ecc_priv_keys = [
+  "vnd-fw-ecc-priv-key-0.pem",
+  "vnd-fw-ecc-priv-key-1.pem",
+  "vnd-fw-ecc-priv-key-2.pem",
+  "vnd-fw-ecc-priv-key-3.pem",
+]
+lms_priv_keys = [
+  "vnd-fw-lms-priv-key-0.pem",
+  "vnd-fw-lms-priv-key-1.pem",
+  "vnd-fw-lms-priv-key-2.pem",
+  "vnd-fw-lms-priv-key-3.pem",
+  # "vnd-fw-lms-priv-key-0.pem",
+  # "vnd-fw-lms-priv-key-1.pem",
+  # "vnd-fw-lms-priv-key-2.pem",
+  # "vnd-fw-lms-priv-key-3.pem",
+  # "vnd-fw-lms-priv-key-0.pem",
+  # "vnd-fw-lms-priv-key-1.pem",
+  # "vnd-fw-lms-priv-key-2.pem",
+  # "vnd-fw-lms-priv-key-3.pem",
+  # "vnd-fw-lms-priv-key-0.pem",
+  # "vnd-fw-lms-priv-key-1.pem",
+  # "vnd-fw-lms-priv-key-2.pem",
+  # "vnd-fw-lms-priv-key-3.pem",
+  # "vnd-fw-lms-priv-key-0.pem",
+  # "vnd-fw-lms-priv-key-1.pem",
+  # "vnd-fw-lms-priv-key-2.pem",
+  # "vnd-fw-lms-priv-key-3.pem",
+  # "vnd-fw-lms-priv-key-0.pem",
+  # "vnd-fw-lms-priv-key-1.pem",
+  # "vnd-fw-lms-priv-key-2.pem",
+  # "vnd-fw-lms-priv-key-3.pem",
+  # "vnd-fw-lms-priv-key-0.pem",
+  # "vnd-fw-lms-priv-key-1.pem",
+  # "vnd-fw-lms-priv-key-2.pem",
+  # "vnd-fw-lms-priv-key-3.pem",
+  # "vnd-fw-lms-priv-key-0.pem",
+  # "vnd-fw-lms-priv-key-1.pem",
+  # "vnd-fw-lms-priv-key-2.pem",
+  # "vnd-fw-lms-priv-key-3.pem",
+]
+mldsa_pub_keys = [
+  "vnd-fw-mldsa-pub-key-0.bin",
+  "vnd-fw-mldsa-pub-key-1.bin",
+  "vnd-fw-mldsa-pub-key-2.bin",
+  "vnd-fw-mldsa-pub-key-3.bin",
+]
+mldsa_priv_keys = [
+  "vnd-fw-mldsa-priv-key-0.bin",
+  "vnd-fw-mldsa-priv-key-1.bin",
+  "vnd-fw-mldsa-priv-key-2.bin",
+  "vnd-fw-mldsa-priv-key-3.bin",
+]
+
+[owner]
+ecc_pub_key = "own-fw-ecc-pub-key.pem"
+ecc_priv_key = "own-fw-ecc-priv-key.pem"
+lms_pub_key = "own-fw-lms-pub-key.pem"
+lms_priv_key = "own-fw-lms-priv-key.pem"
+mldsa_pub_key = "own-fw-mldsa-pub-key.bin"
+mldsa_priv_key = "own-fw-mldsa-priv-key.bin"
