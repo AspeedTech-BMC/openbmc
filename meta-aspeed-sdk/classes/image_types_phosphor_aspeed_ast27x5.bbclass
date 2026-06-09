@@ -10,12 +10,17 @@ do_generate_ext4_tar:append() {
     install -m 644 image-u-boot ${IMGDEPLOYDIR}/image-u-boot
 }
 
+# Override these to use prebuilt images during development.
+SSMCU_ROM_PATH ?= "${DEPLOY_DIR_IMAGE}/${SSMCU_ROM_BINARY}"
+BOOTMCU_ROM_PATH ?= "${DEPLOY_DIR_IMAGE}/${BOOTMCU_ROM_BINARY}"
+CALIPTRA_MANIFEST_FLASH_PATH ?= "${DEPLOY_DIR_IMAGE}/${CALIPTRA_MANIFEST_FLASH_IMAGE}"
+
 do_merge_uboot() {
 
     mk_empty_image_zeros ${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX} ${FLASH_SSMCU_ROM_SIZE}
 
     # Write SS MCU ROM at offset 0
-    imgpath=${DEPLOY_DIR_IMAGE}/${SSMCU_ROM_BINARY}
+    imgpath=${SSMCU_ROM_PATH}
     imgsize=$(wc -c < "$imgpath")
     maxsize=$(expr ${FLASH_SSMCU_ROM_SIZE} \* 1024)
     if [ "$imgsize" -gt "$maxsize" ]; then
@@ -25,7 +30,11 @@ do_merge_uboot() {
     dd bs=1k seek=0 if=${imgpath} of=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}
 
     # Write Boot MCU ROM at offset FLASH_SSMCU_ROM_SIZE
-    imgpath=${DEPLOY_DIR_IMAGE}/${BOOTMCU_ROM_BINARY}
+    imgpath=$(ls ${BOOTMCU_ROM_PATH} 2>/dev/null | head -n 1)
+    if [ -z "$imgpath" ]; then
+        echo "Error: No ${BOOTMCU_ROM_BINARY} found in ${DEPLOY_DIR_IMAGE}."
+        exit 1
+    fi
     imgsize=$(wc -c < "$imgpath")
     maxsize=$(expr $(expr ${FLASH_ABB_OFFSET} - ${FLASH_SSMCU_ROM_SIZE}) \* 1024)
     if [ "$imgsize" -gt "$maxsize" ]; then
@@ -37,7 +46,7 @@ do_merge_uboot() {
 
     # Write Caliptra Manifest Flash image at offset FLASH_ABB_OFFSET
     dd bs=1k seek=${FLASH_ABB_OFFSET} \
-        if=${DEPLOY_DIR_IMAGE}/${CALIPTRA_MANIFEST_FLASH_IMAGE} \
+        if=${CALIPTRA_MANIFEST_FLASH_PATH} \
         of=${DEPLOY_DIR_IMAGE}/u-boot.${UBOOT_SUFFIX}
 }
 
