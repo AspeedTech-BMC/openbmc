@@ -8,8 +8,6 @@ BRANCH = "develop"
 SRC_URI = "git://gerrit.aspeed.com:29418/cptra_imgtool;protocol=ssh;branch=${BRANCH};"
 SRCREV = "${AUTOREV}"
 
-PV = "1.0+git"
-
 DEPENDS += "caliptra-mcu-sw"
 RDEPENDS:${PN} += "caliptra-mcu-sw"
 
@@ -24,7 +22,7 @@ do_compile[network] = "1"
 do_compile() {
     cd ${S}
     # Build caliptra-auth-manifest-app
-    cargo build -p caliptra-auth-manifest-app-1x --release
+    cargo build -p ${CALIPTRA_AUTH_MANIFEST_APP} --release
 
     # Build cptra_imgtool
     cargo build -p cptra-imgtool --release
@@ -34,9 +32,8 @@ do_compile() {
 do_install() {
     install -d ${D}${bindir}
 
-    install -m 0755 ${B}/target/release/caliptra-auth-manifest-app-1x ${D}${bindir}
+    install -m 0755 ${B}/target/release/${CALIPTRA_AUTH_MANIFEST_APP} ${D}${bindir}
     install -m 0755 ${B}/target/release/cptra-imgtool ${D}${bindir}
 }
 
 BBCLASSEXTEND = "native nativesdk"
-

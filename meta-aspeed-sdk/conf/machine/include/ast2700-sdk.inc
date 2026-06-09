@@ -78,6 +78,12 @@ CALIPTRA_MANIFEST_KEY_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/as
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2700-soc-manifest.bin"
 
+PREFERRED_VERSION_cptra-imgtool = "1x"
+PREFERRED_VERSION_cptra-imgtool-native = "1x"
+PREFERRED_VERSION_caliptra-mcu-sw = "1x"
+PREFERRED_VERSION_caliptra-mcu-sw-native = "1x"
+PREFERRED_VERSION_aspeed-image-manifest = "1x"
+
 QB_SYSTEM_NAME = "qemu-system-aarch64"
 QB_MACHINE = "-machine ast2700a1-evb"
 QB_MEM = "-m 1G"

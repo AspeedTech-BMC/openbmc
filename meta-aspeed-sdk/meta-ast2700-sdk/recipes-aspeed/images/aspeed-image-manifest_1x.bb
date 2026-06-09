@@ -3,8 +3,6 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${ASPEEDSDKBASE}/LICENSE;md5=a3740bd0a194cd6dcafdc482a200a56f"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-PR = "r0"
-
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"
 do_install[noexec] = "1"

@@ -8,8 +8,6 @@ BRANCH = "aspeed-dev-ast2700a2"
 SRC_URI = "gitsm://gerrit.aspeed.com:29418/caliptra-mcu-sw;protocol=ssh;branch=${BRANCH};"
 SRCREV = "${AUTOREV}"
 
-PV = "1.0+git"
-
 inherit cargo
 
 # Using cargo to download packages
