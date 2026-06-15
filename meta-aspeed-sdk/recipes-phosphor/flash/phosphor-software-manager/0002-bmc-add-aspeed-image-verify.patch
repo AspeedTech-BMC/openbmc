@@ -1,0 +1,194 @@
+From 18dd65768aefe799798d5dfaeecbded433c5ab72 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Mon, 15 Jun 2026 00:00:00 +0800
+Subject: [PATCH] bmc: add Aspeed image verification
+
+Add a new meson feature option 'aspeed-verify' that, when enabled,
+runs an Aspeed-specific image verification step before BMC update.
+
+When enabled, the activation flow starts an systemd service and
+synchronously waits up to 30 seconds for the result. If verification
+fails or times out, the activation is set to Failed and flash write is
+skipped.
+
+Upstream-Status: Inappropriate [ASPEED-specific feature]
+
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ bmc/activation.cpp | 96 ++++++++++++++++++++++++++++++++++++++++++++++
+ bmc/activation.hpp |  6 +++
+ bmc/meson.build    |  1 +
+ meson.options      |  7 ++++
+ 4 files changed, 110 insertions(+)
+
+diff --git a/bmc/activation.cpp b/bmc/activation.cpp
+index 11bc8ff..16f1f9d 100644
+--- a/bmc/activation.cpp
++++ b/bmc/activation.cpp
+@@ -36,6 +36,11 @@ using InternalFailure =
+ namespace control = sdbusplus::server::xyz::openbmc_project::control;
+ #endif
+ 
++#ifdef ASPEED_VERIFY
++constexpr auto aspeedImageVerifyService = "aspeed-image-verify@";
++constexpr uint64_t aspeedVerifyTimeout = 30 * 1000 * 1000;
++#endif
++
+ void Activation::subscribeToSystemdSignals()
+ {
+     auto method = this->bus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
+@@ -143,6 +148,16 @@ auto Activation::activation(Activations value) -> Activations
+ 
+         activationProgress->progress(10);
+ 
++#ifdef ASPEED_VERIFY
++        if (!verifyAspeedImage())
++        {
++            activationBlocksTransition.reset(nullptr);
++            activationProgress.reset(nullptr);
++            return softwareServer::Activation::activation(
++                softwareServer::Activation::Activations::Failed);
++        }
++#endif
++
+         parent.freeSpace(*this);
+ 
+         // Enable systemd signals
+@@ -339,6 +354,87 @@ bool Activation::verifySignature(const fs::path& imageDir,
+ }
+ #endif
+ 
++#ifdef ASPEED_VERIFY
++bool Activation::verifyAspeedImage()
++{
++    const std::string serviceFile =
++        std::string(aspeedImageVerifyService) + versionId + ".service";
++
++    bool jobComplete = false;
++    bool jobSuccessful = false;
++    sdbusplus::message::object_path verifyJobPath("/");
++
++    info("Aspeed image verification starting for {ID}", "ID", versionId);
++
++    // Use a separate bus connection so sd_bus_process() is not called on a
++    // bus that is already attached to an sd_event loop (which would EBUSY).
++    auto verifyBus = sdbusplus::bus::new_system();
++
++    auto verifyJobMatcher = sdbusplus::bus::match_t(
++        verifyBus,
++        sdbusRule::type::signal() + sdbusRule::member("JobRemoved") +
++            sdbusRule::path("/org/freedesktop/systemd1") +
++            sdbusRule::interface("org.freedesktop.systemd1.Manager"),
++        [&serviceFile, &jobComplete, &jobSuccessful,
++         &verifyJobPath](sdbusplus::message_t& msg) {
++            [[maybe_unused]] uint32_t jobId{};
++            sdbusplus::message::object_path jobPath;
++            std::string unit;
++            std::string result;
++
++            msg.read(jobId, jobPath, unit, result);
++            if (jobPath != verifyJobPath && unit != serviceFile)
++            {
++                return;
++            }
++
++            jobComplete = true;
++            jobSuccessful = (result == "done");
++        });
++
++    try
++    {
++        auto subMethod = verifyBus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
++                                                   SYSTEMD_INTERFACE, "Subscribe");
++        verifyBus.call_noreply(subMethod);
++
++        auto method = verifyBus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
++                                                SYSTEMD_INTERFACE, "StartUnit");
++        method.append(serviceFile, "replace");
++
++        auto reply = verifyBus.call(method);
++        reply.read(verifyJobPath);
++
++        while (!jobComplete)
++        {
++            verifyBus.process_discard();
++            if (!jobComplete)
++            {
++                if (verifyBus.wait(aspeedVerifyTimeout) == 0)
++                {
++                    error("Timed out waiting for {UNIT}", "UNIT", serviceFile);
++                    return false;
++                }
++            }
++        }
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("Aspeed image verification failed to run: {ERROR}", "ERROR", e);
++        return false;
++    }
++
++    if (!jobSuccessful)
++    {
++        error("Aspeed image verification failed for {ID}", "ID", versionId);
++        return false;
++    }
++
++    info("Aspeed image verification succeeded for {ID}", "ID", versionId);
++    return true;
++}
++#endif
++
+ void ActivationBlocksTransition::enableRebootGuard()
+ {
+     info("BMC image activating - BMC reboots are disabled.");
+diff --git a/bmc/activation.hpp b/bmc/activation.hpp
+index 2386bd2..e1041e7 100644
+--- a/bmc/activation.hpp
++++ b/bmc/activation.hpp
+@@ -368,6 +368,12 @@ class Activation : public ActivationInherit, public Flash
+     /** @brief Called when image verification fails. */
+     void onVerifyFailed();
+ #endif
++
++#ifdef ASPEED_VERIFY
++  private:
++    /** @brief Verify the ASPEED BMC image. */
++    bool verifyAspeedImage();
++#endif
+ };
+ 
+ } // namespace updater
+diff --git a/bmc/meson.build b/bmc/meson.build
+index 71ac0b4..e72f813 100644
+--- a/bmc/meson.build
++++ b/bmc/meson.build
+@@ -53,6 +53,7 @@ conf.set('MMC_LAYOUT', get_option('bmc-layout').contains('mmc'))
+ # Configurable features
+ conf.set('HOST_BIOS_UPGRADE', get_option('host-bios-upgrade').allowed())
+ conf.set('WANT_SIGNATURE_VERIFY', get_option('verify-signature').allowed())
++conf.set('ASPEED_VERIFY', get_option('aspeed-verify').allowed())
+ conf.set(
+     'START_UPDATE_DBUS_INTEFACE',
+     get_option('software-update-dbus-interface').allowed(),
+diff --git a/meson.options b/meson.options
+index 5a31e96..cb11655 100644
+--- a/meson.options
++++ b/meson.options
+@@ -43,6 +43,13 @@ option(
+     description: 'Enable image signature validation.',
+ )
+ 
++option(
++    'aspeed-verify',
++    type: 'feature',
++    value: 'disabled',
++    description: 'Enable Aspeed image verification before BMC flash writes.',
++)
++
+ option(
+     'usb-code-update',
+     type: 'feature',
+-- 
+2.43.0
+
