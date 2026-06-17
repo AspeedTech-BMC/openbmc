@@ -26,10 +26,14 @@ create_cptra_manifest_image() {
 
     echo "caliptra_manifest_key_dir=${caliptra_manifest_key_dir}"
 
+    local cfg_patched="${B}/caliptra-manifest-patched.toml"
+    cp ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} ${cfg_patched}
+    sed -i 's|^caliptra_file = ".*"|caliptra_file = "${CALIPTRA_FW_BINARY}"|' ${cfg_patched}
+
     # Build the Caliptra Flash Image (including the Caliptra SoC manifest).
     cptra-imgtool \
         create-auth-flash-2x \
-        --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
+        --cfg ${cfg_patched} \
         ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         --flash ${B}/${CALIPTRA_MANIFEST_FLASH_IMAGE} \
@@ -38,7 +42,7 @@ create_cptra_manifest_image() {
     # Build only the Caliptra SoC Manifest.
     cptra-imgtool \
         create-auth-man-2x \
-        --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
+        --cfg ${cfg_patched} \
         ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
         --man ${B}/${CALIPTRA_MANIFEST_SOC_IMAGE} \
