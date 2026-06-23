@@ -1,0 +1,5 @@
+Please select the machine in your `conf/local.conf` file.
+
+Common targets are:
+     # TSI BMC OpenBMC firmware
+     tsi-obmc-phosphor-image

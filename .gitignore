@@ -3,3 +3,5 @@ customrc
 *.sw?
 .repo/
 .vscode/
+.cursor/
+docs/
