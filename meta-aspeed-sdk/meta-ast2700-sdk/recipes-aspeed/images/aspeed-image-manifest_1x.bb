@@ -3,14 +3,18 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${ASPEEDSDKBASE}/LICENSE;md5=a3740bd0a194cd6dcafdc482a200a56f"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
+S = "${UNPACKDIR}"
+
 do_patch[noexec] = "1"
 do_configure[noexec] = "1"
 do_install[noexec] = "1"
 
 inherit deploy
 
-DEPENDS += "cptra-imgtool-native aspeed-secure-config-native"
+DEPENDS += "cptra-imgtool-native aspeed-secure-config-native aspeed-manifest-config"
 
+CALIPTRA_MANIFEST_AUTH_FLASH_EXTRA_COMMAND ?= ""
+CALIPTRA_MANIFEST_AUTH_MAN_ENABLE ?= "1"
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2700-soc-manifest.bin"
 ASPEED_RTOS = "${@bb.utils.contains('MACHINE_FEATURES', 'ast-rtos', 'yes', 'no', d)}"
@@ -20,32 +24,33 @@ create_cptra_manifest_image() {
     export RUST_LOG="debug"
 
     local caliptra_manifest_key_dir=""
+    local caliptra_manifest_auth_flash_extra_command="${CALIPTRA_MANIFEST_AUTH_FLASH_EXTRA_COMMAND}"
 
     if [ -n "${CALIPTRA_MANIFEST_KEY_DIR}" ]; then
         caliptra_manifest_key_dir="--key-dir ${CALIPTRA_MANIFEST_KEY_DIR}/"
     fi
 
     echo "caliptra_manifest_key_dir=${caliptra_manifest_key_dir}"
-
-    local cfg_patched="${B}/caliptra-manifest-patched.toml"
-    cp ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} ${cfg_patched}
-    sed -i 's|^caliptra_file = ".*"|caliptra_file = "${CALIPTRA_FW_BINARY}"|' ${cfg_patched}
+    echo "caliptra_manifest_auth_flash_extra_command=${caliptra_manifest_auth_flash_extra_command}"
 
     # Build the Caliptra Flash Image (including the Caliptra SoC manifest).
     cptra-imgtool \
         create-auth-flash \
-        --cfg ${cfg_patched} \
+        --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
         ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
+        ${caliptra_manifest_auth_flash_extra_command} \
         --flash ${B}/${CALIPTRA_MANIFEST_FLASH_IMAGE}
 
-    # Build only the Caliptra SoC Manifest.
-    cptra-imgtool \
-        create-auth-man \
-        --cfg ${cfg_patched} \
-        ${caliptra_manifest_key_dir} \
-        --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
-        --man ${B}/${CALIPTRA_MANIFEST_SOC_IMAGE}
+    if [ "${CALIPTRA_MANIFEST_AUTH_MAN_ENABLE}" = "1" ]; then
+        # Build only the Caliptra SoC Manifest.
+        cptra-imgtool \
+            create-auth-man \
+            --cfg ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} \
+            ${caliptra_manifest_key_dir} \
+            --prebuilt-dir ${DEPLOY_DIR_IMAGE}/ \
+            --man ${B}/${CALIPTRA_MANIFEST_SOC_IMAGE}
+    fi
 }
 
 do_compile() {
@@ -67,7 +72,9 @@ do_compile[nostamp] = "1"
 do_deploy_image() {
     install -d ${DEPLOYDIR}
     install -m 644 ${B}/${CALIPTRA_MANIFEST_FLASH_IMAGE} ${DEPLOYDIR}
-    install -m 644 ${B}/${CALIPTRA_MANIFEST_SOC_IMAGE} ${DEPLOYDIR}
+    if [ "${CALIPTRA_MANIFEST_AUTH_MAN_ENABLE}" = "1" ]; then
+        install -m 644 ${B}/${CALIPTRA_MANIFEST_SOC_IMAGE} ${DEPLOYDIR}
+    fi
 }
 
 
