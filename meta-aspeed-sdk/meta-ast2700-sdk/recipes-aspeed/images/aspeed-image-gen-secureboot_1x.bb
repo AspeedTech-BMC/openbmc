@@ -4,6 +4,10 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${ASPEEDSDKBASE}/LICENSE;md5=a3740bd0a194cd6dcafdc482a200a56f"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
+# Include the dynamically generated Caliptra manifest configuration
+# used for Caliptra 1.x firmware.
+require aspeed-manifest-config-1x.inc
+
 PR = "r0"
 
 DEPENDS = " \
@@ -61,7 +65,6 @@ OTPTOOL_SOC = "2700"
 FMC_KEY_DIR = "${OTPTOOL_KEY_DIR}"
 
 # Caliptra manifest
-CALIPTRA_MANIFEST_CONFIG_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
 CALIPTRA_MANIFEST_KEY_DIR = "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 CALIPTRA_MANIFEST_FLASH_IMAGE = "ast2700-manifest-flash.bin"
 CALIPTRA_MANIFEST_SOC_IMAGE = "ast2700-soc-manifest.bin"
@@ -220,6 +223,10 @@ make_kernel_fitimage_and_sign() {
     cd ${S}
 }
 
+make_caliptra_manifest_config() {
+    cptra_generate_manifest_config "${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_CONFIG}"
+}
+
 make_caliptra_manifest_image_and_sign() {
     export RUST_LOG="debug"
 
@@ -231,14 +238,10 @@ make_caliptra_manifest_image_and_sign() {
 
     echo "caliptra_manifest_key_dir=${caliptra_manifest_key_dir}"
 
-    local cfg_patched="${S}/${GEN_IMAGE_MODE}/caliptra-manifest-patched.toml"
-    cp ${CALIPTRA_MANIFEST_CONFIG_DIR}/${CALIPTRA_MANIFEST_CONFIG} ${cfg_patched}
-    sed -i 's|^caliptra_file = ".*"|caliptra_file = "${CALIPTRA_FW_BINARY}"|' ${cfg_patched}
-
     # Build the Caliptra Flash Image (including the Caliptra SoC manifest).
     cptra-imgtool \
         create-auth-flash \
-        --cfg ${cfg_patched} \
+        --cfg ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_CONFIG} \
         ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${S}/${GEN_IMAGE_MODE}/ \
         --flash ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_FLASH_IMAGE}
@@ -246,7 +249,7 @@ make_caliptra_manifest_image_and_sign() {
     # Build only the Caliptra SoC Manifest.
     cptra-imgtool \
         create-auth-man \
-        --cfg ${cfg_patched} \
+        --cfg ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_CONFIG} \
         ${caliptra_manifest_key_dir} \
         --prebuilt-dir ${S}/${GEN_IMAGE_MODE}/ \
         --man ${S}/${GEN_IMAGE_MODE}/${CALIPTRA_MANIFEST_SOC_IMAGE}
@@ -920,8 +923,8 @@ python do_deploy() {
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
-            "caliptra_manifest_config": "ast2700a1-default-ecc-manifest.toml",
-            "caliptra_manifest_config_rtos": "ast2700a1-rtos-ecc-manifest.toml"
+            "cptra_toml_ecc_enable": "1",
+            "cptra_toml_lms_enable": "0"
         },
         {
             "mode": "ecdsa384-lms",
@@ -934,8 +937,8 @@ python do_deploy() {
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
-            "caliptra_manifest_config": "ast2700a1-default-ecc-lms-manifest.toml",
-            "caliptra_manifest_config_rtos": "ast2700a1-rtos-ecc-lms-manifest.toml"
+            "cptra_toml_ecc_enable": "1",
+            "cptra_toml_lms_enable": "1"
         }
     ]
 
@@ -947,8 +950,8 @@ python do_deploy() {
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
-            "caliptra_manifest_config": "ast2700-default-ecc-manifest.toml",
-            "caliptra_manifest_config_rtos": "ast2700-rtos-ecc-manifest.toml"
+            "cptra_toml_ecc_enable": "1",
+            "cptra_toml_lms_enable": "0"
         },
         {
             "mode": "ecdsa384-lms",
@@ -957,8 +960,8 @@ python do_deploy() {
             "cot_kernel_algo": "ecdsa384",
             "cot_kernel_hash": "sha384",
             "cot_uboot_sign_key_name": "test_bl3_ecdsa_secp384r1",
-            "caliptra_manifest_config": "ast2700-default-ecc-lms-manifest.toml",
-            "caliptra_manifest_config_rtos": "ast2700-rtos-ecc-lms-manifest.toml"
+            "cptra_toml_ecc_enable": "1",
+            "cptra_toml_lms_enable": "1"
         }
     ]
 
@@ -988,11 +991,8 @@ python do_deploy() {
         print("Start %s image..." % gen_img)
         d.setVar('GEN_IMAGE_MODE', gen_img)
         d.setVar('OTPTOOL_JSON', sec_img["otptool_json"])
-
-        if aspeed_rtos == "yes":
-            d.setVar('CALIPTRA_MANIFEST_CONFIG', sec_img["caliptra_manifest_config_rtos"])
-        else:
-            d.setVar('CALIPTRA_MANIFEST_CONFIG', sec_img["caliptra_manifest_config"])
+        d.setVar('CPTRA_TOML_ECC_ENABLE', sec_img["cptra_toml_ecc_enable"])
+        d.setVar('CPTRA_TOML_LMS_ENABLE', sec_img["cptra_toml_lms_enable"])
 
         bb.build.exec_func("install_unsigned_image", d)
         kernel_its = os.path.join(d.getVar('S', True), gen_img, d.getVar('KERNEL_FITIMAGE_ITS_NAME', True))
@@ -1011,6 +1011,8 @@ python do_deploy() {
 
         print("Make kernel fitimage and sign")
         bb.build.exec_func("make_kernel_fitimage_and_sign", d)
+        print("Make caliptra manifest config")
+        bb.build.exec_func("make_caliptra_manifest_config", d)
         print("Make caliptra manifest image and sign")
         bb.build.exec_func("make_caliptra_manifest_image_and_sign", d)
         print("Make otp image")
