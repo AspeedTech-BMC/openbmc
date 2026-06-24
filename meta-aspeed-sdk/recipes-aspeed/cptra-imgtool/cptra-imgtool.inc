@@ -9,7 +9,6 @@ SRC_URI = "git://gerrit.aspeed.com:29418/cptra_imgtool;protocol=ssh;branch=${BRA
 SRCREV = "${AUTOREV}"
 
 DEPENDS += "caliptra-mcu-sw"
-RDEPENDS:${PN} += "caliptra-mcu-sw"
 
 inherit cargo
 

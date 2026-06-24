@@ -52,6 +52,5 @@ CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2705-soc-manifest.bin"
 
 PREFERRED_VERSION_cptra-imgtool = "2x"
 PREFERRED_VERSION_cptra-imgtool-native = "2x"
-PREFERRED_VERSION_caliptra-mcu-sw = "2x"
 PREFERRED_VERSION_caliptra-mcu-sw-native = "2x"
 PREFERRED_VERSION_aspeed-image-manifest = "2x"

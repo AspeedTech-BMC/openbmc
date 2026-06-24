@@ -58,7 +58,6 @@ do_compile[depends] += " \
     trusted-firmware-a:do_deploy \
     virtual/bootloader:do_deploy \
     bmc-pb:do_deploy \
-    caliptra-mcu-sw:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
     "

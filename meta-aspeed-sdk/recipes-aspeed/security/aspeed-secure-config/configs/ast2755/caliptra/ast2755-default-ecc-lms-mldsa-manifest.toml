@@ -42,10 +42,10 @@ mldsa_priv_key = "own-man-mldsa-priv-key.bin"
 
 [image_runtime_list]
 caliptra_file = "caliptra-fw.bin"
-mcu_file = "ssmcu-runtime-ast2755.bin"
+mcu_file = "ssmcu-runtime.bin"
 
 [[image_metadata_list]]
-file = "ssmcu-runtime-ast2755.bin"
+file = "ssmcu-runtime.bin"
 source = 1
 fw_id = 0x0002
 ignore_auth_check = false
