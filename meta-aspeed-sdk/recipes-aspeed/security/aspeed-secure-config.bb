@@ -27,7 +27,7 @@ do_install() {
     install -d ${D}${datadir}/aspeed-secure-config/ast2700
     install -d ${D}${datadir}/aspeed-secure-config/ast2700/otp
     install -d ${D}${datadir}/aspeed-secure-config/ast2700/keys
-    install -d ${D}${datadir}/aspeed-secure-config/ast2755/caliptra
+    install -d ${D}${datadir}/aspeed-secure-config/ast2755
     install -d ${D}${datadir}/aspeed-secure-config/ast2755/keys
 
     install -m 0755 ${S}/configs/*.sh \
@@ -44,8 +44,6 @@ do_install() {
         ${D}${datadir}/aspeed-secure-config/ast2700/otp
     install -m 0644 ${S}/keys/ast2755/* \
         ${D}${datadir}/aspeed-secure-config/ast2755/keys
-    install -m 0644 ${S}/configs/ast2755/caliptra/* \
-        ${D}${datadir}/aspeed-secure-config/ast2755/caliptra
 }
 
 BBCLASSEXTEND = "native"
