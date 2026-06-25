@@ -85,7 +85,7 @@ PREFERRED_VERSION_cptra-imgtool-native = "1x"
 PREFERRED_VERSION_caliptra-mcu-sw = "1x"
 PREFERRED_VERSION_caliptra-mcu-sw-native = "1x"
 PREFERRED_VERSION_aspeed-image-manifest = "1x"
-PREFERRED_VERSION_aspeed-manifest-conf = "1x"
+PREFERRED_VERSION_aspeed-manifest-config = "1x"
 PREFERRED_VERSION_aspeed-image-gen-secureboot = "1x"
 
 QB_SYSTEM_NAME = "qemu-system-aarch64"
