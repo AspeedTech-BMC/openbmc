@@ -11,7 +11,7 @@ do_install[noexec] = "1"
 
 inherit deploy
 
-DEPENDS += "cptra-imgtool-native aspeed-secure-config-native aspeed-manifest-config"
+DEPENDS += "cptra-imgtool-native aspeed-secure-config-native"
 
 CALIPTRA_MANIFEST_AUTH_FLASH_EXTRA_COMMAND ?= ""
 CALIPTRA_MANIFEST_AUTH_MAN_ENABLE ?= "1"
@@ -63,6 +63,7 @@ do_compile[depends] += " \
     virtual/bootloader:do_deploy \
     virtual/bootmcu:do_deploy \
     bmc-pb:do_deploy \
+    aspeed-manifest-config:do_deploy \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-irot', 'obmc-phosphor-image:do_image_complete', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-ssp', 'virtual/ssp:do_deploy', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'ast-tsp', 'virtual/tsp:do_deploy', '', d)} \
