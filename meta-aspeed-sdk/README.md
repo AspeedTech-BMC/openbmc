@@ -44,17 +44,17 @@ ast2600-emmc
 ast2600-emmc-612
 ast2600-emmc-tee
 ast2600-emmc-tee-612
-ast2700-default
-ast2700-default-612
-ast2700-default-66
-ast2700-default-ncsi
-ast2700-default-raw
-ast2700-rtos
-ast2700-irot
-ast2700-emmc
-ast2700-ufs
-ast2700-abr
-ast2700-dcscm
+ast2700-gp-default
+ast2700-gp-default-612
+ast2700-gp-default-66
+ast2700-gp-default-ncsi
+ast2700-gp-default-raw
+ast2700-gp-rtos
+ast2700-gp-irot
+ast2700-gp-emmc
+ast2700-gp-ufs
+ast2700-gp-abr
+ast2700-gp-dcscm
 ast2700-a1
 ast2700-a1-612
 ast2700-a1-66
@@ -94,6 +94,8 @@ ast2705-a0-default
    - OPTEE-OS is enabled by default.
    - Trusted-firmware-a is enabled by default and supports only BL31.
    - Machines with the "-a1" postfix indicate support for A1 silicon revision.
+   - Machine names containing `gp` correspond to chips marked with `GP`.
+   - Machine names without `gp` correspond to chips marked with `GPB`.
 
 - AST2700
 
