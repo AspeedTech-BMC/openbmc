@@ -1,4 +1,5 @@
-MACHINE ??= "ast2700-gp-dcscm"
+MACHINE ??= "ast2700-dcscm"
+#MACHINE ??= "ast2700-gp-dcscm"
 #MACHINE ??= "ast2700-a1-dcscm"
 
 DISTRO ?= "openbmc-phosphor"

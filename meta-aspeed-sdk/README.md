@@ -44,6 +44,17 @@ ast2600-emmc
 ast2600-emmc-612
 ast2600-emmc-tee
 ast2600-emmc-tee-612
+ast2700-default
+ast2700-default-612
+ast2700-default-66
+ast2700-default-ncsi
+ast2700-default-raw
+ast2700-rtos
+ast2700-irot
+ast2700-emmc
+ast2700-ufs
+ast2700-abr
+ast2700-dcscm
 ast2700-gp-default
 ast2700-gp-default-612
 ast2700-gp-default-66
