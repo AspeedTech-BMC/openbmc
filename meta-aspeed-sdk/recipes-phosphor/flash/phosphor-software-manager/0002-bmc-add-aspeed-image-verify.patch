@@ -1,6 +1,6 @@
-From 18dd65768aefe799798d5dfaeecbded433c5ab72 Mon Sep 17 00:00:00 2001
+From 005aa1d6aaf6dcab1d0fff9a91bacf5383676ef0 Mon Sep 17 00:00:00 2001
 From: Vince Chang <vince_chang@aspeedtech.com>
-Date: Mon, 15 Jun 2026 00:00:00 +0800
+Date: Fri, 17 Jul 2026 11:58:27 -0600
 Subject: [PATCH] bmc: add Aspeed image verification
 
 Add a new meson feature option 'aspeed-verify' that, when enabled,
@@ -15,51 +15,42 @@ Upstream-Status: Inappropriate [ASPEED-specific feature]
 
 Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
- bmc/activation.cpp | 96 ++++++++++++++++++++++++++++++++++++++++++++++
- bmc/activation.hpp |  6 +++
- bmc/meson.build    |  1 +
- meson.options      |  7 ++++
- 4 files changed, 110 insertions(+)
+ bmc/image_manager.cpp | 98 +++++++++++++++++++++++++++++++++++++++++++
+ bmc/meson.build       |  1 +
+ meson.options         |  7 ++++
+ 3 files changed, 106 insertions(+)
 
-diff --git a/bmc/activation.cpp b/bmc/activation.cpp
-index 11bc8ff..16f1f9d 100644
---- a/bmc/activation.cpp
-+++ b/bmc/activation.cpp
-@@ -36,6 +36,11 @@ using InternalFailure =
- namespace control = sdbusplus::server::xyz::openbmc_project::control;
- #endif
+diff --git a/bmc/image_manager.cpp b/bmc/image_manager.cpp
+index a7687c6..5d8cc23 100644
+--- a/bmc/image_manager.cpp
++++ b/bmc/image_manager.cpp
+@@ -14,6 +14,7 @@
+ #include <phosphor-logging/elog-errors.hpp>
+ #include <phosphor-logging/elog.hpp>
+ #include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/bus/match.hpp>
+ #include <xyz/openbmc_project/Software/Image/error.hpp>
  
+ #include <algorithm>
+@@ -40,6 +41,12 @@ using UnTarFail = Software::image::UnTarFailure;
+ using InternalFail = Software::image::InternalFailure;
+ using ImageFail = Software::image::ImageFailure;
+ namespace fs = std::filesystem;
++namespace sdbusRule = sdbusplus::bus::match::rules;
++
 +#ifdef ASPEED_VERIFY
 +constexpr auto aspeedImageVerifyService = "aspeed-image-verify@";
 +constexpr uint64_t aspeedVerifyTimeout = 30 * 1000 * 1000;
 +#endif
-+
- void Activation::subscribeToSystemdSignals()
+ 
+ struct RemovablePath
  {
-     auto method = this->bus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
-@@ -143,6 +148,16 @@ auto Activation::activation(Activations value) -> Activations
- 
-         activationProgress->progress(10);
- 
-+#ifdef ASPEED_VERIFY
-+        if (!verifyAspeedImage())
-+        {
-+            activationBlocksTransition.reset(nullptr);
-+            activationProgress.reset(nullptr);
-+            return softwareServer::Activation::activation(
-+                softwareServer::Activation::Activations::Failed);
-+        }
-+#endif
-+
-         parent.freeSpace(*this);
- 
-         // Enable systemd signals
-@@ -339,6 +354,87 @@ bool Activation::verifySignature(const fs::path& imageDir,
+@@ -77,6 +84,87 @@ std::vector<std::string> getSoftwareObjects(sdbusplus::bus_t& bus)
+     return paths;
  }
- #endif
  
 +#ifdef ASPEED_VERIFY
-+bool Activation::verifyAspeedImage()
++bool verifyAspeedImage(const std::string& versionId)
 +{
 +    const std::string serviceFile =
 +        std::string(aspeedImageVerifyService) + versionId + ".service";
@@ -139,26 +130,26 @@ index 11bc8ff..16f1f9d 100644
 +}
 +#endif
 +
- void ActivationBlocksTransition::enableRebootGuard()
- {
-     info("BMC image activating - BMC reboots are disabled.");
-diff --git a/bmc/activation.hpp b/bmc/activation.hpp
-index 2386bd2..e1041e7 100644
---- a/bmc/activation.hpp
-+++ b/bmc/activation.hpp
-@@ -368,6 +368,12 @@ class Activation : public ActivationInherit, public Flash
-     /** @brief Called when image verification fails. */
-     void onVerifyFailed();
- #endif
-+
-+#ifdef ASPEED_VERIFY
-+  private:
-+    /** @brief Verify the ASPEED BMC image. */
-+    bool verifyAspeedImage();
-+#endif
- };
+ } // namespace
  
- } // namespace updater
+ int Manager::processImage(const std::string& tarFilePath)
+@@ -217,6 +305,16 @@ int Manager::processImage(const std::string& tarFilePath)
+         std::find(allSoftwareObjs.begin(), allSoftwareObjs.end(), objPath);
+     if (versions.find(id) == versions.end() && it == allSoftwareObjs.end())
+     {
++#ifdef ASPEED_VERIFY
++        if (!verifyAspeedImage(tmpDirPath.filename().string()))
++        {
++            report<ImageFailure>(
++                ImageFail::FAIL("Aspeed image verification failed"),
++                ImageFail::PATH(tmpDirPath.c_str()));
++            return -1;
++        }
++#endif
++
+         // Rename the temp dir to image dir
+         fs::rename(tmpDirPath, imageDirPath, ec);
+         // Clear the path, so it does not attempt to remove a non-existing path
 diff --git a/bmc/meson.build b/bmc/meson.build
 index 71ac0b4..e72f813 100644
 --- a/bmc/meson.build
