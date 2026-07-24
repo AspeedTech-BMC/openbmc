@@ -63,9 +63,6 @@ WARN_TO_ERROR_QA = "already-stripped compile-host-path install-host-path \
 WARN_QA:remove = "${WARN_TO_ERROR_QA}"
 ERROR_QA:append = " ${WARN_TO_ERROR_QA}"
 
-require conf/distro/include/no-static-libs.inc
-require conf/distro/include/yocto-uninative.inc
-
 DISTRO_NAME ?= "Phosphor OpenBMC (Phosphor OpenBMC Project Reference Distro)"
 TARGET_VENDOR = "-openbmc"
 
@@ -85,11 +82,15 @@ FILESYSTEM_PERMS_TABLES:remove = " \
         ${@bb.utils.contains("PHOSPHOR_VOLATILE_VARLOG", "1", "", "files/fs-perms-volatile-log.txt", d)} \
         "
 
-DISTRO_FEATURES_BACKFILL_CONSIDERED = " \
+DISTRO_FEATURES_OPTED_OUT = " \
         bluez5 \
         ldconfig \
         gobject-introspection-data \
+        multiarch \
         pulseaudio \
+        opengl \
+        wayland \
+        vulkan \
         "
 
 DISTRO_FEATURES_OBMC = " \
@@ -101,7 +102,7 @@ DISTRO_FEATURES_OBMC = " \
         obmc-phosphor-system-mgmt \
         "
 
-DISTRO_FEATURES_DEFAULT = " \
+DISTRO_FEATURES_DEFAULTS = " \
         avahi \
         ipv4 \
         ipv6 \
@@ -111,7 +112,7 @@ DISTRO_FEATURES_DEFAULT = " \
         "
 
 DISTRO_FEATURES += " \
-        ${DISTRO_FEATURES_DEFAULT} \
+        ${DISTRO_FEATURES_DEFAULTS} \
         ${DISTRO_FEATURES_OBMC} \
         "
 

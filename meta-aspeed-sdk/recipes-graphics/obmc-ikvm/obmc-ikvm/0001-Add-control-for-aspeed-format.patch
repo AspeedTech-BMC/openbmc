@@ -1,7 +1,7 @@
-From c5872e59d3029949b5aa00230779cabd9e8ec99f Mon Sep 17 00:00:00 2001
+From 7bc5285f9680ddde6c164b8bfa0bf30a5636375b Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 14:58:55 +0800
-Subject: [PATCH 1/4] Add control for aspeed format
+Subject: [PATCH] Add control for aspeed format
 
 Add '-m' to assign jpeg compression format
   0: standard jpeg, 1: aspeed jpeg
@@ -18,12 +18,12 @@ Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
  ikvm_args.hpp    |  7 +++++++
  ikvm_manager.cpp |  2 +-
  ikvm_server.cpp  | 26 ++++++++++++++++++++++++++
- ikvm_video.cpp   | 36 +++++++++++++++++++++++++++++++++---
+ ikvm_video.cpp   | 39 ++++++++++++++++++++++++++++++++++++---
  ikvm_video.hpp   | 10 +++++++++-
- 6 files changed, 85 insertions(+), 7 deletions(-)
+ 6 files changed, 88 insertions(+), 7 deletions(-)
 
 diff --git a/ikvm_args.cpp b/ikvm_args.cpp
-index d5e18dd..6164b4d 100644
+index d5e18dd..e4745cf 100644
 --- a/ikvm_args.cpp
 +++ b/ikvm_args.cpp
 @@ -8,12 +8,13 @@
@@ -38,7 +38,7 @@ index d5e18dd..6164b4d 100644
 +    const char* opts = "f:s:m:hk:p:u:v:c";
      struct option lopts[] = {
          {"frameRate", 1, nullptr, 'f'},   {"subsampling", 1, nullptr, 's'},
-+        {"format", 1, 0, 'm'},
++        {"format", 1, nullptr, 'm'},
          {"help", 0, nullptr, 'h'},        {"keyboard", 1, nullptr, 'k'},
          {"mouse", 1, nullptr, 'p'},       {"udcName", 1, nullptr, 'u'},
          {"videoDevice", 1, nullptr, 'v'}, {"calcCRC", 0, nullptr, 'c'},
@@ -101,19 +101,19 @@ index b283b87..ae6e984 100644
  {}
  
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index 9274a9b..36c57c1 100644
+index 18eb507..31b9549 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
 @@ -9,6 +9,8 @@
  #include <phosphor-logging/lg2.hpp>
  #include <xyz/openbmc_project/Common/error.hpp>
  
-+#define        rfbEncodingAspeed   18
++#define	rfbEncodingAspeed   18
 +
  namespace ikvm
  {
  
-@@ -95,6 +97,7 @@ void Server::run()
+@@ -115,6 +117,7 @@ void Server::run()
  void Server::sendFrame()
  {
      char* data = video.getData();
@@ -121,7 +121,7 @@ index 9274a9b..36c57c1 100644
      rfbClientIteratorPtr it;
      rfbClientPtr cl;
      int64_t frame_crc = -1;
-@@ -181,6 +184,29 @@ void Server::sendFrame()
+@@ -216,6 +219,29 @@ void Server::sendFrame()
                  rfbSendUpdateBuf(cl);
                  break;
  
@@ -152,7 +152,7 @@ index 9274a9b..36c57c1 100644
                  break;
          }
 diff --git a/ikvm_video.cpp b/ikvm_video.cpp
-index b2b10d8..ef3eb49 100644
+index 02c2dc9..7d971ce 100644
 --- a/ikvm_video.cpp
 +++ b/ikvm_video.cpp
 @@ -30,11 +30,26 @@ using namespace phosphor::logging;
@@ -163,7 +163,7 @@ index b2b10d8..ef3eb49 100644
 +Video::Video(const std::string& p, Input& input, int fr, int sub, int fmt) :
      resizeAfterOpen(false), timingsError(false), fd(-1), frameRate(fr),
      lastFrameIndex(-1), height(600), width(800), subSampling(sub), input(input),
-     path(p), pixelformat(V4L2_PIX_FMT_JPEG)
+     path(p)
 -{}
 +{
 +    switch (fmt)
@@ -184,15 +184,36 @@ index b2b10d8..ef3eb49 100644
  
  Video::~Video()
  {
-@@ -434,6 +449,20 @@ void Video::start()
+@@ -46,6 +61,10 @@ void Video::probePixelFormat()
+     int rc;
+     v4l2_format fmt;
+ 
++    // Skip to update format if format is assigned
++    if (pixelformat != V4L2_PIX_FMT_JPEG)
++	    return;
++
+     memset(&fmt, 0, sizeof(v4l2_format));
+     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+     fd = open(path.c_str(), O_RDWR);
+@@ -73,7 +92,8 @@ void Video::probePixelFormat()
+ 
+     if (pixelformat != V4L2_PIX_FMT_RGB24 && pixelformat != V4L2_PIX_FMT_JPEG &&
+         pixelformat != V4L2_PIX_FMT_RGB565 &&
+-        pixelformat != V4L2_PIX_FMT_HEXTILE)
++        pixelformat != V4L2_PIX_FMT_HEXTILE &&
++        pixelformat != V4L2_PIX_FMT_AJPG)
+     {
+         lg2::error("Pixel Format not supported {PIXELFORMAT}", "PIXELFORMAT",
+                    pixelformat);
+@@ -482,6 +502,19 @@ void Video::start()
                  CALLOUT_DEVICE_PATH(path.c_str()));
      }
  
-+    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;
++    fmt.fmt.pix.pixelformat = pixelformat;
 +    rc = ioctl(fd, VIDIOC_S_FMT, &fmt);
 +    if (rc < 0)
 +    {
-+        lg2::error("Failed to set video device format", {ERROR}", "ERROR",
++        lg2::error("Failed to set video device format {ERROR}", "ERROR",
 +                   strerror(errno));
 +        elog<ReadFailure>(
 +            xyz::openbmc_project::Common::Device::ReadFailure::CALLOUT_ERRNO(
@@ -201,22 +222,11 @@ index b2b10d8..ef3eb49 100644
 +                CALLOUT_DEVICE_PATH(path.c_str()));
 +    }
 +
-+
      memset(&sparm, 0, sizeof(v4l2_streamparm));
      sparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
      sparm.parm.capture.timeperframe.numerator = 1;
-@@ -459,7 +488,8 @@ void Video::start()
-     width = fmt.fmt.pix.width;
-     pixelformat = fmt.fmt.pix.pixelformat;
- 
--    if (pixelformat != V4L2_PIX_FMT_RGB24 && pixelformat != V4L2_PIX_FMT_JPEG)
-+    if (pixelformat != V4L2_PIX_FMT_RGB24 && pixelformat != V4L2_PIX_FMT_JPEG
-+        && pixelformat != V4L2_PIX_FMT_AJPG)
-     {
-         lg2::error("Pixel Format not supported {PIXELFORMAT}", "PIXELFORMAT",
-                    pixelformat);
 diff --git a/ikvm_video.hpp b/ikvm_video.hpp
-index ab95e5a..3d0b23e 100644
+index d5f2859..de84b04 100644
 --- a/ikvm_video.hpp
 +++ b/ikvm_video.hpp
 @@ -6,6 +6,14 @@
@@ -244,5 +254,5 @@ index ab95e5a..3d0b23e 100644
      Video(const Video&) = default;
      Video& operator=(const Video&) = delete;
 -- 
-2.43.0
+2.34.1
 

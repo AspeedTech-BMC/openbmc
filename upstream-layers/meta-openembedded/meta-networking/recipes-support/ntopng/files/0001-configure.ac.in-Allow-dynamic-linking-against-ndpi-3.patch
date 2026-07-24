@@ -1,0 +1,58 @@
+From a913b85f720f41bf7e5819c0dc4acc252467a8a4 Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Tue, 15 Feb 2022 14:25:07 -0800
+Subject: [PATCH] configure.ac.in: Allow dynamic linking against ndpi 3.0
+
+Linking statically is problematic since NDPI_LIBS is '-lndpi -lm'
+and when we use -Bstatic it also brings in -lm to use libm.a and on some
+architectures ( x86 ) which this does not work and results in missing symbols
+
+Fixes
+ipe-sysroot/usr/lib/libm.a(e_logf.o): in function `logf_ifunc_selector':
+/usr/src/debug/glibc/2.35-r0/git/math/../sysdeps/i386/i686/multiarch/ifunc-sse2.h:30: undefined reference to `_dl_x86_cpu_features'
+
+Upstream-Status: Submitted [https://github.com/ntop/ntopng/pull/6318]
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+---
+ configure.ac.in | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+--- a/configure.ac.in
++++ b/configure.ac.in
+@@ -235,8 +235,9 @@ AC_ARG_WITH(ndpi-includes,
+       NDPI_CUST_INC="-I$withval -I$withval/../lib/third_party/include"
+    ])
+ 
+-NDPI_INC=`echo $NDPI_CFLAGS | sed -e "s/[ ]*$//"`
+-NDPI_LIB=
++NDPI_INC="$NDPI_CFLAGS"
++NDPI_LIB="$NDPI_LIBS"
++
+ NDPI_LIB_DEP=
+ 
+ AS_VAR_IF(with_dynamic_ndpi, no, [
+@@ -267,11 +268,6 @@ AC_MSG_CHECKING(for nDPI source)
+       fi
+ ])
+ 
+-AS_VAR_IF(with_dynamic_ndpi, yes, [
+-      NDPI_LIB="-lndpi"
+-      NDPI_LIB_DEP=$NDPI_LIB
+-])
+-
+ if test ! -z "$NDPI_CUST_INC" ; then :
+   NDPI_INC=$NDPI_CUST_INC
+ fi
+@@ -280,12 +276,6 @@ if test ! -z "$NDPI_CUST_LIB" ; then :
+   NDPI_LIB=$NDPI_CUST_LIB
+ fi
+ 
+-if test -z "$NDPI_LIB" ; then :
+-  echo "Could not find nDPI"
+-  echo "Please do cd ..; git clone https://github.com/ntop/nDPI.git; cd nDPI; ./autogen.sh; ${MAKE}; cd ../ntopng"
+-  echo "and try again"
+-  exit 1
+-fi
+ dnl finish: nDPI handling
+ 
+ AC_ARG_WITH(json-c-static,

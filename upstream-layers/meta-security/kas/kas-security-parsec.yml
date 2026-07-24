@@ -1,0 +1,13 @@
+header:
+    version: 19
+    includes:
+        - kas-security-base.yml
+
+repos:
+  meta-security:
+    layers:
+      meta-parsec:
+
+local_conf_header:
+  meta-parsec: |
+    IMAGE_INSTALL:append = " parsec-service parsec-tool"

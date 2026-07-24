@@ -15,7 +15,6 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-arm/meta-arm \
   ##OEROOT##/meta-arm/meta-arm-toolchain \
   ##OEROOT##/meta-security \
-  ##OEROOT##/meta-security/meta-tpm \
   ##OEROOT##/meta-aspeed-sdk \
   ##OEROOT##/meta-aspeed-sdk/meta-ast2600-sdk \
   "

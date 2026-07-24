@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+
+header:
+  version: 14
+
+distro: poky
+
+defaults:
+  repos:
+    branch: master
+
+repos:
+  bitbake:
+    url: https://git.openembedded.org/bitbake
+    layers:
+      bitbake: disabled
+
+  core:
+    url: https://git.openembedded.org/openembedded-core
+    layers:
+      meta:
+
+  meta-yocto:
+    url: https://git.yoctoproject.org/meta-yocto
+    layers:
+      meta-poky:
+
+  meta-arm:
+    layers:
+      meta-arm:
+      meta-arm-bsp:
+      meta-arm-toolchain:
+
+env:
+  BB_LOGCONFIG: ""
+  BB_HASHSERVE: "auto"
+
+local_conf_header:
+  base: |
+    CONF_VERSION = "2"
+    BB_SERVER_TIMEOUT = "300"
+    INHERIT += "rm_work"
+  extrapackages: |
+    CORE_IMAGE_EXTRA_INSTALL += "perf"
+    CORE_IMAGE_EXTRA_INSTALL:append:aarch64 = " gator-daemon"
+
+machine: unset
+
+target:
+  - core-image-sato

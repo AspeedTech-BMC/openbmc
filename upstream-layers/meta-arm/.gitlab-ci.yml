@@ -1,0 +1,336 @@
+image: ${MIRROR_GHCR}/siemens/kas/kas:4.7
+
+variables:
+  # These are needed as the k8s executor doesn't respect the container
+  # entrypoint by default
+  FF_KUBERNETES_HONOR_ENTRYPOINT: 1
+  FF_USE_LEGACY_KUBERNETES_EXECUTION_STRATEGY: 0
+  # The default value for KUBERNETES_CPU_REQUEST
+  CPU_REQUEST: ""
+  # The default machine tag for the build jobs
+  DEFAULT_TAG: ""
+  # The directory to use as the persistent cache (the root for DL_DIR, SSTATE_DIR, etc)
+  CACHE_DIR: $CI_BUILDS_DIR/persist
+  # The container mirror to use
+  MIRROR_GHCR: ghcr.io
+  # The list of extra Kas fragments to be used when building
+  EXTRA_KAS_FILES: ""
+  # The NVD API key to use when fetching CVEs
+  NVDCVE_API_KEY: ""
+
+stages:
+  - prep
+  - build
+
+# Common job fragment to get a worker ready
+.setup:
+  tags:
+    - $DEFAULT_TAG
+  stage: build
+  interruptible: true
+  variables:
+    KUBERNETES_CPU_REQUEST: $CPU_REQUEST
+    KAS_WORK_DIR: $CI_PROJECT_DIR/work
+    KAS_BUILD_DIR: $KAS_WORK_DIR/build
+    # Set this in the environment to enable local repository caches
+    KAS_REPO_REF_DIR: ""
+    SSTATE_DIR: $CACHE_DIR/sstate
+    DL_DIR: $CACHE_DIR/downloads
+    BB_LOGCONFIG: $CI_PROJECT_DIR/ci/logging.yml
+    IMAGE_DIR: $KAS_BUILD_DIR/tmp/deploy/images
+  before_script:
+    - rm -rf $KAS_WORK_DIR
+    - mkdir --verbose --parents $KAS_WORK_DIR $KAS_REPO_REF_DIR $SSTATE_DIR $DL_DIR
+
+# Generalised fragment to do a Kas build
+.build:
+  extends: .setup
+  rules:
+    # Don't run MR pipelines
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    # Don't run pipelines for tags
+    - if: $CI_COMMIT_TAG
+      when: never
+    # Don't run if BUILD_ENABLE_REGEX is set, but the job doesn't match the regex
+    - if: '$BUILD_ENABLE_REGEX != null && $CI_JOB_NAME !~ $BUILD_ENABLE_REGEX'
+      when: never
+    # Allow the dev kernels to fail and not fail the overall build
+    - if: '$KERNEL == "linux-yocto-dev"'
+      allow_failure: true
+    # Catch all for everything else
+    - if: '$KERNEL != "linux-yocto-dev"'
+  script:
+    - KASFILES=$(./ci/jobs-to-kas "$CI_JOB_NAME" $EXTRA_KAS_FILES):lockfile.yml
+    - echo KASFILES=$KASFILES
+    - kas dump --update --force-checkout --resolve-refs --resolve-env $KASFILES
+    - kas build $KASFILES
+    - ./ci/check-warnings $KAS_BUILD_DIR/warnings.log
+    - kas shell ci/base.yml:lockfile.yml --command "$CI_PROJECT_DIR/ci/junit.sh $KAS_WORK_DIR/build"
+
+  artifacts:
+    name: "logs"
+    when: on_failure
+    expire_in: 1 week
+    paths:
+      - $KAS_BUILD_DIR/tmp*/work*/**/temp/log.do_*.*
+      - $KAS_BUILD_DIR/tmp*/work*/**/testimage/*
+    reports:
+      junit: $KAS_BUILD_DIR/tmp/log/oeqa/junit.xml
+
+#
+# Prep stage, update repositories once.
+# Set the CI variable CI_CLEAN_REPOS=1 to refetch the respositories from scratch
+#
+update-repos:
+  extends: .setup
+  stage: prep
+  allow_failure:
+    exit_codes: 128
+  script:
+    - |
+      exit_code=0
+
+      # Dump the environment for reference
+      printenv
+
+      # Update the reference repositories if needed
+      if [ -n "$KAS_REPO_REF_DIR" ]; then
+        flock --verbose --timeout 60 $KAS_REPO_REF_DIR --command ./ci/update-repos || exit_code=$?
+        # Exit now if that failed, unless the status was 128 (fetch failed)
+        test $exit_code != 0 -a $exit_code != 128 && exit 1
+      fi
+
+      # Only generate if doesn't already exist, to allow feature branches to drop one in.
+      if test -f lockfile.yml; then
+        echo Using existing lockfile.yml
+      else
+        # Be sure that this is the complete list of layers being fetched
+        kas dump --lock --update ci/qemuarm64.yml:ci/meta-openembedded.yml:ci/clang.yml | tee lockfile.yml
+      fi
+      exit $exit_code
+  artifacts:
+    name: "lockfile"
+    when: always
+    paths:
+      - lockfile.yml
+
+#
+# Build stage, the actual build jobs
+#
+# Available options for building are (VIRT _must_ be last for ssh override)
+#  DISTRO: [poky, poky-altcfg, poky-tiny]
+#  KERNEL: [linux-yocto, linux-yocto-dev]
+#  TOOLCHAINS: [gcc, clang]
+#  TCLIBC: [glibc, musl]
+#  FIRMWARE: [u-boot, edk2]
+#  TS: [none, trusted-services]
+#  TESTING: testimage
+#  SECUREDEBUG: [none, secure-debug]
+
+# Validate layers are Yocto Project Compatible
+check-layers:
+  extends: .setup
+  script:
+    - kas shell --update --force-checkout ci/base.yml:ci/meta-openembedded.yml:lockfile.yml --command \
+      "yocto-check-layer-wrapper $CI_PROJECT_DIR/$LAYER --dependency $CI_PROJECT_DIR/meta-* $KAS_WORK_DIR/meta-openembedded/meta-oe --no-auto-dependency"
+  parallel:
+    matrix:
+      - LAYER: [meta-arm, meta-arm-bsp, meta-arm-toolchain]
+
+corstone1000-fvp:
+  extends: .build
+  parallel:
+    matrix:
+      - FIRMWARE: corstone1000-firmware-only
+        TESTING: [testimage, tftf]
+      - FIRMWARE: none
+        TESTING: testimage
+
+corstone1000-mps3:
+  extends: .build
+  parallel:
+    matrix:
+      - FIRMWARE: corstone1000-firmware-only
+        TESTING: [none, tftf]
+      - FIRMWARE: none
+        SECUREDEBUG: [none, secure-debug]
+
+documentation:
+  extends: .setup
+  script:
+    - |
+      # This can be removed when the kas container has python3-venv installed
+      sudo apt-get update && sudo apt-get install --yes python3-venv
+
+      python3 -m venv venv
+      . ./venv/bin/activate
+
+      pip3 install -r meta-arm-bsp/documentation/requirements.txt
+
+      for CONF in meta-*/documentation/*/conf.py ; do
+        echo Building $CONF...
+        SOURCE_DIR=$(dirname $CONF)
+        MACHINE=$(basename $SOURCE_DIR)
+        sphinx-build -vW $SOURCE_DIR build-docs/$MACHINE
+      done
+      test -d build-docs/
+  artifacts:
+    paths:
+      - build-docs/
+
+fvp-base:
+  extends: .build
+  parallel:
+    matrix:
+      - TS: [none, fvp-base-ts]
+        TESTING: testimage
+      - FIRMWARE: [u-boot, edk2]
+        TESTING: testimage
+      - LTS: lts-revisions
+        TESTING: testimage
+      - KERNEL: linux-yocto-dev
+        LATEST: latest-revisions
+        TESTING: testimage
+
+fvps:
+  extends: .build
+
+genericarm64:
+  extends: .build
+  parallel:
+    matrix:
+      - TOOLCHAINS: [gcc, clang]
+        TESTING: testimage
+      - KERNEL: linux-yocto-dev
+        TESTING: testimage
+
+juno:
+  extends: .build
+  parallel:
+    matrix:
+      - TOOLCHAINS: [gcc, clang]
+        FIRMWARE: [u-boot, edk2]
+
+# What percentage of machines in the layer do we build
+machine-coverage:
+  extends: .setup
+  script:
+    - ./ci/check-machine-coverage
+  coverage: '/Coverage: \d+/'
+
+metrics:
+  extends: .setup
+  artifacts:
+    reports:
+      metrics: metrics.txt
+  script:
+    - kas shell --update --force-checkout ci/base.yml --command \
+      "$CI_PROJECT_DIR/ci/patchreview $CI_PROJECT_DIR/meta-* --verbose --metrics $CI_PROJECT_DIR/metrics.txt"
+
+musca-b1:
+  extends: .build
+
+musca-s1:
+  extends: .build
+
+pending-updates:
+  extends: .setup
+  # Only run this job for the default branch (master), or if forced with
+  # BUILD_FORCE_PENDING_UPDATES.
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $BUILD_FORCE_PENDING_UPDATES != null
+  artifacts:
+    paths:
+      - update-report
+  script:
+    - rm -fr update-report
+    # This configuration has all of the layers we need enabled
+    - kas shell --update --force-checkout ci/qemuarm64.yml:ci/meta-openembedded.yml:ci/meta-secure-core.yml:lockfile.yml --command \
+      "$CI_PROJECT_DIR/scripts/machine-summary.py -t report -o $CI_PROJECT_DIR/update-report $($CI_PROJECT_DIR/ci/listmachines.py meta-arm meta-arm-bsp)"
+
+qemuarm64-secureboot:
+  extends: .build
+  parallel:
+    matrix:
+      - TOOLCHAINS: [gcc, clang]
+        FIRMWARE: [u-boot, edk2]
+        TCLIBC: [glibc, musl]
+        TS: [none, qemuarm64-secureboot-ts]
+        TESTING: testimage
+      - UEFISB: [none, uefi-secureboot]
+        TESTING: testimage
+      - KERNEL: linux-yocto-dev
+        TESTING: testimage
+
+qemuarm64:
+  extends: .build
+  parallel:
+    matrix:
+      - DISTRO: poky-tiny
+        FIRMWARE: [u-boot, edk2]
+        TESTING: testimage
+
+qemuarm-secureboot:
+  extends: .build
+  parallel:
+    matrix:
+      - TOOLCHAINS: [gcc, clang]
+        TCLIBC: [glibc, musl]
+        TESTING: testimage
+      - DISTRO: [poky, poky-altcfg]
+        TESTING: testimage
+      - KERNEL: linux-yocto-dev
+        TESTING: testimage
+
+qemuarm:
+  extends: .build
+  parallel:
+    matrix:
+      - TOOLCHAINS: [gcc, clang]
+        TESTING: testimage
+      - DISTRO: poky-tiny
+        TESTING: testimage
+
+qemuarmv5:
+  extends: .build
+  parallel:
+    matrix:
+      - DISTRO: poky
+        KERNEL: [linux-yocto, linux-yocto-dev]
+        TESTING: testimage
+      - DISTRO: poky-tiny
+        TESTING: testimage
+
+rdn2:
+  extends: .build
+  parallel:
+    matrix:
+      - TESTING: testimage
+
+rdv2:
+  extends: .build
+  parallel:
+    matrix:
+      - TESTING: testimage
+
+sbsa-ref:
+  extends: .build
+  parallel:
+    matrix:
+      - TOOLCHAINS: [gcc, clang]
+        TESTING: testimage
+      - DISTRO: poky-altcfg
+        TESTING: testimage
+      - KERNEL: linux-yocto-dev
+        TESTING: testimage
+
+selftest:
+  extends: .setup
+  script:
+    - KASFILES=./ci/qemuarm64.yml:./ci/selftest.yml:lockfile.yml
+    - kas shell --update --force-checkout $KASFILES -c 'oe-selftest --num-processes 2 --select-tag meta-arm --run-all-tests'
+
+toolchains:
+  extends: .build

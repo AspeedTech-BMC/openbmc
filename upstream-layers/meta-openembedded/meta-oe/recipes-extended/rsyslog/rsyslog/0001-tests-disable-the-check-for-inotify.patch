@@ -1,0 +1,43 @@
+From 1b02236e84aaed5d80d4a67afb418eadb687d65f Mon Sep 17 00:00:00 2001
+From: Yi Fan Yu <yifan.yu@windriver.com>
+Date: Sat, 27 Mar 2021 19:18:25 -0400
+Subject: [PATCH] tests: disable the check for inotify
+
+We don't need to check inotify.h.
+Assume it is present since it is part of the linux kernel
+since 2.6.13 [1].
+
+[1](https://kernelnewbies.org/Linux_2_6_13)
+
+(it would require installing the libc headers otherwise,
+ for the test  to detect /usr/include/sys/inotify.h.)
+
+Upstream-Status: Inappropriate [OE-specific]
+
+Signed-off-by: Yi Fan Yu <yifan.yu@windriver.com>
+---
+ tests/diag.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tests/diag.sh b/tests/diag.sh
+index a9c2a75..0b017c5 100755
+--- a/tests/diag.sh
++++ b/tests/diag.sh
+@@ -3683,7 +3683,7 @@
+ 		fi
+ 		;;
+ 	'check-inotify') # Check for inotify/fen support
+-		if [ -n "$(find /usr/include -name 'inotify.h' -print -quit)" ]; then
++		if true; then
+ 			echo [inotify mode]
+ 		elif [ -n "$(find /usr/include/sys/ -name 'port.h' -print -quit)" ]; then
+ 			grep -qF "PORT_SOURCE_FILE" < /usr/include/sys/port.h
+@@ -3698,7 +3698,7 @@
+ 		fi
+ 		;;
+ 	'check-inotify-only') # Check for ONLY inotify support
+-		if [ -n "$(find /usr/include -name 'inotify.h' -print -quit)" ]; then
++		if true; then
+ 			echo [inotify mode]
+ 		else
+ 			echo [inotify not supported, skipping...]

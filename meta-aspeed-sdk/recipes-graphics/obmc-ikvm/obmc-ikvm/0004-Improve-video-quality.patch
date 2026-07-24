@@ -1,4 +1,4 @@
-From c5a6aa5f9f189c18b1204062b11b9f40cda8c412 Mon Sep 17 00:00:00 2001
+From 2c0236685072f90eabf62130e5b0491080800fff Mon Sep 17 00:00:00 2001
 From: Jammy Huang <jammy_huang@aspeedtech.com>
 Date: Thu, 12 Jun 2025 10:13:41 +0800
 Subject: [PATCH 4/4] Improve video quality
@@ -15,10 +15,10 @@ Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
  3 files changed, 22 insertions(+), 2 deletions(-)
 
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index 5f102f2..d180d29 100644
+index 9e39f16..ef29a38 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
-@@ -187,7 +187,7 @@ void Server::sendFrame()
+@@ -222,7 +222,7 @@ void Server::sendFrame()
                  cl->updateBuf[cl->ublen++] = (char)(frameCount >> 8 & 0xff);
                  cl->updateBuf[cl->ublen++] = (char)(frameCount & 0xff);
                  cl->updateBuf[cl->ublen++] = (char)(video.getSubsampling());
@@ -28,7 +28,7 @@ index 5f102f2..d180d29 100644
                  rfbSendCompressedDataTight(cl, data, video.getFrameSize(i));
                  if (cl->enableLastRectEncoding)
 diff --git a/ikvm_video.cpp b/ikvm_video.cpp
-index e96247f..8e10a4a 100644
+index 44b7106..01f2d96 100644
 --- a/ikvm_video.cpp
 +++ b/ikvm_video.cpp
 @@ -32,7 +32,7 @@ using namespace sdbusplus::xyz::openbmc_project::Common::Device::Error;
@@ -40,7 +40,7 @@ index e96247f..8e10a4a 100644
      path(p), pixelformat(V4L2_PIX_FMT_JPEG), pixelformatflags(0)
  {
      switch (fmt)
-@@ -516,6 +516,15 @@ void Video::start()
+@@ -566,6 +566,15 @@ void Video::start()
                       strerror(errno));
      }
  
@@ -57,10 +57,10 @@ index e96247f..8e10a4a 100644
      ctrl.value = subSampling ? V4L2_JPEG_CHROMA_SUBSAMPLING_420
                               : V4L2_JPEG_CHROMA_SUBSAMPLING_444;
 diff --git a/ikvm_video.hpp b/ikvm_video.hpp
-index e38a2d3..1aea7d4 100644
+index e7d6594..2cd195b 100644
 --- a/ikvm_video.hpp
 +++ b/ikvm_video.hpp
-@@ -161,6 +161,15 @@ class Video
+@@ -166,6 +166,15 @@ class Video
      {
          subSampling = _sub;
      }
@@ -76,7 +76,7 @@ index e38a2d3..1aea7d4 100644
  
      /*
       * @brief Gets the bounding-box of the partial-jpeg
-@@ -223,6 +232,8 @@ class Video
+@@ -228,6 +237,8 @@ class Video
      size_t width;
      /* @brief jpeg's subsampling, 1:420/0:444 */
      int subSampling;

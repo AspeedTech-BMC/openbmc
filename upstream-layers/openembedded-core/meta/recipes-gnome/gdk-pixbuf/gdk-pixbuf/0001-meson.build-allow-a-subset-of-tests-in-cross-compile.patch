@@ -1,0 +1,72 @@
+From 3b6aab24f6844b7d5b3e166bc910bffbcee1f6f5 Mon Sep 17 00:00:00 2001
+From: Alexander Kanavin <alex@linutronix.de>
+Date: Thu, 26 Jan 2023 20:29:46 +0100
+Subject: [PATCH] meson.build: allow (a subset of) tests in cross compile
+ settings
+
+There is no need to completely disable tests: most of them
+do not require running target executables at build time,
+and so can be built and installed.
+
+This requires inserting a couple of specific guards around
+items that do require running target executables.
+
+Upstream-Status: Submitted [https://gitlab.gnome.org/GNOME/gdk-pixbuf/-/merge_requests/150]
+Signed-off-by: Alexander Kanavin <alex@linutronix.de>
+
+rebase to version 2.44.5
+Signed-off-by: Changqing Li <changqing.li@windriver.com>
+---
+ meson.build       |  6 +++---
+ tests/meson.build | 10 ++++++----
+ 2 files changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index f478326..464ae1d 100644
+--- a/meson.build
++++ b/meson.build
+@@ -428,10 +428,10 @@ subdir('gdk-pixbuf')
+ # i18n
+ subdir('po')
+ 
++if get_option('tests')
++  subdir('tests')
++endif
+ if not meson.is_cross_build()
+-  if get_option('tests')
+-    subdir('tests')
+-  endif
+   thumbnailer_opt = get_option('thumbnailer').disable_auto_if(glycin_dep.found())
+   if not thumbnailer_opt.disabled()
+     subdir('thumbnailer')
+diff --git a/tests/meson.build b/tests/meson.build
+index 9b96fdc..9c3ed7d 100644
+--- a/tests/meson.build
++++ b/tests/meson.build
+@@ -4,7 +4,7 @@
+ # gdk-pixbuf-pixdata from build directory because it needs all DLL locations in
+ # $PATH. Ideally we should use gnome.compile_resources() and let Meson deal with
+ # this problem: See https://github.com/mesonbuild/meson/issues/8266.
+-if (enabled_loaders.contains('png') or enabled_loaders.contains('glycin')) and host_system != 'windows'
++if (enabled_loaders.contains('png') or enabled_loaders.contains('glycin')) and host_system != 'windows' and not meson.is_cross_build()
+   # Resources; we cannot use gnome.compile_resources() here, because we need to
+   # override the environment in order to use the utilities we just built instead
+   # of the system ones
+@@ -159,9 +159,11 @@ endif
+ test_deps = gdk_pixbuf_deps + [ gdkpixbuf_dep, ]
+ test_args = [ '-k' ]
+ test_env = environment()
+-test_env.set('G_TEST_SRCDIR', meson.current_source_dir())
+-test_env.set('G_TEST_BUILDDIR', meson.current_build_dir())
+-test_env.set('GDK_PIXBUF_MODULE_FILE', loaders_cache.full_path())
++if not meson.is_cross_build()
++  test_env.set('G_TEST_SRCDIR', meson.current_source_dir())
++  test_env.set('G_TEST_BUILDDIR', meson.current_build_dir())
++  test_env.set('GDK_PIXBUF_MODULE_FILE', loaders_cache.full_path())
++endif
+ 
+ foreach test_name, test_data: installed_tests
+   test_sources = [ test_name + '.c', 'test-common.c' ]
+-- 
+2.34.1
+

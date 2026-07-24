@@ -143,14 +143,18 @@ OBMC_DBUS_IFACE_ROOT ?= "xyz.openbmc_project"
 # phosphor-ipmi-fru-whitelist-native recipe.
 VIRTUAL-RUNTIME_phosphor-ipmi-providers ?= "phosphor-ipmi-fru"
 
-# Set security headers on builds
-require conf/distro/include/security_flags.inc
-
 # obmc-libobmc-intf doesn't compile with security flags enabled
 SECURITY_CFLAGS:pn-obmc-libobmc-intf = ""
 
 # We generally want to enable LTO with meson
 EXTRA_OEMESON:append:class-target = " -Db_lto=true"
+# But, GCC possibly injects build strings when using LTO unless
+# DEBUG_PREFIX_MAP flags are given, resulting in build QA failures:
+#   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=109805
+# See also:
+#   https://lore.kernel.org/openembedded-core/20260325113951.1278864-1-patrick@stwcx.xyz/
+TARGET_LDFLAGS:append:class-target = " ${DEBUG_PREFIX_MAP}"
+
 
 # Set the root password to '0penBmc'
 # Override this in your local.conf

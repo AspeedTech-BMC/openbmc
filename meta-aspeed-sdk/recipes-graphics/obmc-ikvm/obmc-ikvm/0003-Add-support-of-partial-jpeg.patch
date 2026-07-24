@@ -1,4 +1,4 @@
-From 74f90a5cfcd87bf9895759805f3af97556240eb3 Mon Sep 17 00:00:00 2001
+From 97055d98c57002d9c7f77cf99694d5daff952127 Mon Sep 17 00:00:00 2001
 From: Troy Lee <troy_lee@aspeedtech.com>
 Date: Thu, 25 May 2023 15:34:35 +0800
 Subject: [PATCH 3/4] Add support of partial jpeg
@@ -17,9 +17,9 @@ Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---
  ikvm_args.cpp   |  2 +-
  ikvm_server.cpp |  9 +++++++--
- ikvm_video.cpp  | 26 ++++++++++++++++++++++----
+ ikvm_video.cpp  | 24 +++++++++++++++++++++---
  ikvm_video.hpp  | 23 +++++++++++++++++++++++
- 4 files changed, 53 insertions(+), 7 deletions(-)
+ 4 files changed, 52 insertions(+), 6 deletions(-)
 
 diff --git a/ikvm_args.cpp b/ikvm_args.cpp
 index d702c15..1dfd1e7 100644
@@ -35,10 +35,10 @@ index d702c15..1dfd1e7 100644
                  break;
              case 'h':
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index af24fa5..5f102f2 100644
+index 679dd74..9e39f16 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
-@@ -157,8 +157,13 @@ void Server::sendFrame()
+@@ -178,8 +178,13 @@ void Server::sendFrame()
                  cl->ublen = sz_rfbFramebufferUpdateMsg;
                  rfbSendUpdateBuf(cl);
                  cl->tightEncoding = rfbEncodingTight;
@@ -55,14 +55,14 @@ index af24fa5..5f102f2 100644
                  rfbSendCompressedDataTight(cl, data, video.getFrameSize(i));
                  if (cl->enableLastRectEncoding)
 diff --git a/ikvm_video.cpp b/ikvm_video.cpp
-index cf8fe0a..e96247f 100644
+index f8b2b94..44b7106 100644
 --- a/ikvm_video.cpp
 +++ b/ikvm_video.cpp
 @@ -33,17 +33,21 @@ using namespace sdbusplus::xyz::openbmc_project::Common::Device::Error;
  Video::Video(const std::string& p, Input& input, int fr, int sub, int fmt) :
      resizeAfterOpen(false), timingsError(false), fd(-1), frameRate(fr),
      height(600), width(800), subSampling(sub), input(input),
--    path(p), pixelformat(V4L2_PIX_FMT_JPEG)
+-    path(p)
 +    path(p), pixelformat(V4L2_PIX_FMT_JPEG), pixelformatflags(0)
  {
      switch (fmt)
@@ -83,7 +83,7 @@ index cf8fe0a..e96247f 100644
          case 0:
          default:
              pixelformat = V4L2_PIX_FMT_JPEG;
-@@ -82,6 +86,7 @@ void Video::getFrame()
+@@ -133,6 +137,7 @@ void Video::getFrame()
      v4l2_buffer buf;
      fd_set fds;
      timeval tv;
@@ -91,7 +91,7 @@ index cf8fe0a..e96247f 100644
  
      if (fd < 0)
      {
-@@ -124,6 +129,18 @@ void Video::getFrame()
+@@ -175,6 +180,18 @@ void Video::getFrame()
                  {
                      buffers[buf.index].payload = buf.bytesused;
                      buffers[buf.index].sequence = buf.sequence;
@@ -110,18 +110,16 @@ index cf8fe0a..e96247f 100644
                      buffersDone.push_back(buf.index);
                  }
                  else
-@@ -473,7 +490,8 @@ void Video::start()
-                 CALLOUT_DEVICE_PATH(path.c_str()));
+@@ -525,6 +542,7 @@ void Video::start()
      }
  
--    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;
-+    fmt.fmt.pix.pixelformat = pixelformat;
+     fmt.fmt.pix.pixelformat = pixelformat;
 +    fmt.fmt.pix.flags = pixelformatflags;
      rc = ioctl(fd, VIDIOC_S_FMT, &fmt);
      if (rc < 0)
      {
 diff --git a/ikvm_video.hpp b/ikvm_video.hpp
-index c7ad916..e38a2d3 100644
+index 1b7e63f..e7d6594 100644
 --- a/ikvm_video.hpp
 +++ b/ikvm_video.hpp
 @@ -6,6 +6,7 @@
@@ -132,7 +130,7 @@ index c7ad916..e38a2d3 100644
  
  #ifndef V4L2_PIX_FMT_AJPG
  #define V4L2_PIX_FMT_AJPG     v4l2_fourcc('A', 'J', 'P', 'G')
-@@ -125,6 +126,14 @@ class Video
+@@ -130,6 +131,14 @@ class Video
      {
          return pixelformat;
      }
@@ -147,7 +145,7 @@ index c7ad916..e38a2d3 100644
      /*
       * @brief Gets the width of the video frame
       *
-@@ -153,6 +162,17 @@ class Video
+@@ -158,6 +167,17 @@ class Video
          subSampling = _sub;
      }
  
@@ -163,9 +161,9 @@ index c7ad916..e38a2d3 100644
 +
 +
      /* @brief Number of bits per component of a pixel */
-     static const int bitsPerSample;
+     static int bitsPerSample;
      /* @brief Number of bytes of storage for a pixel */
-@@ -183,6 +203,7 @@ class Video
+@@ -188,6 +208,7 @@ class Video
          size_t payload;
          size_t size;
          uint32_t sequence;
@@ -173,7 +171,7 @@ index c7ad916..e38a2d3 100644
      };
  
      /*
-@@ -211,6 +232,8 @@ class Video
+@@ -216,6 +237,8 @@ class Video
  
      /* @brief Pixel Format  */
      uint32_t pixelformat;

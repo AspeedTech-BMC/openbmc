@@ -1,5 +1,9 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
+SRC_URI:append = " \
+    file://0001-Add-back-maximum-transfer-size-configuration.patch \
+"
+
 SRC_URI:append:ast-irot = " file://host_eid "
 
 PACKAGECONFIG:append:ast-irot = " fw-update-pkg-inotify "

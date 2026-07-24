@@ -100,6 +100,48 @@
         "Continue": true
     },
     {
+        "Name": "FM_P3V3_NIC_400G_FAULT_R_N",
+        "LineName": "FM_P3V3_NIC_400G_FAULT_R_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "vr-fault-deassert-log@FM_P3V3_NIC_400G_FAULT_R_N.service"
+            ],
+            "FALLING": [
+                "vr-fault-assert-log@FM_P3V3_NIC_400G_FAULT_R_N.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_P3V3_E1S_0_FAULT_R_N",
+        "LineName": "FM_P3V3_E1S_0_FAULT_R_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "vr-fault-deassert-log@FM_P3V3_E1S_0_FAULT_R_N.service"
+            ],
+            "FALLING": [
+                "vr-fault-assert-log@FM_P3V3_E1S_0_FAULT_R_N.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "E1S_0_P12V_ADC_R_ALERT",
+        "LineName": "E1S_0_P12V_ADC_R_ALERT",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "vr-fault-deassert-log@E1S_0_P12V_ADC_R_ALERT.service"
+            ],
+            "FALLING": [
+                "vr-fault-assert-log@E1S_0_P12V_ADC_R_ALERT.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
         "Name": "reset-button",
         "LineName": "reset-button",
         "EventMon": "BOTH",
@@ -123,7 +165,8 @@
             ],
             "FALLING": [
                 "assert-post-end.service",
-                "platform-host-ready.target"
+                "platform-host-ready.target",
+                "get-mmc-lastest-version.service"
             ]
         },
         "Continue": true
@@ -138,6 +181,86 @@
             ],
             "FALLING": [
                 "assert-rmc-main-power-enable.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_MODULE_PWRGD_1B",
+        "LineName": "FM_MODULE_PWRGD_1B",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "assert-module-power-good@1.service"
+            ],
+            "FALLING": [
+                "deassert-module-power-good@1.service"
+            ],
+            "INIT_HIGH": [
+                "assert-module-power-good@1.service"
+            ],
+            "INIT_LOW": [
+                "deassert-module-power-good@1.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_MODULE_PWRGD_2B",
+        "LineName": "FM_MODULE_PWRGD_2B",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "assert-module-power-good@3.service"
+            ],
+            "FALLING": [
+                "deassert-module-power-good@3.service"
+            ],
+            "INIT_HIGH": [
+                "assert-module-power-good@3.service"
+            ],
+            "INIT_LOW": [
+                "deassert-module-power-good@3.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_MODULE_PWRGD_3B",
+        "LineName": "FM_MODULE_PWRGD_3B",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "assert-module-power-good@2.service"
+            ],
+            "FALLING": [
+                "deassert-module-power-good@2.service"
+            ],
+            "INIT_HIGH": [
+                "assert-module-power-good@2.service"
+            ],
+            "INIT_LOW": [
+                "deassert-module-power-good@2.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "FM_MODULE_PWRGD_4B",
+        "LineName": "FM_MODULE_PWRGD_4B",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "assert-module-power-good@4.service"
+            ],
+            "FALLING": [
+                "deassert-module-power-good@4.service"
+            ],
+            "INIT_HIGH": [
+                "assert-module-power-good@4.service"
+            ],
+            "INIT_LOW": [
+                "deassert-module-power-good@4.service"
             ]
         },
         "Continue": true

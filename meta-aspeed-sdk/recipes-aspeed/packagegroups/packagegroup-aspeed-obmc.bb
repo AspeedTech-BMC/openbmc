@@ -44,7 +44,6 @@ RDEPENDS:${PN}-flash = " \
 
 SUMMARY:${PN}-system = "AspeedTech System"
 RDEPENDS:${PN}-system = " \
-    phosphor-hostlogger \
     phosphor-sel-logger \
     phosphor-post-code-manager \
     phosphor-host-postd \

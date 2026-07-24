@@ -3,6 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SYSTEMD_SERVICE:${PN}:append:ibm-enterprise = " system-vpd.service"
 SYSTEMD_SERVICE:${PN}:append:ibm-enterprise = " wait-vpd-parsers.service"
 SYSTEMD_SERVICE:${PN}:append:ibm-enterprise = " vpd-manager.service"
+SYSTEMD_SERVICE:${PN}:append:ibm-enterprise = " active-to-passive.service"
 PACKAGECONFIG:append:ibm-enterprise = " ibm_system"
 
 FILES:${PN}:append:ibm-enterprise = " ${datadir}/vpd/*.json"
@@ -23,11 +24,6 @@ do_install:append:mf-redundant-bmc() {
         install -d ${override_dir}
         install -m 0644 ${UNPACKDIR}/vpd-manager-rbmc-override.conf \
                 ${override_dir}/vpd-manager-rbmc-override.conf
-}
-
-do_install:append:witherspoon() {
-        DEST=${D}${inventory_envdir}
-        printf "\nEEPROM=/sys/devices/platform/ahb/ahb:apb/ahb:apb:bus@1e78a000/1e78a400.i2c/i2c-11/11-0051/eeprom" >> ${DEST}/inventory
 }
 
 pkg_postinst:${PN}:ibm-enterprise() {

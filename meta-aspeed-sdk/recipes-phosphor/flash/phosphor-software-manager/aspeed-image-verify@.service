@@ -1,0 +1,8 @@
+[Unit]
+Description=Verify Aspeed image for BMC update %I
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+Environment=IMG_UPLOAD_DIR=/tmp/images
+ExecStart=/usr/bin/aspeed-image-verify.sh %i

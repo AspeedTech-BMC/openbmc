@@ -1,0 +1,47 @@
+Subject: [PATCH] change sysconfig path to /etc/default
+
+OE uses /etc/default for service configuration, not /etc/sysconfig which
+is used by SUSE and RedHat based distributions.
+
+Change the files accordingly
+
+Upstream-Status: Inappropriate [OE specific]
+
+Signed-off-by: Claudius Heine <ch@denx.de>
+
+Update for 0.5.2
+Signed-off-by: Liu Yiding <liuyd.fnst@fujitsu.com>
+---
+ btrfsmaintenance-refresh.path    | 4 ++--
+ btrfsmaintenance-refresh.service | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/btrfsmaintenance-refresh.path b/btrfsmaintenance-refresh.path
+index d56ad11..f0b4132 100644
+--- a/btrfsmaintenance-refresh.path
++++ b/btrfsmaintenance-refresh.path
+@@ -1,8 +1,8 @@
+ [Unit]
+-Description=Watch /etc/sysconfig/btrfsmaintenance
++Description=Watch /etc/default/btrfsmaintenance
+ 
+ [Path]
+-PathChanged=/etc/sysconfig/btrfsmaintenance
++PathChanged=/etc/default/btrfsmaintenance
+ 
+ [Install]
+ WantedBy=multi-user.target
+diff --git a/btrfsmaintenance-refresh.service b/btrfsmaintenance-refresh.service
+index 19e51c0..223fca9 100644
+--- a/btrfsmaintenance-refresh.service
++++ b/btrfsmaintenance-refresh.service
+@@ -1,5 +1,5 @@
+ [Unit]
+-Description=Configure systemd timer schedule according to /etc/sysconfig/btrfsmaintenance
++Description=Configure systemd timer schedule according to /etc/default/btrfsmaintenance
+ Documentation="file:/usr/share/doc/btrfsmaintenance/README.man"
+ Documentation="file:/usr/share/doc/packages/btrfsmaintenance/README.man"
+ 
+-- 
+2.43.0
+

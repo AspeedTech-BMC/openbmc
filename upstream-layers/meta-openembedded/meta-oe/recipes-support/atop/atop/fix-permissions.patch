@@ -1,0 +1,73 @@
+From 3684fcf7679d5d5f7adc5a4a7e53f498aa0c45c2 Mon Sep 17 00:00:00 2001
+From: Kai Kang <kai.kang@windriver.com>
+Date: Wed, 6 Feb 2019 13:58:04 +0000
+Subject: [PATCH] Fix permissions
+
+Update permissions of executable files that remove setuid bit and make
+everyone could read.
+
+Upstream-Status: Inappropriate [embedded specific]
+Signed-off-by: Kai Kang <kai.kang@windriver.com>
+Signed-off-by: Tho Dat Nguyen <tho3.nguyen@lge.com>
+---
+ Makefile | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 3a73bd2..1388b65 100644
+--- a/Makefile
++++ b/Makefile
+@@ -86,7 +86,7 @@ install:	genericinstall
+ 		cp atopacct.service    $(DESTDIR)$(SYSDPATH)
+ 		chmod 0644             $(DESTDIR)$(SYSDPATH)/atopacct.service
+ 		cp atop-pm.sh          $(DESTDIR)$(PMPATHD)
+-		chmod 0711             $(DESTDIR)$(PMPATHD)/atop-pm.sh
++		chmod 0755             $(DESTDIR)$(PMPATHD)/atop-pm.sh
+ 		#
+ 		# only when making on target system:
+ 		#
+@@ -116,17 +116,17 @@ sysvinstall:	genericinstall
+ 		cp atopacct.init  $(DESTDIR)$(INIPATH)/atopacct
+ 		cp atop.cronsysv  $(DESTDIR)$(CRNPATH)/atop
+ 		cp atop.daily     $(DESTDIR)$(SCRPATH)
+-		chmod 0711        $(DESTDIR)$(SCRPATH)/atop.daily
++		chmod 0755        $(DESTDIR)$(SCRPATH)/atop.daily
+ 		touch             $(DESTDIR)$(LOGPATH)/dummy_before
+ 		touch             $(DESTDIR)$(LOGPATH)/dummy_after
+ 		#
+ 		if [   -d $(DESTDIR)$(PMPATH1) ]; 			\
+ 		then	cp 45atoppm $(DESTDIR)$(PMPATH1); 		\
+-			chmod 0711  $(DESTDIR)$(PMPATH1)/45atoppm;	\
++			chmod 0755  $(DESTDIR)$(PMPATH1)/45atoppm;	\
+ 		fi
+ 		if [ -d $(DESTDIR)$(PMPATH2) ]; 			\
+ 		then	cp 45atoppm $(DESTDIR)$(PMPATH2);		\
+-			chmod 0711  $(DESTDIR)$(PMPATH2)/45atoppm;	\
++			chmod 0755  $(DESTDIR)$(PMPATH2)/45atoppm;	\
+ 		fi
+ 		#
+ 		#
+@@ -169,7 +169,7 @@ genericinstall:	atop atopacctd atopconvert atopcat atophide
+ 		chmod 644      		$(DESTDIR)$(DEFPATH)/atop
+ 		#
+ 		cp atop   		$(DESTDIR)$(BINPATH)/atop
+-		chmod 0711 		$(DESTDIR)$(BINPATH)/atop
++		chmod 0755 		$(DESTDIR)$(BINPATH)/atop
+ 		ln -sf atop             $(DESTDIR)$(BINPATH)/atopsar
+ 		cp atopacctd  		$(DESTDIR)$(SBINPATH)/atopacctd
+ 		chmod 0700 		$(DESTDIR)$(SBINPATH)/atopacctd
+@@ -178,11 +178,11 @@ genericinstall:	atop atopacctd atopconvert atopcat atophide
+ 		cp atop   		$(DESTDIR)$(BINPATH)/atop-$(VERS)
+ 		ln -sf atop-$(VERS)     $(DESTDIR)$(BINPATH)/atopsar-$(VERS)
+ 		cp atopconvert 		$(DESTDIR)$(BINPATH)/atopconvert
+-		chmod 0711 		$(DESTDIR)$(BINPATH)/atopconvert
++		chmod 0755 		$(DESTDIR)$(BINPATH)/atopconvert
+ 		cp atopcat 		$(DESTDIR)$(BINPATH)/atopcat
+-		chmod 0711 		$(DESTDIR)$(BINPATH)/atopcat
++		chmod 0755 		$(DESTDIR)$(BINPATH)/atopcat
+ 		cp atophide 		$(DESTDIR)$(BINPATH)/atophide
+-		chmod 0711 		$(DESTDIR)$(BINPATH)/atophide
++		chmod 0755 		$(DESTDIR)$(BINPATH)/atophide
+ 		cp man/atop.1    	$(DESTDIR)$(MAN1PATH)
+ 		cp man/atopsar.1 	$(DESTDIR)$(MAN1PATH)
+ 		cp man/atopconvert.1 	$(DESTDIR)$(MAN1PATH)

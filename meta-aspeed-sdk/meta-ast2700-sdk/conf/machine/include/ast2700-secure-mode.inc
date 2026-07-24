@@ -21,11 +21,10 @@ CALIPTRA_MANIFEST_KEY_DIR ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast
 
 # ecdsa384
 #OTPTOOL_CONFIGS ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/otp/2700A2_ECDSA384.json"
-#CALIPTRA_MANIFEST_CONFIG ?= "ast2700-default-ecc-manifest.toml"
-#CALIPTRA_MANIFEST_CONFIG:ast-rtos ?= "ast2700-rtos-ecc-manifest.toml"
+#CPTRA_TOML_ECC_ENABLE ?= "1"
+#CPTRA_TOML_LMS_ENABLE ?= "0"
 
 # ecdsa384-lms
 OTPTOOL_CONFIGS ?= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/otp/2700A2_ECDSA384_LMS.json"
-CALIPTRA_MANIFEST_CONFIG ?= "ast2700-default-ecc-lms-manifest.toml"
-CALIPTRA_MANIFEST_CONFIG:ast-rtos ?= "ast2700-rtos-ecc-lms-manifest.toml"
-
+CPTRA_TOML_ECC_ENABLE ?= "1"
+CPTRA_TOML_LMS_ENABLE ?= "1"
