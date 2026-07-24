@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 # CPU emulation for PFR-4.0:
 #  ┌────────────────────┐                 ┌─────────────────────┐
 #  │     AST2700        │                 │       AST1060       │
 #  │                    │                 │                     │
 #  │           i3c4     │                 │                     │
 #  │  i3c-mctp-target-0 │      I3C        │i3c2                 │
-#  │           EID=0x1D ├─────────────────┤EID=0x0B             │
+#  │           EID=0x1D ├─────────────────┤EID=0x7B             │
 #  │                    │                 │                     │
 #  └────────────────────┘                 └─────────────────────┘
 #
@@ -15,23 +15,58 @@
 #  │                    │                 │                     │
 #  │                    │                 │                     │
 #  │           mctpi3c4 │      I3C        │i3c2                 │
-#  │           EID=0x1D ├─────────────────┤EID=0x08             │
+#  │           EID=0x1D ├─────────────────┤EID=0x7B             │
 #  │                    │                 │                     │
 #  └────────────────────┘                 └─────────────────────┘
 #
 # MCTP Bridge Mode for PFR-5.0:
-# ┌───────────┐       ┌────────────────────┐       ┌───────────┐
-# │    CPU    │       │      AST2700       │       │  AST1060  │
-# │           │       │    MCTP Bridge     │       │           │
-# │           │       │                    │       │           │
-# │    I3C_MNG│  I3C  │mctpi3c5   mctpi3c4 │  I3C  │i3c2       │
-# │   EID=0x1D├───────┤EID=0x09   EID=0x0A ├───────┤EID=0x0B   │
-# │           │       │net=4               │       │net=4      │
-# └───────────┘       └────────────────────┘       └───────────┘
+# ┌────────────┐       ┌────────────────────┐       ┌───────────┐
+# │     CPU    │       │      AST2700       │       │  AST1060  │
+# │            │       │    MCTP Bridge     │       │           │
+# │            │       │                    │       │           │
+# │     I3C_MNG│  I3C  │mctpi3c5   mctpi3c4 │  I3C  │i3c2       │
+# │BHS EID=0x1D├───────┤EID=0x7E   EID=0x7A ├───────┤EID=0x7B   │
+# │OKS EID=0x09│       │net=4               │       │net=4      │
+# └────────────┘       └────────────────────┘       └───────────┘
 
-# PFR MCTP I3C MODE: "CPU_EMULATION" or "BRIDGE_MODE"
-PFR_MCTP_I3C_MODE="CPU_EMULATION"
-#PFR_MCTP_I3C_MODE="BRIDGE_MODE"
+# shellcheck source=/dev/null
+source /usr/bin/intel-gpio-lib.sh
+
+CPU_EID=0x1d
+CPU_I3C_DEVICE="5-20a012900ef"
+CPU_I3C_LLADDR="0x02:0a:01:29:00:ef"
+
+# Determine PFR MCTP I3C mode from board SKU ID:
+#   0   -> Emulation environment -> CPU_EMULATION
+#   37  -> BHS AvenueCity platform   -> BRIDGE_MODE
+#   *   -> OKS JohnsonCity platform  -> BRIDGE_MODE
+board_id=$(read_id)
+echo "Board ID=$board_id"
+
+case $board_id in
+	0)
+		# Emulation environment
+		PFR_MCTP_I3C_MODE="CPU_EMULATION"
+		;;
+	37)
+		# BHS AvenueCity platform
+		PFR_MCTP_I3C_MODE="BRIDGE_MODE"
+		;;
+	*)
+		# OKS JohnsonCity platform
+		PFR_MCTP_I3C_MODE="BRIDGE_MODE"
+		CPU_EID=0x09
+		CPU_I3C_DEVICE="5-20a0168000f"
+		CPU_I3C_LLADDR="0x02:0a:01:68:00:0f"
+		;;
+esac
+
+if ! mctp link|grep mctpi3c4 > /dev/null;then
+	echo "mctpi3c4 not found, falling back to CPU_EMULATION mode"
+	PFR_MCTP_I3C_MODE="CPU_EMULATION"
+fi
+
+echo "PFR_MCTP_I3C_MODE=$PFR_MCTP_I3C_MODE CPU_EID=$CPU_EID"
 
 SetupEndpoint()
 {
@@ -78,7 +113,7 @@ WaitForPlatformReady()
 SetupCpuI3cDevice()
 {
 	for retry_count in $(seq 1 10); do
-		if [ -e /sys/bus/i3c/devices/5-20a012900ef ]; then
+		if [ -e /sys/bus/i3c/devices/$CPU_I3C_DEVICE ]; then
 			echo "CPU I3C found after $retry_count attempts"
 			break
 		else
@@ -87,22 +122,22 @@ SetupCpuI3cDevice()
 			sleep 10
 		fi
 	done
-	if [ ! -e /sys/bus/i3c/devices/5-20a012900ef ]; then
+	if [ ! -e /sys/bus/i3c/devices/$CPU_I3C_DEVICE ]; then
 		echo "Warning: CPU I3C not found after 10 attempts"
 	fi
 
 	if mctp link|grep mctpi3c5 > /dev/null;then
 		echo "Setup MCTP bridge over I3C to CPU"
 		# Delete existing MCTP configurations if they exist
-		mctp neigh del 0x1d dev mctpi3c5 2>/dev/null || true
-		mctp route del 0x1d via mctpi3c5 2>/dev/null || true
-		mctp addr del 0x09 dev mctpi3c5 2>/dev/null || true
+		mctp neigh del $CPU_EID dev mctpi3c5 2>/dev/null || true
+		mctp route del $CPU_EID via mctpi3c5 2>/dev/null || true
+		mctp addr del 0x7e dev mctpi3c5 2>/dev/null || true
 
 		# Re-add MCTP configurations
 		mctp link set mctpi3c5 net 4 up mtu 68
-		mctp addr add 0x09 dev mctpi3c5
-		mctp route add 0x1d via mctpi3c5
-		mctp neigh add 0x1d dev mctpi3c5 lladdr 0x02:0a:01:29:00:ef
+		mctp addr add 0x7e dev mctpi3c5
+		mctp route add $CPU_EID via mctpi3c5
+		mctp neigh add $CPU_EID dev mctpi3c5 lladdr $CPU_I3C_LLADDR
 	fi
 }
 
@@ -134,7 +169,7 @@ StartCpuEmulationMode()
 	if mctp link|grep mctpi3c4 > /dev/null;then
 		echo "Running CPU Emulation for PFR-5.0 MCTP over I3C Master"
 		mctp link set mctpi3c4 net 4 up mtu 68
-		mctp addr add 0x1d dev mctpi3c4
+		mctp addr add $CPU_EID dev mctpi3c4
 		WaitForPlatformReady
 		/usr/bin/pfr-mctpd -s &
 	elif [ -r /dev/i3c-mctp-target-0 ];then
@@ -152,7 +187,7 @@ StartMCTPBridgeMode()
 	if mctp link|grep mctpi3c4 > /dev/null;then
 		echo "Setup MCTP bridge over I3C to PFR"
 		mctp link set mctpi3c4 net 4 up mtu 68
-		mctp addr add 0x0a dev mctpi3c4
+		mctp addr add 0x7a dev mctpi3c4
 		WaitForPlatformReady
 	fi
 
@@ -182,4 +217,3 @@ else
 	echo "Running MCTP I3C Bridge Mode"
 	StartMCTPBridgeMode
 fi
-

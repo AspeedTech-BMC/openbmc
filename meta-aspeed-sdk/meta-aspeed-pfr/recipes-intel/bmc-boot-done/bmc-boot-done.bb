@@ -11,6 +11,7 @@ S = "${UNPACKDIR}"
 SRC_URI = " \
 	file://bmc-boot-done.sh \
 	file://xyz.openbmc_project.bmc_boot_done.service \
+	file://intel-gpio-lib.sh \
 "
 
 SYSTEMD_SERVICE:${PN} = "xyz.openbmc_project.bmc_boot_done.service"
@@ -21,5 +22,6 @@ do_install:append() {
 	install -m 0644 ${UNPACKDIR}/xyz.openbmc_project.bmc_boot_done.service ${D}${systemd_system_unitdir}/
 
 	install -d ${D}${bindir}
+	install -m 0755 ${UNPACKDIR}/intel-gpio-lib.sh ${D}${bindir}/
 	install -m 0755 ${UNPACKDIR}/bmc-boot-done.sh ${D}${bindir}/
 }

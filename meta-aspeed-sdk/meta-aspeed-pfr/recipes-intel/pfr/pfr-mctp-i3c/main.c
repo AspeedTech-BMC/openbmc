@@ -18,8 +18,8 @@
 #define MCTP_BTU 68
 #define MCTP_PAYLOAD_SIZE 64
 
-#define SELF_EID 0xA
-#define ROT_EID  0xB
+#define SELF_EID 0x7A
+#define ROT_EID  0x7B
 #define CPU0_EID 0x1D
 
 #define BMC_I3C_SLAVE_ADDR       0x08

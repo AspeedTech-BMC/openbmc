@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+
+# Simple target to build the FVPs that are publically available
+
+header:
+  version: 14
+  includes:
+    - ci/base.yml
+
+machine: qemuarm64
+
+local_conf_header:
+  license: |
+    LICENSE_FLAGS_ACCEPTED += "Arm-FVP-EULA"
+  sdk: |
+    SDKMACHINE = "x86_64"
+
+target:
+  # Target packages to test aarch64
+  # Nativesdk to test x86-64
+
+  # Architecture Envelope Models (AEM) FVPs
+  - fvp-base-a-aem
+  - nativesdk-fvp-base-a-aem
+
+  # Arm Lumex CSS (Total Compute) FVPs
+  # These are x86 only... :(
+  - nativesdk-fvp-tc3
+
+  # Automotive FVPs
+  - fvp-rd1-ae
+  - nativesdk-fvp-rd1-ae
+
+  # Infrastructure FVPs
+  - fvp-rdv3-r1
+  - nativesdk-fvp-rdv3-r1
+  - fvp-rdv2
+  - nativesdk-fvp-rdv2
+  - fvp-rdn2
+  - nativesdk-fvp-rdn2
+
+  # IoT FVPs
+  - fvp-corstone1000
+  - nativesdk-fvp-corstone1000
+  - fvp-corstone1000-a320
+  - nativesdk-fvp-corstone1000-a320
+
+  # Morello FVPs
+  # TBD

@@ -1,0 +1,36 @@
+From b3854245f061d9ba2159bdb37197e1c711cbd9cd Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Mon, 22 May 2023 18:16:24 -0700
+Subject: [PATCH] plugins: Avoid absolute buildpaths in binaries
+
+plugins seems to add CC to the plugins shared objects via compiler
+cmdline which ends up in real code. Therefore scrub buildpaths from CC
+and CFLAGS before passing them to plugin's build.
+
+Upstream-Status: Submitted [https://gitlab.com/nbdkit/nbdkit/-/merge_requests/30]
+
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+---
+ plugins/cc/Makefile.am | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/plugins/cc/Makefile.am b/plugins/cc/Makefile.am
+index 478178bd..742ea535 100644
+--- a/plugins/cc/Makefile.am
++++ b/plugins/cc/Makefile.am
+@@ -44,9 +44,13 @@ nbdkit_cc_plugin_la_SOURCES = \
+ 	$(top_srcdir)/include/nbdkit-plugin.h \
+ 	$(NULL)
+ 
++workdir1 := $(shell dirname $(abs_top_builddir))
++workdir := $(shell dirname $(workdir1))
++cc_no_sysroot := $(shell echo \"$(CC)\"|sed -e 's#$(workdir)#<WORKDIR>#g')
++cflags_no_sysroot := $(shell echo \"$(CFLAGS)\"|sed -e 's#$(workdir)#<WORKDIR>#g')
+ nbdkit_cc_plugin_la_CPPFLAGS = \
+-	-DCC="\"$(CC_PLUGIN_CC)\"" \
+-	-DCFLAGS="\"$(CC_PLUGIN_CFLAGS)\"" \
++	-DCC=\"$(cc_no_sysroot)\" \
++	-DCFLAGS=\"$(cflags_no_sysroot)\" \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/common/include \

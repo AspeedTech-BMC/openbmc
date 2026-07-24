@@ -1,0 +1,13 @@
+[Unit]
+Description=Zero-configuration networking
+After=network.target
+
+[Service]
+Type=exec
+ExecStart=/usr/sbin/mdnsd -foreground
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

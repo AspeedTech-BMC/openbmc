@@ -1,0 +1,63 @@
+From 08b1bf417be039b097fae25708861fe8184c739c Mon Sep 17 00:00:00 2001
+From: Kai Kang <kai.kang@windriver.com>
+Date: Wed, 1 Nov 2017 09:23:41 -0400
+Subject: [PATCH] stunnel: fix compile error when openssl disable des support
+
+Upstream-Status: Pending
+
+When openssl disable des support with configure option 'no-des', it doesn't
+provide des related header file and functions. That causes stunnel compile
+failed. Fix it by checking macro OPENSSL_NO_DES to use openssl des related
+library conditionaly.
+
+Signed-off-by: Kai Kang <kai.kang@windriver.com>
+---
+ src/common.h   | 2 ++
+ src/protocol.c | 6 +++---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/common.h b/src/common.h
+index ada7ff7..8484144 100644
+--- a/src/common.h
++++ b/src/common.h
+@@ -489,7 +489,9 @@ extern char *sys_errlist[];
+ #ifndef OPENSSL_NO_MD4
+ #include <openssl/md4.h>
+ #endif /* !defined(OPENSSL_NO_MD4) */
++#ifndef OPENSSL_NO_DES
+ #include <openssl/des.h>
++#endif
+ #ifndef OPENSSL_NO_DH
+ #include <openssl/dh.h>
+ #endif /* !defined(OPENSSL_NO_DH) */
+diff --git a/src/protocol.c b/src/protocol.c
+index cddc381..ae0f374 100644
+--- a/src/protocol.c
++++ b/src/protocol.c
+@@ -82,7 +82,7 @@ NOEXPORT void ldap_client_middle(CLI *);
+ NOEXPORT void connect_server_early(CLI *);
+ NOEXPORT const char *connect_client_init(SERVICE_OPTIONS *);
+ NOEXPORT void connect_client_middle(CLI *);
+-#ifndef OPENSSL_NO_MD4
++#if !defined(OPENSSL_NO_MD4) && !defined(OPENSSL_NO_DES)
+ NOEXPORT void ntlm(CLI *);
+ NOEXPORT char *ntlm1(void);
+ NOEXPORT char *ntlm3(char *, char *, char *, char *);
+@@ -1392,7 +1392,7 @@ NOEXPORT void connect_client_middle(CLI *c) {
+     fd_printf(c, c->remote_fd.fd, "Host: %s", c->opt->protocol_host);
+     if(c->opt->protocol_username && c->opt->protocol_password) {
+         if(!strcasecmp(c->opt->protocol_authentication, "ntlm")) {
+-#ifndef OPENSSL_NO_MD4
++#if !defined(OPENSSL_NO_MD4) && !defined(OPENSSL_NO_DES)
+             ntlm(c);
+ #else
+             s_log(LOG_ERR, "NTLM authentication is not available");
+@@ -1435,7 +1435,7 @@ NOEXPORT void connect_client_middle(CLI *c) {
+     str_free(line);
+ }
+ 
+-#ifndef OPENSSL_NO_MD4
++#if !defined(OPENSSL_NO_MD4) && !defined(OPENSSL_NO_DES)
+ 
+ /*
+  * NTLM code is based on the following documentation:

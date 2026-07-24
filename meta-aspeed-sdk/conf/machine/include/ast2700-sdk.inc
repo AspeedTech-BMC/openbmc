@@ -8,6 +8,7 @@ require conf/machine/include/arm/armv8a/tune-cortexa35.inc
 require conf/machine/include/ast-arm-trusted-firmware-a.inc
 require conf/machine/include/ast-bootmcu.inc
 require conf/machine/include/ast-optee-os.inc
+require conf/machine/include/ast-update-verify.inc
 
 SERIAL_CONSOLES ?= "115200;ttyS12"
 
@@ -52,7 +53,7 @@ TFA_BUILD_TARGET = "bl31"
 # It is a shortcut for "make PLATFORM=aspeed PLATFORM_FLAVOR=ast2700"
 OPTEEMACHINE = "aspeed-ast2700"
 
-UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE ?= "${DEPLOY_DIR_IMAGE}/${TFA_BUILD_TARGET}.bin"
+UBOOT_FIT_ARM_TRUSTED_FIRMWARE_IMAGE ?= "${DEPLOY_DIR_IMAGE}/trusted-firmware-a/${TFA_BUILD_TARGET}.bin"
 UBOOT_FIT_TEE_IMAGE ?= "${DEPLOY_DIR_IMAGE}/optee/tee-raw.bin"
 UBOOT_FIT_SSP_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-ssp.bin"
 UBOOT_FIT_TSP_IMAGE ?= "${DEPLOY_DIR_IMAGE}/zephyr-aspeed-tsp.bin"
@@ -72,13 +73,21 @@ PREFERRED_VERSION_zephyr-sdk-native = "0.16.9"
 PREFERRED_VERSION_zephyr-kernel ??= "3.7.0"
 
 # caliptra manifest
-CALIPTRA_MANIFEST_CONFIG_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/caliptra"
-CALIPTRA_MANIFEST_CONFIG ??= "ast2700-default-ecc-manifest.toml"
+CPTRA_TOML_FILENAME ?= "ast2700-manifest.toml"
+CALIPTRA_MANIFEST_CONFIG_DIR ??= "${DEPLOY_DIR_IMAGE}"
+CALIPTRA_MANIFEST_CONFIG ??= "${CPTRA_TOML_FILENAME}"
 CALIPTRA_MANIFEST_KEY_DIR ??= "${STAGING_DATADIR_NATIVE}/aspeed-secure-config/ast2700/keys"
 CALIPTRA_MANIFEST_FLASH_IMAGE ?= "ast2700-manifest-flash.bin"
 CALIPTRA_MANIFEST_SOC_IMAGE ?= "ast2700-soc-manifest.bin"
 
-QB_SYSTEM_NAME = "qemu-system-aarch64"
-QB_MACHINE = "-machine ast2700a1-evb"
-QB_MEM = "-m 1G"
+PREFERRED_VERSION_cptra-imgtool = "1x"
+PREFERRED_VERSION_cptra-imgtool-native = "1x"
+PREFERRED_VERSION_caliptra-mcu-sw = "1x"
+PREFERRED_VERSION_caliptra-mcu-sw-native = "1x"
+PREFERRED_VERSION_aspeed-image-manifest = "1x"
+PREFERRED_VERSION_aspeed-manifest-config = "1x"
+PREFERRED_VERSION_aspeed-image-gen-secureboot = "1x"
 
+QB_SYSTEM_NAME = "qemu-system-aarch64"
+QB_MACHINE = "-machine ast2700-evb"
+QB_MEM = "-m 2G"

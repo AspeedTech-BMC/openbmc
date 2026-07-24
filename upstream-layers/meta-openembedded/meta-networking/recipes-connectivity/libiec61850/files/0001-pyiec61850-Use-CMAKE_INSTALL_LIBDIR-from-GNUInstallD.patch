@@ -1,0 +1,35 @@
+From 16d07a82242c3263ec0038c9b4c97355795d2dd9 Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Sat, 19 Mar 2022 23:16:51 -0700
+Subject: [PATCH] pyiec61850: Use CMAKE_INSTALL_LIBDIR from GNUInstallDirs in
+ cmake
+
+This ensures that it gets installed in platform specified system libdir
+all platforms do not use /usr/lib as assumed here e.g. ppc64 uses lib64
+
+Upstream-Status: Denied [https://github.com/mz-automation/libiec61850/pull/376 - closed without a word]
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+---
+ pyiec61850/CMakeLists.txt | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/pyiec61850/CMakeLists.txt
++++ b/pyiec61850/CMakeLists.txt
+@@ -31,14 +31,9 @@ swig_add_library(pyiec61850
+ 
+ swig_link_libraries(pyiec61850 ${LIBS})
+ 
+-# Finding python modules install path
+-execute_process(
+-	COMMAND ${Python_EXECUTABLE} -c
+-	"from sysconfig import get_path; import sys; sys.stdout.write(get_path('platlib'))"
+-	OUTPUT_VARIABLE PYTHON_SITE_DIR
+-)
++include(GNUInstallDirs)
+ 
+-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pyiec61850.py DESTINATION ${PYTHON_SITE_DIR})
+-install(TARGETS pyiec61850 LIBRARY DESTINATION ${PYTHON_SITE_DIR})
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pyiec61850.py DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/python${PYTHON_BASEVERSION}/site-packages)
++install(TARGETS pyiec61850 LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/python${PYTHON_BASEVERSION}/site-packages)
+ 
+ add_test(test_pyiec61850 ${Python_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/test_pyiec61850.py)

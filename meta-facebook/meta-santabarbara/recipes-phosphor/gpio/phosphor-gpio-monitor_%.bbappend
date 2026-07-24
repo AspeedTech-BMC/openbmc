@@ -1,15 +1,19 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-inherit obmc-phosphor-systemd systemd
+inherit obmc-phosphor-utils
+inherit systemd
 
-SERVICE_LIST = "assert-post-end.service \
+SERVICE_LIST = "assert-module-power-good@.service \
+                assert-post-end.service \
                 assert-power-good-drop.service \
                 assert-reset-button.service \
                 assert-rmc-main-power-enable.service \
+                deassert-module-power-good@.service \
                 deassert-post-end.service \
                 deassert-power-good-drop.service \
                 deassert-reset-button.service \
                 deassert-rmc-main-power-enable.service \
+                get-mmc-lastest-version.service \
                 platform-host-ready.target \
                 power-rail-assert-log@.service \
                 power-rail-deassert-log@.service \
@@ -24,18 +28,22 @@ SERVICE_FILE_FMT = "file://{0}"
 
 SRC_URI += " \
     file://assert-post-end \
+    file://assert-module-power-good \
     file://assert-power-good-drop \
     file://assert-reset-button \
     file://assert-rmc-main-power-enable \
+    file://deassert-module-power-good \
     file://deassert-post-end \
     file://deassert-power-good-drop \
     file://deassert-reset-button \
     file://deassert-rmc-main-power-enable \
+    file://get-mmc-lastest-version \
     file://multi-gpios-sys-init \
     file://plat-phosphor-multi-gpio-monitor.json \
     file://power-rail-event-logger \
     file://thermal-event-logger \
     file://vr-fault-event-logger \
+    file://phosphor-multi-gpio-monitor.conf \
     ${@compose_list(d, 'SERVICE_FILE_FMT', 'SERVICE_LIST')} \
     "
 
@@ -50,24 +58,30 @@ do_install:append() {
     install -m 0644 ${UNPACKDIR}/plat-phosphor-multi-gpio-monitor.json \
                     ${D}${datadir}/phosphor-gpio-monitor/phosphor-multi-gpio-monitor.json
 
+    install -d ${D}${systemd_system_unitdir}
     for s in ${SERVICE_LIST}
     do
         install -m 0644 ${UNPACKDIR}/${s} ${D}${systemd_system_unitdir}/${s}
     done
 
     install -d ${D}${libexecdir}/${PN}
+    install -m 0755 ${UNPACKDIR}/assert-module-power-good ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/assert-post-end ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/assert-power-good-drop ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/assert-reset-button ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/assert-rmc-main-power-enable ${D}${libexecdir}/${PN}/
+    install -m 0755 ${UNPACKDIR}/deassert-module-power-good ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/deassert-post-end ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/deassert-power-good-drop ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/deassert-reset-button ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/deassert-rmc-main-power-enable ${D}${libexecdir}/${PN}/
+    install -m 0755 ${UNPACKDIR}/get-mmc-lastest-version ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/multi-gpios-sys-init ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/power-rail-event-logger ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/thermal-event-logger ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/vr-fault-event-logger ${D}${libexecdir}/${PN}/
-}
 
-SYSTEMD_OVERRIDE:${PN}-monitor += "phosphor-multi-gpio-monitor.conf:phosphor-multi-gpio-monitor.service.d/phosphor-multi-gpio-monitor.conf"
+    install -d ${D}${systemd_system_unitdir}/phosphor-multi-gpio-monitor.service.d
+    install -m 0644 ${UNPACKDIR}/phosphor-multi-gpio-monitor.conf \
+        ${D}${systemd_system_unitdir}/phosphor-multi-gpio-monitor.service.d/phosphor-multi-gpio-monitor.conf
+}

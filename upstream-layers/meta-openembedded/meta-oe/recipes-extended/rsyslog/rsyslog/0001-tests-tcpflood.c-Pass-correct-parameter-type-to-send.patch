@@ -1,0 +1,32 @@
+From 59753fe14e9eef4909a535b6e00967e546cc29ea Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Sat, 11 May 2024 23:31:46 -0700
+Subject: [PATCH] tests/tcpflood.c: Pass correct parameter type to sendto()
+
+Fixes build with GCC-14 and musl
+
+../../rsyslog-8.2404.0/tests/tcpflood.c:811:70: error: passing argument 5 of 'sendto' from incompatible pointer type [-Wincompatible-pointer-types]
+  811 |                         lenSend = sendto(udpsockout, buf, lenBuf, 0, &udpRcvr, sizeof(udpRcvr));
+      |                                                                      ^~~~~~~~
+      |                                                                      |
+      |                                                                      struct sockaddr_in *
+
+Upstream-Status: Pending
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+---
+ tests/tcpflood.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/tcpflood.c b/tests/tcpflood.c
+index 5e6f13a..09cedbb 100644
+--- a/tests/tcpflood.c
++++ b/tests/tcpflood.c
+@@ -865,7 +865,7 @@
+             }
+             lenSend = sendPlainTCP(socknum, buf, lenBuf, &error_number);
+         } else if (transport == TP_UDP) {
+-            lenSend = sendto(udpsockout, buf, lenBuf, 0, &udpRcvr, sizeof(udpRcvr));
++            lenSend = sendto(udpsockout, buf, lenBuf, 0, (const struct sockaddr *)&udpRcvr, sizeof(udpRcvr));
+             error_number = errno;
+         } else if (transport == TP_TLS) {
+             if (sockArray[socknum] == -1) {

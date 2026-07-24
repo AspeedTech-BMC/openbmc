@@ -1,0 +1,32 @@
+Add LDFLAGS variable to Makefile, make sure the extra linker flags can be passed.
+
+Upstream-Status: Inactive-Upstream [last change: 2013-03-22]
+
+Signed-off-by: Yi Zhao <yi.zhao@windriver.com>
+
+--- a/Makefile
++++ b/Makefile
+@@ -6,7 +6,7 @@ MAN = $(PACKAGE).$(MANS)
+ 
+ DIST = Makefile $(PACKAGE).spec $(PACKAGE).c $(PACKAGE).sgml ChangeLog
+ 
+-CFLAGS = -g -Wall
++CFLAGS ?= -g -Wall
+ 
+ BIN_DIR ?= /usr/sbin
+ MAN_DIR ?= /usr/share/man/man$(MANS)
+@@ -14,12 +14,12 @@ MAN_DIR ?= /usr/share/man/man$(MANS)
+ all : $(BIN) $(MAN)
+ 
+ $(BIN) : $(BIN).c
+-	$(CC) $(CFLAGS) -o $(BIN) $(BIN).c
++	$(CC) $(CFLAGS) ${LDFLAGS} -o $(BIN) $(BIN).c
+ 
+ $(MAN) : $(PACKAGE).sgml
+ 	docbook2man $(PACKAGE).sgml
+ 
+-clean : 
++clean :
+ 	rm -f $(BIN) $(OBJS) $(MAN) *~ manpage.*
+ 
+ install : $(BIN) $(MAN)

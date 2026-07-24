@@ -1,34 +1,7 @@
 #!/bin/bash
 
-# Function to find the gpiochip number for specific gpio controller
-find_gpiochip() {
-    local gpio_type="$1"
-    local chip_info
-    chip_info=$(gpiodetect | grep "$gpio_type")
-    if [ -n "$chip_info" ]; then
-        echo "${chip_info//gpiochip/}" | cut -d' ' -f1
-    else
-        echo "Error: $gpio_type not found" >&2
-        return 1
-    fi
-}
-
-read_id() {
-    local FM_BOARD_SKU_ID0="${LTPI0_GPIO} 22"     #BMC_GPI11
-    local FM_BOARD_SKU_ID1="${LTPI0_GPIO} 24"     #BMC_GPI12
-    local FM_BOARD_SKU_ID2="${LTPI0_GPIO} 26"     #BMC_GPI13
-    local FM_BOARD_SKU_ID3="${LTPI0_GPIO} 28"     #BMC_GPI14
-    local FM_BOARD_SKU_ID4="${LTPI0_GPIO} 30"     #BMC_GPI15
-    local FM_BOARD_SKU_ID5="${LTPI0_GPIO} 32"     #BMC_GPI16
-    local value=0
-    for pin in "$FM_BOARD_SKU_ID5" "$FM_BOARD_SKU_ID4" "$FM_BOARD_SKU_ID3" "$FM_BOARD_SKU_ID2" "$FM_BOARD_SKU_ID1" "$FM_BOARD_SKU_ID0"; do
-      # shellcheck disable=SC2086
-      val=$(gpioget $pin)
-      value="${value}${val}"
-    done
-    # Convert binary to hexadecimal
-    echo $((2#$value))
-}
+# shellcheck source=/dev/null
+source /usr/bin/intel-gpio-lib.sh
 
 GPIO_NAME="BMC_BOOT_DONE"
 
@@ -89,7 +62,7 @@ if [ "$INTEL_OKS" == "1" ]; then
   NODE_ID1="${LTPI0_GPIO} 29"             #BMC_GPO14
 
   # Set BootComplete to PFR.
-  # This is a workaround. If no network waiting pfr-amanger send bootcomplete too slow. 
+  # This is a workaround. If no network waiting pfr-manager send bootcomplete too slow.
   aspeed-pfr-tool -w 0x60 9
 
   # Wait for SMBUS_RDY to be 1

@@ -42,6 +42,7 @@ covered by [Jenkins](https://jenkins.openbmc.org/job/ci-openbmc/) CI testing.
   * fbdarwin
   * harma
   * minerva
+  * rainiera6
   * sanmiguel
   * santabarbara
   * tiogapass
@@ -50,6 +51,7 @@ covered by [Jenkins](https://jenkins.openbmc.org/job/ci-openbmc/) CI testing.
   * yosemite4
   * yosemite4n
   * yosemite5
+  * yosemite5a7
 * fii
   * kudo
   * mori
@@ -67,7 +69,6 @@ covered by [Jenkins](https://jenkins.openbmc.org/job/ci-openbmc/) CI testing.
   * romulus
   * sbp1
   * system1
-  * witherspoon
 * ieisystem
   * fp5280g3
   * nf5280m7

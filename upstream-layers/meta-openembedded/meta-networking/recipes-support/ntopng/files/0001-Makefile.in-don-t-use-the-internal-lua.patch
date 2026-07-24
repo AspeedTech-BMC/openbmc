@@ -1,0 +1,45 @@
+From 52953ab99c727a19e88243dda2702d6814f7974d Mon Sep 17 00:00:00 2001
+From: Mingli Yu <mingli.yu@windriver.com>
+Date: Wed, 4 Nov 2020 08:55:10 +0000
+Subject: [PATCH] Makefile.in: don't use the internal lua
+
+ntopng depends on lua and it will compile the lua under
+third-party sub dir of source tree, but this one supports
+cross-compiling badly, so use the one under RECIPE_SYSROOT.
+
+Upstream-Status: Inappropriate [embedded specific]
+
+Signed-off-by: Mingli Yu <mingli.yu@windriver.com>
+---
+ Makefile.in | 2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -31,8 +31,6 @@ MONGOOSE_INC=-I$(MONGOOSE_HOME)
+ 
+ LUA_PLATFORM=generic
+ LUA_HOME=${PWD}/third-party/lua-5.4.6
+-LUA_INC=-I$(LUA_HOME)/src
+-LUA_LIB=$(LUA_HOME)/src/liblua.a
+ 
+ HAVE_CLICKHOUSE=@HAVE_CLICKHOUSE@
+ CLICKHOUSE_HOME=
+@@ -52,7 +50,7 @@ else ifeq ($(OS),Darwin)
+ 	LUA_PLATFORM=macosx
+ else ifeq ($(OS), $(filter $(OS), FreeBSD))
+ 	LUA_PLATFORM=freebsd
+-	LUA_LIB=/usr/local/lib/liblua-5.3.a
++	LUA_LIB=liblua.a
+ endif
+ 
+ ######
+@@ -138,7 +136,7 @@ HEADERS = $(wildcard include/*.h) $(wild
+ INC     = $(wildcard src/*.inc)
+ OBJECTS_NO_MAIN := $(filter-out src/main.o,$(OBJECTS))
+ 
+-TEST_FILES = $(wildcard tests/src/*.cpp) 
++TEST_FILES = $(wildcard tests/src/*.cpp)
+ TEST_HEADERS = $(wildcard tests/include/*.h)
+ 
+ %.o: %.c $(HEADERS) $(INC) Makefile

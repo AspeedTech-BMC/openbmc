@@ -7,8 +7,8 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=d50b901333b4eedfee074ebcd6a6d611"
 SRC_URI = "git://github.com/AspeedTech-BMC/socsec.git;protocol=https;branch=master"
 
 PV = "v02.00.09+git"
-# Tag for v02.00.13
-SRCREV = "caed9e36550cb64f422325bc97cebd70d8f8c265"
+# Tag for v02.00.14
+SRCREV = "98347ac1adb627b4369bb7c758006d45b9d4158f"
 
 
 inherit python3native setuptools3

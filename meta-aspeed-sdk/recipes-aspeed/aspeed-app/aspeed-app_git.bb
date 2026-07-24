@@ -7,8 +7,8 @@ SRC_URI = "gitsm://github.com/AspeedTech-BMC/aspeed_app.git;protocol=https;branc
 
 PV = "1.0+git"
 
-# Tag for v00.01.22
-SRCREV = "4cb20ccffccb818e2458d069148329189368aaa0"
+# Tag for v00.01.23
+SRCREV = "5ec910ccec5d4edc3aec0b1b35219d04d44aa23b"
 BRANCH = "master"
 
 
@@ -18,5 +18,11 @@ RDEPENDS:${PN} += "openssl"
 EXTRA_OEMESON:append:aspeed-g7 = " \
     -Dotp-platform='ast2700' \
 "
+
+# mctp-i3c and i3c-test are not supported on AST2500, remove them after install
+do_install:append:aspeed-g5() {
+    rm -f ${D}${bindir}/mctp-i3c
+    rm -f ${D}${bindir}/i3c-test
+}
 
 FILES:${PN}:append = " /usr/share/* "
