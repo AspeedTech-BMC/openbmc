@@ -29,7 +29,7 @@ do_compile() {
 # Build xtask only for native
 do_compile:class-native() {
     cd ${S}
-    cargo build -p xtask --release
+    cargo build -p caliptra-mcu-xtask --release
 }
 
 # Install xtask only for native
@@ -39,7 +39,7 @@ do_install() {
 
 do_install:class-native() {
     install -d ${D}${bindir}
-    install -m 0755 ${B}/target/release/xtask ${D}${bindir}/xtask-2x
+    install -m 0755 ${B}/target/release/caliptra-mcu-xtask ${D}${bindir}/xtask-2x
 }
 
 do_deploy() {
