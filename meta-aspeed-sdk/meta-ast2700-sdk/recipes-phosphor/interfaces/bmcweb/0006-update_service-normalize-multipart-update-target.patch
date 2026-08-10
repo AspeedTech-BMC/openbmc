@@ -1,0 +1,38 @@
+From df335de1e34c6f492c7e40c126311dbe847e1a35 Mon Sep 17 00:00:00 2001
+From: Kane-Chen-AS <kane_chen@aspeedtech.com>
+Date: Mon, 13 Jul 2026 14:00:54 +0800
+Subject: [PATCH] update_service: normalize multipart update target
+
+Multipart updates may provide the manager target as a full
+Redfish URI instead of a manager name.
+
+Extract the last path component before comparing the target
+with the local manager name.
+
+Tested: multipart firmware update with Targets set to the full
+        manager URI correctly routes to handleBMCUpdate.
+
+Upstream-Status: Pending
+Signed-off-by: Kane-Chen-AS <kane_chen@aspeedtech.com>
+---
+ redfish-core/lib/update_service.hpp | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/redfish-core/lib/update_service.hpp b/redfish-core/lib/update_service.hpp
+index 71a44874..ca5b7f81 100644
+--- a/redfish-core/lib/update_service.hpp
++++ b/redfish-core/lib/update_service.hpp
+@@ -1029,7 +1029,12 @@ inline void processUpdateRequest(
+         return;
+     }
+ 
+-    if (targets[0] == BMCWEB_REDFISH_MANAGER_URI_NAME)
++    auto lastSlash = targets[0].rfind('/');
++    std::string_view targetName = (lastSlash != std::string_view::npos)
++                                      ? std::string_view(targets[0]).substr(
++                                            lastSlash + 1)
++                                      : std::string_view(targets[0]);
++    if (targetName == BMCWEB_REDFISH_MANAGER_URI_NAME)
+     {
+         dbus::utility::getAssociationEndPoints(
+             "/xyz/openbmc_project/software/bmc/updateable",
