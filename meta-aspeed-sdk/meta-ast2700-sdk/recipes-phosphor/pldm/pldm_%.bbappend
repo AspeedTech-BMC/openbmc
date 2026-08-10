@@ -4,9 +4,10 @@ SRC_URI:append = " \
     file://0001-Add-back-maximum-transfer-size-configuration.patch \
 "
 
-SRC_URI:append:ast-irot = " file://host_eid "
-
-PACKAGECONFIG:append:ast-irot = " fw-update-pkg-inotify "
+SRC_URI:append:ast-irot = " \
+    file://host_eid \
+    file://0002-fw-update-send-apply-phase-progress-heartbeat.patch \
+"
 
 EXTRA_OEMESON:append:ast-irot = " \
     -Dmaximum-transfer-size=32768 \
