@@ -348,7 +348,6 @@ RDEPENDS:packagegroup-meta-oe-extended = "\
     indent \
     iotop \
     isomd5sum \
-    jansson \
     jpnevulator \
     libblockdev \
     libcec \
@@ -557,7 +556,9 @@ RDEPENDS:packagegroup-meta-oe-graphics = "\
     ttf-lklug \
     ttf-lohit \
     ttf-noto-emoji-color \
-    ttf-noto-emoji-regular \
+    ttf-noto-emoji-color-noflags \
+    ttf-noto-emoji-colrv1 \
+    ttf-noto-emoji-colrv1-noflags \
     ttf-pt-sans \
     ttf-roboto \
     ttf-sazanami-gothic \
@@ -654,7 +655,6 @@ RDEPENDS:packagegroup-meta-oe-multimedia = "\
     libass \
     libcdio \
     libcdio-paranoia \
-    libdvdread \
     ${@bb.utils.contains("LICENSE_FLAGS_ACCEPTED", "commercial", "libmad", "", d)} \
     libmikmod \
     libmms \

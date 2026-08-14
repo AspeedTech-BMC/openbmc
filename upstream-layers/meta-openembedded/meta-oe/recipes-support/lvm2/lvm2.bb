@@ -86,9 +86,11 @@ FILES:${PN}-scripts = " \
     ${sbindir}/fsadm \
     ${sbindir}/lvmconf \
     ${sbindir}/lvmdump \
+    ${sbindir}/lvm_import_vdo \
+    ${sbindir}/lvmpersist \
+    ${libexecdir}/lvresize_fs_helper \
 "
 
-RDEPENDS:${PN} = "bash"
 RDEPENDS:${PN}:append:class-target = " libdevmapper"
 RDEPENDS:${PN}:append:class-nativesdk = " libdevmapper"
 
@@ -107,6 +109,7 @@ remove_libdevmapper_sysroot_preprocess() {
     rm -f ${SYSROOT_DESTDIR}${libdir}/libdevmapper.so* \
        ${SYSROOT_DESTDIR}${sbindir}/dmsetup \
        ${SYSROOT_DESTDIR}${sbindir}/dmstats \
+       ${SYSROOT_DESTDIR}${sbindir}/dmvdostats \
        ${SYSROOT_DESTDIR}${includedir}/libdevmapper.h \
        ${SYSROOT_DESTDIR}${libdir}/pkgconfig/devmapper.pc
 }

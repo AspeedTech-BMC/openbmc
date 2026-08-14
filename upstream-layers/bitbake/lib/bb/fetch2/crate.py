@@ -1,7 +1,16 @@
 # ex:ts=4:sw=4:sts=4:et
 # -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
 """
-BitBake 'Fetch' implementation for crates.io
+BitBake 'Fetch' implementation for cargo registries, e.g. crates.io
+
+SRC_URI = "crate://some.host/crate_name/version;OptionA=xxx;OptionB=xxx;..."
+
+Supported SRC_URI options are:
+
+- protocol
+   The method to use to download the crate file. Common options are "http",
+   "https", and "ftp". The default is "https".
+
 """
 
 # Copyright (C) 2016 Doug Goldstein
@@ -14,8 +23,10 @@ import hashlib
 import json
 import os
 import subprocess
+import re
+from functools import cmp_to_key
 import bb
-from   bb.fetch2 import logger, subprocess_setup, UnpackError
+from   bb.fetch2 import logger, subprocess_setup, UnpackError, runfetchcmd
 from   bb.fetch2.wget import Wget
 
 
@@ -45,12 +56,23 @@ class Crate(Wget):
 
         super(Crate, self).urldata_init(ud, d)
 
+    def _generate_index_path(self, name):
+        # https://doc.rust-lang.org/cargo/reference/registry-index.html#index-files
+        if len(name) == 1:
+            return f"1/{name}"
+        elif len(name) == 2:
+            return f"2/{name}"
+        elif len(name) == 3:
+            return f"3/{name[0]}/{name}"
+        else:
+            return f"{name[0:2]}/{name[2:4]}/{name}"
+
     def _crate_urldata_init(self, ud, d):
         """
         Sets up the download for a crate
         """
 
-        # URL syntax is: crate://NAME/VERSION
+        # URL syntax is: crate://HOST/NAME/VERSION
         # break the URL apart by /
         parts = ud.url.split('/')
         if len(parts) < 5:
@@ -65,12 +87,21 @@ class Crate(Wget):
         # host (this is to allow custom crate registries to be specified
         host = '/'.join(parts[2:-2])
 
-        # if using upstream just fix it up nicely
-        if host == 'crates.io':
-            host = 'crates.io/api/v1/crates'
+        if 'protocol' in ud.parm:
+            proto = ud.parm['protocol']
+        else:
+            proto = 'https'
 
-        ud.url = "https://%s/%s/%s/download" % (host, name, version)
-        ud.versionsurl = "https://%s/%s/versions" % (host, name)
+        # If using crates.io use the CDN directly as per https://crates.io/data-access
+        if host == 'crates.io':
+            if proto != 'https':
+                bb.warn("URL: %s does the %s protocol which is not supported by crates.io. Please change to ;protocol=https in the url." % (ud.url, proto))
+            ud.url = "https://static.crates.io/crates/%s/%s/download" % (name, version)
+            ud.versionsurl = 'https://index.crates.io/' + self._generate_index_path(name)
+        else:
+            ud.url = "%s://%s/%s/%s/download" % (proto, host, name, version)
+            ud.versionsurl = "%s://%s/%s/versions" % (proto, host, name)
+
         ud.parm['downloadfilename'] = "%s-%s.crate" % (name, version)
         if 'name' not in ud.parm:
             ud.parm['name'] = '%s-%s' % (name, version)
@@ -95,19 +126,15 @@ class Crate(Wget):
         # possible metadata we need to write out
         metadata = {}
 
-        # change to the rootdir to unpack but save the old working dir
-        save_cwd = os.getcwd()
-        os.chdir(rootdir)
-
         bp = d.getVar('BP')
         if bp == ud.parm.get('name'):
-            cmd = "tar -xz --no-same-owner -f %s" % thefile
+            cmd = ['tar', '-xz', '--no-same-owner', '-f', thefile]
             ud.unpack_tracer.unpack("crate-extract", rootdir)
         else:
             cargo_bitbake = self._cargo_bitbake_path(rootdir)
             ud.unpack_tracer.unpack("cargo-extract", cargo_bitbake)
 
-            cmd = "tar -xz --no-same-owner -f %s -C %s" % (thefile, cargo_bitbake)
+            cmd = ['tar', '-xz', '--no-same-owner', '-f', thefile, '-C', cargo_bitbake]
 
             # ensure we've got these paths made
             bb.utils.mkdirhier(cargo_bitbake)
@@ -120,17 +147,8 @@ class Crate(Wget):
             metadata['files'] = {}
             metadata['package'] = tarhash
 
-        path = d.getVar('PATH')
-        if path:
-            cmd = "PATH=\"%s\" %s" % (path, cmd)
         bb.note("Unpacking %s to %s/" % (thefile, os.getcwd()))
-
-        ret = subprocess.call(cmd, preexec_fn=subprocess_setup, shell=True)
-
-        os.chdir(save_cwd)
-
-        if ret != 0:
-            raise UnpackError("Unpack command %s failed with return value %s" % (cmd, ret), ud.url)
+        runfetchcmd(cmd, d, workdir=rootdir)
 
         # if we have metadata to write out..
         if len(metadata) > 0:
@@ -141,10 +159,40 @@ class Crate(Wget):
             with open(mdpath, "w") as f:
                 json.dump(metadata, f)
 
-    def latest_versionstring(self, ud, d):
-        from functools import cmp_to_key
+    def latest_versionstring(self, ud, d, filter_regex=None):
+        """
+        Return the latest upstream version, dispatching to the appropriate
+        parser based on the versionsurl format.
+        """
+        if ud.versionsurl.startswith('https://index.crates.io/'):
+            return self._latest_versionstring_from_index(ud, d, filter_regex)
+        return self._latest_versionstring_from_api(ud, d, filter_regex)
+
+    def _latest_versionstring_from_api(self, ud, d, filter_regex=None):
+        """
+        Parse the latest version from a [name]/versions JSON API response.
+        """
         json_data = json.loads(self._fetch_index(ud.versionsurl, ud, d))
         versions = [(0, i["num"], "") for i in json_data["versions"]]
+        if filter_regex:
+            versions = [v for v in versions if re.match(filter_regex, v[1])]
         versions = sorted(versions, key=cmp_to_key(bb.utils.vercmp))
+        return (versions[-1][1], "") if versions else ("", "")
 
-        return (versions[-1][1], "")
+    def _latest_versionstring_from_index(self, ud, d, filter_regex=None):
+        """
+        Parse the latest version from a Cargo sparse index file (NDJSON).
+        https://doc.rust-lang.org/cargo/reference/registry-index.html#index-files
+        """
+        versions = []
+        response = self._fetch_index(ud.versionsurl, ud, d)
+        for line in response.splitlines():
+            data = json.loads(line)
+            if not data.get("yanked", False):
+                versions.append((0, data["vers"], ""))
+
+        if filter_regex:
+            versions = [v for v in versions if re.match(filter_regex, v[1])]
+
+        versions = sorted(versions, key=cmp_to_key(bb.utils.vercmp))
+        return (versions[-1][1], "") if versions else ("", "")

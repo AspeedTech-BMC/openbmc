@@ -23,9 +23,12 @@ PTESTS_FAST_META_OE = "\
     function2 \
     fwupd \
     gcab \
+    googletest \
+    hunspell \
     imagemagick \
     jemalloc \
     jq \
+    lcms \
     leveldb \
     libcereal \
     libdbi-perl \
@@ -33,6 +36,7 @@ PTESTS_FAST_META_OE = "\
     libjcat \
     libio-pty-perl \
     libmanette \
+    libpcre \
     libplist \
     librelp \
     libssh \
@@ -50,6 +54,7 @@ PTESTS_FAST_META_OE = "\
     nlohmann-json \
     nodejs \
     onig \
+    openjpeg \
     oprofile \
     pegtl \
     pv \
@@ -80,6 +85,7 @@ PTESTS_SLOW_META_OE = "\
     postgresql \
     re2 \
     rocksdb \
+    tbb \
 "
 PTESTS_SLOW_META_OE:append:x86 = " kernel-selftest"
 PTESTS_SLOW_META_OE:append:x86-64 = " kernel-selftest"

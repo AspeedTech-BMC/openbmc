@@ -4,7 +4,7 @@
 #
 # Generate Toaster Fixtures for 'poky.xml' and 'oe-core.xml'
 #
-# Copyright (C) 2022      Wind River Systems
+# Copyright (C) 2026      Wind River Systems
 # SPDX-License-Identifier: GPL-2.0-only
 #
 # Edit the 'current_releases' table for each new release cycle
@@ -35,19 +35,19 @@ verbose = False
 # [0=Codename, 1=Yocto Project Version, 2=Release Date, 3=Current Version, 4=Support Level, 5=Poky Version, 6=BitBake branch]
 current_releases = [
     # Release slot #1
-    ['Wrynose','6.0','April 2026','6.0 (April 2026)','Long Term Support (until April 2030)','','2.16'],
+    ['Wrynose','6.0','April 2026','6.0 (April 2026)','Long Term Support (until April 2030)','','2.18'],
     # Release slot #2 'local'
     ['HEAD','HEAD','','Local Yocto Project','HEAD','','HEAD'],
     # Release slot #3 'master'
     ['Master','master','','Yocto Project master','master','','master'],
     # Release slot #4
     ['Scarthgap','5.0','April 2024','5.0 (April 2024)','Long Term Support (until April 2028)','','2.8'],
+    #['Whinlatter','5.3','October 2025','5.3 (October 2024)','Support for 7 months (until May 2026)','','2.14'],
     #['Styhead','5.1','November 2024','5.1.0 (November 2024)','Support for 7 months (until May 2025)','','2.10'],
     #['Nanbield','4.3','November 2023','4.3.0 (November 2023)','Support for 7 months (until May 2024)','','2.6'],
     #['Mickledore','4.2','April 2023','4.2.0 (April 2023)','Support for 7 months (until October 2023)','','2.4'],
     #['Langdale','4.1','October 2022','4.1.2 (January 2023)','Support for 7 months (until May 2023)','','2.2'],
-    ['Kirkstone','4.0','April 2022','4.0 (March 2023)','Stable - Long Term Support (until Apr. 2024)','','2.0'],
-    ['Whinlatter','5.3','October 2025','5.3 (October 2024)','Support for 7 months (until May 2026)','','2.14'],
+    #['Kirkstone','4.0','April 2022','4.0 (March 2023)','Stable - Long Term Support (until Apr. 2024)','','2.0'],
     #['Honister','3.4','October 2021','3.4.2 (February 2022)','Support for 7 months (until May 2022)','26.0','1.52'],
     #['Hardknott','3.3','April 2021','3.3.5 (March 2022)','Stable - Support for 13 months (until Apr. 2022)','25.0','1.50'],
     #['Gatesgarth','3.2','Oct 2020','3.2.4 (May 2021)','EOL','24.0','1.48'],
@@ -81,7 +81,7 @@ prolog_template = '''\
 bitbakeversion_poky_template = '''\
   <object model="orm.bitbakeversion" pk="{{bitbake_id}}">
     <field type="CharField" name="name">{{name}}</field>
-    <field type="CharField" name="giturl">git://git.openembedded.org/bitbake</field>
+    <field type="CharField" name="giturl">https://git.openembedded.org/bitbake</field>
     <field type="CharField" name="branch">{{branch}}</field>
     <field type="CharField" name="dirpath"></field>
   </object>
@@ -89,7 +89,7 @@ bitbakeversion_poky_template = '''\
 bitbakeversion_oecore_template = '''\
   <object model="orm.bitbakeversion" pk="{{bitbake_id}}">
     <field type="CharField" name="name">{{name}}</field>
-    <field type="CharField" name="giturl">git://git.openembedded.org/bitbake</field>
+    <field type="CharField" name="giturl">https://git.openembedded.org/bitbake</field>
     <field type="CharField" name="branch">{{bitbakeversion}}</field>
   </object>
 '''
@@ -247,7 +247,7 @@ def generate_poky():
             params['description'] = 'Local Yocto Project'
             params['name'] = 'local'
         else:
-            params['help_source'] = 'using the tip of the &lt;a href="https://git.yoctoproject.org/cgit/cgit.cgi/poky/log/{{h_release}}"&gt;Yocto Project {{Release}} branch&lt;/a&gt;'
+            params['help_source'] = 'using the tip of the &lt;a href="https://git.yoctoproject.org/meta-yocto/log/{{h_release}}"&gt;Yocto Project {{Release}} branch&lt;/a&gt;'
             params['description'] = 'Yocto Project {{release_version}} "{{Release}}"'
         if 'master' == params['release']:
             params['h_release'] = ''
@@ -280,10 +280,17 @@ def generate_poky():
         params = {}
         params['layer'] = layer
         params['layer_id'] = str(i+1)
-        params['vcs_url'] = 'git://git.yoctoproject.org/poky'
-        params['vcs_web_url'] = 'https://git.yoctoproject.org/cgit/cgit.cgi/poky'
-        params['vcs_web_tree_base_url'] = 'https://git.yoctoproject.org/cgit/cgit.cgi/poky/tree/%path%?h=%branch%'
-        params['vcs_web_file_base_url'] = 'https://git.yoctoproject.org/cgit/cgit.cgi/poky/tree/%path%?h=%branch%'
+        if 'openembedded-core' == layer:
+            params['vcs_url'] = 'https://git.openembedded.org/openembedded-core'
+            params['vcs_web_url'] = 'https://git.openembedded.org/openembedded-core'
+            params['vcs_web_tree_base_url'] = 'https://git.openembedded.org/openembedded-core/tree/%path%?h=%branch%'
+            params['vcs_web_file_base_url'] = 'https://git.openembedded.org/openembedded-core/tree/%path%?h=%branch%'
+        else:
+            # Yocto Project layers: meta-poky, meta-yocto-bsp
+            params['vcs_url'] = 'https://git.yoctoproject.org/meta-yocto'
+            params['vcs_web_url'] = 'https://git.yoctoproject.org/meta-yocto/tree'
+            params['vcs_web_tree_base_url'] = 'https://git.yoctoproject.org/meta-yocto/tree/%path%?h=%branch%'
+            params['vcs_web_file_base_url'] = 'https://git.yoctoproject.org/meta-yocto/tree/%path%?h=%branch%'
 
         if i:
             print_str('',fd)
@@ -392,10 +399,10 @@ def generate_oe_core():
         params = {}
         params['layer'] = layer
         params['layer_id'] = str(i+1)
-        params['vcs_url'] = 'git://git.openembedded.org/openembedded-core'
-        params['vcs_web_url'] = 'https://cgit.openembedded.org/openembedded-core'
-        params['vcs_web_tree_base_url'] = 'https://cgit.openembedded.org/openembedded-core/tree/%path%?h=%branch%'
-        params['vcs_web_file_base_url'] = 'https://cgit.openembedded.org/openembedded-core/tree/%path%?h=%branch%'
+        params['vcs_url'] = 'https://git.openembedded.org/openembedded-core'
+        params['vcs_web_url'] = 'https://git.openembedded.org/openembedded-core'
+        params['vcs_web_tree_base_url'] = 'https://git.openembedded.org/openembedded-core/tree/%path%?h=%branch%'
+        params['vcs_web_file_base_url'] = 'https://git.openembedded.org/openembedded-core/tree/%path%?h=%branch%'
         if i:
             print_str('',fd)
         print_template(layer_oe_core_template,params,fd)
@@ -405,6 +412,68 @@ def generate_oe_core():
 
     print_str(epilog_template,fd)
     fd.close()
+
+#################################
+# Update test project list
+#
+
+def generate_test():
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    test_script = os.path.join(this_path,"../../tests/functional/test_create_new_project.py")
+
+    is_copy = True
+    out_lines = ""
+    with open(test_script, 'r') as file_fd:
+        lines = file_fd.readlines()
+        for line in lines:
+            if 'test_create_new_project_without_name' in line:
+                is_copy = True
+                out_lines += '\n'
+            if is_copy:
+                out_lines += line
+            if line.startswith('class TestCreateNewProject'):
+                is_copy = False
+                # Insert new project entries
+
+                for id,release in enumerate(current_releases):
+                    release_id = id + 1
+                    release_name = release[0]
+                    release_merge = 'True'
+                    release_version = ''
+                    if 'Master' == release_name:
+                        release_name = 'Master'
+                        release_title = 'Yocto Project master'
+                        release_merge = 'False'
+                    elif 'HEAD' == release_name:
+                        release_name = 'Local'
+                        release_title = 'Local Yocto Project'
+                    else:
+                        release_title = f'Yocto Project {release[1]} "{release_name}"'
+                        release_version = f'{release[1]} '
+                    # Insert project
+                    test_release_def = f'''
+    def test_create_new_project_{release_name.lower()}(self):
+        """ Test create new project using:
+          - Project Name: Any string
+          - Release: Yocto Project {release_version}"{release_name}" (option value: {release_id})
+          - Merge Toaster settings: {release_merge}
+        """
+        release = '{release_id}'
+        release_title = '{release_title}'
+        project_name = 'project{release_name.lower()}'
+        self.create_new_project(
+            project_name,
+            release,
+            release_title,
+            {release_merge},
+        )
+'''
+                    out_lines += test_release_def
+
+    with open('test_create_new_project.py', 'w') as file_fd:
+        file_fd.write(out_lines)
+    print(f"Output: 'test_create_new_project.py'")
+    os.system(f"mv -f test_create_new_project.py {test_script}")
 
 #################################
 # Help
@@ -424,8 +493,9 @@ def main(argv):
     global verbose
 
     parser = argparse.ArgumentParser(description='gen_fixtures.py: table generate the fixture files')
-    parser.add_argument('--poky', '-p', action='store_const', const='poky', dest='command', help='Generate the poky.xml file')
-    parser.add_argument('--oe-core', '-o', action='store_const', const='oe_core', dest='command', help='Generate the oe-core.xml file')
+    parser.add_argument('--poky', '-p', action='store_const', const='poky', dest='command', help="Generate the 'poky.xml' file")
+    parser.add_argument('--oe-core', '-o', action='store_const', const='oe_core', dest='command', help="Generate the 'oe-core.xml' file")
+    parser.add_argument('--test', '-t', action='store_const', const='test', dest='command', help="Update the 'test_create_new_project.py' file")
     parser.add_argument('--all', '-a', action='store_const', const='all', dest='command', help='Generate all fixture files')
     parser.add_argument('--list', '-l', action='store_const', const='list', dest='command', help='List the release table')
     parser.add_argument('--verbose', '-v', action='store_true', dest='verbose', help='Enable verbose debugging output')
@@ -436,11 +506,12 @@ def main(argv):
         generate_poky()
     elif 'oe_core' == args.command:
         generate_oe_core()
+    elif 'test' == args.command:
+        generate_test()
     elif 'all' == args.command:
         generate_poky()
         generate_oe_core()
-    elif 'all' == args.command:
-        list_releases()
+        generate_test()
     elif 'list' == args.command:
         list_releases()
 

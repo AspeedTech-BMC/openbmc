@@ -1,7 +1,7 @@
 require recipes-security/optee/optee-test.inc
 
-# v4.8.0
-SRCREV = "6569cd7b13e1b37b37069e090d592adca7d3926d"
+# v4.10.0
+SRCREV = "88c93e87a5c172363ee986ded036a25cafcc9d2c"
 PV .= "+git"
 UPSTREAM_CHECK_COMMITS = "1"
 

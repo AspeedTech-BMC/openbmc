@@ -1,9 +1,0 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
-
-header:
-  version: 14
-
-local_conf_header:
-  a320: |
-    MACHINE_FEATURES += "cortexa320"
-    OVERRIDES .= ":cortexa320"

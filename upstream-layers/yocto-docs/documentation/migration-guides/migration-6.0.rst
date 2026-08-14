@@ -77,7 +77,7 @@ Default :term:`INIT_MANAGER` definition changed to ``systemd``
 --------------------------------------------------------------
 
 The default definition of :term:`INIT_MANAGER` in the :oe_git:`defaultsetup.conf
-<openembedded-core/tree/meta/conf/distro/defaultsetup.conf>` file was changed
+</openembedded-core/tree/meta/conf/distro/defaultsetup.conf>` file was changed
 from ``none`` to ``systemd``.
 
 This means that users of the default distro setup (appearing as the ``nodistro``
@@ -177,11 +177,8 @@ The configuration templates located in ``meta-poky/conf/templates/default`` have
 been removed as they are now provided in a single location:
 :term:`OpenEmbedded-Core (OE-Core)` :oecore_path:`meta/conf/templates/default`.
 
-These files were duplicating themselves but were mostly similar.
-
 See commit :meta_yocto_rev:`ac300baea7314ea3c80f2330b2a993f729f32150` for more
-information on the differences there are between the two sets of default
-templates.
+information on the differences between the two sets of default templates.
 
 :ref:`ref-classes-native` and :ref:`ref-classes-cross` classes :term:`DEBUG_BUILD` change
 -----------------------------------------------------------------------------------------
@@ -246,7 +243,7 @@ See commit :oecore_rev:`cd9e7304481b24b27df61c03ad73496d18e4d47c` for more infor
 
 All the :ref:`ref-classes-pkgconfig`-related variables, such as
 :term:`PKG_CONFIG_PATH`, are no longer exported in
-:oe_git:`meta/conf/bitbake.conf <bitbake/tree/meta/conf/bitbake.conf>` with the
+:oe_git:`meta/conf/bitbake.conf </bitbake/tree/meta/conf/bitbake.conf>` with the
 :ref:`export <bitbake:bitbake-user-manual/bitbake-user-manual-metadata:Exporting
 Variables to the Environment>` directive.
 
@@ -262,9 +259,9 @@ See commit :oecore_rev:`68d2d38483efada7bc2409e10508b03a7431caff` for more infor
 ------------------------------------------------------------
 
 Image recipes that inherit the :ref:`ref-classes-vex` class have an extra JSON
-document generated which was previous ending with the ``.json`` suffix. For
+document generated which was previously ending with the ``.json`` suffix. For
 example, a build for the ``core-image-minimal`` image recipe with this class
-would have resulted in a file named::
+inherited would have resulted in a file named::
 
    core-image-minimal-qemuarm64.rootfs.json
 
@@ -290,6 +287,95 @@ information.
 
 Users are advised to transition to SDPX 3.0, which is provided by the
 :ref:`ref-classes-create-spdx` class.
+
+``cve-check`` class removed
+---------------------------
+
+The ``cve-check`` class was removed and replaced by the
+:ref:`ref-classes-sbom-cve-check` class. Quoting the commit removing the class
+(:oecore_rev:`00de455f8d3aeca880129d23e8cfb7e246404699`):
+
+.. code-block:: text
+
+   It's been long known that the cve-check class in oe-core is not that
+   usable in the real world, for more details see "Future of CVE scanning
+   in Yocto"[1].  This mail proposed an alternative direction that included
+   a CVE scanning tool that can be ran both during the build and afterwards,
+   so that periodic scans of a previously build image is possible.
+
+   Last year, Bootlin wrote sbom-cve-check[2] and I compared this to my
+   proposal in "Comparing cve-check with sbom-cve-check"[3], concluding
+   that this is likely the missing piece.
+
+   Support for sbom-cve-check has been merged into oe-core, and the
+   cve-check class is now obsolete. So that we don't have to maintain it for
+   the four-year lifecycle of the Wrynose release, delete it.
+
+   This patch also deletes the database fetcher recipes, and the test cases
+   that were specific to cve-check.  Note that the oe.cve_check library
+   still exists as this is used by the SPDX classes.
+
+   [1] https://lore.kernel.org/openembedded-core/7D6E419E-A7AE-4324-966C-3552C586E452@arm.com/
+   [2] https://github.com/bootlin/sbom-cve-check
+   [3] https://lore.kernel.org/openembedded-core/2CD10DD9-FB2A-4B10-B98A-85918EB6B4B7@arm.com/
+
+Users currently using the ``cve-check`` class are advised to switch to
+:ref:`ref-classes-sbom-cve-check`:
+
+-  The following assignment::
+
+      INHERIT += "cve-check"
+
+   Should be removed and replaced by::
+
+      OE_FRAGMENTS += "core/yocto/sbom-cve-check"
+
+   This will enable the :ref:`ref-classes-sbom-cve-check` class along with the recommended
+   settings.
+
+   This will deploy two files to the deployment directory
+   (:term:`DEPLOY_DIR_IMAGE`) after building an image:
+
+   -  A file ending with ``.sbom-cve-check.yocto.json``: this is the output JSON
+      report in the same format as the one deployed by the ``cve-check`` class.
+
+   -  A file ending with ``.sbom-cve-check.spdx.json``: this is an output SPDX
+      report annotated with vulnerable CVEs.
+
+-  The ``cve-check`` class output summary file (deployed in the
+   :term:`DEPLOY_DIR_IMAGE`) ending with ``.cve.txt`` is no longer
+   deployed by default but can be brought back by adding the following statement
+   to a configuration file::
+
+      SBOM_CVE_CHECK_EXPORT_VARS:append = " SBOM_CVE_CHECK_EXPORT_SUMMARY"
+
+   This will deploy a new file ending with ``.cve.txt``, which uses the same
+   format as the summary previously deployed by the ``cve-check`` class.
+
+   See the documentation of :term:`SBOM_CVE_CHECK_EXPORT_VARS` for more
+   details.
+
+-  The ``CVE_CHECK_SHOW_WARNINGS`` variable, which was used to control whether
+   the ``cve-check`` would print warning when unpatched CVEs were found, is now
+   removed and replaced by the :term:`SBOM_CVE_CHECK_SHOW_WARNINGS` variable,
+   which does the same.
+
+See the :doc:`/security-manual/vulnerabilities` section of the Yocto Project
+Security Manual for more information.
+
+:term:`CVE_PRODUCT` character escaping change
+---------------------------------------------
+
+The :term:`CVE_PRODUCT` variable, which specifies a name used to match the
+recipe name against the name in the upstream `NIST CVE database
+<https://nvd.nist.gov/>`__, used to require special characters to be escaped.
+
+This is no longer, the case. For example, the :term:`CVE_PRODUCT` variable for
+the ``webkitgtk`` recipe must no longer be written as ``webkitgtk\+`` but
+``webkitgtk+``.
+
+Users are advised to review their :term:`CVE_PRODUCT` assignments and remove any
+special character escaping.
 
 .. _ref-migration-6-0-wic-sector-size-change:
 
@@ -320,12 +406,12 @@ Should be replaced by::
 See commit :oecore_rev:`b50d6debf7baa555fbfb3521c4f952675bba2d37` for more
 information.
 
-:doc:`WIC </dev-manual/wic>` files to be moved under ``files/wic``
-------------------------------------------------------------------
+:doc:`WIC </dev-manual/wic>` kickstart files to be moved under ``files/wic``
+----------------------------------------------------------------------------
 
-:doc:`WIC </dev-manual/wic>` related files such as :doc:`WKS
-</ref-manual/kickstart>` files or custom WIC plugins should be moved to the
-``files/wic/`` directory of the layer containing them.
+:doc:`WIC </dev-manual/wic>` kickstart files (:doc:`WKS </ref-manual/kickstart>`
+files) should be moved to the ``files/wic/`` directory of the layer containing
+them.
 
 If not done, the build will fail with errors indicating how to move these files,
 for example::
@@ -352,6 +438,9 @@ For example, here is the content of the :term:`OpenEmbedded-Core (OE-Core)`
    ├── qemux86-directdisk.wks
    ├── sdimage-bootpart.wks
    └── systemd-bootdisk.wks
+
+This change does not affect :ref:`WIC plugins <dev-manual/wic:Using the Wic
+Plugin Interface>`, which should remain in ``scripts/lib/wic/plugins/source/``.
 
 Support for SysVinit compatibility in systemd was dropped
 ---------------------------------------------------------
@@ -395,6 +484,13 @@ The following recipes have been removed in this release:
 -  ``python3-pyzstd``: there were no users of this in :term:`OpenEmbedded-Core
    (OE-Core)` and Python 3.14 now has built-in support for zstd
    (:oecore_rev:`55061de857657ea01babc5652caa062e8d292c44`)
+
+-  ``cve-update-db-native``, ``cve-update-nvd2-native``: removed with the
+   ``cve-check`` class removal as it was the only user of these recipes.
+   (:oecore_rev:`00de455f8d3aeca880129d23e8cfb7e246404699`)
+
+-  ``python3-roman-numerals-py``: renamed to ``python3-roman-numerals``
+   (:oecore_rev:`faff756e829b852724ad706051d6a771071440cb`)
 
 Removed :term:`PACKAGECONFIG` options
 -------------------------------------

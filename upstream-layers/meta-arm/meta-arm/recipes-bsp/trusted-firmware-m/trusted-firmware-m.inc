@@ -43,6 +43,11 @@ DEPENDS += "cmake-native \
 
 B = "${WORKDIR}/build"
 
+# Build TF-M regression tests instead of the default firmware.
+# When enabled, the desired test suite options should be appended to
+# EXTRA_OECMAKE (e.g. -DTEST_S=ON).
+BUILD_REGRESSION_TESTS ?= "0"
+
 # Build for debug (set TFM_DEBUG to 1 to activate)
 TFM_DEBUG ?= "${FIRMWARE_DEBUG_BUILD}"
 
@@ -52,11 +57,6 @@ python() {
     if not d.getVar("TFM_PLATFORM"):
         raise bb.parse.SkipRecipe("TFM_PLATFORM needs to be set")
 }
-
-PACKAGECONFIG ??= ""
-# Whether to integrate the test suite
-PACKAGECONFIG[test-secure] = "-DTEST_S=ON,-DTEST_S=OFF"
-PACKAGECONFIG[test-nonsecure] = "-DTEST_NS=ON,-DTEST_NS=OFF"
 
 # Currently we only support using the Arm binary GCC
 EXTRA_OECMAKE += "-DTFM_TOOLCHAIN_FILE=${S}/toolchain_GNUARM.cmake"
@@ -72,13 +72,15 @@ EXTRA_OECMAKE += "${@bb.utils.contains('TFM_DEBUG', '1', '-DCMAKE_BUILD_TYPE=Deb
 
 EXTRA_OECMAKE += "\
     -DCMSIS_PATH=${S}/external/cmsis \
-    -DMBEDCRYPTO_PATH=${S}/external/mbedtls \
     -DMCUBOOT_PATH=${S}/external/mcuboot \
     -DQCBOR_PATH=${S}/external/qcbor \
     -DT_COSE_PATH=${S}/external/t_cose \
     -DTFM_EXTRAS_REPO_PATH=${S}/external/tfm-extras \
-    -DTFM_TEST_REPO_PATH=${S}/external/tf-m-tests \
     "
+
+# tf-m-tests directory
+# The directory can be overridden by local tf-m-tests folder path.
+TFM_TESTS_DIR ?= "${S}/external/tf-m-tests"
 
 export CMAKE_BUILD_PARALLEL_LEVEL = "${@oe.utils.parallel_make(d, False)}"
 
@@ -92,7 +94,13 @@ export OPENSSL_MODULES = "${STAGING_LIBDIR_NATIVE}/ossl-modules"
 
 do_configure[cleandirs] = "${B}"
 do_configure() {
-    cmake -GNinja -S ${S} -B ${B} ${EXTRA_OECMAKE} ${PACKAGECONFIG_CONFARGS}
+    # When regression tests are enabled, TF-M is built under regression test
+    # directory.
+    if [ "${BUILD_REGRESSION_TESTS}" = "1" ]; then
+        cmake -GNinja -S ${TFM_TESTS_DIR}/tests_reg/spe -B ${B} -DCONFIG_TFM_SOURCE_PATH=${S} ${EXTRA_OECMAKE}
+    else
+        cmake -GNinja -S ${S} -B ${B} ${EXTRA_OECMAKE}
+    fi
 }
 
 # Invoke install here as there's no point in splitting compile from install: the
@@ -110,6 +118,15 @@ do_install() {
     find ${B}/bin \( -name '*.bin' -o -name '*.elf' \) -type f | while read -r file; do
         install -m 0644 "$file" "${D}${FIRMWARE_DIR}"
     done
+
+    # Install for NS build
+    if [ -d "${B}/api_ns" ]; then
+        install -d -m 0755 ${D}/sysroot-only/api_ns
+
+        cd ${B}/api_ns
+        find . -type d -exec install -d -m 0755 ${D}/sysroot-only/api_ns/{} \;
+        find . -type f -exec install -m 0644 {} ${D}/sysroot-only/api_ns/{} \;
+    fi
 }
 
 # Build paths are currently embedded because it's impossible to pass -fdebug-prefix-map
@@ -118,3 +135,5 @@ INSANE_SKIP:${PN}-dbg += "buildpaths"
 # Target binaries will be 32-bit Arm
 INSANE_SKIP:${PN} += "arch"
 INSANE_SKIP:${PN}-dbg += "arch"
+
+CVE_PRODUCT = "trustedfirmware:trusted_firmware-m"

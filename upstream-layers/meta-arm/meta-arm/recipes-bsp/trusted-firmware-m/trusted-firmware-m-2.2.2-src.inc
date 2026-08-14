@@ -63,6 +63,8 @@ SRC_URI  = "${SRC_URI_TRUSTED_FIRMWARE_M};branch=${SRCBRANCH_tfm};name=tfm;dests
 
 SRCREV_FORMAT = "tfm_tfm-extras_tfm-tests_cmsis_mbedtls_mcuboot_qcbor_tfm-psa-adac_t-cose"
 
+EXTRA_OECMAKE += "-DMBEDCRYPTO_PATH=${S}/external/mbedtls"
+
 S = "${UNPACKDIR}/tfm"
 
 # Apply patches

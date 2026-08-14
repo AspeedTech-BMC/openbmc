@@ -11,6 +11,8 @@ import warnings
 warnings.simplefilter("default")
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib'))
 
+__version__ = "2.19.0"
+
 import unittest
 try:
     import bb
@@ -19,6 +21,9 @@ try:
     import layerindexlib
 except RuntimeError as exc:
     sys.exit(str(exc))
+
+if __version__ != bb.__version__:
+    sys.exit("Bitbake core library version and program version mismatch!")
 
 tests = ["bb.tests.codeparser",
          "bb.tests.color",
@@ -67,6 +72,8 @@ ENV_HELP = """\
 Environment variables:
   BB_SKIP_NETTESTS      set to 'yes' in order to skip tests using network
                         connection
+  BB_SKIP_PYPI_TESTS    set to 'no' to run PyPI packaging tests
+                        (default: yes/skip)
   BB_TMPDIR_NOCLEAN     set to 'yes' to preserve test tmp directories
 """
 

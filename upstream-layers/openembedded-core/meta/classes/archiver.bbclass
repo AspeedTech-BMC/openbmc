@@ -6,36 +6,34 @@
 
 #
 # This bbclass is used for creating archive for:
-#  1) original (or unpacked) source: ARCHIVER_MODE[src] = "original"
-#  2) patched source: ARCHIVER_MODE[src] = "patched" (default)
-#  3) configured source: ARCHIVER_MODE[src] = "configured"
-#  4) source mirror: ARCHIVER_MODE[src] = "mirror"
-#  5) The patches between do_unpack and do_patch:
+#  - original (or unpacked) source: ARCHIVER_MODE[src] = "original"
+#  - patched source: ARCHIVER_MODE[src] = "patched" (default)
+#  - configured source: ARCHIVER_MODE[src] = "configured"
+#  - source mirror: ARCHIVER_MODE[src] = "mirror"
+#  - The patches between do_unpack and do_patch:
 #     ARCHIVER_MODE[diff] = "1"
-#     And you can set the one that you'd like to exclude from the diff:
+#    And you can set the one that you'd like to exclude from the diff:
 #     ARCHIVER_MODE[diff-exclude] ?= ".pc autom4te.cache patches"
-#  6) The environment data, similar to 'bitbake -e recipe':
+#  - The environment data, similar to 'bitbake -e recipe':
 #     ARCHIVER_MODE[dumpdata] = "1"
-#  7) The recipe (.bb and .inc): ARCHIVER_MODE[recipe] = "1"
-#  8) Whether output the .src.rpm package:
-#     ARCHIVER_MODE[srpm] = "1"
-#  9) Filter the license, the recipe whose license in
-#     COPYLEFT_LICENSE_INCLUDE will be included, and in
-#     COPYLEFT_LICENSE_EXCLUDE will be excluded.
-#     COPYLEFT_LICENSE_INCLUDE = 'GPL* LGPL*'
-#     COPYLEFT_LICENSE_EXCLUDE = 'CLOSED Proprietary'
-# 10) The recipe type that will be archived:
-#     COPYLEFT_RECIPE_TYPES = 'target'
-# 11) The source mirror mode:
-#     ARCHIVER_MODE[mirror] = "split" (default): Sources are split into
-#     per-recipe directories in a similar way to other archiver modes.
-#     Post-processing may be required to produce a single mirror directory.
-#     This does however allow inspection of duplicate sources and more
-#     intelligent handling.
-#     ARCHIVER_MODE[mirror] = "combined": All sources are placed into a single
-#     directory suitable for direct use as a mirror. Duplicate sources are
-#     ignored.
-# 12) Source mirror exclusions:
+#  - The recipe (.bb and .inc): ARCHIVER_MODE[recipe] = "1"
+#  - Filter the license, the recipe whose license in
+#    COPYLEFT_LICENSE_INCLUDE will be included, and in
+#    COPYLEFT_LICENSE_EXCLUDE will be excluded.
+#    COPYLEFT_LICENSE_INCLUDE = 'GPL* LGPL*'
+#    COPYLEFT_LICENSE_EXCLUDE = 'CLOSED Proprietary'
+# - The recipe type that will be archived:
+#    COPYLEFT_RECIPE_TYPES = 'target'
+# - The source mirror mode:
+#    ARCHIVER_MODE[mirror] = "split" (default): Sources are split into
+#    per-recipe directories in a similar way to other archiver modes.
+#    Post-processing may be required to produce a single mirror directory.
+#    This does however allow inspection of duplicate sources and more
+#    intelligent handling.
+#    ARCHIVER_MODE[mirror] = "combined": All sources are placed into a single
+#    directory suitable for direct use as a mirror. Duplicate sources are
+#    ignored.
+# - Source mirror exclusions:
 #     ARCHIVER_MIRROR_EXCLUDE is a list of prefixes to exclude from the mirror.
 #     This may be used for sources which you are already publishing yourself
 #     (e.g. if the URI starts with 'https://mysite.com/' and your mirror is
@@ -48,7 +46,6 @@
 COPYLEFT_RECIPE_TYPES ?= 'target native nativesdk cross crosssdk cross-canadian'
 inherit copyleft_filter
 
-ARCHIVER_MODE[srpm] ?= "0"
 ARCHIVER_MODE[src] ?= "patched"
 ARCHIVER_MODE[diff] ?= "0"
 ARCHIVER_MODE[diff-exclude] ?= ".pc autom4te.cache patches"
@@ -61,8 +58,6 @@ DEPLOY_DIR_SRC ?= "${DEPLOY_DIR}/sources"
 ARCHIVER_TOPDIR ?= "${WORKDIR}/archiver-sources"
 ARCHIVER_ARCH = "${TARGET_SYS}"
 ARCHIVER_OUTDIR = "${ARCHIVER_TOPDIR}/${ARCHIVER_ARCH}/${PF}/"
-ARCHIVER_RPMTOPDIR ?= "${WORKDIR}/deploy-sources-rpm"
-ARCHIVER_RPMOUTDIR = "${ARCHIVER_RPMTOPDIR}/${ARCHIVER_ARCH}/${PF}/"
 ARCHIVER_WORKDIR = "${WORKDIR}/archiver-work/"
 
 # When producing a combined mirror directory, allow duplicates for the case
@@ -154,29 +149,20 @@ python () {
 
     if ar_recipe == "1":
         d.appendVarFlag('do_deploy_archives', 'depends', ' %s:do_ar_recipe' % pn)
+}
 
-    # Output the SRPM package
-    if d.getVarFlag('ARCHIVER_MODE', 'srpm') == "1" and d.getVar('PACKAGES'):
-        if "package_rpm" not in d.getVar('PACKAGE_CLASSES'):
-            bb.fatal("ARCHIVER_MODE[srpm] needs package_rpm in PACKAGE_CLASSES")
-
-        # Some recipes do not have any packaging tasks
-        if hasTask("do_package_write_rpm"):
-            d.appendVarFlag('do_deploy_archives', 'depends', ' %s:do_package_write_rpm' % pn)
-            d.appendVarFlag('do_package_write_rpm', 'dirs', ' ${ARCHIVER_RPMTOPDIR}')
-            d.appendVarFlag('do_package_write_rpm', 'sstate-inputdirs', ' ${ARCHIVER_RPMTOPDIR}')
-            d.appendVarFlag('do_package_write_rpm', 'sstate-outputdirs', ' ${DEPLOY_DIR_SRC}')
-            d.appendVar('PSEUDO_INCLUDE_PATHS', ',${ARCHIVER_TOPDIR}')
-            if ar_dumpdata == "1":
-                d.appendVarFlag('do_package_write_rpm', 'depends', ' %s:do_dumpdata' % pn)
-            if ar_recipe == "1":
-                d.appendVarFlag('do_package_write_rpm', 'depends', ' %s:do_ar_recipe' % pn)
-            if ar_src == "original":
-                d.appendVarFlag('do_package_write_rpm', 'depends', ' %s:do_ar_original' % pn)
-            elif ar_src == "patched":
-                d.appendVarFlag('do_package_write_rpm', 'depends', ' %s:do_ar_patched' % pn)
-            elif ar_src == "configured":
-                d.appendVarFlag('do_package_write_rpm', 'depends', ' %s:do_ar_configured' % pn)
+do_ar_prepare[vardeps] += " \
+    ARCHIVER_MODE \
+    ARCHIVER_MIRROR_EXCLUDE \
+    COPYLEFT_LICENSE_EXCLUDE \
+    COPYLEFT_LICENSE_INCLUDE \
+    COPYLEFT_PN_EXCLUDE \
+    COPYLEFT_PN_INCLUDE \
+    COPYLEFT_RECIPE_TYPES \
+"
+do_ar_prepare[cleandirs] = "${ARCHIVER_TOPDIR}"
+do_ar_prepare() {
+	:
 }
 
 # Take all the sources for a recipe and put them in WORKDIR/archiver-work/.
@@ -398,8 +384,8 @@ python do_ar_mirror() {
 
         # We now have an appropriate localpath
         bb.note('Copying source mirror')
-        cmd = 'cp --force --preserve=timestamps --no-dereference --recursive -H %s %s' % (localpath, destdir)
-        subprocess.check_call(cmd, shell=True)
+        cmd = ['cp', '--force', '--preserve=timestamps', '--no-dereference', '--recursive', '-H', localpath, destdir]
+        subprocess.check_call(cmd)
 }
 
 def create_tarball(d, srcdir, suffix, ar_outdir):
@@ -438,9 +424,8 @@ def create_tarball(d, srcdir, suffix, ar_outdir):
     bb.note('Creating %s' % tarname)
     dirname = os.path.dirname(srcdir)
     basename = os.path.basename(srcdir)
-    exclude = "--exclude=temp --exclude=patches --exclude='.pc'"
-    tar_cmd = "tar %s -cf - %s | %s > %s" % (exclude, basename, compression_cmd, tarname)
-    subprocess.check_call(tar_cmd, cwd=dirname, shell=True)
+    tar_cmd = ["tar", "--exclude=temp", "--exclude=patches", "--exclude=.pc", '-cf', tarname, basename, '-I', compression_cmd]
+    subprocess.check_call(tar_cmd, cwd=dirname)
 
 # creating .diff.gz between source.orig and source
 def create_diff_gz(d, src_orig, src, ar_outdir):
@@ -609,14 +594,15 @@ do_deploy_archives[sstate-inputdirs] = "${ARCHIVER_TOPDIR}"
 do_deploy_archives[sstate-outputdirs] = "${DEPLOY_DIR_SRC}"
 addtask do_deploy_archives_setscene
 
-addtask do_ar_original after do_unpack
-addtask do_unpack_and_patch after do_patch do_preconfigure
+addtask do_ar_prepare
+addtask do_ar_original after do_unpack do_ar_prepare
+addtask do_unpack_and_patch after do_patch do_preconfigure do_ar_prepare
 addtask do_ar_patched after do_unpack_and_patch
 addtask do_ar_configured after do_unpack_and_patch
-addtask do_ar_mirror after do_fetch
-addtask do_dumpdata
-addtask do_ar_recipe
-addtask do_deploy_archives
+addtask do_ar_mirror after do_fetch do_ar_prepare
+addtask do_dumpdata after do_ar_prepare
+addtask do_ar_recipe after do_ar_prepare
+addtask do_deploy_archives after do_ar_prepare
 do_build[recrdeptask] += "do_deploy_archives"
 do_rootfs[recrdeptask] += "do_deploy_archives"
 do_populate_sdk[recrdeptask] += "do_deploy_archives"

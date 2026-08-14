@@ -1,6 +1,40 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "description": "Schema for bitbake-setup configuration files",
+    "examples" : [
+        {
+            "description": "Example bitbake-setup configuration file",
+            "sources": {
+                "bitbake": {
+                    "git-remote": {
+                        "uri": "https://git.openembedded.org/bitbake",
+                        "rev": "master"
+                    },
+                    "path": "bitbake"
+                },
+                "openembedded-core": {
+                    "git-remote": {
+                        "uri": "https://git.openembedded.org/openembedded-core",
+                        "rev": "master"
+                    },
+                    "path": "openembedded-core"
+                }
+            },
+            "bitbake-setup": {
+                "configurations": [
+                    {
+                        "name" : "qemux86-64-nodistro",
+                        "description": "OpenEmbedded 'nodistro' build for qemux86-64",
+                        "setup-dir-name": "oe-nodistro-master",
+                        "bb-layers": ["openembedded-core/meta"],
+                        "oe-fragments": ["machine/qemux86-64"]
+                    }
+                ]
+            },
+            "version": "1.0"
+        }
+    ],
+    "title": "bitbake-setup configuration file",
     "type": "object",
     "required": [
         "description",
@@ -41,6 +75,20 @@
                                 "type": "string",
                                 "description": "Human-readable description of the configuration"
                             },
+                            "notes": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                ],
+                                "description": "Extra notes that populate conf-notes.txt when bb-layers is used"
+                            },
                             "bb-layers": {
                                 "type": "array",
                                 "description": "List of BitBake layer paths to include, relative to the layers download directory",
@@ -64,7 +112,7 @@
                                 "type": "array",
                                 "description": "List of BitBake configuration fragments to enable",
                                 "items": {
-                                    "oneOf": [
+                                    "anyOf": [
                                         {
                                             "type": "string",
                                             "description": "Configuration fragment name"
@@ -123,6 +171,27 @@
                             "setup-dir-name": {
                                 "type": "string",
                                 "description": "A suggestion for the setup directory name, $-prefixed keys from oe-fragments-one-of will be substituted with user selections."
+                            },
+                            "install-buildtools": {
+                                "type": "object",
+                                "description": "Settings for downloading buildtools via bb.fetch",
+                                "properties": {
+                                    "url": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "description": "Full URL to the buildtools SDK installer."
+                                    },
+                                    "sha256sum": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "description": "SHA256 checksum of the buildtools installer."
+                                    }
+                                },
+                                "required": [
+                                    "url",
+                                    "sha256sum"
+                                ],
+                                "additionalProperties": false
                             }
                         },
                         "additionalProperties": false

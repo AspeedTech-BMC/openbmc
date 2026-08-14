@@ -6,8 +6,9 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=0fca02217a5d49a14dfe2d11837bb34d"
 DEPENDS += "ninja-native"
 UPSTREAM_CHECK_COMMITS = "1"
 
-SRC_URI = "git://gn.googlesource.com/gn;protocol=https;branch=main"
-SRCREV = "9d19a7870add65151ff91bcc26252bb7521065cf"
+SRC_URI = "git://gn.googlesource.com/gn;protocol=https;branch=main \
+"
+SRCREV = "1d86777e7f2562a86ecea77d1809ac4f82bb5bfe"
 PV = "0+git"
 
 BB_GIT_SHALLOW = ""
@@ -38,7 +39,7 @@ do_configure() {
 do_compile[progress] = "outof:^\[(\d+)/(\d+)\]\s+"
 
 do_compile() {
-    ninja -C ${B} --verbose
+    ninja -C ${B} --verbose gn
 }
 
 do_install() {

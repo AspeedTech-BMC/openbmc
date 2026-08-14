@@ -74,6 +74,14 @@ PACKAGECONFIG[install-utils] = "-Dinstall-utils=enabled, -Dinstall-utils=disable
 
 PACKAGECONFIG[auto-reboot-on-bmc-quiesce] = "-Dauto-reboot-on-bmc-quiesce=enabled,-Dauto-reboot-on-bmc-quiesce=disabled"
 
+# Calculate the maximum chassis instance number from OBMC_CHASSIS_INSTANCES
+CHASSIS_SMP_MAX_INSTANCE = "${@max(map(int, d.getVar('OBMC_CHASSIS_INSTANCES').split()))}"
+
+# Enable multi-chassis SMP support where chassis instance 0 aggregates state
+# from chassis instances 1-N. The num-chassis-smp is set to the maximum chassis
+# instance number from OBMC_CHASSIS_INSTANCES.
+PACKAGECONFIG[multi-chassis-smp] = "-Dmulti-chassis-smp=enabled -Dnum-chassis-smp=${CHASSIS_SMP_MAX_INSTANCE},-Dmulti-chassis-smp=disabled"
+
 # The host-check function will check if the host is running
 # after a BMC reset.
 # The reset-sensor-states function will reset the host
@@ -107,8 +115,8 @@ RDEPENDS:${PN}-host += "bash"
 
 EXTRA_OEMESON:append = " -Dtests=disabled"
 
-FILES:${PN}-host = "${bindir}/phosphor-host-state-manager"
-FILES:${PN}-host += "${bindir}/phosphor-host-condition-gpio"
+FILES:${PN}-host = "${libexecdir}/phosphor-state-manager/phosphor-host-state-manager"
+FILES:${PN}-host += "${libexecdir}/phosphor-state-manager/phosphor-host-condition-gpio"
 FILES:${PN}-host += "${libexecdir}/phosphor-state-manager/host-reboot"
 DBUS_SERVICE:${PN}-host += "xyz.openbmc_project.State.Host@.service"
 DBUS_SERVICE:${PN}-host += "phosphor-reboot-host@.service"
@@ -118,7 +126,7 @@ SYSTEMD_SERVICE:${PN}-host += "phosphor-set-host-transition-to-running@.service"
 SYSTEMD_SERVICE:${PN}-host += "phosphor-set-host-transition-to-off@.service"
 SYSTEMD_SERVICE:${PN}-host += "${@bb.utils.contains('PACKAGECONFIG', 'host-gpio', 'phosphor-host-condition-gpio@.service', '', d)}"
 
-FILES:${PN}-chassis = "${bindir}/phosphor-chassis-state-manager"
+FILES:${PN}-chassis = "${libexecdir}/phosphor-state-manager/phosphor-chassis-state-manager"
 DBUS_SERVICE:${PN}-chassis += "xyz.openbmc_project.State.Chassis@.service"
 SYSTEMD_SERVICE:${PN}-chassis += "obmc-power-start@.service"
 SYSTEMD_SERVICE:${PN}-chassis += "obmc-power-stop@.service"
@@ -127,10 +135,12 @@ SYSTEMD_SERVICE:${PN}-chassis += "phosphor-reset-chassis-on@.service"
 SYSTEMD_SERVICE:${PN}-chassis += "phosphor-reset-chassis-running@.service"
 SYSTEMD_SERVICE:${PN}-chassis += "phosphor-set-chassis-transition-to-on@.service"
 SYSTEMD_SERVICE:${PN}-chassis += "phosphor-set-chassis-transition-to-off@.service"
+SYSTEMD_SERVICE:${PN}-chassis += "${@bb.utils.contains('PACKAGECONFIG', 'multi-chassis-smp', 'phosphor-chassis-wait-for-smp-poweron.service', '', d)}"
+FILES:${PN}-chassis += "${@bb.utils.contains('PACKAGECONFIG', 'multi-chassis-smp', '${libexecdir}/phosphor-state-manager/phosphor-chassis-wait-for-smp-poweron', '', d)}"
 
 SYSTEMD_SERVICE:${PN}-chassis-poweron-log += "phosphor-create-chassis-poweron-log@.service"
 
-FILES:${PN}-bmc = "${bindir}/phosphor-bmc-state-manager"
+FILES:${PN}-bmc = "${libexecdir}/phosphor-state-manager/phosphor-bmc-state-manager"
 FILES:${PN}-bmc += "${sysconfdir}/phosphor-systemd-target-monitor/phosphor-service-monitor-default.json"
 FILES:${PN}-bmc += "${bindir}/obmcutil"
 DBUS_SERVICE:${PN}-bmc += "xyz.openbmc_project.State.BMC.service"
@@ -139,32 +149,32 @@ SYSTEMD_SERVICE:${PN}-bmc += "phosphor-bmc-quiesce-reboot.service"
 FILES:${PN}-bmc += "${@bb.utils.contains('PACKAGECONFIG', 'auto-reboot-on-bmc-quiesce', '${systemd_system_unitdir}/obmc-bmc-service-quiesce@0.target.wants', '', d)}"
 FILES:${PN}-bmc += "${@bb.utils.contains('PACKAGECONFIG', 'auto-reboot-on-bmc-quiesce', '${systemd_system_unitdir}/obmc-bmc-service-quiesce@0.target.wants/phosphor-bmc-quiesce-reboot.service', '', d)}"
 
-FILES:${PN}-secure-check = "${bindir}/phosphor-secure-boot-check"
+FILES:${PN}-secure-check = "${libexecdir}/phosphor-state-manager/phosphor-secure-boot-check"
 SYSTEMD_SERVICE:${PN}-secure-check += "phosphor-bmc-security-check.service"
 
-FILES:${PN}-hypervisor = "${bindir}/phosphor-hypervisor-state-manager"
+FILES:${PN}-hypervisor = "${libexecdir}/phosphor-state-manager/phosphor-hypervisor-state-manager"
 DBUS_SERVICE:${PN}-hypervisor += "xyz.openbmc_project.State.Hypervisor.service"
 
-FILES:${PN}-discover = "${bindir}/phosphor-discover-system-state"
+FILES:${PN}-discover = "${libexecdir}/phosphor-state-manager/phosphor-discover-system-state"
 SYSTEMD_SERVICE:${PN}-discover += "phosphor-discover-system-state@.service"
 
-FILES:${PN}-host-check = "${bindir}/phosphor-host-check"
+FILES:${PN}-host-check = "${libexecdir}/phosphor-state-manager/phosphor-host-check"
 SYSTEMD_SERVICE:${PN}-host-check += "phosphor-reset-host-running@.service"
-FILES:${PN}-host-check = "${bindir}/phosphor-host-reset-recovery"
+FILES:${PN}-host-check = "${libexecdir}/phosphor-state-manager/phosphor-host-reset-recovery"
 SYSTEMD_SERVICE:${PN}-host-check += "phosphor-reset-host-recovery@.service"
 
 SYSTEMD_SERVICE:${PN}-reset-sensor-states += "phosphor-reset-sensor-states@.service"
 
 FILES:${PN}-systemd-target-monitor = " \
-    ${bindir}/phosphor-systemd-target-monitor \
+    ${libexecdir}/phosphor-state-manager/phosphor-systemd-target-monitor \
     ${sysconfdir}/phosphor-systemd-target-monitor/phosphor-target-monitor-default.json \
     "
 SYSTEMD_SERVICE:${PN}-systemd-target-monitor += "phosphor-systemd-target-monitor.service"
 
-FILES:${PN}-scheduled-host-transition = "${bindir}/phosphor-scheduled-host-transition"
+FILES:${PN}-scheduled-host-transition = "${libexecdir}/phosphor-state-manager/phosphor-scheduled-host-transition"
 DBUS_SERVICE:${PN}-scheduled-host-transition += "xyz.openbmc_project.State.ScheduledHostTransition@.service"
 
-FILES:${PN}-chassis-check-power-status = "${bindir}/phosphor-chassis-check-power-status"
+FILES:${PN}-chassis-check-power-status = "${libexecdir}/phosphor-state-manager/phosphor-chassis-check-power-status"
 SYSTEMD_SERVICE:${PN}-chassis-check-power-status += "phosphor-chassis-check-power-status@.service"
 
 # Chassis power synchronization targets
@@ -288,5 +298,5 @@ SYSTEMD_LINK:${PN}-obmc-targets += "${@compose_list_zip(d, 'RESET_FMT_CTRL', 'OB
 SYSTEMD_LINK[vardeps] += "OBMC_CHASSIS_INSTANCES OBMC_HOST_INSTANCES"
 
 SRC_URI = "git://github.com/openbmc/phosphor-state-manager;branch=master;protocol=https"
-SRCREV = "a97c09875eb514599cddcf97af2477f6e2ee7deb"
+SRCREV = "1f2d8f6c3556b529668dbbf19dac3fe6ab264e37"
 

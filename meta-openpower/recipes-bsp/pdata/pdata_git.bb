@@ -10,8 +10,8 @@ LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
 inherit autotools \
         perlnative
 
-SRC_URI = "git://git@github.com/open-power/pdata;branch="main";protocol=https"
-SRCREV = "1c25e47b7d6ef2aa40c93c038a4360bf00d78086"
+SRC_URI = "git://github.com/open-power/pdata;branch=main;protocol=https"
+SRCREV = "2aca674d7f4e953599402321a530e9ccef00f9b6"
 
 DEPENDS = "pdbg \
            libxml-simple-perl-native \

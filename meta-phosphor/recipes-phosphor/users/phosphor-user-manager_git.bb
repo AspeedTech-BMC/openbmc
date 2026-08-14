@@ -7,7 +7,7 @@ DEPENDS += "sdbusplus"
 DEPENDS += "phosphor-logging"
 DEPENDS += "phosphor-dbus-interfaces"
 DEPENDS += "systemd"
-SRCREV = "225c280c48d9966f500a1cf0470bcc787afdedba"
+SRCREV = "92c4d18ad175083e67232aa9ff9d4c76edb74f03"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
@@ -25,6 +25,7 @@ PACKAGECONFIG ?= " \
     ${@bb.utils.filter('DISTRO_FEATURES', 'ldap', d)} \
     "
 PACKAGECONFIG[root-user-mgmt] = "-Droot_user_mgmt=enabled, -Droot_user_mgmt=disabled"
+PACKAGECONFIG:remove:df-phosphor-no-root-login = "root-user-mgmt"
 PACKAGECONFIG[ldap] = "-Dldap=enabled, -Dldap=disabled, nss-pam-ldapd"
 
 do_install:append() {

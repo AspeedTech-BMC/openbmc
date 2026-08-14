@@ -18,8 +18,8 @@ SRC_URI = "git://github.com/vim/vim.git;branch=master;protocol=https;tag=v${PV} 
            file://no-path-adjust.patch \
            "
 
-PV .= ".0340"
-SRCREV = "6addd6c101117706bc9b3609d3a418e26e92618f"
+PV .= ".0782"
+SRCREV = "834b8d218f1db92e587ecd449e5ce88b41fbe256"
 
 # Do not consider .z in x.y.z, as that is updated with every commit
 UPSTREAM_CHECK_GITTAGREGEX = "(?P<pver>\d+\.\d+)\.0"
@@ -52,8 +52,7 @@ do_configure () {
 }
 
 PACKAGECONFIG ??= "\
-    ${@bb.utils.filter('DISTRO_FEATURES', 'acl selinux', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'x11', '', d)} \
+    ${@bb.utils.filter('DISTRO_FEATURES', 'acl selinux x11', d)} \
     nls \
 "
 

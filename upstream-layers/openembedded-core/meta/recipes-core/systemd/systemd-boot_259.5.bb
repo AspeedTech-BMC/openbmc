@@ -8,6 +8,8 @@ DEPENDS = "libcap util-linux gperf-native python3-jinja2-native python3-pyelftoo
 inherit meson pkgconfig gettext
 inherit deploy
 
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+
 LDFLAGS =+ "${@ " ".join(d.getVar('LD').split()[1:])} "
 
 EFI_LD = "bfd"
@@ -34,11 +36,8 @@ EXTRA_OEMESON += "-Defi=true \
 # otherwise install as the full name.
 # This allows multiple bootloaders to coexist in a single image.
 python __anonymous () {
-    import re
-    target = d.getVar('TARGET_ARCH')
     prefix = "" if d.getVar('EFI_PROVIDER') == "systemd-boot" else "systemd-"
-    systemdimage = prefix + d.getVar("EFI_BOOT_IMAGE")
-    d.setVar("SYSTEMD_BOOT_IMAGE", systemdimage)
+    d.setVar("SYSTEMD_BOOT_IMAGE", prefix + d.getVar("EFI_BOOT_IMAGE"))
     prefix = "systemd-" if prefix == "" else ""
     d.setVar("SYSTEMD_BOOT_IMAGE_PREFIX", prefix)
 }

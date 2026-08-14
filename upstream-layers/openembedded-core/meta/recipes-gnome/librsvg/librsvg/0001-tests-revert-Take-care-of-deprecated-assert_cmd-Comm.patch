@@ -1,4 +1,4 @@
-From bc089af8ce38ad268bc4283040ec28241c5064a6 Mon Sep 17 00:00:00 2001
+From 095e3c67c5e6b410098eb8d86878ec411d00fa0b Mon Sep 17 00:00:00 2001
 From: Alexander Kanavin <alex@linutronix.de>
 Date: Thu, 18 Dec 2025 18:43:20 +0100
 Subject: [PATCH] tests: revert 'Take care of deprecated
@@ -20,17 +20,17 @@ Signed-off-by: Alexander Kanavin <alex@linutronix.de>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/rsvg_convert/tests/rsvg_convert.rs b/rsvg_convert/tests/rsvg_convert.rs
-index 3d0a340..90a4c2f 100644
+index dbf6dd7..2dbc8f6 100644
 --- a/rsvg_convert/tests/rsvg_convert.rs
 +++ b/rsvg_convert/tests/rsvg_convert.rs
-@@ -3,7 +3,6 @@ mod internal_predicates;
- use internal_predicates::file;
+@@ -4,7 +4,6 @@ use internal_predicates::file;
  
+ use assert_cmd::Command;
  use assert_cmd::assert::IntoOutputPredicate;
 -use assert_cmd::cargo::cargo_bin_cmd;
- use assert_cmd::Command;
  #[cfg(system_deps_have_cairo_pdf)]
  use chrono::{TimeZone, Utc};
+ use predicates::boolean::*;
 @@ -50,7 +49,7 @@ impl RsvgConvert {
          let path_str = config_file_path.to_str().unwrap();
          eprintln!("FONTCONFIG_FILE={path_str}");

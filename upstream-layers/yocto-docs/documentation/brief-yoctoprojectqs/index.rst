@@ -63,8 +63,8 @@ following requirements:
 
    -  Git &MIN_GIT_VERSION; or greater
    -  tar &MIN_TAR_VERSION; or greater
-   -  Python &MIN_PYTHON_VERSION; or greater.
-   -  gcc &MIN_GCC_VERSION; or greater.
+   -  Python &MIN_PYTHON_VERSION; or greater
+   -  gcc &MIN_GCC_VERSION; or greater
    -  GNU make &MIN_MAKE_VERSION; or greater
 
 If your build host does not satisfy all of the above version
@@ -84,11 +84,11 @@ Build Host Packages
    see the :ref:`ref-manual/system-requirements:required packages for the build host`
    section in the Yocto Project Reference Manual.
 
-Use Git to Clone bitbake-setup
+Use Git to clone bitbake-setup
 ==============================
 
 Once you complete the setup instructions for your machine, you need to
-get a copy of the ``bitbake-setup`` tool to setup the :term:`Poky` reference
+get a copy of the ``bitbake-setup`` tool to set up the :term:`Poky` reference
 distribution on your build host. Use the following commands to clone
 the bitbake repository.
 
@@ -102,9 +102,9 @@ Setup a build environment with the following command:
 
    $ ./bitbake/bin/bitbake-setup init
 
-By default, this will setup a top directory in the current directory.
+By default, this will set up a top directory in the current directory.
 
-If you prefer to setup your builds in a different top directory, for example
+If you prefer to set up your builds in a different top directory, for example
 ``$HOME/bitbake-builds``, you can set it with the :ref:`bitbake:ref-bbsetup-command-settings` command:
 
 .. code-block:: console
@@ -124,15 +124,13 @@ differ from the examples below.
 
    .. code-block:: text
 
-      Available configurations:
-      1. poky-master  Poky - The Yocto Project testing distribution configurations and hardware test platforms
-      2. oe-nodistro-&DISTRO_NAME_NO_CAP;       OpenEmbedded - 'nodistro' basic configuration, release &DISTRO_RELEASE_SERIES; '&DISTRO_NAME_NO_CAP;'
-      3. poky-&DISTRO_NAME_NO_CAP;      Poky - The Yocto Project testing distribution configurations and hardware test platforms, release &DISTRO_RELEASE_SERIES; '&DISTRO_NAME_NO_CAP;'
-      4. oe-nodistro-master   OpenEmbedded - 'nodistro' basic configuration
-      ...
+      Available Configuration Templates:
+      1. oe-nodistro-master   OpenEmbedded - 'nodistro' basic configuration
+      2. oe-nodistro-&DISTRO_NAME_NO_CAP  OpenEmbedded - 'nodistro' basic configuration, release &DISTRO_RELEASE_SERIES; '&DISTRO_NAME_NO_CAP;' (supported until ...)
+      3. poky-master          Poky - The Yocto Project testing distribution configurations and hardware test platforms
+      4. poky-&DISTRO_NAME_NO_CAP         Poky - The Yocto Project testing distribution configurations and hardware test platforms, release &DISTRO_RELEASE_SERIES; '&DISTRO_NAME_NO_CAP;' (supported until ...)
 
-      Please select one of the above configurations by its number:
-      1
+      Please select one of the above configurations by its number: 3
 
    Depending on the choice above, new options can be prompted to further specify
    which configuration to use. For example:
@@ -140,43 +138,40 @@ differ from the examples below.
    .. code-block:: text
 
       Available bitbake configurations:
-      1. poky Poky - The Yocto Project testing distribution
-      2. poky-with-sstate     Poky - The Yocto Project testing distribution with internet sstate acceleration. Use with caution as it requires a completely robust local network with sufficient bandwidth.
+      1. poky              Poky - The Yocto Project testing distribution
+      2. poky-with-sstate  Poky - The Yocto Project testing distribution with internet sstate acceleration. Use with caution as it requires a completely robust local network with sufficient bandwidth.
 
-      Please select one of the above bitbake configurations by its number:
-      1
+      Please select one of the above bitbake configurations by its number: 1
 
 #. Choose a target :term:`MACHINE` (for example, ``qemux86-64``):
 
    .. code-block:: text
 
       Target machines:
-      1. machine/qemux86-64
-      2. machine/qemuarm64
-      3. machine/qemuriscv64
-      4. machine/genericarm64
-      5. machine/genericx86-64
+      1. machine/qemux86-64     x86-64 system on QEMU
+      2. machine/qemuarm64      ARMv8 system on QEMU
+      3. machine/qemuriscv64    RISC-V system on QEMU
+      4. machine/genericarm64   Arm64 SystemReady IR/ES platforms
+      5. machine/genericx86-64  x86_64 (64-bit) PCs and servers
 
-      Please select one of the above options by its number:
-      1
+      Please select one of the above options by its number: 1
 
 #. Choose a :term:`DISTRO` (for example, ``poky``):
 
    .. code-block:: text
 
-      Distribution configuration variants:
-      1. distro/poky
-      2. distro/poky-altcfg
-      3. distro/poky-tiny
+      Target distributions:
+      1. distro/poky         Yocto Project Reference Distro
+      2. distro/poky-altcfg  Poky alternative with systemd as init manager
+      3. distro/poky-tiny    Poky alternative optimized for size
 
-      Please select one of the above options by its number:
-      1
+      Please select one of the above options by its number: 1
 
 #. Choose a :term:`bitbake:setup` directory name:
 
    .. code-block:: text
 
-      Enter setup directory name: [poky-master-poky-distro_poky-machine_qemux86-64]
+      Enter setup directory name: [poky-master]
 
    Press Enter to leave it to the default value shown in the brackets, or type a
    custom directory name.
@@ -188,7 +183,7 @@ differ from the examples below.
 
    .. code-block:: console
 
-      $ bitbake-setup init --non-interactive poky-master poky-with-sstate distro/poky machine/qemux86-64
+      $ ./bitbake/bin/bitbake-setup init --non-interactive poky-master poky distro/poky machine/qemux86-64
 
 The ``init`` command creates a new :term:`bitbake:Setup` in the
 :term:`bitbake:top directory`. The default name is derived from the selected
@@ -198,7 +193,7 @@ For the selected options in the above example, this would be:
 
 .. code-block:: text
 
-   poky-master-poky-distro_poky-machine_qemux86-64
+   poky-master
 
 This will be our example configuration in the following sections.
 
@@ -219,7 +214,7 @@ This directory contains:
 
 .. note::
 
-   It is also possible to setup the :term:`Poky` reference distro manually. For
+   It is also possible to set up the :term:`Poky` reference distro manually. For
    that refer to the :doc:`/dev-manual/poky-manual-setup` section of the Yocto
    Project Development Tasks Manual.
 
@@ -245,11 +240,11 @@ an entire Linux distribution, including the toolchain, from source.
 
 #.  **Initialize the Build Environment:** Source the ``init-build-env``
     environment setup script within the :term:`bitbake:BitBake build` directory
-    to setup the :term:`BitBake` build environment on your host:
+    to set up the :term:`BitBake` build environment on your host:
 
     .. code-block:: console
 
-       $ source poky-master-poky-distro_poky-machine_qemux86-64/build/init-build-env
+       $ source poky-master/build/init-build-env
        Poky reference distro build
 
 #.  **Examine Your Current Configuration:** When you set up the build
@@ -279,7 +274,7 @@ an entire Linux distribution, including the toolchain, from source.
 
        These set up the environment similar to what was previously in the local
        configuration file :ref:`local.conf <structure-build-conf-local.conf>`,
-       which is now largely empty. To setup the build how it was done
+       which is now largely empty. To set up the build how it was done
        previously, see the :doc:`/dev-manual/poky-manual-setup` section of the
        Yocto Project Development Tasks Manual.
 
@@ -352,7 +347,7 @@ development environment.
 
 In general, layers are repositories that contain related sets of
 instructions and configurations that tell the Yocto Project what to do.
-Isolating related metadata into functionally specific layers facilitates
+Isolating related metadata into functionally-specific layers facilitates
 modular development and makes it easier to reuse the layer metadata.
 
 .. note::
@@ -367,7 +362,7 @@ layer>`:
     adds the :yocto_git:`meta-raspberrypi </meta-raspberrypi>` BSP
     layer.
 
-    First, clone the layer next the other layers::
+    First, clone the layer next to the other layers::
 
       git clone -b &DISTRO_NAME_NO_CAP; https://git.yoctoproject.org/meta-raspberrypi ../layers/meta-raspberrypi
 
@@ -375,7 +370,7 @@ layer>`:
     it, you must add the layer and its dependencies to your ``bblayers.conf``
     file, which is found in the :term:`Build Directory` (``conf/``) directory.
 
-    For this, the ``bitbake-layers add-layer`` can be used:
+    For this, the ``bitbake-layers add-layer`` command can be used:
 
     .. code-block:: console
 
@@ -387,8 +382,8 @@ layer>`:
 
 #.  **Change the Configuration to Build for a Specific Machine:** The
     :term:`MACHINE` variable is defined by the :ref:`ref-fragments-builtin-core-machine`
-    fragment. For this example, the meta-raspberrypi layer provides the
-    :yocto_git:`raspberrypi5 </meta-yocto/tree/meta-yocto-bsp/conf/machine/beaglebone-yocto.conf>`
+    fragment. For this example, the ``meta-raspberrypi`` layer provides the
+    :yocto_git:`raspberrypi5 </meta-raspberrypi/tree/conf/machine/raspberrypi5.conf>`
     machine, so let's make it the :term:`MACHINE` used for the build with
     ``bitbake-config-build``:
 

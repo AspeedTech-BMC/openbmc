@@ -11,6 +11,7 @@ SRC_URI:append = " \
 
 TFA_DEBUG = "1"
 TFA_UBOOT ?= "1"
+#FIXME - this can be removed after moving to 2.15.0
 TFA_MBEDTLS = "1"
 TFA_BUILD_TARGET = "bl2 bl31 fip"
 
@@ -23,10 +24,10 @@ TFA_SPMD_SPM_AT_SEL2 = "0"
 # BL2 loads BL32 (optee). So, optee needs to be built first:
 DEPENDS += "optee-os"
 
-ENABLE_CORTEX_A35_ERRATA = " \
+ENABLE_CORTEX_A_ERRATA = " \
     ERRATA_A35_855472=1 \
 "
-ENABLE_CORTEX_A35_ERRATA:cortexta320 = ""
+ENABLE_CORTEX_A_ERRATA:cortexa320 = ""
 FVP_GIC_DRIVER ?= "FVP_GICV2"
 FVP_GIC_DRIVER:cortexa320 = "FVP_GICV3"
 
@@ -54,7 +55,7 @@ EXTRA_OEMAKE:append = " \
                         NR_OF_IMAGES_IN_FW_BANK=4 \
                         COT=tbbr \
                         ARM_ROTPK_LOCATION=devel_rsa  \
-                        ${ENABLE_CORTEX_A35_ERRATA} \
+                        ${ENABLE_CORTEX_A_ERRATA} \
                         ROT_KEY=plat/arm/board/common/rotpk/arm_rotprivk_rsa.pem \
                         BL32=${RECIPE_SYSROOT}/${nonarch_base_libdir}/firmware/tee-pager_v2.bin \
                         FVP_USE_GIC_DRIVER=${FVP_GIC_DRIVER} \

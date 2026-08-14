@@ -1,0 +1,51 @@
+SUMMARY = "Xfce4 Panel"
+HOMEPAGE = "https://docs.xfce.org/xfce/xfce4-panel/start"
+SECTION = "x11"
+LICENSE = "GPL-2.0-or-later"
+LIC_FILES_CHKSUM = "file://COPYING;md5=26a8bd75d8f8498bdbbe64a27791d4ee"
+DEPENDS = "garcon exo cairo libxml2 vala-native gtk+3 libxfce4windowing"
+
+XFCE_COMPRESS_TYPE = "xz"
+XFCEBASEBUILDCLASS = "meson"
+GTKDOC_MESON_OPTION = "gtk-doc"
+
+inherit xfce gtk-doc gobject-introspection features_check mime-xdg
+
+SRC_URI += " \
+    file://0001-windowmenu-do-not-display-desktop-icon-when-no-windo.patch \
+    file://0002-use-lxdm-to-replace-dm-tool.patch \
+"
+SRC_URI[sha256sum] = "ba490351b7837fa345385c830d118a1c85f7400672f7f0525095c739e83d9a43"
+
+EXTRA_OEMESON += "-Dvala=disabled"
+
+ANY_OF_DISTRO_FEATURES = "${GTK3DISTROFEATURES}"
+
+PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'wayland x11', d)}"
+PACKAGECONFIG[x11] = "-Dx11=enabled, -Dx11=disabled, virtual/libx11 libwnck3 libxext"
+PACKAGECONFIG[wayland] = "-Dwayland=enabled, -Dwayland=disabled, wayland wayland-native wayland-protocols"
+
+python populate_packages:prepend() {
+    plugin_dir = d.expand('${libdir}/xfce4/panel/plugins/')
+    plugin_name = d.expand('${PN}-plugin-%s')
+    do_split_packages(d, plugin_dir, r'^lib(.*)\.so$', plugin_name,
+                      '${PN} plugin for %s', extra_depends='', prepend=True,
+                      aux_files_pattern=['${datadir}/xfce4/panel/plugins/%s.desktop',
+                                         '${sysconfdir}/xdg/xfce/panel/%s-*',
+                                         '${datadir}/icons/hicolor/48x48/apps/*-%s.png',
+                                         '${bindir}/*%s*'])
+}
+
+PACKAGES_DYNAMIC += "^${PN}-plugin-.*"
+
+PACKAGES =+ "${PN}-gtk3"
+
+FILES:${PN} += "${libdir}/xfce4/panel/migrate \
+                ${libdir}/xfce4/panel/wrapper-1.0"
+
+FILES:${PN}-dev += "${libdir}/xfce4/panel/plugins/*.la"
+
+FILES:${PN}-gtk3 = " \
+    ${libdir}/libxfce4panel-2.0${SOLIBS} \
+    ${libdir}/xfce4/panel/wrapper-2.0 \
+"

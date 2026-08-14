@@ -20,6 +20,8 @@ SRC_URI += " \
     file://update-rs485-rules.sh \
     file://rmc-v1.rules \
     file://rmc-v1plus.rules \
+    file://rackmond-override.conf \
+    file://wait-rs485-devices.sh \
     "
 
 SYSTEMD_SERVICE:${PN} = " \
@@ -30,6 +32,11 @@ do_install() {
     VENTURA_LIBEXECDIR="${D}${libexecdir}/ventura"
     install -d ${VENTURA_LIBEXECDIR}
     install -m 0755 ${UNPACKDIR}/update-rs485-rules.sh ${VENTURA_LIBEXECDIR}
+    install -m 0755 ${UNPACKDIR}/wait-rs485-devices.sh ${VENTURA_LIBEXECDIR}
+
+    install -d ${D}${systemd_system_unitdir}/rackmond.service.d
+    install -m 0644 ${UNPACKDIR}/rackmond-override.conf \
+        ${D}${systemd_system_unitdir}/rackmond.service.d/rackmond-override.conf
 
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${UNPACKDIR}/update-rs485-rules.service ${D}${systemd_system_unitdir}

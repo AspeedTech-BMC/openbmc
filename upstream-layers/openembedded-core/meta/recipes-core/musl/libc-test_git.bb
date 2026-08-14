@@ -42,6 +42,8 @@ RDEPENDS:${PN}-ptest = " \
      tzdata \
 "
 
+RDEPENDS:${PN}-ptest:append:toolchain-gcc = " libatomic-staticdev"
+
 install_path = "/opt/${PN}"
 FILES:${PN} += "${install_path}/*"
 

@@ -333,9 +333,9 @@ def sstate_install(ss, d):
     for plain in ss['plaindirs']:
         workdir = d.getVar('WORKDIR')
         sharedworkdir = os.path.join(d.getVar('TMPDIR'), "work-shared")
-        src = sstateinst + "/" + plain.replace(workdir, '')
+        src = plain.replace(workdir, sstateinst)
         if sharedworkdir in plain:
-            src = sstateinst + "/" + plain.replace(sharedworkdir, '')
+            src = plain.replace(sharedworkdir, sstateinst)
         dest = plain
         bb.utils.mkdirhier(src)
         prepdir(dest)
@@ -467,6 +467,7 @@ def sstate_clean_cachefiles(d):
         ld = d.createCopy()
         ss = sstate_state_fromvars(ld, task)
         sstate_clean_cachefile(ss, ld)
+sstate_clean_cachefiles[vardepsexclude] += "SSTATETASKS"
 
 def sstate_clean_manifest(manifest, d, canrace=False, prefix=None):
     import oe.path
@@ -474,11 +475,15 @@ def sstate_clean_manifest(manifest, d, canrace=False, prefix=None):
     with open(manifest) as mfile:
         entries = mfile.readlines()
 
+    # Remove binaries first, then all the other files, just in case somehow something
+    # is trying to execute something in a sysroot (e.g. python3 from PATH).
+    entries.sort(key=lambda d: '/bin/' not in d)
+
     for entry in entries:
         entry = entry.strip()
         if prefix and not entry.startswith("/"):
             entry = prefix + "/" + entry
-        bb.debug(2, "Removing manifest: %s" % entry)
+        bb.debug(2, "Removing file: %s" % entry)
         # We can race against another package populating directories as we're removing them
         # so we ignore errors here.
         try:
@@ -498,7 +503,7 @@ def sstate_clean_manifest(manifest, d, canrace=False, prefix=None):
     if os.path.exists(manifest + ".postrm"):
         import subprocess
         os.chmod(postrm, 0o755)
-        subprocess.check_call(postrm, shell=True)
+        subprocess.check_call([postrm])
         oe.path.remove(postrm)
 
     oe.path.remove(manifest)
@@ -567,6 +572,7 @@ python sstate_cleanall() {
         shared_state = sstate_state_fromvars(ld, name)
         sstate_clean(shared_state, ld)
 }
+sstate_cleanall[vardepsexclude] = "SSTATETASKS"
 
 python sstate_hardcode_path () {
     import subprocess, platform
@@ -603,7 +609,7 @@ python sstate_hardcode_path () {
     sstate_filelist_cmd = "tee %s" % (fixmefn)
 
     # fixmepath file needs relative paths, drop sstate_builddir prefix
-    sstate_filelist_relative_cmd = "sed -i -e 's:^%s::g' %s" % (sstate_builddir, fixmefn)
+    sstate_filelist_relative_cmd = ['sed', '-i', '-e', 's:^%s::g' % sstate_builddir, fixmefn]
 
     xargs_no_empty_run_cmd = '--no-run-if-empty'
     if platform.system() == 'Darwin':
@@ -621,7 +627,7 @@ python sstate_hardcode_path () {
         os.remove(fixmefn)
     else:
         bb.note("Replacing absolute paths in fixmepath file: '%s'" % (sstate_filelist_relative_cmd))
-        subprocess.check_output(sstate_filelist_relative_cmd, shell=True)
+        subprocess.check_output(sstate_filelist_relative_cmd)
 }
 
 def sstate_package(ss, d):
@@ -639,7 +645,6 @@ def sstate_package(ss, d):
     for state in ss['dirs']:
         if not os.path.exists(state[1]):
             continue
-        srcbase = state[0].rstrip("/").rsplit('/', 1)[0]
         # Find and error for absolute symlinks. We could attempt to relocate but its not
         # clear where the symlink is relative to in this context. We could add that markup
         # to sstate tasks but there aren't many of these so better just avoid them entirely.
@@ -655,10 +660,15 @@ def sstate_package(ss, d):
                     continue
                 bb.error("sstate found an absolute path symlink %s pointing at %s. Please replace this with a relative link." % (srcpath, link))
                 exit = True
+            for dir in dirs:
+                dir = os.path.join(walkroot, dir).removeprefix(state[1])
+                if tmpdir in dir:
+                    bb.error("sstate found a tmpdir path reference in installation directiory %s which must be removed." % dir)
+                    exit = True
         bb.debug(2, "Preparing tree %s for packaging at %s" % (state[1], sstatebuild + state[0]))
         bb.utils.rename(state[1], sstatebuild + state[0])
     if exit:
-        bb.fatal("Failing task due to absolute path symlinks")
+        bb.fatal("Failing task due to absolute path symlinks or tmpdir path reference")
 
     workdir = d.getVar('WORKDIR')
     sharedworkdir = os.path.join(d.getVar('TMPDIR'), "work-shared")

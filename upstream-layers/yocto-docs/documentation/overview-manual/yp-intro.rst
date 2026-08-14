@@ -26,12 +26,6 @@ platforms as well as software stacks that can be maintained and scaled.
 .. image:: svg/key-dev-elements.*
     :width: 100%
 
-For further introductory information on the Yocto Project, you might be
-interested in this
-`article <https://www.embedded.com/why-the-yocto-project-for-my-iot-project/>`__
-by Drew Moseley and in this short introductory
-`video <https://www.youtube.com/watch?v=utZpKM7i5Z4>`__.
-
 The remainder of this section overviews advantages and challenges tied
 to the Yocto Project.
 
@@ -48,7 +42,8 @@ Here are features and advantages of the Yocto Project:
    :yocto_home:`Yocto Project <>` home page.
 
 -  *Architecture Agnostic:* Yocto Project supports Intel, ARM, MIPS, AMD, PPC,
-   RISC-V and other architectures. Most ODMs, OSVs, and chip vendors create and
+   RISC-V and other architectures. Most Original Design Manufacturers (ODMs),
+   Operating System Vendors (OSVs), and chip vendors create and
    supply BSPs that support their hardware. If you have custom silicon, you can
    create a BSP that supports that architecture. See
    :doc:`/ref-manual/yocto-project-supported-features` for details on the level
@@ -389,7 +384,7 @@ Yocto Project:
 
    .. note::
 
-      AutoBuilder is based on buildbot.
+      AutoBuilder is based on `buildbot <https://buildbot.net/>`__.
 
    A goal of the Yocto Project is to lead the open source industry with
    a project that automates testing and QA procedures. In doing so, the
@@ -680,7 +675,9 @@ helpful for getting started:
    their code available to other application developers. For information
    on the eSDK, see the :doc:`/sdk-manual/index` manual.
 
--  *Layer:* A collection of related recipes. Layers allow you to
+-  *Layer:* A collection of related metadata, which could include any of
+   recipes, machine configuration files, distro configuration files
+   and/or class files. Layers allow you to
    consolidate related metadata to customize your build. Layers also
    isolate information used when building for multiple architectures.
    Layers are hierarchical in their ability to override previous
