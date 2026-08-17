@@ -15,10 +15,8 @@ DEPENDS += "nlohmann-json"
 DEPENDS += "cli11"
 DEPENDS += "mbedtls"
 
-
-# libmctp-externals.h is from https://github.com/NVIDIA/libmctp
-SRC_URI += "file://libmctp-externals.h"
 SRC_URI += "file://0001-make-spdmd-subdir-optional-in-meson.patch"
+SRC_URI += "file://0002-update-sdbusplus-types.patch"
 
 EXTRA_OEMESON = " \
         -Dspdmd=disabled \
@@ -28,7 +26,3 @@ EXTRA_OEMESON = " \
         -Dcsm_service_enabled=disabled \
         -Denable-in-kernel-mctp=enabled \
         "
-
-do_configure:prepend() {
-    cp ${UNPACKDIR}/libmctp-externals.h ${S}/libspdmcpp/headers_public/
-}
