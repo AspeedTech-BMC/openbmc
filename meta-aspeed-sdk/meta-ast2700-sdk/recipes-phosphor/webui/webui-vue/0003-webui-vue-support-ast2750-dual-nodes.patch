@@ -1,70 +1,35 @@
-From 741ea72bcd208b72e26cf3f90a6e01daed99d413 Mon Sep 17 00:00:00 2001
-From: VinceChang6637 <vince_chang@aspeedtech.com>
-Date: Thu, 7 Dec 2023 13:32:59 +0800
+From b8a9c3535c88cd084a21c82df08cd20bef3ebecb Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Mon, 29 Jun 2026 16:52:30 -0600
 Subject: [PATCH] webui-vue: support ast2750 dual nodes.
 
 1. Add KVM1 page.
 2. Add Host1 Virtual Media device.
 
 Upstream-Status: Pending
-Signed-off-by: VinceChang6637 <vince_chang@aspeedtech.com>
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
 ---
- src/assets/styles/bmc/custom/_index.scss      |   1 +
- src/assets/styles/bmc/custom/_kvm1.scss       |  12 ++
- src/components/AppHeader/AppHeader.vue        |   7 +-
- .../AppNavigation/AppNavigationMixin.js       |   5 +
- src/env/components/AppNavigation/intel.js     |   5 +
- src/env/router/intel.js                       |  18 ++
- src/locales/en-US.json                        |  18 +-
- src/router/routes.js                          |  18 ++
- .../Authentication/AuthenticanStore.js        |   3 +
- .../modules/Operations/VirtualMediaStore.js   |  21 ++
- src/views/Operations/Kvm1/Kvm1.vue            |  24 +++
- src/views/Operations/Kvm1/Kvm1Console.vue     | 200 ++++++++++++++++++
- src/views/Operations/Kvm1/index.js            |   2 +
- .../Operations/VirtualMedia/VirtualMedia.vue  |  71 +++++++
- 14 files changed, 402 insertions(+), 3 deletions(-)
- create mode 100644 src/assets/styles/bmc/custom/_kvm1.scss
+ src/components/AppHeader/AppHeader.vue        |  7 ++-
+ .../AppNavigation/AppNavigationMixin.js       |  5 ++
+ src/env/components/AppNavigation/intel.js     |  5 ++
+ src/env/router/intel.js                       | 18 +++++++
+ src/layouts/AppLayout.vue                     |  1 +
+ src/locales/en-US.json                        | 19 ++++++-
+ src/router/routes.js                          | 18 +++++++
+ .../Authentication/AuthenticanStore.js        |  3 ++
+ .../modules/Operations/VirtualMediaStore.js   | 10 +++-
+ src/views/Operations/Kvm/KvmConsole.vue       | 50 +++++++++++++------
+ src/views/Operations/Kvm1/Kvm1.vue            | 24 +++++++++
+ src/views/Operations/Kvm1/index.js            |  2 +
+ 12 files changed, 143 insertions(+), 19 deletions(-)
  create mode 100644 src/views/Operations/Kvm1/Kvm1.vue
- create mode 100644 src/views/Operations/Kvm1/Kvm1Console.vue
  create mode 100644 src/views/Operations/Kvm1/index.js
 
-diff --git a/src/assets/styles/bmc/custom/_index.scss b/src/assets/styles/bmc/custom/_index.scss
-index 74594e3..9b72699 100644
---- a/src/assets/styles/bmc/custom/_index.scss
-+++ b/src/assets/styles/bmc/custom/_index.scss
-@@ -10,6 +10,7 @@
- @import "./dropdown";
- @import "./forms";
- @import "./kvm";
-+@import "./kvm1";
- @import "./modal";
- @import "./pagination";
- @import "./section-divider";
-diff --git a/src/assets/styles/bmc/custom/_kvm1.scss b/src/assets/styles/bmc/custom/_kvm1.scss
-new file mode 100644
-index 0000000..a722384
---- /dev/null
-+++ b/src/assets/styles/bmc/custom/_kvm1.scss
-@@ -0,0 +1,12 @@
-+#terminal-kvm {
-+  height: calc(100vh - 300px);
-+  display: flex;
-+  &.full-window {
-+   height: calc(100vh - 80px); 
-+  }
-+  div:nth-child(1) {
-+    background: transparent !important;
-+    display: block !important;
-+    overflow: hidden !important;
-+  }
-+}
-\ No newline at end of file
 diff --git a/src/components/AppHeader/AppHeader.vue b/src/components/AppHeader/AppHeader.vue
-index b7c417f..807d4d6 100644
+index 79e5c16..cdffb2c 100644
 --- a/src/components/AppHeader/AppHeader.vue
 +++ b/src/components/AppHeader/AppHeader.vue
-@@ -145,7 +145,7 @@ export default {
+@@ -158,7 +158,7 @@ export default {
      };
    },
    computed: {
@@ -73,7 +38,7 @@ index b7c417f..807d4d6 100644
      isNavTagPresent() {
        return this.assetTag || this.modelType || this.serialNumber;
      },
-@@ -203,6 +203,11 @@ export default {
+@@ -222,6 +222,11 @@ export default {
      consoleWindow() {
        if (this.consoleWindow === false) this.$eventBus.$consoleWindow?.close();
      },
@@ -86,7 +51,7 @@ index b7c417f..807d4d6 100644
        if (value === false) {
          this.errorToast(i18n.global.t('global.toast.unAuthDescription'), {
 diff --git a/src/components/AppNavigation/AppNavigationMixin.js b/src/components/AppNavigation/AppNavigationMixin.js
-index 89c1508..427786b 100644
+index dc9e050..2a842da 100644
 --- a/src/components/AppNavigation/AppNavigationMixin.js
 +++ b/src/components/AppNavigation/AppNavigationMixin.js
 @@ -88,6 +88,11 @@ const AppNavigationMixin = {
@@ -102,7 +67,7 @@ index 89c1508..427786b 100644
                id: 'key-clear',
                label: i18n.global.t('appNavigation.keyClear'),
 diff --git a/src/env/components/AppNavigation/intel.js b/src/env/components/AppNavigation/intel.js
-index e20b0ef..3480107 100644
+index ef5a02a..6049a26 100644
 --- a/src/env/components/AppNavigation/intel.js
 +++ b/src/env/components/AppNavigation/intel.js
 @@ -79,6 +79,11 @@ const AppNavigationMixin = {
@@ -118,28 +83,28 @@ index e20b0ef..3480107 100644
                id: 'firmware',
                label: i18n.global.t('appNavigation.firmware'),
 diff --git a/src/env/router/intel.js b/src/env/router/intel.js
-index 9abdc68..da2f1c6 100644
+index 551d00b..d9c92cd 100644
 --- a/src/env/router/intel.js
 +++ b/src/env/router/intel.js
-@@ -8,6 +8,8 @@ import Firmware from '@/views/Operations/Firmware';
+@@ -8,6 +8,7 @@ import Firmware from '@/views/Operations/Firmware';
  import Inventory from '@/views/HardwareStatus/Inventory';
  import Kvm from '@/views/Operations/Kvm';
  import KvmConsole from '@/views/Operations/Kvm/KvmConsole';
 +import Kvm1 from '@/views/Operations/Kvm1';
-+import Kvm1Console from '@/views/Operations/Kvm1/Kvm1Console';
  import UserManagement from '@/views/SecurityAndAccess/UserManagement';
  import Login from '@/views/Login';
  import LoginLayout from '@/layouts/LoginLayout';
-@@ -81,6 +83,14 @@ const routes = [
+@@ -81,6 +82,15 @@ const routes = [
            title: i18n.global.t('appPageTitle.kvm'),
          },
        },
 +      {
 +        path: 'kvm1',
 +        name: 'kvm1-console',
-+        component: Kvm1Console,
++        component: KvmConsole,
++        props: { hostIndex: 1 },
 +        meta: {
-+          title: i18n.t('appPageTitle.kvm1'),
++          title: i18n.global.t('appPageTitle.kvm1'),
 +        },
 +      },
      ],
@@ -154,17 +119,29 @@ index 9abdc68..da2f1c6 100644
 +        name: 'kvm1',
 +        component: Kvm1,
 +        meta: {
-+          title: i18n.t('appPageTitle.kvm1'),
++          title: i18n.global.t('appPageTitle.kvm1'),
 +        },
 +      },
        {
          path: '/operations/firmware',
          name: 'firmware',
+diff --git a/src/layouts/AppLayout.vue b/src/layouts/AppLayout.vue
+index eaedab7..407714a 100644
+--- a/src/layouts/AppLayout.vue
++++ b/src/layouts/AppLayout.vue
+@@ -51,6 +51,7 @@ export default {
+     setInterval(() => {
+       if (!localStorage.getItem('storedUsername')) {
+         this.$eventBus.$consoleWindow?.close();
++        this.$eventBus.$consoleWindow1?.close();
+         this.refresh();
+       }
+     }, 10000);
 diff --git a/src/locales/en-US.json b/src/locales/en-US.json
-index e64287d..09873f0 100644
+index b4e1df0..0fa2c6a 100644
 --- a/src/locales/en-US.json
 +++ b/src/locales/en-US.json
-@@ -115,6 +115,7 @@
+@@ -129,6 +129,7 @@
          "hardwareStatus": "Hardware status",
          "inventory": "@:appPageTitle.inventory",
          "kvm": "@:appPageTitle.kvm",
@@ -172,7 +149,7 @@ index e64287d..09873f0 100644
          "ldap": "@:appPageTitle.ldap",
          "logs": "Logs",
          "userManagement": "@:appPageTitle.userManagement",
-@@ -145,6 +146,7 @@
+@@ -159,6 +160,7 @@
          "firmware": "Firmware",
          "inventory": "Inventory and LEDs",
          "kvm": "KVM",
@@ -180,13 +157,14 @@ index e64287d..09873f0 100644
          "ldap": "LDAP",
          "userManagement": "User management",
          "login": "Login",
-@@ -497,6 +499,14 @@
+@@ -515,6 +517,15 @@
          "connecting": "Connecting",
          "disconnected": "Disconnected"
      },
 +    "pageKvm1": {
 +        "openNewTab": "Open in new tab",
 +        "buttonCtrlAltDelete": "Send Ctrl+Alt+Delete",
++        "captureScreenshot": "Capture Screenshot",
 +        "status": "Status",
 +        "connected": "Connected",
 +        "connecting": "Connecting",
@@ -195,9 +173,9 @@ index e64287d..09873f0 100644
      "pageLdap": {
          "pageDescription": "Configure LDAP settings and manage role groups",
          "roleGroups": "Role groups",
-@@ -999,7 +1009,8 @@
-     },
+@@ -1051,7 +1062,8 @@
      "pageVirtualMedia": {
+         "activeExternalSession": "Active in another session",
          "configureConnection": "Configure Connection",
 -        "defaultDeviceName": "Virtual media device",
 +        "defaultDeviceName": "Host0 Virtual media device",
@@ -205,7 +183,7 @@ index e64287d..09873f0 100644
          "start": "Start",
          "stop": "Stop",
          "virtualMediaSubTitleFirst": "Load image from web browser",
-@@ -1017,7 +1028,10 @@
+@@ -1069,7 +1081,10 @@
              "serverRunning": "Server running",
              "serverConnectionEstablished": "Server connection established",
              "serverClosedSuccessfully": "Server closed successfully",
@@ -218,26 +196,26 @@ index e64287d..09873f0 100644
      },
      "countries": {
 diff --git a/src/router/routes.js b/src/router/routes.js
-index f821ce1..f8e460d 100644
+index f3f6f6b..9066e17 100644
 --- a/src/router/routes.js
 +++ b/src/router/routes.js
-@@ -8,6 +8,8 @@ import Firmware from '@/views/Operations/Firmware';
+@@ -8,6 +8,7 @@ import Firmware from '@/views/Operations/Firmware';
  import Inventory from '@/views/HardwareStatus/Inventory';
  import Kvm from '@/views/Operations/Kvm';
  import KvmConsole from '@/views/Operations/Kvm/KvmConsole';
 +import Kvm1 from '@/views/Operations/Kvm1';
-+import Kvm1Console from '@/views/Operations/Kvm1/Kvm1Console';
  import Sessions from '../views/SecurityAndAccess/Sessions';
  import Ldap from '@/views/SecurityAndAccess/Ldap';
  import UserManagement from '@/views/SecurityAndAccess/UserManagement';
-@@ -88,6 +90,14 @@ const routes = [
+@@ -88,6 +89,15 @@ const routes = [
            title: i18n.global.t('appPageTitle.kvm'),
          },
        },
 +      {
 +        path: 'kvm1',
 +        name: 'kvm1-console',
-+        component: Kvm1Console,
++        component: KvmConsole,
++        props: { hostIndex: 1 },
 +        meta: {
 +          title: i18n.global.t('appPageTitle.kvm1'),
 +        },
@@ -261,10 +239,10 @@ index f821ce1..f8e460d 100644
          path: '/operations/firmware',
          name: 'firmware',
 diff --git a/src/store/modules/Authentication/AuthenticanStore.js b/src/store/modules/Authentication/AuthenticanStore.js
-index e876f78..170cb13 100644
+index d63481c..9443765 100644
 --- a/src/store/modules/Authentication/AuthenticanStore.js
 +++ b/src/store/modules/Authentication/AuthenticanStore.js
-@@ -7,6 +7,7 @@ const AuthenticationStore = {
+@@ -11,6 +11,7 @@ const AuthenticationStore = {
    namespaced: true,
    state: {
      consoleWindow: null,
@@ -272,7 +250,7 @@ index e876f78..170cb13 100644
      authError: false,
      xsrfCookie: Cookies.get('XSRF-TOKEN'),
      isAuthenticatedCookie: Cookies.get('IsAuthenticated'),
-@@ -15,6 +16,7 @@ const AuthenticationStore = {
+@@ -21,6 +22,7 @@ const AuthenticationStore = {
    },
    getters: {
      consoleWindow: (state) => state.consoleWindow,
@@ -280,7 +258,7 @@ index e876f78..170cb13 100644
      authError: (state) => state.authError,
      isLoggedIn: (state) => {
        // We might have gotten XSRF-TOKEN (and HttpOnly SESSION cookie) by Mutual TLS authentication,
-@@ -58,6 +60,7 @@ const AuthenticationStore = {
+@@ -65,6 +67,7 @@ const AuthenticationStore = {
        state.sessionURI = null;
        state.xAuthToken = null;
        state.consoleWindow = false;
@@ -289,72 +267,171 @@ index e876f78..170cb13 100644
    },
    actions: {
 diff --git a/src/store/modules/Operations/VirtualMediaStore.js b/src/store/modules/Operations/VirtualMediaStore.js
-index 8561275..adbc169 100644
+index 8867a14..23e4d86 100644
 --- a/src/store/modules/Operations/VirtualMediaStore.js
 +++ b/src/store/modules/Operations/VirtualMediaStore.js
-@@ -17,16 +17,20 @@ const VirtualMediaStore = {
-   namespaced: true,
-   state: {
-     proxyDevices: [],
-+    proxyDevices1: [],
-     legacyDevices: [],
-     connections: [],
-   },
-   getters: {
-     proxyDevices: (state) => state.proxyDevices,
-+    proxyDevices1: (state) => state.proxyDevices1,
-     legacyDevices: (state) => state.legacyDevices,
-   },
-   mutations: {
-     setProxyDevicesData: (state, deviceData) =>
-       (state.proxyDevices = deviceData),
-+    setProxyDevices1Data: (state, deviceData) =>
-+      (state.proxyDevices1 = deviceData),
-     setLegacyDevicesData: (state, deviceData) =>
-       (state.legacyDevices = deviceData),
-   },
-@@ -44,7 +48,15 @@ const VirtualMediaStore = {
+@@ -76,7 +76,15 @@ const VirtualMediaStore = {
            transferProtocolType: transferProtocolType.OEM,
            isActive: false,
          };
+-        commit('setProxyDevicesData', [device]);
 +        const device1 = {
 +          id: i18n.global.t('pageVirtualMedia.defaultDeviceName1'),
 +          websocket: '/vm/1/0',
 +          file: null,
++          nbd: null,
 +          transferProtocolType: transferProtocolType.OEM,
 +          isActive: false,
 +        };
-         commit('setProxyDevicesData', [device]);
-+        commit('setProxyDevices1Data', [device1]);
++        commit('setProxyDevicesData', [device, device1]);
          return;
        }
+
+diff --git a/src/views/Operations/Kvm/KvmConsole.vue b/src/views/Operations/Kvm/KvmConsole.vue
+index 1077471..e492466 100644
+--- a/src/views/Operations/Kvm/KvmConsole.vue
++++ b/src/views/Operations/Kvm/KvmConsole.vue
+@@ -4,7 +4,9 @@
+       <b-row class="d-flex">
+         <b-col class="d-flex flex-column justify-content-end" cols="4">
+           <dl class="mb-2" sm="2" md="2">
+-            <dt class="d-inline fw-bold me-1">{{ $t('pageKvm.status') }}:</dt>
++            <dt class="d-inline fw-bold me-1">
++              {{ $t(`${i18nRoot}.status`) }}:
++            </dt>
+             <dd class="d-inline">
+               <status-icon :status="serverStatusIcon" />
+               <span class="d-none d-md-inline"> {{ serverStatus }}</span>
+@@ -20,7 +22,7 @@
+             @click="sendCtrlAltDel"
+           >
+             <icon-arrow-down />
+-            {{ $t('pageKvm.buttonCtrlAltDelete') }}
++            {{ $t(`${i18nRoot}.buttonCtrlAltDelete`) }}
+           </b-button>
+           <b-button
+             v-if="isConnected"
+@@ -29,7 +31,7 @@
+             @click="captureScreenshot"
+           >
+             <icon-camera />
+-            {{ $t('pageKvm.captureScreenshot') }}
++            {{ $t(`${i18nRoot}.captureScreenshot`) }}
+           </b-button>
+           <b-button
+             v-if="!isFullWindow"
+@@ -38,7 +40,7 @@
+             @click="openConsoleWindow()"
+           >
+             <icon-launch />
+-            {{ $t('pageKvm.openNewTab') }}
++            {{ $t(`${i18nRoot}.openNewTab`) }}
+           </b-button>
+         </b-col>
+       </b-row>
+@@ -68,6 +70,10 @@ export default {
+       type: Boolean,
+       default: true,
+     },
++    hostIndex: {
++      type: Number,
++      default: 0,
++    },
+   },
+   data() {
+     return {
+@@ -81,6 +87,18 @@ export default {
+     };
+   },
+   computed: {
++    i18nRoot() {
++      return this.hostIndex === 0 ? 'pageKvm' : 'pageKvm1';
++    },
++    consoleRoute() {
++      return this.hostIndex === 0 ? '#/console/kvm' : '#/console/kvm1';
++    },
++    consoleWindowKey() {
++      return this.hostIndex === 0 ? '$consoleWindow' : '$consoleWindow1';
++    },
++    consoleWindowName() {
++      return this.hostIndex === 0 ? 'kvmConsoleWindow' : 'kvmConsoleWindow1';
++    },
+     serverStatusIcon() {
+       if (this.status === Connected) {
+         return 'success';
+@@ -91,11 +109,11 @@ export default {
+     },
+     serverStatus() {
+       if (this.status === Connected) {
+-        return i18n.global.t('pageKvm.connected');
++        return i18n.global.t(`${this.i18nRoot}.connected`);
+       } else if (this.status === Disconnected) {
+-        return i18n.global.t('pageKvm.disconnected');
++        return i18n.global.t(`${this.i18nRoot}.disconnected`);
+       }
+-      return i18n.global.t('pageKvm.connecting');
++      return i18n.global.t(`${this.i18nRoot}.connecting`);
+     },
+   },
+   created() {
+@@ -124,7 +142,7 @@ export default {
+           const link = document.createElement('a');
+           link.href = url;
+           const ts = new Date().toISOString().replace(/[:.]/g, '-');
+-          link.download = `kvm-screenshot-${ts}.png`;
++          link.download = `kvm${this.hostIndex}-screenshot-${ts}.png`;
+           document.body.appendChild(link);
+           link.click();
+           document.body.removeChild(link);
+@@ -135,6 +153,7 @@ export default {
+       }
+     },
+     closeTerminal() {
++      if (!this.rfb) return;
+       this.rfb.disconnect();
+       this.rfb = null;
+     },
+@@ -142,7 +161,7 @@ export default {
+       const token = this.$store.getters['authentication/token'];
+       this.rfb = new RFB(
+         this.$refs.panel,
+-        `wss://${window.location.host}/kvm/0`,
++        `wss://${window.location.host}/kvm/${this.hostIndex}`,
+         { wsProtocols: [token] },
+       );
  
-@@ -74,6 +86,14 @@ const VirtualMediaStore = {
-                 file: null,
-               };
-             });
-+          const proxyDevices1 = deviceData
-+            .filter((d) => d.transferProtocolType === transferProtocolType.OEM)
-+            .map((device) => {
-+              return {
-+                ...device,
-+                file: null,
-+              };
-+            });
-           const legacyDevices = deviceData
-             .filter((d) => d.transferProtocolType !== transferProtocolType.OEM)
-             .map((device) => {
-@@ -86,6 +106,7 @@ const VirtualMediaStore = {
-               };
-             });
-           commit('setProxyDevicesData', proxyDevices);
-+          commit('setProxyDevices1Data', proxyDevices1);
-           commit('setLegacyDevicesData', legacyDevices);
-         })
-         .catch((error) => {
+@@ -181,11 +200,12 @@ export default {
+     openConsoleWindow() {
+       // If consoleWindow is not null
+       // Check the newly opened window is closed or not
+-      if (this.$eventBus.$consoleWindow) {
++      const consoleWindow = this.$eventBus[this.consoleWindowKey];
++      if (consoleWindow) {
+         // If window is not closed set focus to new window
+         // If window is closed, do open new window
+-        if (!this.$eventBus.$consoleWindow.closed) {
+-          this.$eventBus.$consoleWindow.focus();
++        if (!consoleWindow.closed) {
++          consoleWindow.focus();
+           return;
+         } else {
+           this.openNewWindow();
+@@ -196,9 +216,9 @@ export default {
+       }
+     },
+     openNewWindow() {
+-      this.$eventBus.$consoleWindow = window.open(
+-        '#/console/kvm',
+-        'kvmConsoleWindow',
++      this.$eventBus[this.consoleWindowKey] = window.open(
++        this.consoleRoute,
++        this.consoleWindowName,
+         'directories=no,titlebar=no,toolbar=no,location=no,status=no,menubar=no,scrollbars=no,resizable=yes,width=700,height=550',
+       );
+     },
 diff --git a/src/views/Operations/Kvm1/Kvm1.vue b/src/views/Operations/Kvm1/Kvm1.vue
 new file mode 100644
-index 0000000..1593a51
+index 0000000..b172ce0
 --- /dev/null
 +++ b/src/views/Operations/Kvm1/Kvm1.vue
 @@ -0,0 +1,24 @@
@@ -362,230 +439,24 @@ index 0000000..1593a51
 +  <b-container fluid="xl">
 +    <page-title />
 +    <div class="terminal-container">
-+      <kvm1-console :is-full-window="false" />
++      <kvm-console :host-index="1" :is-full-window="false" />
 +    </div>
 +  </b-container>
 +</template>
 +
 +<script>
 +import PageTitle from '@/components/Global/PageTitle';
-+import Kvm1Console from './Kvm1Console';
++import KvmConsole from '@/views/Operations/Kvm/KvmConsole';
 +
 +export default {
 +  name: 'Kvm1',
-+  components: { PageTitle, Kvm1Console },
++  components: { PageTitle, KvmConsole },
 +};
 +</script>
 +
 +<style scoped>
 +.terminal-container {
 +  width: 100%;
-+}
-+</style>
-diff --git a/src/views/Operations/Kvm1/Kvm1Console.vue b/src/views/Operations/Kvm1/Kvm1Console.vue
-new file mode 100644
-index 0000000..c3c8b64
---- /dev/null
-+++ b/src/views/Operations/Kvm1/Kvm1Console.vue
-@@ -0,0 +1,200 @@
-+<template>
-+  <div :class="marginClass">
-+    <div ref="toolbar" class="kvm-toolbar">
-+      <b-row class="d-flex">
-+        <b-col class="d-flex flex-column justify-content-end" cols="4">
-+          <dl class="mb-2" sm="2" md="2">
-+            <dt class="d-inline font-weight-bold mr-1">
-+              {{ $t('pageKvm1.status') }}:
-+            </dt>
-+            <dd class="d-inline">
-+              <status-icon :status="serverStatusIcon" />
-+              <span class="d-none d-md-inline"> {{ serverStatus }}</span>
-+            </dd>
-+          </dl>
-+        </b-col>
-+
-+        <b-col class="d-flex justify-content-end pr-1">
-+          <b-button
-+            v-if="isConnected"
-+            variant="link"
-+            type="button"
-+            @click="sendCtrlAltDel"
-+          >
-+            <icon-arrow-down />
-+            {{ $t('pageKvm1.buttonCtrlAltDelete') }}
-+          </b-button>
-+          <b-button
-+            v-if="!isFullWindow"
-+            variant="link"
-+            type="button"
-+            @click="openConsoleWindow1()"
-+          >
-+            <icon-launch />
-+            {{ $t('pageKvm1.openNewTab') }}
-+          </b-button>
-+        </b-col>
-+      </b-row>
-+    </div>
-+    <div id="terminal-kvm" ref="panel" :class="terminalClass"></div>
-+  </div>
-+</template>
-+
-+<script>
-+import RFB from '@novnc/novnc/core/rfb';
-+import StatusIcon from '@/components/Global/StatusIcon';
-+import IconLaunch from '@carbon/icons-vue/es/launch/20';
-+import IconArrowDown from '@carbon/icons-vue/es/arrow--down/16';
-+import { throttle } from 'lodash';
-+import { useI18n } from 'vue-i18n';
-+import i18n from '@/i18n';
-+
-+const Connecting = 0;
-+const Connected = 1;
-+const Disconnected = 2;
-+
-+export default {
-+  name: 'Kvm1Console',
-+  components: { StatusIcon, IconLaunch, IconArrowDown },
-+  props: {
-+    isFullWindow: {
-+      type: Boolean,
-+      default: true,
-+    },
-+  },
-+  data() {
-+    return {
-+      $t: useI18n().t,
-+      rfb: null,
-+      isConnected: false,
-+      terminalClass: this.isFullWindow ? 'full-window' : '',
-+      marginClass: this.isFullWindow ? 'margin-left-full-window' : '',
-+      status: Connecting,
-+      convasRef: null,
-+      resizeKvmWindow: null,
-+    };
-+  },
-+  computed: {
-+    serverStatusIcon() {
-+      if (this.status === Connected) {
-+        return 'success';
-+      } else if (this.status === Disconnected) {
-+        return 'danger';
-+      }
-+      return 'secondary';
-+    },
-+    serverStatus() {
-+      if (this.status === Connected) {
-+        return i18n.global.t('pageKvm1.connected');
-+      } else if (this.status === Disconnected) {
-+        return i18n.global.t('pageKvm1.disconnected');
-+      }
-+      return i18n.global.t('pageKvm1.connecting');
-+    },
-+  },
-+  created() {
-+    this.$store.dispatch('global/getSystemInfo');
-+  },
-+  mounted() {
-+    this.openTerminal();
-+  },
-+  beforeUnmount() {
-+    window.removeEventListener('resize', this.resizeKvmWindow);
-+    this.closeTerminal();
-+  },
-+  methods: {
-+    sendCtrlAltDel() {
-+      this.rfb.sendCtrlAltDel();
-+    },
-+    closeTerminal() {
-+      this.rfb.disconnect();
-+      this.rfb = null;
-+    },
-+    openTerminal() {
-+      const token = this.$store.getters['authentication/token'];
-+      this.rfb = new RFB(
-+        this.$refs.panel,
-+        `wss://${window.location.host}/kvm/1`,
-+        { wsProtocols: [token] },
-+      );
-+
-+      this.rfb.scaleViewport = true;
-+      this.rfb.clipViewport = true;
-+      const that = this;
-+
-+      this.resizeKvmWindow = throttle(() => {
-+        setTimeout(that.setWidthToolbar, 0);
-+      }, 1000);
-+      window.addEventListener('resize', this.resizeKvmWindow);
-+
-+      this.rfb.addEventListener('connect', () => {
-+        that.isConnected = true;
-+        that.status = Connected;
-+        that.setWidthToolbar();
-+      });
-+
-+      this.rfb.addEventListener('disconnect', () => {
-+        this.isConnected = false;
-+        that.status = Disconnected;
-+      });
-+    },
-+    setWidthToolbar() {
-+      if (
-+        this.$refs.panel.children &&
-+        this.$refs.panel.children.length > 0 &&
-+        this.$refs.panel.children[0].children.length > 0
-+      ) {
-+        this.$refs.toolbar.style.width =
-+          this.$refs.panel.children[0].children[0].clientWidth - 10 + 'px';
-+      }
-+    },
-+    openConsoleWindow1() {
-+      // If consoleWindow1 is not null
-+      // Check the newly opened window is closed or not
-+      if (this.$eventBus.$consoleWindow1) {
-+        // If window is not closed set focus to new window
-+        // If window is closed, do open new window
-+        if (!this.$eventBus.$consoleWindow1.closed) {
-+          this.$eventBus.$consoleWindow1.focus();
-+          return;
-+        } else {
-+          this.openNewWindow1();
-+        }
-+      } else {
-+        // If consoleWindow1 is null, open new window
-+        this.openNewWindow1();
-+      }
-+    },
-+    openNewWindow1() {
-+      this.$eventBus.$consoleWindow1 = window.open(
-+        '#/console/kvm1',
-+        'kvmConsoleWindow1',
-+        'directories=no,titlebar=no,toolbar=no,location=no,status=no,menubar=no,scrollbars=no,resizable=yes,width=700,height=550',
-+      );
-+    },
-+  },
-+};
-+</script>
-+
-+<style lang="scss">
-+@import '@/assets/styles/bmc/custom/_kvm1.scss';
-+</style>
-+
-+<style lang="scss" scoped>
-+@import '@/assets/styles/bmc/helpers/_index.scss';
-+@import '@/assets/styles/bootstrap/_helpers.scss';
-+
-+.button-ctrl-alt-delete {
-+  float: right;
-+}
-+
-+.kvm-status {
-+  padding-top: $spacer / 2;
-+  padding-left: $spacer / 4;
-+  display: inline-block;
-+}
-+
-+.margin-left-full-window {
-+  margin-left: 5px;
 +}
 +</style>
 diff --git a/src/views/Operations/Kvm1/index.js b/src/views/Operations/Kvm1/index.js
@@ -596,102 +467,5 @@ index 0000000..f309220
 @@ -0,0 +1,2 @@
 +import Kvm1 from './Kvm1.vue';
 +export default Kvm1;
-diff --git a/src/views/Operations/VirtualMedia/VirtualMedia.vue b/src/views/Operations/VirtualMedia/VirtualMedia.vue
-index e158059..39dba18 100644
---- a/src/views/Operations/VirtualMedia/VirtualMedia.vue
-+++ b/src/views/Operations/VirtualMedia/VirtualMedia.vue
-@@ -39,6 +39,39 @@
-               </b-button>
-             </b-col>
-           </b-row>
-+          <b-row>
-+            <b-col v-for="(dev, $index) in proxyDevices1" :key="$index" md="6">
-+              <b-form-group :label="dev.id" label-class="bold">
-+                <form-file
-+                  v-if="!dev.isActive"
-+                  :id="concatId(dev.id)"
-+                  v-model="dev.file"
-+                >
-+                  <template #invalid>
-+                    <b-form-invalid-feedback role="alert">
-+                      {{ $t('global.form.required') }}
-+                    </b-form-invalid-feedback>
-+                  </template>
-+                </form-file>
-+              </b-form-group>
-+              <b-button
-+                v-if="!dev.isActive"
-+                variant="primary"
-+                :disabled="!dev.file"
-+                @click="startVM1(dev)"
-+              >
-+                {{ $t('pageVirtualMedia.start') }}
-+              </b-button>
-+              <b-button
-+                v-if="dev.isActive"
-+                variant="primary"
-+                :disabled="!dev.file"
-+                @click="stopVM1(dev)"
-+              >
-+                {{ $t('pageVirtualMedia.stop') }}
-+              </b-button>
-+            </b-col>
-+          </b-row>
-         </page-section>
-       </b-col>
-     </b-row>
-@@ -125,6 +158,9 @@ export default {
-     proxyDevices() {
-       return this.$store.getters['virtualMedia/proxyDevices'];
-     },
-+    proxyDevices1() {
-+      return this.$store.getters['virtualMedia/proxyDevices1'];
-+    },
-     legacyDevices() {
-       return this.$store.getters['virtualMedia/legacyDevices'];
-     },
-@@ -173,6 +209,41 @@ export default {
-     stopVM(device) {
-       device.nbd.stop();
-     },
-+    startVM1(device) {
-+      const token = this.$store.getters['authentication/token'];
-+      device.nbd = new NbdServer(
-+        `wss://${window.location.host}${device.websocket}`,
-+        device.file,
-+        device.id,
-+        token,
-+      );
-+      device.nbd.socketStarted = () =>
-+        this.successToast(
-+          i18n.global.t('pageVirtualMedia.toast.serverRunning1'),
-+        );
-+      device.nbd.errorReadingFile = () =>
-+        this.errorToast(
-+          i18n.global.t('pageVirtualMedia.toast.errorReadingFile'),
-+        );
-+      device.nbd.socketClosed = (code2) => {
-+        if (code2 === 1000)
-+          this.successToast(
-+            i18n.global.t('pageVirtualMedia.toast.serverClosedSuccessfully1'),
-+          );
-+        else
-+          this.errorToast(
-+            i18n.global.t('pageVirtualMedia.toast.serverClosedWithErrors'),
-+          );
-+        device.file = null;
-+        device.isActive = false;
-+      };
-+
-+      device.nbd.start();
-+      device.isActive = true;
-+    },
-+    stopVM1(device) {
-+      device.nbd.stop();
-+    },
-     startLegacy(connectionData) {
-       var data = {};
-       data.Image = connectionData.serverUri;
 -- 
 2.43.0
-
