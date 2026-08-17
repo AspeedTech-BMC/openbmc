@@ -57,7 +57,7 @@ index a7687c6..5d8cc23 100644
 +
 +    bool jobComplete = false;
 +    bool jobSuccessful = false;
-+    sdbusplus::message::object_path verifyJobPath("/");
++    sdbusplus::object_path verifyJobPath("/");
 +
 +    info("Aspeed image verification starting for {ID}", "ID", versionId);
 +
@@ -73,7 +73,7 @@ index a7687c6..5d8cc23 100644
 +        [&serviceFile, &jobComplete, &jobSuccessful,
 +         &verifyJobPath](sdbusplus::message_t& msg) {
 +            [[maybe_unused]] uint32_t jobId{};
-+            sdbusplus::message::object_path jobPath;
++            sdbusplus::object_path jobPath;
 +            std::string unit;
 +            std::string result;
 +
