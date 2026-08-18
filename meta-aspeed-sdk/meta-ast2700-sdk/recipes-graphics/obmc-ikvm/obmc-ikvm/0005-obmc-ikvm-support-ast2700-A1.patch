@@ -14,10 +14,10 @@ Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/ikvm_input.hpp b/ikvm_input.hpp
-index d34bd9a..3bbc302 100644
+index 9ae770f..29f6448 100644
 --- a/ikvm_input.hpp
 +++ b/ikvm_input.hpp
-@@ -87,7 +87,7 @@ class Input
+@@ -72,7 +72,7 @@ class Input
      static constexpr const char* USB_VHUB_PATH =
          "/sys/bus/platform/devices/12060000.usb-vhub";
      static constexpr const char* USB_VHUB_PATH_1 =
@@ -25,6 +25,6 @@ index d34bd9a..3bbc302 100644
 +        "/sys/bus/platform/devices/12021000.usb-vhub";
      /* @brief Retry limit for writing an HID report */
      static constexpr int HID_REPORT_RETRY_MAX = 5;
-     /*
+ 
 -- 
 2.43.0
