@@ -1,0 +1,44 @@
+From c7d9e35d84ef7f1c9d6b101879f186e4367f1728 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Mon, 17 Aug 2026 15:44:55 +0800
+Subject: [PATCH] nbd-proxy: pass default export name to nbd-client
+
+nbd-client commit 17043b068f43 ("Refactor the negotiate() and
+connected functions") changed the parsed arguments to use the CLIENT
+structure. As a result, the default export name is no longer initialized
+to an empty string when -N is not specified.
+
+The jsnbd nbd-proxy command line does not pass -N, so nbd-client 3.27.0
+rejects the command before connecting:
+
+  not enough information specified, and argument didn't look like an nbd device
+
+Pass -N "" explicitly to request the default export. Also pass -u as a
+flag and keep the Unix socket path as the positional host argument, which
+matches the nbd-client Unix socket syntax.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/jsnbd/+/93577]
+
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ nbd-proxy.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/nbd-proxy.c b/nbd-proxy.c
+index e6d12f3..eccbbdf 100644
+--- a/nbd-proxy.c
++++ b/nbd-proxy.c
+@@ -157,8 +157,9 @@ static int start_nbd_client(struct ctx* ctx)
+         dup2(fd, STDOUT_FILENO);
+         close(fd);
+ 
+-        execlp("nbd-client", "nbd-client", "-u", ctx->sock_path, "-n", "-L",
+-               "-t", timeout_str, ctx->config->nbd_device, NULL);
++        execlp("nbd-client", "nbd-client", "-u", "-n", "-L", "-N", "",
++               "-t", timeout_str, ctx->sock_path, ctx->config->nbd_device,
++               NULL);
+         err(EXIT_FAILURE, "can't start ndb client");
+     }
+ 
+-- 
+2.43.0

@@ -5,6 +5,7 @@ FILES:${PN}:append = " ${sysconfdir}/nbd-proxy/config.json "
 
 SRC_URI:append = " file://state_hook"
 SRC_URI:append = " file://config.json"
+SRC_URI:append = " file://0001-nbd-proxy-use-current-nbd-client-unix-socket-syntax.patch"
 
 do_install:append() {
     install -d ${D}${sysconfdir}/nbd-proxy/
