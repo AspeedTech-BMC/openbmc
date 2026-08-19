@@ -31,6 +31,8 @@ IMAGE_INSTALL:remove:aspeed-g5 = " \
 IMAGE_FEATURES:remove:aspeed-g5 = " \
         obmc-telemetry \
         obmc-debug-collector \
+        obmc-fan-control \
+        obmc-fan-mgmt \
         "
 
 
