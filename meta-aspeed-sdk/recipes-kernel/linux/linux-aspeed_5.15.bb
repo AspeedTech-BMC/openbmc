@@ -12,3 +12,6 @@ SRC_URI:append = " file://ipmi_ssif.cfg "
 SRC_URI:append = " file://mtd_test.cfg "
 SRC_URI:append = " file://crpyto_manager.cfg "
 SRC_URI:append:spi-nor-ecc = " file://jffs2_writebuffer.cfg "
+
+# scripts/gcc-plugins fails to build against gcc 16's plugin headers
+SRC_URI:append = " file://disable_gcc_plugins.cfg "
