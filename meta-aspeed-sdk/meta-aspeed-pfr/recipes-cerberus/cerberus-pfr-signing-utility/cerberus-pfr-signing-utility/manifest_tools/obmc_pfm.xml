@@ -9,7 +9,7 @@
           <OperationOnFailure>Restore</OperationOnFailure>
       </Region>
       <Region>
-          <StartAddr>0x02E00000</StartAddr> <!-- rwfs -->
+          <StartAddr>0x03100000</StartAddr> <!-- rwfs -->
           <EndAddr>0x03DDFFFF</EndAddr>
           <OperationOnFailure>Erase</OperationOnFailure>
       </Region>
@@ -30,7 +30,7 @@
       </Region>
       <Region>
           <StartAddr>0x00160000</StartAddr> <!-- fit-image -->
-          <EndAddr>0x02DFFFFF</EndAddr>
+          <EndAddr>0x030FFFFF</EndAddr>
       </Region>
       <ValidateOnBoot>true</ValidateOnBoot>
   </SignedImage>
