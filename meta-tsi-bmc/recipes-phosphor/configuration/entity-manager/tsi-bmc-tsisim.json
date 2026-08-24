@@ -1,0 +1,45 @@
+{
+    "Exposes": [
+        {
+            "Address": "0x48",
+            "Bus": 0,
+            "Name": "BMC_Temp",
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 85
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 75
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 5
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 0
+                }
+            ],
+            "Type": "TMP75"
+        }
+    ],
+    "Name": "TSI BMC TSISIM",
+    "Probe": "TRUE",
+    "Type": "Board",
+    "xyz.openbmc_project.Inventory.Decorator.Asset": {
+        "Manufacturer": "Tsavorite Scalable Intelligence",
+        "Model": "tsi-bmc-tsisim",
+        "PartNumber": "N/A",
+        "SerialNumber": "N/A"
+    }
+}
