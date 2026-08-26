@@ -28,6 +28,8 @@ MACHINE ??= "ast2700-default"
 #MACHINE ??= "ast2700-a1-abr"
 #MACHINE ??= "ast2700-a1-612"
 #MACHINE ??= "ast2700-a1-66"
+#MACHINE ??= "ast2705-a0-default"
+#MACHINE ??= "ast2705-a0-netboot"
 
 DISTRO ?= "openbmc-phosphor"
 PACKAGE_CLASSES ?= "package_ipk"
