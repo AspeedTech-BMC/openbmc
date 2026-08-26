@@ -1,6 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://0001-config-enhance-aspeed-uart-routing-for-dual-nodes.patch"
+SRC_URI += "file://0002-tty-handler-zero-init-tty_handler-to-avoid-stuck-local-tty-writes.patch"
 
 CONSOLE_CLIENT ?= "2200"
 
