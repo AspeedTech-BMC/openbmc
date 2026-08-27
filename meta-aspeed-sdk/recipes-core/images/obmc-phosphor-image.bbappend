@@ -46,6 +46,10 @@ IMAGE_INSTALL:append:aspeed-g7 = " \
         packagegroup-oss-extended \
         "
 
+IMAGE_INSTALL:append = " \
+        ${@bb.utils.contains('MACHINE_FEATURES', 'obmf', 'lstp-module', '', d)} \
+        "
+
 EXTRA_IMAGE_FEATURES:append = " \
         nfs-client \
         ${@bb.utils.contains('DISTRO_FEATURES', 'obmc-ubi-fs', 'read-only-rootfs-delayed-postinsts', '', d)} \
