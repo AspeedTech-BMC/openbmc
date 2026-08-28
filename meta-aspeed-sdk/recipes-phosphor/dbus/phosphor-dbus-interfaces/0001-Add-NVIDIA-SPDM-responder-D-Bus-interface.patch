@@ -1,0 +1,592 @@
+From f9587982d3dbccf6fa5de4bf13541f9e11bb7c88 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Fri, 28 Aug 2026 14:45:21 +0800
+Subject: [PATCH] Add NVIDIA SPDM responder D-Bus interface
+
+Import the SPDM responder interface and generated Meson integration from NVIDIA phosphor-dbus-interfaces develop commit dd778031ba68223771b303464e4555fefb8d88c2.
+
+Upstream-Status: Inappropriate [NVIDIA-specific interface]
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ .../SPDM/Responder/meson.build                |  39 ++
+ gen/xyz/openbmc_project/SPDM/meson.build      |  28 ++
+ gen/xyz/openbmc_project/meson.build           |   2 +-
+ .../SPDM/Responder.interface.yaml             | 468 ++++++++++++++++++
+ 4 files changed, 536 insertions(+), 1 deletion(-)
+ create mode 100644 gen/xyz/openbmc_project/SPDM/Responder/meson.build
+ create mode 100644 gen/xyz/openbmc_project/SPDM/meson.build
+ create mode 100644 yaml/xyz/openbmc_project/SPDM/Responder.interface.yaml
+
+diff --git a/gen/xyz/openbmc_project/SPDM/Responder/meson.build b/gen/xyz/openbmc_project/SPDM/Responder/meson.build
+new file mode 100644
+index 000000000..84c98060b
+--- /dev/null
++++ b/gen/xyz/openbmc_project/SPDM/Responder/meson.build
+@@ -0,0 +1,39 @@
++# Generated file; do not modify.
++
++sdbusplus_current_path = 'xyz/openbmc_project/SPDM/Responder'
++
++generated_sources += custom_target(
++    'xyz/openbmc_project/SPDM/Responder__cpp'.underscorify(),
++    input: [
++        '../../../../../yaml/xyz/openbmc_project/SPDM/Responder.interface.yaml',
++    ],
++    output: [
++        'common.hpp',
++        'server.hpp',
++        'server.cpp',
++        'aserver.hpp',
++        'client.hpp',
++    ],
++    depend_files: sdbusplusplus_depfiles,
++    command: [
++        sdbuspp_gen_meson_prog,
++        '--command',
++        'cpp',
++        '--output',
++        meson.current_build_dir(),
++        '--tool',
++        sdbusplusplus_prog,
++        '--directory',
++        meson.current_source_dir() / '../../../../../yaml',
++        'xyz/openbmc_project/SPDM/Responder',
++    ],
++    install: should_generate_cpp,
++    install_dir: [
++        get_option('includedir') / sdbusplus_current_path,
++        get_option('includedir') / sdbusplus_current_path,
++        false,
++        get_option('includedir') / sdbusplus_current_path,
++        get_option('includedir') / sdbusplus_current_path,
++    ],
++    build_by_default: should_generate_cpp,
++)
+diff --git a/gen/xyz/openbmc_project/SPDM/meson.build b/gen/xyz/openbmc_project/SPDM/meson.build
+new file mode 100644
+index 000000000..b04378c50
+--- /dev/null
++++ b/gen/xyz/openbmc_project/SPDM/meson.build
+@@ -0,0 +1,28 @@
++# Generated file; do not modify.
++subdir('Responder')
++
++sdbusplus_current_path = 'xyz/openbmc_project/SPDM'
++
++generated_markdown += custom_target(
++    'xyz/openbmc_project/SPDM/Responder__markdown'.underscorify(),
++    input: [
++        '../../../../yaml/xyz/openbmc_project/SPDM/Responder.interface.yaml',
++    ],
++    output: ['Responder.md'],
++    depend_files: sdbusplusplus_depfiles,
++    command: [
++        sdbuspp_gen_meson_prog,
++        '--command',
++        'markdown',
++        '--output',
++        meson.current_build_dir(),
++        '--tool',
++        sdbusplusplus_prog,
++        '--directory',
++        meson.current_source_dir() / '../../../../yaml',
++        'xyz/openbmc_project/SPDM/Responder',
++    ],
++    install: should_generate_markdown,
++    install_dir: [inst_markdown_dir / sdbusplus_current_path],
++    build_by_default: should_generate_markdown,
++)
+diff --git a/gen/xyz/openbmc_project/meson.build b/gen/xyz/openbmc_project/meson.build
+index 6a5aad8e2..25335e412 100644
+--- a/gen/xyz/openbmc_project/meson.build
++++ b/gen/xyz/openbmc_project/meson.build
+@@ -27,6 +27,7 @@ subdir('Object')
+ subdir('ObjectMapper')
+ subdir('PFR')
+ subdir('PLDM')
++subdir('SPDM')
+ subdir('ScheduledTime')
+ subdir('Sensor')
+ subdir('Smbios')
+@@ -351,4 +352,3 @@ generated_markdown += custom_target(
+     install_dir: [inst_markdown_dir / sdbusplus_current_path],
+     build_by_default: should_generate_markdown,
+ )
+-
+diff --git a/yaml/xyz/openbmc_project/SPDM/Responder.interface.yaml b/yaml/xyz/openbmc_project/SPDM/Responder.interface.yaml
+new file mode 100644
+index 000000000..17bbf5b85
+--- /dev/null
++++ b/yaml/xyz/openbmc_project/SPDM/Responder.interface.yaml
+@@ -0,0 +1,468 @@
++description: >
++    The SPDM D-bus interface provides information about authentication results,
++    certificates and measurements for SPDM available responders.
++
++methods:
++    - name: Refresh
++      description: >
++          Use this method to get all fresh measurements and certificates.
++          The method is asynchronous, so it returns immediately.
++          Current status of communication between the SPDM requester and responder
++          may be verified using the Status property.
++          SPDM interface client should wait on an event of changing the Status property
++          and check its value for required action.
++          If this command is received before finishing communication requested
++          by the earlier command then it will be ignored.
++      parameters:
++        - name: slot
++          type: byte
++          default: 0
++          description: >
++              Slot number to get certificates from a responder.
++              By default value 0 should be used.
++        - name: nonce
++          type: array[byte]
++          description: >
++              Nonce to be used with CHALLENGE and GET_MEASUREMENT request messages.
++              It should be a random number up to 32 bytes and it should be different between each Refresh method call.
++              If the provided number is equal to 0 then the nonce will be generated by the SPDM requester.
++        - name: MeasurementIndices
++          type: array[byte]
++          description: >
++              An array of indices that identify the measurement blocks to sign. This array shall contain
++              one or more unique values between `0` to `254`, inclusive, or contain a single value of `255`.
++              If not provided by the client, the value shall be assumed to be an array containing a single
++              value of `255`.
++        - name: sessionId
++          type: uint32
++          default: 0
++          description: >
++              Session ID chosen for the communication channel.
++              For now this parameter is optional as this implementation does not provide
++              secure sessions implementation.
++
++properties:
++    - name: Measurements
++      type: array[struct[byte,byte,array[byte]]]
++      description: >
++          According to the SPDM specification a measurement is a representation of firmware/software or
++          configuration data on an endpoint. A measurement is typically a cryptographic hash value (digest) of the data,
++          or the raw data itself. The endpoint optionally binds a measurement
++          with the endpoint identity through the use of digital signatures.
++          This binding enables an authentication initiator to establish the identity and
++          measurement of the firmware/software or configuration running on the endpoint.
++          The format of provided structure:
++            array[struct[byte,byte,array[byte]]] - array of measurements, where:
++              - byte - measurements index;
++              - byte - the DMTF specific measurement type defined in the SPDM specification and mapped as follows:
++                      0: 'Digest: Immutable ROM'
++                      1: 'Digest: Mutable firmware'
++                      2: 'Digest: Hardware configuration'
++                      3: 'Digest: Firmware configuration'
++                      4: 'Digest: Measurement manifest'
++                      128: 'Raw bit stream: Immutable ROM'
++                      129: 'Raw bit stream: Mutable firmware'
++                      130: 'Raw bit stream: Hardware configuration'
++                      131: 'Raw bit stream: Firmware configuration'
++                      132: 'Raw bit stream: Measurement manifest'
++              - array of bytes -> the measurement binary data.
++          It should be noticed that the measurements data type nature is an array of bytes (and not a string).
++          Proper measurements can be read only if Status property is equal to "Success".
++          When Status is equal to "Success" and the value in this field is still empty then
++          it may mean that the responder does not provide proper measurements.
++          Data in this property is provided from an SPDM responder device directly.
++      flags:
++          - readonly
++
++    - name: MeasurementsHash
++      type: array[byte]
++      description: >
++          It shall contain a hash of the given nonce and measurement blocks corresponding to the requested measurement indices.
++          If the SPDM version is 1.2, the hash value shall be counted on a concatenation of SPDM 'VCA' and
++          'GET_MEASUREMENTS' requests and responses exchanged between the SPDM Requester and the SPDM Responder.
++          If SPDM version is 1.0 or 1.1, the hash value shall be counted on a concatenation of SPDM 'GET_MEASUREMENTS' requests and
++          responses exchanged between the SPDM Requester and the SPDM Responder. The last 'MEASUREMENTS' response shall
++          contain a signature generated over the 'L2' string by the SPDM Responder.
++          The hash value in this property is counted by the SPDM requester.
++      flags:
++          - readonly
++
++    - name: MeasurementsSignature
++      type: array[byte]
++      description: >
++          It shall contain the cryptographic signature of the hash stored in MeasurementsHash.
++          The signature is provided by an SPDM responder within SignedMeasurements array
++           and it is separately provided in this property for Redfish client convenience.
++      flags:
++          - readonly
++
++    - name: SignedMeasurements
++      type: array[byte]
++      description: >
++          It shall contain the cryptographic signed statement over the given nonce and measurement blocks
++          corresponding to the requested measurement indices.
++          If the SPDM version is 1.2, this value shall be a concatenation of SPDM 'VCA' and 'GET_MEASUREMENTS' requests and
++          responses exchanged between the SPDM Requester and the SPDM Responder.
++          If SPDM version is 1.0 or 1.1, this value shall be a concatenation of SPDM 'GET_MEASUREMENTS' requests and
++          responses exchanged between the SPDM Requester and the SPDM Responder. The last 'MEASUREMENTS' response shall
++          contain a signature generated over the 'L2' string by the SPDM Responder.
++      flags:
++          - readonly
++
++    - name: Slot
++      type: byte
++      description: >
++          A slot (index) of a certificate chain which was used for the last signing measurements.
++          It points to the slot number in the "Certificate" property, described below.
++      flags:
++          - readonly
++
++    - name: Certificate
++      type: array[struct[byte,string]]
++      description: >
++          According to the SPDM specification a responder may provide up to 8 certificate chains.
++          Each certificate shall be in ASN.1 PEM-encoded X.509 v3 format.
++          The ASN.1 PEM encoding of each individual certificate can be analyzed to determine its length.
++          The format of provided structure:
++            - array of the certificates:
++              - byte - slot number;
++              - array[byte] - a certificate chain in ASN.1 DER-encoded X.509 v3 binary format.
++          Proper certificates can be read only if Status property is equal to "Success".
++          When Status is equal to "Success" and the value in this field is still empty then
++          it may mean that the responder does not provide any proper certificate.
++      flags:
++          - readonly
++
++    - name: HashingAlgorithm
++      default: 'None'
++      type: enum[self.HashingAlgorithms]
++      description: >
++          The hashing algorithm used for SPDM messages.
++          It is negotiated between SPDM requester and responder and used for all measurements
++          within one session.
++      flags:
++          - readonly
++
++    - name: SigningAlgorithm
++      default: 'None'
++      type: enum[self.SigningAlgorithms]
++      description: >
++          The signing algorithm used for SPDM messages.
++          It is negotiated between SPDM requester and responder and used for all measurements
++          within one session.
++      flags:
++          - readonly
++
++    - name: MeasurementsType
++      default: 'All'
++      type: enum[self.MeasurementsType]
++      description: >
++          The measurements type.
++          It is requested by an SPDM requester from a responder within the CHALLENGE request message.
++          The measurement type is configured during the SPDM daemon service start.
++      flags:
++          - readonly
++
++    - name: Version
++      default: 0
++      type: byte
++      description: >
++          The SPDM EROT responder version, encoded in the following pattern:
++          - 0x10, for SPDM version 1.0
++          - 0x11, for SPDM version 1.1
++      flags:
++          - readonly
++
++    - name: Status
++      default: 'GettingVersion'
++      type: enum[self.SPDMStatus]
++      description: >
++          Status of the SPDM communication between the SPDM daemon requester and the responder.
++      flags:
++          - readonly
++
++    - name: LastUpdate
++      default: 0
++      type: uint64
++      description: >
++          The point in time (seconds since the Epoch Jan 1, 1970 0:00 UTC)
++          when the last successful read of certificate and measurements occurred.
++      flags:
++          - readonly
++
++    - name: Nonce
++      type: array[byte]
++      description: >
++          The last used nonce.
++          It should be a random number of exactly 32 bytes.
++          It may be provided by an SPDM D-Bus client or the SPDM daemon itself.
++      flags:
++          - readonly
++
++    - name: SessionId
++      type: array[uint32]
++      description: >
++          Session IDs used for the communication channels. There may be several session
++          channels open between SPDM requester and responder.
++          Session ID is four bytes record, which consists of:
++            - Two-byte requester contribution;
++            - Two-byte responder contribution.
++          The final session ID = Concatenate (ReqSessionID, RspSessionID).
++          For now this parameter is optional as the current SPDM daemon implementation does not provide
++          secure sessions implementation.
++
++    - name: Capabilities
++      type: uint32
++      flags:
++        - readonly
++      description: >
++        Responder capabilities according to the Responder flags fields definition in
++        DSP0274_1.1.0c.
++        Bits:
++          - 0:      CACHE_CAP
++          - 1:      CERT_CAP
++          - 2:      CHAL_CAP
++          - 3-4:    MEAS_CAP
++          - 5:      MEAS_FRESH_CAP
++          - 6:      ENCRYPT_CAP
++          - 7:      MAC_CAP
++          - 8:      MUT_AUTH_CAP
++          - 9:      KEY_EX_CAP
++          - 10-11:  PSK_CAP
++          - 12:     ENCAP_CAP
++          - 13:     HBEAT_CAP
++          - 14:     KEY_UPD_CAP
++          - 15:     HANDSHAKE_IN_THE_CLEAR_CAP
++          - 16:     PUB_KEY_ID_CAP
++          - 17-31:  RESERVED
++
++enumerations:
++    - name: HashingAlgorithms
++      description: >
++          The hashing algorithms allowed by the SPDM specification and possibly
++          used by the SPDM requester and responder communication.
++          See the SPDM specification for more details.
++      values:
++        - name: 'TPM_ALG_SHA_256'
++          description: >
++            SHA 256
++        - name: 'TPM_ALG_SHA_384'
++          description: >
++            SHA 384
++        - name: 'TPM_ALG_SHA_512'
++          description: >
++            SHA 512
++        - name: 'TPM_ALG_SHA3_256'
++          description: >
++            SHA3 256
++        - name: 'TPM_ALG_SHA3_384'
++          description: >
++            SHA3 384
++        - name: 'TPM_ALG_SHA3_512'
++          description: >
++            SHA3 512
++        - name: 'OEM'
++          description: >
++            An extended algorithm used for hashing.
++        - name: 'None'
++          description: >
++            Value None means that there is not any compliance for hashing
++            between the SPDM requester daemon and the SPDM responder.
++
++    - name: SigningAlgorithms
++      description: >
++          The signing algorithms allowed by the SPDM specification and possibly
++          used by the SPDM requester and responder communication.
++          See the SPDM specification for more details.
++      values:
++        - name: 'ffdhe2048'
++          description: >
++            SPDM-enumerated DHE group, where the corresponding public values group D = 256
++        - name: 'ffdhe3072'
++          description: >
++            SPDM-enumerated DHE group, where the corresponding public values group D = 384
++        - name: 'ffdhe4096'
++          description: >
++            SPDM-enumerated DHE group, where the corresponding public values group D = 512
++        - name: 'secp256r1'
++          description: >
++            SPDM-enumerated DHE group, where the corresponding public values group D = 64, C = 32
++        - name: 'secp384r1'
++          description: >
++            SPDM-enumerated DHE group, where the corresponding public values group D = 96, C = 48
++        - name: 'secp521r1'
++          description: >
++            SPDM-enumerated DHE group, where the corresponding public values group D = 132, C = 66
++        - name: 'AES_128_GCM'
++          description: >
++            SPDM-enumerated AEAD algorithm for the purposes of signature verification.
++        - name: 'AES_256_GCM'
++          description: >
++            SPDM-enumerated AEAD algorithm for the purposes of signature verification.
++        - name: 'CHACHA20_POLY1305'
++          description: >
++            SPDM-enumerated AEAD algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_RSASSA_2048'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_RSAPSS_2048'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_RSASSA_3072'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_RSAPSS_3072'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_ECDSA_ECC_NIST_P256'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_RSASSA_4096'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_RSAPSS_4096'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_ECDSA_ECC_NIST_P384'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'TPM_ALG_ECDSA_ECC_NIST_P521'
++          description: >
++            SPDM-enumerated asymmetric key signature algorithm for the purposes of signature verification.
++        - name: 'OEM'
++          description: >
++            An extended algorithm used for signing.
++        - name: 'None'
++          description: >
++            Value None means that there is not any compliance for signing
++            between the SPDM requester daemon and the SPDM responder.
++
++    - name: MeasurementsType
++      description: >
++          The type of measurement summary. See SPDM specification for more information
++          (Challenge Request message format).
++      values:
++        - name: 'All'
++          description: >
++            The measurement summary covers all measurements in SPDM.
++        - name: 'TCB'
++          description: >
++            The measurement summary covers the TCB measurement hash (Trusted Computing Base).
++
++    - name: SPDMStatus
++      description: >
++          Status of the SPDM communication between the SPDM daemon requester and the responder.
++          Errors are defined in the status field description.
++          D-bus exceptions or errors are not used in purpose and by an architecture design.
++          This is also to limit changes in the SPDM interface client implementation in a case of changes
++          in the SPDM daemon implementation.
++      values:
++        - name: 'Success'
++          description: >
++            The communication is proper, all certificates and measurements for this responder
++            are properly gathered and ready.
++
++        - name: 'GettingVersion'
++          description: >
++            The SPDM requester is in the stage of getting version information from the responder.
++            This status is set by default after system restart.
++
++        - name: 'GettingCapabilities'
++          description: >
++            The SPDM requester is in the stage of getting capabilities from the responder.
++
++        - name: 'GettingAlgorithms'
++          description: >
++            The SPDM requester is in the stage of negotiating algorithms with the responder.
++
++        - name: 'GettingDigest'
++          description: >
++            The SPDM requester is in the stage of getting certificate chain digest from the responder.
++
++        - name: 'GettingCertificates'
++          description: >
++            The SPDM requester is in the stage of getting certificates from the responder.
++
++        - name: 'GettingMeasurements'
++          description: >
++            The SPDM requester is in the stage of getting measurements from the responder.
++
++        - name: 'Error_ConnectionTimeout'
++          description: >
++            The SPDM daemon didn't receive a request response from an SPDM responder within
++            an allowed time window.
++            This status will be shown only for a while. Restart of the connection will
++            be performed as soon as the SPDM requester does not perform any
++            other communication with other SPDM responders.
++            If the status exists most of the time it may mean that the SPDM responder is not active
++            or stacked in an unresponsive state.
++            Redfish client may map this error to: 504 Gateway Timeout
++
++        - name: 'Error_Responder'
++          description: >
++            An issue was discovered in a request response during communication between SPDM requester and responder.
++            SPDM daemon will stop communication with this responder until new Refresh command.
++            Redfish client may map this error to: 502 Bad Gateway
++
++        - name: 'Error_RequesterCommunication'
++          description: >
++            SPDM responder provided more data in a request response than SPDM requester expected,
++            which occurred in an internal error: buffer too small.
++            SPDM daemon will stop communication with this responder until new Refresh command.
++            Redfish client may map this error to: 507 Insufficient Storage or 500 Internal Server Error
++
++        - name: 'Error_CertificateValidation'
++          description: >
++            Certificate validation occurred in SPDM requester after checking a certificate provided by
++            an SPDM responder. Possible reasons:
++              - Root certificate hash is invalid;
++              - Certificate chain digest is invalid;
++              - Certificate chain verification failed.
++            SPDM daemon will stop communication with this responder until new Refresh command.
++            Redfish client may map this error to: 502 Bad Gateway
++
++        - name: 'Error_AuthenticationFailed'
++          description: >
++            SPDM requester encountered authentication issue during communication with SPDM responder.
++            SPDM daemon will stop communication with this responder until new Refresh command.
++            Redfish client may map this error to: 502 Bad Gateway
++
++        - name: 'Error_MeasurementsSignatureVerificationFailed'
++          description: >
++            SPDM requester failed on signature verification for measurements provided by SPDM responder.
++            SPDM daemon will stop communication with this responder until new Refresh command.
++            Redfish client may map this error to: 502 Bad Gateway
++
++        - name: 'Error_InvalidArguments'
++          description: >
++            The arguments provided to the Refresh method were invalid.
++            So the call is ignored, and communication with this responder will not be started.
++
++        - name: "Error_Other"
++          description: >
++            The SPDM daemon requester did encounter some internal issue or unsupported error.
++            This status will be shown only for a while. Restart of the connection will
++            be performed as soon as the SPDM requester does not perform any
++            other communication with other SPDM responders.
++            If the status exists most of the time it may mean that the SPDM requester has
++            some internal issue.
++            Redfish client may map this error to: 500 Internal Server Error
++
++associations:
++    - name: transport_object
++      description: >
++          Objects that implements SPDM.Responder interface can optionally implement the
++          transport_object association to provide a link to the associated transport
++          D-Bus object which will carry the SPDM traffic. eg MCTP D-bus object.
++      reverse_name: spdm_responder_object
++      required_endpoint_interfaces:
++        - xyz.openbmc_project.MCTP.Endpoint
++
++    - name: inventory_object
++      description: >
++          Objects that implements SPDM.Responder interface can optionally implement
++          this association to provide a link to the associated inventory D-Bus object
++          which implements the Inventory.Item.SPDMResponder interface.
++      reverse_name: spdm_responder_object
++      required_endpoint_interfaces:
++        - xyz.openbmc_project.Inventory.Item.SPDMResponder
+-- 
+2.43.0
+

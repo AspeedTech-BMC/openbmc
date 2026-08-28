@@ -1,7 +1,7 @@
-HOMEPAGE = "https://gitlab-master.nvidia.com/dgx/bmc/spdm"
+HOMEPAGE = "https://github.com/NVIDIA/spdm"
 
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://README.md;md5=f104f1dd1349cfc64bf390d7495ed4a0"
 
-SRC_URI = "git://github.com/NVIDIA/spdm;protocol=https;branch=develop"
-SRCREV = "32171d3e854ccd9f4e2bd560e45ccf1af2088f4c"
+SRC_URI = "git://github.com/NVIDIA/spdm.git;branch=develop;protocol=https"
+SRCREV = "9e4bd81ba607db200b8ed58229cd543277eb12f2"
