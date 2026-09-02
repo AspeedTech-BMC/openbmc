@@ -1,0 +1,243 @@
+From 623e1cf0ca77203b55ed2272836af78c1aba6380 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Wed, 2 Sep 2026 10:56:46 +0800
+Subject: [PATCH] libocp: add I3CSysfsTransport
+
+Add an I3C counterpart to I2CTransport, backed by the raw
+command/response sysfs interface a DCR-0xBD ("ocp-recovery") kernel
+driver exposes at <i3c-device>/ocp_recovery/{cmd,cmd_resp} (see the
+companion kernel change "i3c: add OCP Secure Firmware Recovery
+driver").
+
+cmd_resp's write(2) performs the command write and the repeated-start
+read as a single atomic transaction in-kernel and caches the response;
+read(2) just drains that cache. That gives the exact same
+combined-transaction semantics I2CTransport::transfer() already
+relies on via ioctl(I2C_RDWR), and SMBus PEC framing is fully handled
+by the kernel driver, so Target/ocp_recovery.cpp need no I3C-specific
+code at all - only a new Transport implementation.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+
+Upstream-Status: Pending
+---
+ libocp/include/ocp/ocp_recovery.hpp |  48 ++++++++++
+ libocp/meson.build                  |   1 +
+ libocp/src/i3c_transport.cpp        | 137 ++++++++++++++++++++++++++++
+ 3 files changed, 186 insertions(+)
+ create mode 100644 libocp/src/i3c_transport.cpp
+
+diff --git a/libocp/include/ocp/ocp_recovery.hpp b/libocp/include/ocp/ocp_recovery.hpp
+index 3e0a034..64cb737 100644
+--- a/libocp/include/ocp/ocp_recovery.hpp
++++ b/libocp/include/ocp/ocp_recovery.hpp
+@@ -251,6 +251,54 @@ class I2CTransport final : public Transport
+     uint16_t addr = 0;
+ };
+ 
++/*
++ * Raw command/response transport over the sysfs interface exposed by the
++ * kernel's DCR-0xBD ("ocp-recovery") I3C driver:
++ *   <group>/cmd       - write-only; one SDR private write per write().
++ *   <group>/cmd_resp  - write() performs the write and the repeated-start
++ *                       read as one atomic transaction in-kernel and
++ *                       caches the (PEC-verified, PEC-stripped) response;
++ *                       read() drains that cache with no further bus
++ *                       activity. Mirrors I2CTransport::transfer()'s
++ *                       combined-transaction semantics exactly, so the
++ *                       protocol layer above needs no I3C-specific code.
++ * SMBus PEC (CRC-8) is computed/verified entirely in the kernel driver;
++ * this class only moves the same [cmd, len, payload...] /
++ * [count, payload...] bytes I2CTransport moves, with PEC framing already
++ * stripped out of what it sees.
++ */
++class I3CSysfsTransport final : public Transport
++{
++  public:
++    /* groupPath is the driver's sysfs group directory, e.g.
++     * /sys/bus/i3c/devices/0-3f6008000000000/ocp_recovery */
++    [[nodiscard]] static std::expected<I3CSysfsTransport, std::error_code>
++        open(const std::string& groupPath);
++
++    /* Convenience: builds groupPath from the I3C bus number and the
++     * device's Provisioned ID, matching the kernel's device naming
++     * ("<bus>-<pid in lowercase hex>", see i3c core's dev_set_name()). */
++    [[nodiscard]] static std::expected<I3CSysfsTransport, std::error_code>
++        open(uint16_t bus, uint64_t pid);
++
++    ~I3CSysfsTransport() override;
++    I3CSysfsTransport(I3CSysfsTransport&& other) noexcept;
++    I3CSysfsTransport& operator=(I3CSysfsTransport&& other) noexcept;
++    I3CSysfsTransport(const I3CSysfsTransport&) = delete;
++    I3CSysfsTransport& operator=(const I3CSysfsTransport&) = delete;
++
++    std::error_code transfer(std::span<const uint8_t> wbuf,
++                             std::span<uint8_t> rbuf) override;
++
++  private:
++    I3CSysfsTransport(int cmdFd, int cmdRespFd) :
++        cmdFd(cmdFd), cmdRespFd(cmdRespFd)
++    {}
++
++    int cmdFd = -1;
++    int cmdRespFd = -1;
++};
++
+ /* A recovery-capable device behind a Transport. */
+ class Target
+ {
+diff --git a/libocp/meson.build b/libocp/meson.build
+index f11b7e1..ae53ef2 100644
+--- a/libocp/meson.build
++++ b/libocp/meson.build
+@@ -3,6 +3,7 @@ libocp_fw_recovery_inc = include_directories('include')
+ libocp_fw_recovery = static_library(
+     'ocp_fw_recovery',
+     'src/i2c_transport.cpp',
++    'src/i3c_transport.cpp',
+     'src/ocp_recovery.cpp',
+     include_directories: libocp_fw_recovery_inc,
+     install: false,
+diff --git a/libocp/src/i3c_transport.cpp b/libocp/src/i3c_transport.cpp
+new file mode 100644
+index 0000000..257172a
+--- /dev/null
++++ b/libocp/src/i3c_transport.cpp
+@@ -0,0 +1,137 @@
++// SPDX-License-Identifier: Apache-2.0
++
++#include "ocp/ocp_recovery.hpp"
++
++#include <fcntl.h>
++#include <unistd.h>
++
++#include <algorithm>
++#include <cerrno>
++#include <format>
++#include <utility>
++
++namespace ocp::recovery
++{
++
++static std::error_code errnoCode(int fallback)
++{
++    return std::error_code((errno != 0) ? errno : fallback,
++                           std::generic_category());
++}
++
++std::expected<I3CSysfsTransport, std::error_code> I3CSysfsTransport::open(
++    const std::string& groupPath)
++{
++    const std::string cmdPath = groupPath + "/cmd";
++    const std::string cmdRespPath = groupPath + "/cmd_resp";
++
++    const int cmdFd = ::open(cmdPath.c_str(), O_WRONLY | O_CLOEXEC);
++    if (cmdFd < 0)
++    {
++        return std::unexpected(errnoCode(EIO));
++    }
++
++    const int cmdRespFd = ::open(cmdRespPath.c_str(), O_RDWR | O_CLOEXEC);
++    if (cmdRespFd < 0)
++    {
++        const auto ec = errnoCode(EIO);
++        ::close(cmdFd);
++        return std::unexpected(ec);
++    }
++
++    return I3CSysfsTransport(cmdFd, cmdRespFd);
++}
++
++std::expected<I3CSysfsTransport, std::error_code> I3CSysfsTransport::open(
++    uint16_t bus, uint64_t pid)
++{
++    return open(std::format("/sys/bus/i3c/devices/{}-{:x}/ocp_recovery", bus,
++                            pid));
++}
++
++I3CSysfsTransport::~I3CSysfsTransport()
++{
++    if (cmdFd >= 0)
++    {
++        ::close(cmdFd);
++    }
++    if (cmdRespFd >= 0)
++    {
++        ::close(cmdRespFd);
++    }
++}
++
++I3CSysfsTransport::I3CSysfsTransport(I3CSysfsTransport&& other) noexcept :
++    cmdFd(std::exchange(other.cmdFd, -1)),
++    cmdRespFd(std::exchange(other.cmdRespFd, -1))
++{}
++
++I3CSysfsTransport& I3CSysfsTransport::operator=(
++    I3CSysfsTransport&& other) noexcept
++{
++    if (this != &other)
++    {
++        if (cmdFd >= 0)
++        {
++            ::close(cmdFd);
++        }
++        if (cmdRespFd >= 0)
++        {
++            ::close(cmdRespFd);
++        }
++        cmdFd = std::exchange(other.cmdFd, -1);
++        cmdRespFd = std::exchange(other.cmdRespFd, -1);
++    }
++    return *this;
++}
++
++std::error_code I3CSysfsTransport::transfer(std::span<const uint8_t> wbuf,
++                                            std::span<uint8_t> rbuf)
++{
++    if (cmdFd < 0 || cmdRespFd < 0 || wbuf.empty())
++    {
++        return std::make_error_code(std::errc::invalid_argument);
++    }
++
++    /* write-only commands (no response expected) go to cmd; commands
++     * that expect a reply go to cmd_resp, which performs the combined
++     * write + repeated-start read atomically in the kernel driver.
++     * pwrite/pread with offset 0 avoid the shared read/write file
++     * position a plain write()-then-read() pair on the same fd would
++     * otherwise advance past the driver's off-must-be-zero check. */
++    const int fd = rbuf.empty() ? cmdFd : cmdRespFd;
++
++    const ssize_t written = ::pwrite(fd, wbuf.data(), wbuf.size(), 0);
++    if (written < 0)
++    {
++        return errnoCode(EIO);
++    }
++    if (static_cast<size_t>(written) != wbuf.size())
++    {
++        return std::make_error_code(std::errc::io_error);
++    }
++
++    if (rbuf.empty())
++    {
++        return {};
++    }
++
++    const ssize_t got = ::pread(cmdRespFd, rbuf.data(), rbuf.size(), 0);
++    if (got < 0)
++    {
++        return errnoCode(EIO);
++    }
++
++    /* The driver hands back exactly what it cached; a response shorter
++     * than the caller's buffer is normal (small fixed-size replies like
++     * RECOVERY_STATUS), so zero the remainder rather than leave it
++     * uninitialised. */
++    if (static_cast<size_t>(got) < rbuf.size())
++    {
++        std::ranges::fill(rbuf.subspan(static_cast<size_t>(got)), 0);
++    }
++
++    return {};
++}
++
++} // namespace ocp::recovery

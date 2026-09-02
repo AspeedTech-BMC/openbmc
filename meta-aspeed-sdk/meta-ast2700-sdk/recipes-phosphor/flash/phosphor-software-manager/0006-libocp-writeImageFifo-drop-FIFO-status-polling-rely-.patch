@@ -1,0 +1,95 @@
+From f0d8dc7a995baf92dddd6fa0217750be05ad135d Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Wed, 2 Sep 2026 11:04:09 +0800
+Subject: [PATCH] libocp: writeImageFifo: drop FIFO status polling, rely on
+ NACK+retry
+
+Stop reading indirectFifoStatus() before every chunk (both the
+up-front max-transfer-size clamp and the per-chunk free-space poll).
+Write chunkSize-sized pieces directly and lean on the spec's NACK
+flow-control option instead: a write the device can't yet accept
+surfaces as a transport error, which gets retried after a short delay.
+
+waitFifoSpace() stays defined but unused - trivial to wire back in if
+NACK+retry alone doesn't hold up.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+
+Upstream-Status: Pending
+---
+ libocp/include/ocp/ocp_recovery.hpp |  5 +++--
+ libocp/src/ocp_recovery.cpp         | 31 +++++++++--------------------
+ 2 files changed, 12 insertions(+), 24 deletions(-)
+
+diff --git a/libocp/include/ocp/ocp_recovery.hpp b/libocp/include/ocp/ocp_recovery.hpp
+index 2928e52..d76904f 100644
+--- a/libocp/include/ocp/ocp_recovery.hpp
++++ b/libocp/include/ocp/ocp_recovery.hpp
+@@ -435,8 +435,9 @@ class Target
+         std::span<const uint8_t> image, const ProgressFn& progress = {});
+ 
+     /* Stream image into the currently configured FIFO CMS window via
+-     * chunked INDIRECT_FIFO_DATA writes, polling indirectFifoStatus()
+-     * for enough free space before each chunk rather than an ack bit. */
++     * chunked INDIRECT_FIFO_DATA writes. No indirectFifoStatus() polling
++     * for now: relies on the spec's NACK flow-control option, retrying a
++     * chunk write that the transport reports as failed. */
+     [[nodiscard]] std::expected<void, std::error_code> writeImageFifo(
+         std::span<const uint8_t> image, const ProgressFn& progress = {});
+ 
+diff --git a/libocp/src/ocp_recovery.cpp b/libocp/src/ocp_recovery.cpp
+index b018893..47cf105 100644
+--- a/libocp/src/ocp_recovery.cpp
++++ b/libocp/src/ocp_recovery.cpp
+@@ -420,42 +420,29 @@ std::expected<void, std::error_code> Target::writeImageFifo(
+         return failure(std::errc::invalid_argument);
+     }
+ 
+-    /* Clamp to the device-advertised max INDIRECT_FIFO_DATA payload, when
+-     * it reports one; a fixed chunk size for the whole transfer keeps
+-     * this simple and matches "transfers ... with size less than or
+-     * equal to the max transfer size" from the spec. */
+-    size_t chunk = chunkSize;
+-    if (const auto status = indirectFifoStatus(); status)
+-    {
+-        const uint64_t maxTransfer = status->maxTransferBytes();
+-        if (maxTransfer > 0 && maxTransfer < chunk)
+-        {
+-            chunk = static_cast<size_t>(maxTransfer);
+-        }
+-    }
+-
++    /* No indirectFifoStatus() polling for now (neither an up-front max
++     * transfer size read nor a per-chunk free-space check) - write
++     * pieces directly and rely on the spec's NACK flow-control option: a
++     * write the device can't accept surfaces as a transport error here,
++     * and gets retried after a short delay. Re-introduce waitFifoSpace()
++     * calls here if that turns out not to be enough. */
+     size_t offset = 0;
+     while (offset < image.size())
+     {
+-        const auto piece =
+-            image.subspan(offset, std::min(chunk, image.size() - offset));
++        const auto piece = image.subspan(
++            offset, std::min(chunkSize, image.size() - offset));
+ 
+         std::expected<void, std::error_code> result =
+             failure(std::errc::timed_out);
+ 
+         for (unsigned int attempt = 0; attempt < chunkWriteRetries; attempt++)
+         {
+-            if (auto space = waitFifoSpace(piece.size()); !space)
+-            {
+-                result = space;
+-                continue;
+-            }
+-
+             result = writeIndirectFifoData(piece);
+             if (result)
+             {
+                 break;
+             }
++            std::this_thread::sleep_for(ackPollInterval);
+         }
+         if (!result)
+         {

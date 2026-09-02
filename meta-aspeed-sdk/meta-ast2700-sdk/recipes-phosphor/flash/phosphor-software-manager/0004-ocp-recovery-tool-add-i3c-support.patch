@@ -1,0 +1,218 @@
+From 1a8fe11a323601b3b4cd25b812b48a484ff29782 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Wed, 2 Sep 2026 10:58:59 +0800
+Subject: [PATCH] ocp-recovery-tool: add --i3c support
+
+Add a --i3c flag that switches the transport from I2CTransport to the
+new I3CSysfsTransport. I3C has no fixed 7-bit address the way I2C
+does, so device selection works differently: an explicit
+-g/--i3c-group sysfs path, -b/--bus with -p/--pid to build
+"<bus>-<pid>" directly, or -b/--bus alone to auto-discover the single
+matching device under /sys/bus/i3c/devices/<bus>-*/ocp_recovery
+(erroring out if there's zero or more than one match, asking for -p or
+-g to disambiguate).
+
+Every existing subcommand keeps working unchanged over either
+transport, since Target never sees which one it's talking to.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+
+Upstream-Status: Pending
+---
+ libocp/tools/ocp_recovery_tool.cpp | 149 +++++++++++++++++++++++++++--
+ 1 file changed, 140 insertions(+), 9 deletions(-)
+
+diff --git a/libocp/tools/ocp_recovery_tool.cpp b/libocp/tools/ocp_recovery_tool.cpp
+index f92d945..8a92c12 100644
+--- a/libocp/tools/ocp_recovery_tool.cpp
++++ b/libocp/tools/ocp_recovery_tool.cpp
+@@ -15,9 +15,11 @@
+ 
+ #include <chrono>
+ #include <cstdint>
++#include <filesystem>
+ #include <format>
+ #include <fstream>
+ #include <iostream>
++#include <optional>
+ #include <string>
+ #include <thread>
+ #include <utility>
+@@ -465,23 +467,69 @@ int cmdGetCmsLogs(Target& target, uint8_t window, std::string outfile)
+     return success;
+ }
+ 
++/* Finds every /sys/bus/i3c/devices/<bus>-* entry exposing an ocp_recovery
++ * sysfs group, for --i3c mode when the caller gave -b/--bus but neither
++ * -p/--pid nor -g/--i3c-group. */
++std::vector<std::string> findI3cGroups(uint16_t bus)
++{
++    namespace fs = std::filesystem;
++
++    const std::string prefix = std::format("{}-", bus);
++    std::vector<std::string> groups;
++    std::error_code ec;
++
++    /* Constructing with the error_code overload yields the end iterator
++     * (i.e. zero iterations) instead of throwing when the path doesn't
++     * exist, which is exactly "no matches" here. */
++    for (const auto& entry : fs::directory_iterator("/sys/bus/i3c/devices",
++                                                     ec))
++    {
++        if (!entry.path().filename().string().starts_with(prefix))
++        {
++            continue;
++        }
++
++        const fs::path group = entry.path() / "ocp_recovery";
++        if (fs::exists(group / "cmd_resp", ec))
++        {
++            groups.push_back(group.string());
++        }
++    }
++
++    return groups;
++}
++
+ } // namespace
+ 
+ int main(int argc, char** argv)
+ {
+     CLI::App app{"OCP Secure Firmware Recovery tool"};
+ 
++    bool useI3c = false;
+     uint16_t bus = 0;
+     uint8_t address = 0;
++    uint64_t pid = 0;
++    std::string i3cGroup;
+     uint8_t cms = cmsDefault;
+     size_t chunk = chunkSizeMax;
+     uint8_t window = 2;
+     std::string outfile;
+     std::vector<std::string> images;
+ 
+-    app.add_option("-b,--bus", bus, "I2C bus number")->required();
+-    app.add_option("-s,--slave", address, "7-bit device address (e.g. 0x69)")
+-        ->required();
++    app.add_flag("--i3c", useI3c,
++                 "Use the I3C sysfs transport instead of I2C");
++    auto* busOpt = app.add_option(
++        "-b,--bus", bus, "I2C bus number, or I3C bus number with --i3c");
++    auto* slaveOpt = app.add_option(
++        "-s,--slave", address, "7-bit I2C device address (e.g. 0x69)");
++    auto* pidOpt = app.add_option(
++        "-p,--pid", pid,
++        "I3C Provisioned ID (--i3c; e.g. 0x3f6008000000000). With -b and "
++        "no -g, selects the device at <bus>-<pid>");
++    auto* groupOpt = app.add_option(
++        "-g,--i3c-group", i3cGroup,
++        "I3C ocp_recovery sysfs group path (--i3c; overrides -b/-p), e.g. "
++        "/sys/bus/i3c/devices/0-3f6008000000000/ocp_recovery");
+     app.add_option("-c,--cms", cms, "Component memory space index (default 0)");
+     app.add_option("-k,--chunk", chunk,
+                    std::format("Block write payload size, 1-{} (default {})",
+@@ -513,15 +561,98 @@ int main(int argc, char** argv)
+ 
+     CLI11_PARSE(app, argc, argv);
+ 
+-    auto transport = ocp::recovery::I2CTransport::open(bus, address);
+-    if (!transport)
++    std::optional<I2CTransport> i2cTransport;
++    std::optional<I3CSysfsTransport> i3cTransport;
++    Transport* transportPtr = nullptr;
++
++    if (useI3c)
+     {
+-        std::cerr << std::format("cannot open i2c bus {}: {}\n", bus,
+-                                 transport.error().message());
+-        return failure;
++        std::expected<I3CSysfsTransport, std::error_code> transport =
++            std::unexpected(std::make_error_code(std::errc::invalid_argument));
++        std::string describe;
++
++        if (!i3cGroup.empty())
++        {
++            describe = i3cGroup;
++            transport = I3CSysfsTransport::open(i3cGroup);
++        }
++        else if (pidOpt->count())
++        {
++            if (!busOpt->count())
++            {
++                std::cerr << "-p/--pid requires -b/--bus\n";
++                return failure;
++            }
++            describe = std::format("i3c {}-{:x}", bus, pid);
++            transport = I3CSysfsTransport::open(bus, pid);
++        }
++        else
++        {
++            if (!busOpt->count())
++            {
++                std::cerr
++                    << "--i3c requires -g/--i3c-group, or -b/--bus to "
++                       "auto-discover, or -b/--bus with -p/--pid\n";
++                return failure;
++            }
++
++            const auto groups = findI3cGroups(bus);
++            if (groups.empty())
++            {
++                std::cerr << std::format(
++                    "no ocp_recovery device found on i3c bus {}\n", bus);
++                return failure;
++            }
++            if (groups.size() > 1)
++            {
++                std::cerr << std::format(
++                    "multiple ocp_recovery devices on i3c bus {}; use "
++                    "-p/--pid or -g/--i3c-group:\n",
++                    bus);
++                for (const auto& g : groups)
++                {
++                    std::cerr << "  " << g << '\n';
++                }
++                return failure;
++            }
++            describe = groups.front();
++            transport = I3CSysfsTransport::open(groups.front());
++        }
++
++        if (!transport)
++        {
++            std::cerr << std::format("cannot open '{}': {}\n", describe,
++                                     transport.error().message());
++            return failure;
++        }
++        i3cTransport.emplace(std::move(*transport));
++        transportPtr = &*i3cTransport;
++    }
++    else
++    {
++        if (!busOpt->count() || !slaveOpt->count())
++        {
++            std::cerr << "I2C mode requires -b/--bus and -s/--slave\n";
++            return failure;
++        }
++        if (groupOpt->count() || pidOpt->count())
++        {
++            std::cerr << "-g/--i3c-group and -p/--pid require --i3c\n";
++            return failure;
++        }
++
++        auto transport = I2CTransport::open(bus, address);
++        if (!transport)
++        {
++            std::cerr << std::format("cannot open i2c bus {}: {}\n", bus,
++                                     transport.error().message());
++            return failure;
++        }
++        i2cTransport.emplace(std::move(*transport));
++        transportPtr = &*i2cTransport;
+     }
+ 
+-    Target target(*transport, chunk, cms);
++    Target target(*transportPtr, chunk, cms);
+ 
+     int ret = failure;
+     if (getDeviceId->parsed())
