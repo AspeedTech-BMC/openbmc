@@ -30,6 +30,7 @@ MACHINE ??= "ast2700-default"
 #MACHINE ??= "ast2700-a1-66"
 #MACHINE ??= "ast2705-a0-default"
 #MACHINE ??= "ast2705-a0-netboot"
+#MACHINE ??= "ast2705-a0-default-ncsi"
 
 DISTRO ?= "openbmc-phosphor"
 PACKAGE_CLASSES ?= "package_ipk"
