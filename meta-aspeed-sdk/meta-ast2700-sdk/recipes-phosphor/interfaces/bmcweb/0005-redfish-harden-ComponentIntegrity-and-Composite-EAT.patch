@@ -1,0 +1,1288 @@
+From 0d7ed4e50e849ced375914a29d9a61babc42a0b6 Mon Sep 17 00:00:00 2001
+From: xilingsun <xilingsun@microsoft.com>
+Date: Tue, 15 Sep 2026 18:55:19 -0700
+Subject: [PATCH] redfish: harden ComponentIntegrity and Composite EAT
+
+Upstream-Status: Pending
+---
+ README.md                                     |   2 +
+ docs/COMPONENT_INTEGRITY.md                   | 251 ++++++++++++++++++
+ docs/OPENBMC_COMPOSITE_EAT_ADOPTER_GUIDE.md   | 167 ++++++++++++
+ redfish-core/lib/component_integrity.hpp      | 140 ++++++++--
+ .../lib/openbmc/oem_composite_eat.hpp         |  98 +++++--
+ .../csdl/OpenBMCCompositeEATBundle_v1.xml     |  27 +-
+ .../OpenBMCCompositeEATBundle.v1_0_0.json     | 141 ++++++++--
+ .../lib/component_integrity_test.cpp          | 121 ++++++++-
+ .../lib/oem_composite_eat_test.cpp            |  32 ++-
+ 9 files changed, 897 insertions(+), 82 deletions(-)
+ create mode 100644 docs/COMPONENT_INTEGRITY.md
+ create mode 100644 docs/OPENBMC_COMPOSITE_EAT_ADOPTER_GUIDE.md
+
+diff --git a/README.md b/README.md
+index fc7865cf6e..6f66cab31e 100644
+--- a/README.md
++++ b/README.md
+@@ -13,6 +13,8 @@ The webserver implements a few distinct interfaces:
+ - Serial: A serial websocket for interacting with the host serial console
+   through websockets.
+ - Redfish: A protocol compliant, [DBus to Redfish translator](docs/Redfish.md).
++  The [ComponentIntegrity and Composite EAT reference implementation](docs/COMPONENT_INTEGRITY.md)
++  documents its integrity and attestation APIs.
+ - KVM: A websocket based implementation of the RFB (VNC) frame buffer protocol
+   intended to mate to webui-vue to provide a complete KVM implementation.
+ 
+diff --git a/docs/COMPONENT_INTEGRITY.md b/docs/COMPONENT_INTEGRITY.md
+new file mode 100644
+index 0000000000..c57a60e1ef
+--- /dev/null
++++ b/docs/COMPONENT_INTEGRITY.md
+@@ -0,0 +1,251 @@
++# ComponentIntegrity and Composite EAT
++
++## Status
++
++This is an OpenBMC reference implementation for Redfish ComponentIntegrity and
++platform-scoped Composite EAT retrieval. Both features are disabled by default
++and require explicit build-time enablement.
++
++The Composite EAT Bundle API is currently implemented as an OpenBMC OEM
++extension. It will be proposed for Redfish standardization. Until a standard
++API is defined, clients should use the OEM schema and routes documented here.
++
++The public API and D-Bus contracts are platform-neutral. Device enumeration,
++transport topology, measurement selection, signing policy, and endorsement
++material remain the responsibility of the producer behind the D-Bus boundary.
++
++## Build Options
++
++Enable ComponentIntegrity resources with:
++
++```text
++-Dredfish-component-integrity=enabled
++```
++
++Enable the Composite EAT Bundle extension with:
++
++```text
++-Dredfish-composite-eat=enabled
++```
++
++`redfish-composite-eat` depends on `redfish-component-integrity`. Both options
++are disabled by default.
++
++## Redfish Resources
++
++| Method | URI | Purpose |
++|---|---|---|
++| `GET` | `/redfish/v1/ComponentIntegrity` | List ComponentIntegrity resources |
++| `GET` | `/redfish/v1/ComponentIntegrity/{ComponentIntegrityId}` | Read one ComponentIntegrity resource |
++| `POST` | `/redfish/v1/ComponentIntegrity/Actions/Oem/OpenBMCCompositeEATBundle.Generate` | Start platform Composite EAT generation |
++| `GET` | `/redfish/v1/ComponentIntegrity/CompositeEATBundle` | Read the current generation state or completed bundle |
++
++The ServiceRoot advertises `/redfish/v1/ComponentIntegrity` when
++`redfish-component-integrity` is enabled.
++
++## ComponentIntegrity D-Bus Contract
++
++bmcweb discovers objects implementing:
++
++```text
++xyz.openbmc_project.Attestation.ComponentIntegrity
++```
++
++under `/xyz/openbmc_project`. The final D-Bus object-path segment becomes the
++Redfish `ComponentIntegrityId`.
++
++Each object provides these properties:
++
++| D-Bus property | D-Bus type | Redfish property |
++|---|---|---|
++| `Enabled` | `b` | `ComponentIntegrityEnabled` |
++| `Type` | enum string | `ComponentIntegrityType` |
++| `TypeVersion` | `s` | `ComponentIntegrityTypeVersion` |
++| `LastUpdated` | `t` | `LastUpdated` |
++
++`LastUpdated` is expressed in milliseconds since the Unix epoch. A value of
++zero omits the Redfish property.
++
++The implementation maps the following security technology types:
++
++| D-Bus enum suffix | Redfish value |
++|---|---|
++| `.SPDM` | `SPDM` |
++| `.OEM` | `OEM` |
++
++Other values fail closed. An enabled SPDM resource includes an `SPDM.Requester`
++link to the Redfish Manager resource.
++
++### Target Association
++
++Each ComponentIntegrity object must expose exactly one `authenticating`
++association endpoint. bmcweb maps the associated inventory object to
++`TargetComponentURI` as follows:
++
++| Inventory interface | Redfish target |
++|---|---|
++| `xyz.openbmc_project.Inventory.Item.Board` | `/redfish/v1/Chassis/{id}` |
++| `xyz.openbmc_project.Inventory.Item.Chassis` | `/redfish/v1/Chassis/{id}` |
++| `xyz.openbmc_project.Inventory.Item.Cpu` | `/redfish/v1/Systems/{system}/Processors/{id}` |
++| `xyz.openbmc_project.Inventory.Item.Dimm` | `/redfish/v1/Systems/{system}/Memory/{id}` |
++| `xyz.openbmc_project.Inventory.Item.PCIeDevice` | `/redfish/v1/Systems/{system}/PCIeDevices/{id}` |
++
++Missing, multiple, or unsupported association targets produce an internal
++error. Duplicate D-Bus leaf IDs or multiple providers for one member ID are
++also rejected because they would create ambiguous Redfish resources.
++
++### Example Member
++
++```json
++{
++  "@odata.id": "/redfish/v1/ComponentIntegrity/spdm0",
++  "@odata.type": "#ComponentIntegrity.v1_4_0.ComponentIntegrity",
++  "Id": "spdm0",
++  "Name": "Component Integrity spdm0",
++  "ComponentIntegrityEnabled": true,
++  "ComponentIntegrityType": "SPDM",
++  "ComponentIntegrityTypeVersion": "1.2",
++  "LastUpdated": "2026-09-15T12:00:00.000+00:00",
++  "SPDM": {
++    "Requester": {
++      "@odata.id": "/redfish/v1/Managers/bmc"
++    }
++  },
++  "TargetComponentURI": "/redfish/v1/Systems/system/Processors/cpu0"
++}
++```
++
++## Composite EAT Bundle D-Bus Contract
++
++The platform provides one producer at the fixed service, object, and interface:
++
++```text
++Service:   xyz.openbmc_project.SPDM
++Object:    /xyz/openbmc_project/SPDM/CompositeEATBundle
++Interface: xyz.openbmc_project.SPDM.CompositeEATBundle
++```
++
++The interface exposes:
++
++| Member | Type | Requirement |
++|---|---|---|
++| `Generate` | method `ay -> void` | Accept one 32-byte nonce and start generation |
++| `Status` | property `s` | `Idle`, `InProgress`, `Ready`, or `Error` |
++| `Bundle` | property `ay` | Complete Composite EAT Bundle bytes when `Status` is `Ready` |
++
++The producer must clear stale bundle data before reporting `InProgress` or
++`Error`, and it must publish the complete bundle before reporting `Ready`.
++bmcweb treats the returned bundle as opaque bytes.
++
++The ComponentIntegrity collection advertises the OEM action and result resource
++only when the fixed producer is present.
++
++The advertised action uses the CSDL namespace and action name consistently:
++
++```json
++{
++  "#OpenBMCCompositeEATBundle.Generate": {
++    "target": "/redfish/v1/ComponentIntegrity/Actions/Oem/OpenBMCCompositeEATBundle.Generate"
++  }
++}
++```
++
++## Generate A Composite EAT Bundle
++
++The action starts asynchronous platform collection and bundle generation. It
++accepts one canonical, standard-base64 encoded 32-byte nonce:
++
++```http
++POST /redfish/v1/ComponentIntegrity/Actions/Oem/OpenBMCCompositeEATBundle.Generate
++Content-Type: application/json
++
++{
++  "Nonce": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
++}
++```
++
++The encoded nonce must contain exactly 44 characters, use the standard base64
++alphabet, end in one `=`, and decode to exactly 32 bytes. URL-safe or unpadded
++forms are rejected.
++
++On success, bmcweb returns:
++
++```http
++HTTP/1.1 202 Accepted
++Location: /redfish/v1/ComponentIntegrity/CompositeEATBundle
++```
++
++If generation is already active, bmcweb returns `503 Service Unavailable` with
++`Retry-After: 5`.
++
++## Read The Result
++
++Clients poll:
++
++```text
++GET /redfish/v1/ComponentIntegrity/CompositeEATBundle
++```
++
++While generation is active, the result contains no bundle:
++
++```json
++{
++  "@odata.id": "/redfish/v1/ComponentIntegrity/CompositeEATBundle",
++  "@odata.type": "#OpenBMCCompositeEATBundle.v1_0_0.CompositeEATBundle",
++  "Id": "CompositeEATBundle",
++  "Name": "Platform Composite EAT Bundle",
++  "Status": "InProgress"
++}
++```
++
++When generation completes, `CompositeEATBundle` contains the standard-base64
++encoding of the producer's complete byte array:
++
++```json
++{
++  "@odata.id": "/redfish/v1/ComponentIntegrity/CompositeEATBundle",
++  "@odata.type": "#OpenBMCCompositeEATBundle.v1_0_0.CompositeEATBundle",
++  "Id": "CompositeEATBundle",
++  "Name": "Platform Composite EAT Bundle",
++  "Status": "Ready",
++  "CompositeEATBundle": "2QJY..."
++}
++```
++
++A producer-reported `Error`, missing required property, unknown status, or empty
++bundle in the `Ready` state produces an internal error. A missing producer
++result resource returns `404 Not Found`.
++
++## Security Boundary
++
++bmcweb validates the request envelope and translates between Redfish and D-Bus.
++It does not:
++
++- select devices or measurements;
++- transport SPDM messages;
++- construct the Composite EAT Bundle;
++- verify signatures or certificate chains;
++- appraise EAT claims; or
++- define platform trust or endorsement policy.
++
++Those responsibilities belong to the producer and the external verifier. The
++version 1 action intentionally has no device selector or measurement selector.
++
++## Validation
++
++Implementations should verify at least:
++
++- feature-off and feature-on builds;
++- collection and member discovery;
++- duplicate and ambiguous provider rejection;
++- target association mapping;
++- producer-present and producer-absent collection responses;
++- canonical nonce acceptance and malformed nonce rejection;
++- `202` and result `Location` behavior;
++- concurrent generation handling;
++- all status transitions and stale bundle removal;
++- exact equality between decoded Redfish bytes and D-Bus `Bundle` bytes; and
++- OEM CSDL and JSON schema consistency.
++
++See [OPENBMC_COMPOSITE_EAT_ADOPTER_GUIDE.md](OPENBMC_COMPOSITE_EAT_ADOPTER_GUIDE.md)
++for deployment validation and interoperability-report guidance.
+\ No newline at end of file
+diff --git a/docs/OPENBMC_COMPOSITE_EAT_ADOPTER_GUIDE.md b/docs/OPENBMC_COMPOSITE_EAT_ADOPTER_GUIDE.md
+new file mode 100644
+index 0000000000..3c31b8eb08
+--- /dev/null
++++ b/docs/OPENBMC_COMPOSITE_EAT_ADOPTER_GUIDE.md
+@@ -0,0 +1,167 @@
++# OpenBMC Composite EAT Adopter Guide
++
++## Status
++
++This is an OpenBMC reference implementation for cross-vendor integration. The
++Composite EAT Bundle API is currently an OpenBMC OEM extension and will be
++proposed for Redfish standardization.
++
++The public bmcweb implementation is on branch
++`xsun/bmcweb-composite-eat-reference` in
++`https://github.com/helloxiling/bmcweb`.
++
++The corresponding spdmd implementation is under review in
++`https://github.com/NVIDIA/spdm/pull/2`. That pull request implements the
++external D-Bus contract described below.
++
++## Scope
++
++Composite EAT is platform-scoped. It is separate from the standard per-device
++ComponentIntegrity member APIs and never takes a ComponentIntegrity member ID.
++
++The canonical Redfish routes are:
++
++```text
++POST /redfish/v1/ComponentIntegrity/Actions/Oem/
++  OpenBMCCompositeEATBundle.Generate
++
++GET  /redfish/v1/ComponentIntegrity/CompositeEATBundle
++```
++
++The trigger body contains only a base64-encoded 32-byte nonce:
++
++```json
++{
++  "Nonce": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
++}
++```
++
++There is no device selector or measurement-index selector in version 1.
++
++## D-Bus Producer Contract
++
++Each platform provides one producer:
++
++```text
++Service:   xyz.openbmc_project.SPDM
++Object:    /xyz/openbmc_project/SPDM/CompositeEATBundle
++Interface: xyz.openbmc_project.SPDM.CompositeEATBundle
++```
++
++The interface exposes:
++
++| Member | Type | Requirement |
++|---|---|---|
++| `Generate` | method `ay -> void` | Accept exactly one 32-byte nonce and start platform collection |
++| `Status` | property `s` | `Idle`, `InProgress`, `Ready`, or `Error` |
++| `Bundle` | property `ay` | Complete tag-602 CBOR Detached EAT Bundle when `Status=Ready` |
++
++The producer must:
++
++1. Reject a nonce whose decoded length is not 32 bytes.
++2. Reject concurrent generation with `EBUSY`.
++3. Clear the previous bundle before publishing `InProgress`.
++4. Collect the configured platform attestation scope.
++5. Publish complete `Bundle` bytes before publishing `Ready`.
++6. Clear `Bundle` before publishing `Error`.
++7. Isolate concurrent collection state by responder identity.
++
++bmcweb treats `Bundle` as opaque bytes. Signature verification, appraisal, and
++platform policy remain outside bmcweb.
++
++## bmcweb Integration
++
++Enable both Meson features:
++
++```text
++-Dredfish-component-integrity=enabled
++-Dredfish-composite-eat=enabled
++```
++
++`redfish-composite-eat` depends on `redfish-component-integrity`. Both features
++are disabled by default.
++
++When the D-Bus producer is available, the ComponentIntegrity collection
++advertises this OEM object:
++
++```json
++{
++  "Oem": {
++    "OpenBMC": {
++      "@odata.type": "#OpenBMCCompositeEATBundle.v1_0_0.ComponentIntegrityCollection",
++      "CompositeEATBundle": {
++        "@odata.id": "/redfish/v1/ComponentIntegrity/CompositeEATBundle"
++      },
++      "Actions": {
++        "#OpenBMCCompositeEATBundle.Generate": {
++          "target": "/redfish/v1/ComponentIntegrity/Actions/Oem/OpenBMCCompositeEATBundle.Generate"
++        }
++      }
++    }
++  }
++}
++```
++
++The action returns `202 Accepted` with a `Location` header naming the result
++resource. A concurrent request returns `503 Service Unavailable` with
++`Retry-After`. Clients poll the result until `Ready` or an error response.
++
++## Required Validation
++
++Run this matrix on each platform and record exact source, firmware, executable,
++and evidence hashes.
++
++| Test | Expected result |
++|---|---|
++| Feature disabled | Composite routes and schemas are absent |
++| Producer absent | Collection does not advertise the OEM action |
++| Unauthorized POST | `401` |
++| Missing nonce | `400` |
++| Malformed or wrong-length nonce | `400` |
++| Extra version-1 parameter | `400` |
++| Valid nonce | `202` and result `Location` |
++| Concurrent request | `503` and `Retry-After` |
++| Poll while running | `200`, `Status=InProgress`, no bundle |
++| Poll when complete | `200`, `Status=Ready`, non-empty bundle |
++| Producer error | Redfish error and no stale bundle |
++| Metadata and OEM schemas | Available and internally consistent |
++| Redfish versus D-Bus | Decoded Redfish bundle equals D-Bus bytes exactly |
++| Repeated nonce requests | Each result binds the supplied nonce |
++| Service restart | No stale or partially published bundle is returned |
++
++For each returned artifact, verify:
++
++1. The CBOR stream is complete and has tag 602.
++2. The signed EAT uses the expected COSE algorithm and a trusted certificate
++   chain.
++3. The signed nonce equals the verifier nonce.
++4. The profile and UEID claims are present and acceptable to verifier policy.
++5. Signed `submods` labels match the detached Claims-Set labels.
++6. Every signed detached digest matches its corresponding Claims-Set bytes.
++
++## Interoperability Report
++
++An adopter report should include:
++
++- bmcweb repository and commit;
++- spdmd or producer repository and commit;
++- BMC firmware and platform identifiers suitable for public disclosure;
++- enabled feature flags;
++- D-Bus producer service, object, and interface;
++- Redfish status matrix results;
++- generated bundle size and SHA-256;
++- signature and detached-digest verification results; and
++- producer service-health results before and after generation.
++
++Do not add platform device paths, endpoint IDs, signer internals, or collection
++policy to public bmcweb. Those belong below the D-Bus producer boundary.
++
++## Upstreaming
++
++Treat bmcweb and producer reviews as separate changes:
++
++1. Review and stabilize the platform-neutral D-Bus producer contract.
++2. Validate at least two independent platform implementations.
++3. Keep the OpenBMC OEM schema and route stable during interoperability work.
++4. Submit DMTF standardization separately; the validator can check schema and
++   Redfish correctness but cannot standardize an OEM API.
+\ No newline at end of file
+diff --git a/redfish-core/lib/component_integrity.hpp b/redfish-core/lib/component_integrity.hpp
+index 9baa38348d..a8c65ec641 100644
+--- a/redfish-core/lib/component_integrity.hpp
++++ b/redfish-core/lib/component_integrity.hpp
+@@ -17,6 +17,7 @@
+ #include "utils/dbus_utils.hpp"
+ #include "utils/time_utils.hpp"
+ 
++#include <boost/system/errc.hpp>
+ #include <boost/system/error_code.hpp>
+ #include <boost/url/format.hpp>
+ #include <sdbusplus/message/native_types.hpp>
+@@ -53,6 +54,56 @@ inline constexpr std::array<std::string_view, 5> targetInterfaces = {
+     "xyz.openbmc_project.Inventory.Item.Dimm",
+     "xyz.openbmc_project.Inventory.Item.PCIeDevice"};
+ 
++struct ComponentProvider
++{
++    std::string service;
++    std::string objectPath;
++};
++
++inline std::vector<ComponentProvider> findComponentProviders(
++    const dbus::utility::MapperGetSubTreeResponse& subtree,
++    std::string_view componentId)
++{
++    std::vector<ComponentProvider> providers;
++    for (const auto& [objectPath, serviceMap] : subtree)
++    {
++        if (sdbusplus::object_path(objectPath).filename() != componentId)
++        {
++            continue;
++        }
++        for (const auto& [service, interfaces] : serviceMap)
++        {
++            if (std::ranges::find(interfaces, componentIntegrityInterface) !=
++                interfaces.end())
++            {
++                providers.push_back({service, objectPath});
++            }
++        }
++    }
++    return providers;
++}
++
++inline std::optional<std::vector<std::string>> getUniqueComponentIds(
++    const dbus::utility::MapperGetSubTreePathsResponse& objects)
++{
++    std::vector<std::string> ids;
++    for (const std::string& object : objects)
++    {
++        std::string id = sdbusplus::object_path(object).filename();
++        if (id.empty())
++        {
++            continue;
++        }
++        if (std::ranges::find(ids, id) != ids.end())
++        {
++            return std::nullopt;
++        }
++        ids.push_back(std::move(id));
++    }
++    std::ranges::sort(ids);
++    return ids;
++}
++
+ inline std::optional<std::string> translateSecurityTechnologyType(
+     std::string_view type)
+ {
+@@ -60,10 +111,6 @@ inline std::optional<std::string> translateSecurityTechnologyType(
+     {
+         return "SPDM";
+     }
+-    if (type.ends_with(".TPM"))
+-    {
+-        return "TPM";
+-    }
+     if (type.ends_with(".OEM"))
+     {
+         return "OEM";
+@@ -146,6 +193,11 @@ inline bool fillProperties(nlohmann::json& json,
+     json["ComponentIntegrityEnabled"] = *enabled;
+     json["ComponentIntegrityType"] = *redfishType;
+     json["ComponentIntegrityTypeVersion"] = *typeVersion;
++    if (*enabled && *redfishType == "SPDM")
++    {
++        json["SPDM"]["Requester"]["@odata.id"] = boost::urls::format(
++            "/redfish/v1/Managers/{}", BMCWEB_REDFISH_MANAGER_URI_NAME);
++    }
+     if (*lastUpdated != 0)
+     {
+         json["LastUpdated"] = time_utils::getDateTimeUintMs(*lastUpdated);
+@@ -271,28 +323,64 @@ inline void afterGetComponentIntegrity(
+         return;
+     }
+ 
+-    for (const auto& [objectPath, serviceMap] : subtree)
++    std::vector<component_integrity_utils::ComponentProvider> providers =
++        component_integrity_utils::findComponentProviders(subtree, componentId);
++    if (providers.size() > 1)
+     {
+-        if (sdbusplus::object_path(objectPath).filename() != componentId)
+-        {
+-            continue;
+-        }
+-        for (const auto& [service, interfaces] : serviceMap)
+-        {
+-            if (std::ranges::find(
+-                    interfaces,
+-                    component_integrity_utils::componentIntegrityInterface) !=
+-                interfaces.end())
+-            {
+-                getComponentIntegrityData(asyncResp, componentId, service,
+-                                          objectPath);
+-                return;
+-            }
+-        }
++        BMCWEB_LOG_ERROR("ComponentIntegrity ID {} has {} D-Bus providers",
++                         componentId, providers.size());
++        messages::internalError(asyncResp->res);
++        return;
++    }
++    if (providers.empty())
++    {
++        messages::resourceNotFound(asyncResp->res, "ComponentIntegrity",
++                                   componentId);
++        return;
+     }
+ 
+-    messages::resourceNotFound(asyncResp->res, "ComponentIntegrity",
+-                               componentId);
++    getComponentIntegrityData(asyncResp, componentId, providers.front().service,
++                              providers.front().objectPath);
++}
++
++inline void afterGetComponentIntegrityCollection(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const boost::system::error_code& ec,
++    const dbus::utility::MapperGetSubTreePathsResponse& objects)
++{
++    if (ec == boost::system::errc::io_error)
++    {
++        asyncResp->res.jsonValue["Members"] = nlohmann::json::array();
++        asyncResp->res.jsonValue["Members@odata.count"] = 0;
++        return;
++    }
++    if (ec)
++    {
++        BMCWEB_LOG_ERROR("Unable to enumerate ComponentIntegrity members: {}",
++                         ec);
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    std::optional<std::vector<std::string>> ids =
++        component_integrity_utils::getUniqueComponentIds(objects);
++    if (!ids)
++    {
++        BMCWEB_LOG_ERROR("ComponentIntegrity object paths contain duplicate "
++                         "Redfish member IDs");
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    nlohmann::json& members = asyncResp->res.jsonValue["Members"];
++    members = nlohmann::json::array();
++    for (const std::string& id : *ids)
++    {
++        members.push_back(
++            {{"@odata.id",
++              boost::urls::format("/redfish/v1/ComponentIntegrity/{}", id)}});
++    }
++    asyncResp->res.jsonValue["Members@odata.count"] = members.size();
+ }
+ 
+ inline void handleComponentIntegrityGet(
+@@ -328,10 +416,10 @@ inline void handleComponentIntegrityCollectionGet(
+     {
+         composite_eat_utils::addCollectionExtension(asyncResp);
+     }
+-    collection_util::getCollectionMembers(
+-        asyncResp, boost::urls::url("/redfish/v1/ComponentIntegrity"),
++    dbus::utility::getSubTreePaths(
++        std::string(component_integrity_utils::componentIntegrityPath), 0,
+         component_integrity_utils::componentIntegrityInterfaces,
+-        std::string(component_integrity_utils::componentIntegrityPath));
++        std::bind_front(afterGetComponentIntegrityCollection, asyncResp));
+ }
+ 
+ inline void requestRoutesComponentIntegrity(App& app)
+diff --git a/redfish-core/lib/openbmc/oem_composite_eat.hpp b/redfish-core/lib/openbmc/oem_composite_eat.hpp
+index 312f3e28ce..2f53073f05 100644
+--- a/redfish-core/lib/openbmc/oem_composite_eat.hpp
++++ b/redfish-core/lib/openbmc/oem_composite_eat.hpp
+@@ -41,7 +41,7 @@ inline constexpr std::string_view interface =
+     "xyz.openbmc_project.SPDM.CompositeEATBundle";
+ inline constexpr std::string_view actionUri =
+     "/redfish/v1/ComponentIntegrity/Actions/Oem/"
+-    "OpenBMC.GetCompositeEATBundle";
++    "OpenBMCCompositeEATBundle.Generate";
+ inline constexpr std::string_view resultUri =
+     "/redfish/v1/ComponentIntegrity/CompositeEATBundle";
+ inline constexpr std::array<std::string_view, 1> interfaces = {interface};
+@@ -87,6 +87,23 @@ inline std::optional<Status> parseStatus(std::string_view status)
+ inline bool decodeNonce(std::string_view encoded,
+                         std::vector<std::uint8_t>& nonce)
+ {
++    if (encoded.size() != 44 || encoded.back() != '=')
++    {
++        return false;
++    }
++    for (char character : encoded.substr(0, 43))
++    {
++        const bool isBase64Character =
++            (character >= 'A' && character <= 'Z') ||
++            (character >= 'a' && character <= 'z') ||
++            (character >= '0' && character <= '9') || character == '+' ||
++            character == '/';
++        if (!isBase64Character)
++        {
++            return false;
++        }
++    }
++
+     std::string decoded;
+     if (!crow::utility::base64Decode(encoded, decoded) || decoded.size() != 32)
+     {
+@@ -161,17 +178,33 @@ inline void afterFindProducer(
+     const boost::system::error_code& ec,
+     const dbus::utility::MapperGetObject& object)
+ {
+-    if (ec || object.empty())
++    if (ec)
+     {
+         BMCWEB_LOG_DEBUG("Composite EAT producer is unavailable");
+         return;
+     }
+ 
++    bool foundService = false;
++    for (const auto& [candidateService, candidateInterfaces] : object)
++    {
++        static_cast<void>(candidateInterfaces);
++        if (candidateService == service)
++        {
++            foundService = true;
++            break;
++        }
++    }
++    if (!foundService)
++    {
++        BMCWEB_LOG_DEBUG("Composite EAT producer service is unavailable");
++        return;
++    }
++
+     nlohmann::json& openBmc = asyncResp->res.jsonValue["Oem"]["OpenBMC"];
+     openBmc["@odata.type"] =
+         "#OpenBMCCompositeEATBundle.v1_0_0.ComponentIntegrityCollection";
+     openBmc["CompositeEATBundle"]["@odata.id"] = resultUri;
+-    openBmc["Actions"]["#OpenBMCCompositeEATBundle.GetCompositeEATBundle"]
++    openBmc["Actions"]["#OpenBMCCompositeEATBundle.Generate"]
+            ["target"] = actionUri;
+ }
+ 
+@@ -203,12 +236,42 @@ inline void afterGenerate(const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+     asyncResp->res.addHeader(boost::beast::http::field::location, resultUri);
+ }
+ 
++inline void afterGetResult(const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++                           const boost::system::error_code& ec,
++                           const Properties& properties)
++{
++    if (ec.value() == EBADR)
++    {
++        messages::resourceNotFound(asyncResp->res, "CompositeEATBundle",
++                                   "CompositeEATBundle");
++        return;
++    }
++    if (ec)
++    {
++        BMCWEB_LOG_ERROR("Unable to read Composite EAT result: {}", ec);
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    Result result = fillResult(asyncResp->res.jsonValue, properties);
++    if (result == Result::producerError)
++    {
++        messages::internalError(asyncResp->res);
++        return;
++    }
++    if (result == Result::invalid)
++    {
++        BMCWEB_LOG_ERROR("Invalid Composite EAT producer properties");
++        messages::internalError(asyncResp->res);
++    }
++}
++
+ } // namespace composite_eat_utils
+ 
+ inline void requestRoutesCompositeEatBundleAction(App& app)
+ {
+     BMCWEB_ROUTE(app, "/redfish/v1/ComponentIntegrity/Actions/Oem/"
+-                      "OpenBMC.GetCompositeEATBundle")
++                      "OpenBMCCompositeEATBundle.Generate/")
+         .privileges(redfish::privileges::postComponentIntegrityCollection)
+         .methods(boost::beast::http::verb::post)(
+             [&app](const crow::Request& req,
+@@ -230,7 +293,7 @@ inline void requestRoutesCompositeEatBundleAction(App& app)
+                 {
+                     messages::actionParameterValueFormatError(
+                         asyncResp->res, encodedNonce, "Nonce",
+-                        "OpenBMC.GetCompositeEATBundle");
++                        "OpenBMCCompositeEATBundle.Generate");
+                     return;
+                 }
+ 
+@@ -261,29 +324,8 @@ inline void requestRoutesCompositeEatBundleResult(App& app)
+                     [asyncResp](
+                         const boost::system::error_code& ec,
+                         const composite_eat_utils::Properties& properties) {
+-                        if (ec)
+-                        {
+-                            messages::resourceNotFound(asyncResp->res,
+-                                                       "CompositeEATBundle",
+-                                                       "CompositeEATBundle");
+-                            return;
+-                        }
+-
+-                        composite_eat_utils::Result result =
+-                            composite_eat_utils::fillResult(
+-                                asyncResp->res.jsonValue, properties);
+-                        if (result ==
+-                            composite_eat_utils::Result::producerError)
+-                        {
+-                            messages::internalError(asyncResp->res);
+-                            return;
+-                        }
+-                        if (result == composite_eat_utils::Result::invalid)
+-                        {
+-                            BMCWEB_LOG_ERROR(
+-                                "Invalid Composite EAT producer properties");
+-                            messages::internalError(asyncResp->res);
+-                        }
++                        composite_eat_utils::afterGetResult(asyncResp, ec,
++                                                            properties);
+                     },
+                     std::string(composite_eat_utils::service),
+                     std::string(composite_eat_utils::objectPath),
+diff --git a/redfish-core/schema/oem/openbmc/csdl/OpenBMCCompositeEATBundle_v1.xml b/redfish-core/schema/oem/openbmc/csdl/OpenBMCCompositeEATBundle_v1.xml
+index 8eaacf2bba..ab93cda8c1 100644
+--- a/redfish-core/schema/oem/openbmc/csdl/OpenBMCCompositeEATBundle_v1.xml
++++ b/redfish-core/schema/oem/openbmc/csdl/OpenBMCCompositeEATBundle_v1.xml
+@@ -14,30 +14,37 @@
+   <edmx:DataServices>
+     <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="OpenBMCCompositeEATBundle">
+       <Annotation Term="Redfish.OwningEntity" String="OpenBMC"/>
++      <Action Name="Generate" IsBound="true">
++        <Parameter Name="OpenBMCCompositeEATBundle" Type="OpenBMCCompositeEATBundle.v1_0_0.Actions"/>
++        <Parameter Name="Nonce" Type="Edm.String" Nullable="false" MaxLength="44">
++          <Annotation Term="OData.Description" String="A base64-encoded 32-byte verifier nonce."/>
++          <Annotation Term="Validation.Pattern" String="^[A-Za-z0-9+/]{43}=$"/>
++        </Parameter>
++      </Action>
+     </Schema>
+     <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="OpenBMCCompositeEATBundle.v1_0_0">
+       <Annotation Term="Redfish.OwningEntity" String="OpenBMC"/>
+       <Annotation Term="Redfish.Release" String="1.0"/>
+       <ComplexType Name="ComponentIntegrityCollection" BaseType="Resource.OemObject">
+         <Property Name="Actions" Type="OpenBMCCompositeEATBundle.v1_0_0.Actions"/>
+-        <NavigationProperty Name="CompositeEATBundle" Type="OpenBMCCompositeEATBundle.v1_0_0.CompositeEATBundle"/>
++        <NavigationProperty Name="CompositeEATBundle" Type="Resource.Item"/>
+       </ComplexType>
+-      <ComplexType Name="Actions" BaseType="Resource.OemActions"/>
+-      <Action Name="GetCompositeEATBundle" IsBound="true">
+-        <Parameter Name="OpenBMCCompositeEATBundle" Type="OpenBMCCompositeEATBundle.v1_0_0.Actions"/>
+-        <Parameter Name="Nonce" Type="Edm.String" Nullable="false" MaxLength="44">
+-          <Annotation Term="OData.Description" String="A base64-encoded 32-byte verifier nonce."/>
+-          <Annotation Term="Validation.Pattern" String="^[A-Za-z0-9+/]{43}=$"/>
+-        </Parameter>
+-      </Action>
++      <ComplexType Name="Actions"/>
++      <EnumType Name="Status">
++        <Member Name="Idle"/>
++        <Member Name="InProgress"/>
++        <Member Name="Ready"/>
++        <Member Name="Error"/>
++      </EnumType>
+       <EntityType Name="CompositeEATBundle" BaseType="Resource.v1_0_0.Resource">
+         <Annotation Term="Redfish.Uris">
+           <Collection>
+             <String>/redfish/v1/ComponentIntegrity/CompositeEATBundle</String>
+           </Collection>
+         </Annotation>
+-        <Property Name="Status" Type="Edm.String" Nullable="false">
++        <Property Name="Status" Type="OpenBMCCompositeEATBundle.v1_0_0.Status" Nullable="false">
+           <Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
++          <Annotation Term="Redfish.Required"/>
+         </Property>
+         <Property Name="CompositeEATBundle" Type="Edm.String">
+           <Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+diff --git a/redfish-core/schema/oem/openbmc/json-schema/OpenBMCCompositeEATBundle.v1_0_0.json b/redfish-core/schema/oem/openbmc/json-schema/OpenBMCCompositeEATBundle.v1_0_0.json
+index c4f3e17fd4..6cdcbfee94 100644
+--- a/redfish-core/schema/oem/openbmc/json-schema/OpenBMCCompositeEATBundle.v1_0_0.json
++++ b/redfish-core/schema/oem/openbmc/json-schema/OpenBMCCompositeEATBundle.v1_0_0.json
+@@ -1,35 +1,95 @@
+ {
+     "$id": "https://github.com/openbmc/bmcweb/tree/master/redfish-core/schema/oem/openbmc/json-schema/OpenBMCCompositeEATBundle.v1_0_0.json",
++    "$ref": "#/definitions/CompositeEATBundle",
+     "$schema": "http://redfish.dmtf.org/schemas/v1/redfish-schema-v1.json",
+-    "copyright": "Copyright 2026 OpenBMC.",
++    "copyright": "Copyright 2024 OpenBMC.",
+     "definitions": {
+         "Actions": {
+             "additionalProperties": false,
++            "patternProperties": {
++                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\\.[a-zA-Z_][a-zA-Z0-9_]*$": {
++                    "description": "This property shall specify a valid odata or Redfish property.",
++                    "type": [
++                        "array",
++                        "boolean",
++                        "integer",
++                        "number",
++                        "null",
++                        "object",
++                        "string"
++                    ]
++                }
++            },
+             "properties": {
+-                "#OpenBMCCompositeEATBundle.GetCompositeEATBundle": {
+-                    "$ref": "#/definitions/GetCompositeEATBundle"
++                "#OpenBMCCompositeEATBundle.Generate": {
++                    "$ref": "#/definitions/Generate"
+                 }
+             },
+             "type": "object"
+         },
+         "ComponentIntegrityCollection": {
+             "additionalProperties": false,
++            "patternProperties": {
++                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\\.[a-zA-Z_][a-zA-Z0-9_]*$": {
++                    "description": "This property shall specify a valid odata or Redfish property.",
++                    "type": [
++                        "array",
++                        "boolean",
++                        "integer",
++                        "number",
++                        "null",
++                        "object",
++                        "string"
++                    ]
++                }
++            },
+             "properties": {
+-                "@odata.type": {
+-                    "type": "string"
+-                },
+                 "Actions": {
+-                    "$ref": "#/definitions/Actions"
++                    "anyOf": [
++                        {
++                            "$ref": "#/definitions/Actions"
++                        },
++                        {
++                            "type": "null"
++                        }
++                    ]
+                 },
+                 "CompositeEATBundle": {
+-                    "$ref": "http://redfish.dmtf.org/schemas/v1/odata-v4.json#/definitions/idRef"
++                    "anyOf": [
++                        {
++                            "$ref": "http://redfish.dmtf.org/schemas/v1/odata-v4.json#/definitions/idRef"
++                        },
++                        {
++                            "type": "null"
++                        }
++                    ]
+                 }
+             },
+             "type": "object"
+         },
+         "CompositeEATBundle": {
+             "additionalProperties": false,
++            "patternProperties": {
++                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\\.[a-zA-Z_][a-zA-Z0-9_]*$": {
++                    "description": "This property shall specify a valid odata or Redfish property.",
++                    "type": [
++                        "array",
++                        "boolean",
++                        "integer",
++                        "number",
++                        "null",
++                        "object",
++                        "string"
++                    ]
++                }
++            },
+             "properties": {
++                "@odata.context": {
++                    "$ref": "http://redfish.dmtf.org/schemas/v1/odata-v4.json#/definitions/context"
++                },
++                "@odata.etag": {
++                    "$ref": "http://redfish.dmtf.org/schemas/v1/odata-v4.json#/definitions/etag"
++                },
+                 "@odata.id": {
+                     "$ref": "http://redfish.dmtf.org/schemas/v1/odata-v4.json#/definitions/id"
+                 },
+@@ -39,7 +99,21 @@
+                 "CompositeEATBundle": {
+                     "description": "The base64-encoded tag-602 CBOR Detached EAT Bundle.",
+                     "readonly": true,
+-                    "type": "string"
++                    "type": [
++                        "string",
++                        "null"
++                    ]
++                },
++                "Description": {
++                    "anyOf": [
++                        {
++                            "$ref": "http://redfish.dmtf.org/schemas/v1/Resource.json#/definitions/Description"
++                        },
++                        {
++                            "type": "null"
++                        }
++                    ],
++                    "readonly": true
+                 },
+                 "Id": {
+                     "$ref": "http://redfish.dmtf.org/schemas/v1/Resource.json#/definitions/Id",
+@@ -49,36 +123,73 @@
+                     "$ref": "http://redfish.dmtf.org/schemas/v1/Resource.json#/definitions/Name",
+                     "readonly": true
+                 },
++                "Oem": {
++                    "$ref": "http://redfish.dmtf.org/schemas/v1/Resource.json#/definitions/Oem",
++                    "description": "The OEM extension property.",
++                    "longDescription": "This property shall contain the OEM extensions.  All values for properties that this object contains shall conform to the Redfish Specification-described requirements."
++                },
+                 "Status": {
+-                    "enum": ["Idle", "InProgress", "Ready", "Error"],
+-                    "readonly": true,
+-                    "type": "string"
++                    "$ref": "#/definitions/Status",
++                    "readonly": true
+                 }
+             },
+-            "required": ["@odata.id", "@odata.type", "Id", "Name", "Status"],
++            "required": [
++                "Status",
++                "@odata.id",
++                "@odata.type",
++                "Id",
++                "Name"
++            ],
+             "type": "object"
+         },
+-        "GetCompositeEATBundle": {
++        "Generate": {
+             "additionalProperties": false,
+             "parameters": {
+                 "Nonce": {
+                     "description": "A base64-encoded 32-byte verifier nonce.",
++                    "pattern": "^[A-Za-z0-9+/]{43}=$",
++                    "requiredParameter": true,
+                     "type": "string"
+                 }
+             },
++            "patternProperties": {
++                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\\.[a-zA-Z_][a-zA-Z0-9_]*$": {
++                    "description": "This property shall specify a valid odata or Redfish property.",
++                    "type": [
++                        "array",
++                        "boolean",
++                        "integer",
++                        "number",
++                        "null",
++                        "object",
++                        "string"
++                    ]
++                }
++            },
+             "properties": {
+                 "target": {
++                    "description": "Link to invoke action",
+                     "format": "uri-reference",
+                     "type": "string"
+                 },
+                 "title": {
++                    "description": "Friendly action name",
+                     "type": "string"
+                 }
+             },
+             "type": "object"
++        },
++        "Status": {
++            "enum": [
++                "Idle",
++                "InProgress",
++                "Ready",
++                "Error"
++            ],
++            "type": "string"
+         }
+     },
+     "owningEntity": "OpenBMC",
+     "release": "1.0",
+-    "title": "#OpenBMCCompositeEATBundle.v1_0_0"
++    "title": "#OpenBMCCompositeEATBundle.v1_0_0.CompositeEATBundle"
+ }
+\ No newline at end of file
+diff --git a/test/redfish-core/lib/component_integrity_test.cpp b/test/redfish-core/lib/component_integrity_test.cpp
+index 23f9997b3f..970eb3dae5 100644
+--- a/test/redfish-core/lib/component_integrity_test.cpp
++++ b/test/redfish-core/lib/component_integrity_test.cpp
+@@ -31,7 +31,7 @@ TEST(TranslateSecurityTechnologyType, MapsPublicInterfaceValues)
+     EXPECT_EQ(translateSecurityTechnologyType(
+                   "xyz.openbmc_project.Attestation.ComponentIntegrity."
+                   "SecurityTechnologyType.TPM"),
+-              "TPM");
++              std::nullopt);
+     EXPECT_EQ(translateSecurityTechnologyType(
+                   "xyz.openbmc_project.Attestation.ComponentIntegrity."
+                   "SecurityTechnologyType.OEM"),
+@@ -112,6 +112,25 @@ TEST(FillProperties, ProducesRequiredRedfishValues)
+     EXPECT_EQ(json["ComponentIntegrityType"], "SPDM");
+     EXPECT_EQ(json["ComponentIntegrityTypeVersion"], "1.2.0");
+     EXPECT_EQ(json["LastUpdated"], time_utils::getDateTimeUintMs(1000));
++    EXPECT_EQ(json["SPDM"]["Requester"]["@odata.id"],
++              "/redfish/v1/Managers/" +
++                  std::string(BMCWEB_REDFISH_MANAGER_URI_NAME));
++}
++
++TEST(FillProperties, OmitsConditionalValuesWhenDisabled)
++{
++    dbus::utility::DBusPropertiesMap properties = {
++        {"Enabled", false},
++        {"Type",
++         std::string("xyz.openbmc_project.Attestation.ComponentIntegrity."
++                     "SecurityTechnologyType.SPDM")},
++        {"TypeVersion", std::string()},
++        {"LastUpdated", uint64_t{0}}};
++    nlohmann::json json;
++
++    ASSERT_TRUE(fillProperties(json, properties));
++    EXPECT_FALSE(json.contains("SPDM"));
++    EXPECT_FALSE(json.contains("LastUpdated"));
+ }
+ 
+ TEST(FillProperties, RejectsUnknownOrMissingValues)
+@@ -133,5 +152,105 @@ TEST(FillProperties, RejectsUnknownOrMissingValues)
+     EXPECT_FALSE(fillProperties(json, missingType));
+ }
+ 
++TEST(ComponentIntegrityDiscovery, RejectsDuplicateMemberIds)
++{
++    const dbus::utility::MapperGetSubTreePathsResponse uniquePaths = {
++        "/xyz/openbmc_project/SPDM/device0",
++        "/xyz/openbmc_project/SPDM/device1"};
++    const std::optional<std::vector<std::string>> unique =
++        getUniqueComponentIds(uniquePaths);
++    ASSERT_TRUE(unique);
++    EXPECT_EQ(*unique, (std::vector<std::string>{"device0", "device1"}));
++
++    const dbus::utility::MapperGetSubTreePathsResponse duplicatePaths = {
++        "/xyz/openbmc_project/SPDM/device0",
++        "/xyz/openbmc_project/vendor/device0"};
++    EXPECT_FALSE(getUniqueComponentIds(duplicatePaths));
++}
++
++TEST(ComponentIntegrityDiscovery, FindsAllMatchingProviders)
++{
++    const dbus::utility::MapperGetSubTreeResponse subtree = {
++        {"/xyz/openbmc_project/SPDM/device0",
++         {{"service0", {std::string(componentIntegrityInterface)}}}},
++        {"/xyz/openbmc_project/vendor/device0",
++         {{"service1", {std::string(componentIntegrityInterface)}}}},
++        {"/xyz/openbmc_project/SPDM/device1",
++         {{"service2", {std::string(componentIntegrityInterface)}}}}};
++
++    const std::vector<ComponentProvider> providers =
++        findComponentProviders(subtree, "device0");
++    ASSERT_EQ(providers.size(), 2U);
++    EXPECT_EQ(providers[0].service, "service0");
++    EXPECT_EQ(providers[1].service, "service1");
++}
++
++TEST(ComponentIntegrityCallbacks, HandlesCollectionErrorsAndDuplicateIds)
++{
++    auto missing = std::make_shared<bmcweb::AsyncResp>();
++    afterGetComponentIntegrityCollection(
++        missing, make_error_code(boost::system::errc::io_error), {});
++    EXPECT_EQ(missing->res.jsonValue["Members"], nlohmann::json::array());
++    EXPECT_EQ(missing->res.jsonValue["Members@odata.count"], 0);
++
++    auto duplicate = std::make_shared<bmcweb::AsyncResp>();
++    afterGetComponentIntegrityCollection(
++        duplicate, {},
++        {"/xyz/openbmc_project/SPDM/device0",
++         "/xyz/openbmc_project/vendor/device0"});
++    EXPECT_EQ(duplicate->res.result(),
++              boost::beast::http::status::internal_server_error);
++}
++
++TEST(ComponentIntegrityCallbacks, HandlesMissingOrAmbiguousMembers)
++{
++    auto missing = std::make_shared<bmcweb::AsyncResp>();
++    afterGetComponentIntegrity(missing, "device0", {}, {});
++    EXPECT_EQ(missing->res.result(), boost::beast::http::status::not_found);
++
++    const dbus::utility::MapperGetSubTreeResponse duplicateSubtree = {
++        {"/xyz/openbmc_project/SPDM/device0",
++         {{"service0", {std::string(componentIntegrityInterface)}}}},
++        {"/xyz/openbmc_project/vendor/device0",
++         {{"service1", {std::string(componentIntegrityInterface)}}}}};
++    auto duplicate = std::make_shared<bmcweb::AsyncResp>();
++    afterGetComponentIntegrity(duplicate, "device0", {}, duplicateSubtree);
++    EXPECT_EQ(duplicate->res.result(),
++              boost::beast::http::status::internal_server_error);
++}
++
++TEST(ComponentIntegrityCallbacks, RejectsInvalidTargetAssociations)
++{
++    auto noTarget = std::make_shared<bmcweb::AsyncResp>();
++    afterGetComponentTarget(noTarget, {}, {});
++    EXPECT_EQ(noTarget->res.result(),
++              boost::beast::http::status::internal_server_error);
++
++    auto multipleTargets = std::make_shared<bmcweb::AsyncResp>();
++    afterGetComponentTarget(multipleTargets, {},
++                            {"/xyz/openbmc_project/inventory/device0",
++                             "/xyz/openbmc_project/inventory/device1"});
++    EXPECT_EQ(multipleTargets->res.result(),
++              boost::beast::http::status::internal_server_error);
++
++    auto unmappable = std::make_shared<bmcweb::AsyncResp>();
++    const dbus::utility::MapperGetObject object = {
++        {"inventory.service", {"xyz.openbmc_project.Inventory.Item"}}};
++    afterGetComponentTargetObject(
++        unmappable, "/xyz/openbmc_project/inventory/device0", {}, object);
++    EXPECT_EQ(unmappable->res.result(),
++              boost::beast::http::status::internal_server_error);
++}
++
++TEST(ComponentIntegrityCallbacks, HandlesPropertyReadFailure)
++{
++    auto failed = std::make_shared<bmcweb::AsyncResp>();
++    afterGetComponentIntegrityProperties(
++        failed, "/xyz/openbmc_project/SPDM/device0",
++        make_error_code(boost::system::errc::io_error), {});
++    EXPECT_EQ(failed->res.result(),
++              boost::beast::http::status::internal_server_error);
++}
++
+ } // namespace
+ } // namespace redfish::component_integrity_utils
+diff --git a/test/redfish-core/lib/oem_composite_eat_test.cpp b/test/redfish-core/lib/oem_composite_eat_test.cpp
+index a83ee48414..9ecec03de6 100644
+--- a/test/redfish-core/lib/oem_composite_eat_test.cpp
++++ b/test/redfish-core/lib/oem_composite_eat_test.cpp
+@@ -29,6 +29,12 @@ TEST(CompositeEatNonce, RejectsMalformedOrWrongLength)
+     std::vector<std::uint8_t> nonce;
+     EXPECT_FALSE(decodeNonce("not-base64", nonce));
+     EXPECT_FALSE(decodeNonce("AAECAwQFBgc=", nonce));
++    EXPECT_FALSE(
++        decodeNonce("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8", nonce));
++    EXPECT_FALSE(decodeNonce(
++        "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=trailing", nonce));
++    EXPECT_FALSE(
++        decodeNonce("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh_=", nonce));
+ }
+ 
+ TEST(CompositeEatStatus, AcceptsOnlyContractStates)
+@@ -97,6 +103,10 @@ TEST(CompositeEatResult, FailsClosedForErrorOrInvalidProperties)
+ 
+ TEST(CompositeEatAction, MapsGenerateCompletionToHttpResponse)
+ {
++    EXPECT_EQ(actionUri,
++              "/redfish/v1/ComponentIntegrity/Actions/Oem/"
++              "OpenBMCCompositeEATBundle.Generate");
++
+     auto accepted = std::make_shared<bmcweb::AsyncResp>();
+     afterGenerate(accepted, {});
+     EXPECT_EQ(accepted->res.result(), boost::beast::http::status::accepted);
+@@ -120,17 +130,35 @@ TEST(CompositeEatCollection, AdvertisesOnlyAnAvailableProducer)
+     afterFindProducer(absent, {}, {});
+     EXPECT_FALSE(absent->res.jsonValue.contains("Oem"));
+ 
++    auto wrongService = std::make_shared<bmcweb::AsyncResp>();
++    const dbus::utility::MapperGetObject wrongServiceObject = {
++        {"xyz.openbmc_project.AttestationProvider", {std::string(interface)}}};
++    afterFindProducer(wrongService, {}, wrongServiceObject);
++    EXPECT_FALSE(wrongService->res.jsonValue.contains("Oem"));
++
+     auto available = std::make_shared<bmcweb::AsyncResp>();
+     const dbus::utility::MapperGetObject object = {
+-        {"xyz.openbmc_project.AttestationProvider", {std::string(interface)}}};
++        {std::string(service), {std::string(interface)}}};
+     afterFindProducer(available, {}, object);
+     const nlohmann::json& openBmc = available->res.jsonValue["Oem"]["OpenBMC"];
+     EXPECT_EQ(openBmc["CompositeEATBundle"]["@odata.id"], resultUri);
+     EXPECT_EQ(
+-        openBmc["Actions"]["#OpenBMCCompositeEATBundle.GetCompositeEATBundle"]
++        openBmc["Actions"]["#OpenBMCCompositeEATBundle.Generate"]
+                ["target"],
+         actionUri);
+ }
+ 
++TEST(CompositeEatResult, DistinguishesMissingResourceFromReadFailure)
++{
++    auto missing = std::make_shared<bmcweb::AsyncResp>();
++    afterGetResult(missing, {EBADR, boost::system::generic_category()}, {});
++    EXPECT_EQ(missing->res.result(), boost::beast::http::status::not_found);
++
++    auto failed = std::make_shared<bmcweb::AsyncResp>();
++    afterGetResult(failed, make_error_code(boost::system::errc::io_error), {});
++    EXPECT_EQ(failed->res.result(),
++              boost::beast::http::status::internal_server_error);
++}
++
+ } // namespace
+ } // namespace redfish::composite_eat_utils

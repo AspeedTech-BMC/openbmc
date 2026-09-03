@@ -1,0 +1,44 @@
+[
+	{
+		"Exposes": [
+		],
+		"xyz.openbmc_project.Inventory.Item.SPDMResponder": {},
+		"xyz.openbmc_project.Inventory.Item": {},
+		"Name": "ASPEED-iROT",
+		"Probe": "xyz.openbmc_project.Common.UUID({'UUID': '00010203-0405-0607-0809-0a0b0c0d0e0f'})",
+		"Type": "Chassis"
+
+	}, 
+	{
+		"Exposes": [
+			{
+				"Type": "MCTPI3CTarget",
+				"Interface": "$Interface",
+				"Address": "fffe005a00a5",
+				"Bus": "i3c12",
+				"Name": "smc0"
+			}
+		],
+		"Name": "SMC_0",
+		"Type": "Board",
+		"Probe": "xyz.openbmc_project.Common.UUID({'UUID': '30313233-3435-3637-3839-616200000000'})",
+		"xyz.openbmc_project.Inventory.Item.SPDMResponder": {},
+		"xyz.openbmc_project.Inventory.Item": {}
+	},
+	{
+		"Exposes": [
+			{
+				"Type": "MCTPI3CTarget",
+				"Interface": "$Interface",
+				"Address": "fffe005a00a5",
+				"Bus": "i3c15",
+				"Name": "smc1"
+			}
+		],
+		"Name": "SMC_1",
+		"Type": "Board",
+		"Probe": "xyz.openbmc_project.Common.UUID({'UUID': '30313233-3435-3637-3839-616200000001'})",
+		"xyz.openbmc_project.Inventory.Item.SPDMResponder": {},
+		"xyz.openbmc_project.Inventory.Itemr": {}
+	}
+]

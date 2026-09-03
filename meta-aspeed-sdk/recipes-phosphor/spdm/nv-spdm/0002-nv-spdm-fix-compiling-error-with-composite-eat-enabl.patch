@@ -1,0 +1,39 @@
+From de2494580b3a850ab850bbd6c2d2b4c145780ec1 Mon Sep 17 00:00:00 2001
+From: Troy Lee <troy_lee@aspeedtech.com>
+Date: Mon, 31 Aug 2026 10:02:55 +0800
+Subject: [PATCH] nv-spdm: fix compiling error with composite-eat enabled
+
+The steady_timer::cancel(error_code& ec) is deprecated, the patch
+doesn't process ec, so use steady_timer::cancel() instead.
+
+Upstream-Status: Pending
+
+Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
+---
+ spdmd/dbus_impl_composite.cpp | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/spdmd/dbus_impl_composite.cpp b/spdmd/dbus_impl_composite.cpp
+index 0b5b31d..30a8c45 100644
+--- a/spdmd/dbus_impl_composite.cpp
++++ b/spdmd/dbus_impl_composite.cpp
+@@ -246,8 +246,7 @@ void DbusImplComposite::onDeviceComplete(std::uint8_t eid, bool success)
+     done[eid] = true;
+     if (auto& t = perDevTimers[eid])
+     {
+-        boost::system::error_code ec;
+-        t->cancel(ec);
++        t->cancel();
+     }
+     for (auto& r : active)
+     {
+@@ -263,8 +262,7 @@ void DbusImplComposite::onDeviceComplete(std::uint8_t eid, bool success)
+     }
+     if (pending == 0)
+     {
+-        boost::system::error_code ec;
+-        overallTimer.cancel(ec);
++        overallTimer.cancel();
+         finalize();
+     }
+ }
