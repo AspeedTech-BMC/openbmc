@@ -18,6 +18,7 @@ EXTRA_OEMESON:append:aspeed-g7 = " \
 "
 
 EXTRA_OEMESON:append:ast27x5 = " \
+    -Dotp-platform='ast2705' \
     -Dcptra-platform='ast2705' \
 "
 
