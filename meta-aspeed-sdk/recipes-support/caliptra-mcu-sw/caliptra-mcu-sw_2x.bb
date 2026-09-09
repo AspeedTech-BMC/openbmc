@@ -6,9 +6,9 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 
 BRANCH = "aspeed-dev-2.1-rt"
 SRC_URI = "gitsm://gerrit.aspeed.com:29418/caliptra-mcu-sw;protocol=ssh;branch=${BRANCH}; \
-           https://sh.rustup.rs;name=rustup-init;subdir=${UNPACKDIR};downloadfilename=rustup-init.sh;unpack=0 \
+           https://raw.githubusercontent.com/rust-lang/rustup/1.29.1/rustup-init.sh;name=rustup-init;subdir=${UNPACKDIR};downloadfilename=rustup-init.sh;unpack=0 \
           "
-SRC_URI[rustup-init.sha256sum] = "6c30b75a75b28a96fd913a037c8581b580080b6ee9b8169a3c0feb1af7fe8caf"
+SRC_URI[rustup-init.sha256sum] = "7d0ea0f8eba7fa1ebfe998091cd7ec4501e33ec5ca6b884eb4d894d7da5170af"
 
 SRCREV = "${AUTOREV}"
 
