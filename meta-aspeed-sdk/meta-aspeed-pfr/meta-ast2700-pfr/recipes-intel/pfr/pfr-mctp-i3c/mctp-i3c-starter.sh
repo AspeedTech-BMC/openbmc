@@ -70,10 +70,34 @@ echo "PFR_MCTP_I3C_MODE=$PFR_MCTP_I3C_MODE CPU_EID=$CPU_EID"
 
 SetupEndpoint()
 {
+	local device_path
+	local pid
+	local pid_hex
+	local offset
+	local -a pid_bytes=()
+
+	for device_path in /sys/bus/i3c/devices/4-*; do
+		[ -e "$device_path" ] || continue
+		pid=${device_path##*/}
+		pid=${pid#4-}
+		break
+	done
+
+	if [ -z "$pid" ] || [[ ! "$pid" =~ ^[[:xdigit:]]{1,12}$ ]]; then
+		echo "Unable to get a valid I3C PID from /sys/bus/i3c/devices/4-*"
+		return 1
+	fi
+
+	printf -v pid_hex "%012x" "0x$pid"
+	for ((offset = 0; offset < 12; offset += 2)); do
+		pid_bytes+=("0x${pid_hex:offset:2}")
+	done
+
+	echo "Setup mctpi3c4 endpoint with PID=0x$pid_hex"
 	busctl call au.com.codeconstruct.MCTP1 \
 	/au/com/codeconstruct/mctp1/interfaces/mctpi3c4 \
 	au.com.codeconstruct.MCTP.BusOwner1 SetupEndpoint \
-	ay 6 0x07 0xec 0xa0 0x03 0x20 0x00
+	ay 6 "${pid_bytes[@]}"
 }
 
 GetPlatformState()
@@ -101,7 +125,9 @@ WaitForPlatformReady()
 	STATE=$(GetPlatformState)
 	while true; do
 		if [ "$STATE" = "T0 BMC booted" ] || [ "$STATE" = "T0 boot complete" ]; then
-			SetupEndpoint
+			if ! SetupEndpoint; then
+				echo "I3C endpoint setup failed"
+			fi
 			break
 		fi
 
