@@ -287,13 +287,9 @@ int main(int argc, char *argv[])
 
 #ifdef SUPPORT_SECURE_CONNECTION
 	if (args.secure_mode) {
-		int ret = access("/dev/i3c-mctp-target-0", F_OK);
+		int ret = access("/sys/class/net/mctpi3c4", F_OK);
 
 		if (ret == 0) {
-			fprintf(stderr, "Secure connection isn't supported in this mode\n");
-			args.i2c_fd = i2cOpenDev(args.i2c_bus, args.rot_addr);
-			args.secure_mode = 0;
-		} else {
 			if (args.mctp_dst == 0)
 				args.mctp_dst = DEFAULT_MCTP_DST_SKT;
 
@@ -306,6 +302,10 @@ int main(int argc, char *argv[])
 				args.i2c_fd = i2cOpenDev(args.i2c_bus, args.rot_addr);
 				args.secure_mode = 0;
 			}
+		} else {
+			fprintf(stderr, "Secure connection isn't supported in this mode\n");
+			args.i2c_fd = i2cOpenDev(args.i2c_bus, args.rot_addr);
+			args.secure_mode = 0;
 		}
 	} else {
 		args.i2c_fd = i2cOpenDev(args.i2c_bus, args.rot_addr);
