@@ -1,5 +1,5 @@
 #!/bin/bash
-# CPU emulation for PFR-4.0:
+# CPU emulation for PFR-4.0 (chardev):
 #  ┌────────────────────┐                 ┌─────────────────────┐
 #  │     AST2700        │                 │       AST1060       │
 #  │                    │                 │                     │
@@ -9,7 +9,17 @@
 #  │                    │                 │                     │
 #  └────────────────────┘                 └─────────────────────┘
 #
-# CPU emulation for PFR-5.0:
+# CPU emulation, AST2700 as I3C target (base ast2700-dcscm.dts):
+#  ┌────────────────────┐                 ┌─────────────────────┐
+#  │     AST2700        │                 │       AST1060       │
+#  │                    │                 │                     │
+#  │           i3c4     │                 │                     │
+#  │          mctpi3ct4 │      I3C        │i3c2                 │
+#  │           EID=0x1D ├─────────────────┤EID=0x7B             │
+#  │                    │                 │                     │
+#  └────────────────────┘                 └─────────────────────┘
+#
+# CPU emulation, AST2700 as I3C master (ast2700-dcscm-mctp-socket.dts):
 #  ┌────────────────────┐                 ┌─────────────────────┐
 #  │     AST2700        │                 │       AST1060       │
 #  │                    │                 │                     │
@@ -26,13 +36,15 @@
 # │            │       │                    │       │           │
 # │     I3C_MNG│  I3C  │mctpi3c5   mctpi3c4 │  I3C  │i3c2       │
 # │BHS EID=0x1D├───────┤EID=0x7E   EID=0x7A ├───────┤EID=0x7B   │
-# │OKS EID=0x09│       │net=4               │       │net=4      │
+# │OKS EID=0x09│       │net=1               │       │net=1      │
 # └────────────┘       └────────────────────┘       └───────────┘
 
 # shellcheck source=/dev/null
 source /usr/bin/intel-gpio-lib.sh
 
 CPU_EID=0x1d
+# EID handed to the PFR endpoint on the point-to-point target link.
+PFR_EID=0x7b
 CPU_I3C_DEVICE="5-20a012900ef"
 CPU_I3C_LLADDR="0x02:0a:01:29:00:ef"
 
@@ -100,6 +112,26 @@ SetupEndpoint()
 	ay 6 "${pid_bytes[@]}"
 }
 
+# Wait until mctpd publishes $1 with a bus owner interface.  busctl exits 0
+# for an absent interface, so match it in the introspection output instead.
+WaitForMctpd()
+{
+	local iface=$1
+	local timeout=${2:-20}
+	local retry_count
+
+	for retry_count in $(seq 1 "$timeout"); do
+		if busctl introspect au.com.codeconstruct.MCTP1 \
+			"/au/com/codeconstruct/mctp1/interfaces/$iface" \
+			2>/dev/null | grep -q au.com.codeconstruct.MCTP.BusOwner1; then
+			return 0
+		fi
+		sleep 1
+	done
+
+	return 1
+}
+
 GetPlatformState()
 {
 	result="0x$(aspeed-pfr-tool -r 0x0a)"
@@ -120,17 +152,13 @@ GetPlatformState()
 	fi
 }
 
+# Block until the PFR reports T0.  GetPlatformState() reads the RoT over I2C,
+# so this gate applies to every I3C topology, target mode included.
 WaitForPlatformReady()
 {
 	STATE=$(GetPlatformState)
-	while true; do
-		if [ "$STATE" = "T0 BMC booted" ] || [ "$STATE" = "T0 boot complete" ]; then
-			if ! SetupEndpoint; then
-				echo "I3C endpoint setup failed"
-			fi
-			break
-		fi
-
+	while [ "$STATE" != "T0 BMC booted" ] && \
+		[ "$STATE" != "T0 boot complete" ]; do
 		sleep 2
 		STATE=$(GetPlatformState)
 	done
@@ -160,7 +188,7 @@ SetupCpuI3cDevice()
 		mctp addr del 0x7e dev mctpi3c5 2>/dev/null || true
 
 		# Re-add MCTP configurations
-		mctp link set mctpi3c5 net 4 up mtu 68
+		mctp link set mctpi3c5 net 1 up mtu 68
 		mctp addr add 0x7e dev mctpi3c5
 		mctp route add $CPU_EID via mctpi3c5
 		mctp neigh add $CPU_EID dev mctpi3c5 lladdr $CPU_I3C_LLADDR
@@ -190,13 +218,87 @@ MonitorPltrstn()
 	exec 3<&-;
 }
 
+# The PFR only hooks its MCTP IBI handler after it processes the BMC boot
+# complete checkpoint; a Set Endpoint ID sent before that is dropped.  Wait
+# for PfrActivityInfo1 (mailbox 0x7e) instead: the PFR writes one of
+# bits 0..2 (DAA / SET_EID / EID_REGISTRATION for the BMC link) as soon as
+# its MCTP I3C task is running.  The register is overwritten, not OR'd, so
+# test the whole BMC field rather than bit 0 alone.
+WaitForPfrMctpReady()
+{
+	local timeout=${1:-30}
+	local retry_count
+	local act
+
+	for retry_count in $(seq 1 "$timeout"); do
+		act="0x$(aspeed-pfr-tool -r 0x7e)"
+		if [ $(( act & 0x07 )) -ne 0 ]; then
+			echo "PFR MCTP I3C ready (0x7e=$act) after $retry_count attempts"
+			return 0
+		fi
+		sleep 1
+	done
+
+	echo "PFR MCTP I3C not ready (0x7e=$act)"
+	return 1
+}
+
+# The target netdev has addr_len 0 and the remote controller has no sysfs
+# entry, so SetupEndpoint()'s PID lladdr is unavailable here: address the
+# peer by an empty physaddr and pin its EID.
+#
+# WaitForPfrMctpReady() should already have seen the PFR's MCTP task up;
+# retry anyway in case the first Set Endpoint ID still goes unanswered.
+AssignPfrEndpointStatic()
+{
+	local retry_count
+
+	for retry_count in $(seq 1 10); do
+		if busctl call au.com.codeconstruct.MCTP1 \
+			/au/com/codeconstruct/mctp1/interfaces/mctpi3ct4 \
+			au.com.codeconstruct.MCTP.BusOwner1 \
+			AssignEndpointStatic ayy 0 $PFR_EID; then
+			return 0
+		fi
+		echo "Assign EID $PFR_EID on mctpi3ct4 failed (attempt $retry_count)"
+		sleep 2
+	done
+
+	echo "Failed to assign EID $PFR_EID on mctpi3ct4"
+	return 1
+}
+
 StartCpuEmulationMode()
 {
-	if mctp link|grep mctpi3c4 > /dev/null;then
-		echo "Running CPU Emulation for PFR-5.0 MCTP over I3C Master"
-		mctp link set mctpi3c4 net 4 up mtu 68
+	if mctp link|grep mctpi3ct4 > /dev/null;then
+		echo "Running CPU Emulation for MCTP over I3C Target (socket)"
+		mctp link set mctpi3ct4 net 1 up mtu 68
+		# Drop any stale local EID before claiming CPU_EID.
+		mctp addr | awk '$NF == "mctpi3ct4" {print $2}' | while read -r eid; do
+			[ "$eid" = "$((CPU_EID))" ] || \
+				mctp addr del "$eid" dev mctpi3ct4
+		done
+		mctp addr add $CPU_EID dev mctpi3ct4 > /dev/null 2>&1 || true
+		# mctpd picks up link and address changes over netlink, so only
+		# restart it if it somehow missed mctpi3ct4 appearing.
+		if ! WaitForMctpd mctpi3ct4 5; then
+			systemctl restart mctpd
+			WaitForMctpd mctpi3ct4 || \
+				echo "mctpd did not expose mctpi3ct4"
+		fi
+		# PfrActivityInfo1 already implies the PFR processed the BMC
+		# boot-complete checkpoint, so WaitForPlatformReady() would only add
+		# delay here (unprovisioned, it waits ~20s for pfr-manager to exit).
+		WaitForPfrMctpReady
+		AssignPfrEndpointStatic
+		/usr/bin/pfr-mctpd -s &
+	elif mctp link|grep mctpi3c4 > /dev/null;then
+		echo "Running CPU Emulation for MCTP over I3C Master (socket)"
+		mctp link set mctpi3c4 net 1 up mtu 68
 		mctp addr add $CPU_EID dev mctpi3c4
 		WaitForPlatformReady
+		WaitForPfrMctpReady
+		SetupEndpoint || echo "I3C endpoint setup failed"
 		/usr/bin/pfr-mctpd -s &
 	elif [ -r /dev/i3c-mctp-target-0 ];then
 		echo "Running CPU Emulation for PFR-4.0 MCTP over I3C Target"
@@ -212,9 +314,11 @@ StartMCTPBridgeMode()
 {
 	if mctp link|grep mctpi3c4 > /dev/null;then
 		echo "Setup MCTP bridge over I3C to PFR"
-		mctp link set mctpi3c4 net 4 up mtu 68
+		mctp link set mctpi3c4 net 1 up mtu 68
 		mctp addr add 0x7a dev mctpi3c4
 		WaitForPlatformReady
+		WaitForPfrMctpReady
+		SetupEndpoint || echo "I3C endpoint setup failed"
 	fi
 
 	if [ ! -e /dev/aspeed-espi-pltrstn0 ]; then
@@ -229,7 +333,7 @@ StartMCTPBridgeMode()
 	fi
 
 	#ls /sys/bus/i3c/devices/
-	#mctp-client net 4 eid 0x1d type control data 80 05
+	#mctp-client net 1 eid 0x1d type control data 80 05
 }
 
 if [ "$PFR_MCTP_I3C_MODE" = "CPU_EMULATION" ]; then

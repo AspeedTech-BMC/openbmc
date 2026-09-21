@@ -1,0 +1,33 @@
+[Unit]
+Description=I3C Attestation Emulator
+
+[Service]
+Restart=always
+WorkingDirectory=/usr/share/spdm-emu
+ExecStart=/usr/bin/spdm_responder_emu \
+        --ver 1.2 \
+        --mctp_medium 1 \
+        --mctp_network 1 \
+        --cap CERT,CHAL,MEAS_SIG,HBEAT,HANDSHAKE_IN_CLEAR,KEY_EX,MUT_AUTH,ENCAP,KEY_UPD,ENCRYPT,MAC \
+        --hash SHA_384 \
+        --meas_spec DMTF \
+        --meas_hash SHA_384 \
+        --asym ECDSA_P384 \
+        --req_asym ECDSA_P384 \
+        --basic_mut_auth NO \
+        --slot_id 0 \
+        --dhe SECP_384_R1 \
+        --mut_auth DIGESTS \
+        --meas_sum ALL \
+        --meas_op ONE_BY_ONE \
+        --meas_att HASH \
+        --exe_mode SHUTDOWN \
+        --exe_session KEY_EX,HEARTBEAT,KEY_UPDATE,MEAS \
+        --exe_conn VER_ONLY,DIGEST,CERT,CHAL,MEAS \
+        --key_upd ALL \
+        --trans MCTP
+RestartSec=5
+StartLimitInterval=0
+Type=simple
+StandardOutput=null
+

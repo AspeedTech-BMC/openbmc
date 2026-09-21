@@ -289,6 +289,9 @@ int main(int argc, char *argv[])
 	if (args.secure_mode) {
 		int ret = access("/sys/class/net/mctpi3c4", F_OK);
 
+		if (ret != 0)
+			ret = access("/sys/class/net/mctpi3ct4", F_OK);
+
 		if (ret == 0) {
 			if (args.mctp_dst == 0)
 				args.mctp_dst = DEFAULT_MCTP_DST_SKT;

@@ -1,6 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:append = " \
+        file://0001-mctp-add-ast2700-i3c-target-network-transport.patch \
         file://ast2700-dcscm.cfg \
         file://ast2700-dcscm-mctp-socket.dts \
         file://ast2700a1-dcscm-mctp-socket.dts \
