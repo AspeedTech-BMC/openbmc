@@ -94,6 +94,8 @@ c_args = ${@meson_array('CFLAGS', d)}
 c_link_args = ${@meson_array('LDFLAGS', d)}
 cpp_args = ${@meson_array('CXXFLAGS', d)}
 cpp_link_args = ${@meson_array('LDFLAGS', d)}
+python.platlibdir = '${PYTHON_SITEPACKAGES_DIR}'
+python.purelibdir = '${PYTHON_SITEPACKAGES_DIR}'
 
 [properties]
 needs_exe_wrapper = true
@@ -180,7 +182,7 @@ meson_do_configure() {
 
 do_compile[progress] = "outof:^\[(\d+)/(\d+)\]\s+"
 meson_do_compile() {
-    meson compile -v ${PARALLEL_MAKE} ${MESON_TARGET}
+    ninja --verbose ${PARALLEL_MAKE} ${MESON_TARGET}
 }
 
 meson_do_install() {

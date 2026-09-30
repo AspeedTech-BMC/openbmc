@@ -1,0 +1,152 @@
+From d750b851b1b3ccd7f3d7aff50e6995a5de3733c1 Mon Sep 17 00:00:00 2001
+From: Kane-Chen-AS <kane_chen@aspeedtech.com>
+Date: Mon, 24 Aug 2026 15:05:15 +0800
+Subject: [PATCH] webui-vue: poll TaskMonitor to completion for multipart
+ upload
+
+The multipart HTTP push upload previously returned as soon as the
+upload request completed, without waiting for the BMC to actually
+finish processing the firmware update task. This caused the UI to
+show the "verify update" message too early for the multipart path.
+
+Poll the TaskMonitor URI returned in the upload response every 5
+seconds (cache disabled to always get a fresh status) until the task
+is no longer in the "running" (202) state, up to a 10 minute limit.
+Surface a distinct error message when the task monitor itself
+reports a failure (500).
+
+FirmwareFormUpdate.vue is updated to only use the old 6-minute
+timer-based verify message for the plain httpPush path; for the
+multipart path, the verify message is now shown after the task
+polling resolves instead.
+
+Upstream-Status: Pending
+Signed-off-by: Kane-Chen-AS <kane_chen@aspeedtech.com>
+---
+ src/locales/en-US.json                        |  1 +
+ src/store/modules/Operations/FirmwareStore.js | 31 ++++++++++++-
+ .../Firmware/FirmwareFormUpdate.vue           | 44 +++++++++++++------
+ 3 files changed, 61 insertions(+), 15 deletions(-)
+
+diff --git a/src/locales/en-US.json b/src/locales/en-US.json
+index 8b98be4..729eee9 100644
+--- a/src/locales/en-US.json
++++ b/src/locales/en-US.json
+@@ -383,6 +383,7 @@
+         "toast": {
+             "errorSwitchImages": "Error switching running and backup images.",
+             "errorUpdateFirmware": "Error starting firmware update.",
++            "errorFirmwareUpdateFailed": "Firmware update failed.",
+             "rebootStarted": "Reboot started",
+             "rebootStartedMessage": "Successfully started reboot from backup image.",
+             "updateStarted": "Update started",
+diff --git a/src/store/modules/Operations/FirmwareStore.js b/src/store/modules/Operations/FirmwareStore.js
+index 07ce606..e848ec2 100644
+--- a/src/store/modules/Operations/FirmwareStore.js
++++ b/src/store/modules/Operations/FirmwareStore.js
+@@ -156,7 +156,8 @@ const FirmwareStore = {
+       if (forceUpdate) params.ForceUpdate = true;
+       params['@Redfish.OperationApplyTime'] = applyTime;
+       formData.append('UpdateParameters', JSON.stringify(params));
+-      return await api
++
++      const uploadResponse = await api
+         .post(state.multipartHttpPushUri, formData, {
+           headers: { 'Content-Type': 'multipart/form-data' },
+         })
+@@ -166,6 +167,34 @@ const FirmwareStore = {
+             i18n.global.t('pageFirmware.toast.errorUpdateFirmware'),
+           );
+         });
++
++      const taskMonitorUrl = uploadResponse.headers?.location;
++      if (!taskMonitorUrl) {
++        return uploadResponse;
++      }
++
++      // Poll TaskMonitor until task completes (202 = running, other = done).
++      // Disable cache to always get a fresh response from the server.
++      const maxAttempts = 120; // 10 minutes at 5s intervals
++      for (let attempt = 0; attempt < maxAttempts; attempt++) {
++        await new Promise((resolve) => setTimeout(resolve, 5000));
++        const taskResponse = await api
++          .get(taskMonitorUrl, { cache: false })
++          .catch((error) => {
++            if (error.response?.status === 500) {
++              throw new Error(
++                i18n.global.t('pageFirmware.toast.errorFirmwareUpdateFailed'),
++              );
++            }
++            throw new Error(
++              i18n.global.t('pageFirmware.toast.errorUpdateFirmware'),
++            );
++          });
++        if (taskResponse.status !== 202) {
++          return taskResponse;
++        }
++      }
++      throw new Error(i18n.global.t('pageFirmware.toast.errorUpdateFirmware'));
+     },
+     async switchBmcFirmwareAndReboot({ getters }) {
+       const backupLocation = getters.backupBmcFirmware.location;
+diff --git a/src/views/Operations/Firmware/FirmwareFormUpdate.vue b/src/views/Operations/Firmware/FirmwareFormUpdate.vue
+index 30aca15..058981e 100644
+--- a/src/views/Operations/Firmware/FirmwareFormUpdate.vue
++++ b/src/views/Operations/Firmware/FirmwareFormUpdate.vue
+@@ -92,26 +92,42 @@ export default {
+   methods: {
+     updateFirmware() {
+       this.startLoader();
+-      const timerId = setTimeout(() => {
+-        this.endLoader();
+-        this.infoToast(
+-          i18n.global.t('pageFirmware.toast.verifyUpdateMessage'),
+-          {
+-            title: i18n.global.t('pageFirmware.toast.verifyUpdate'),
+-            refreshAction: true,
+-          },
+-        );
+-      }, 360000);
+       this.infoToast(i18n.global.t('pageFirmware.toast.updateStartedMessage'), {
+         title: i18n.global.t('pageFirmware.toast.updateStarted'),
+         timestamp: true,
+       });
+-      this.dispatchWorkstationUpload(timerId);
++      this.dispatchWorkstationUpload();
+     },
+-    dispatchWorkstationUpload(timerId) {
++    dispatchWorkstationUpload() {
++      const isMultipart = !!this.$store.state.firmware.multipartHttpPushUri;
++      let timerId = null;
++      if (!isMultipart) {
++        // httpPush path: use a timer as the BMC processes the image asynchronously
++        timerId = setTimeout(() => {
++          this.endLoader();
++          this.infoToast(
++            i18n.global.t('pageFirmware.toast.verifyUpdateMessage'),
++            {
++              title: i18n.global.t('pageFirmware.toast.verifyUpdate'),
++              refreshAction: true,
++            },
++          );
++        }, 360000);
++      }
+       this.$store
+-        .dispatch('firmware/uploadFirmware', {
+-          image: this.file,
++        .dispatch('firmware/uploadFirmware', { image: this.file })
++        .then(() => {
++          if (isMultipart) {
++            // Multipart path: polling completed, show verify message now
++            this.endLoader();
++            this.infoToast(
++              i18n.global.t('pageFirmware.toast.verifyUpdateMessage'),
++              {
++                title: i18n.global.t('pageFirmware.toast.verifyUpdate'),
++                refreshAction: true,
++              },
++            );
++          }
+         })
+         .catch(({ message }) => {
+           this.endLoader();

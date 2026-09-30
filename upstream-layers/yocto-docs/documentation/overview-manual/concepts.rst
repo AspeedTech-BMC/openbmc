@@ -11,6 +11,14 @@ workflow,
 cross-development toolchains, shared state cache, and so forth are
 explained.
 
+.. note::
+
+   Throughout this section, many variables and their meanings are
+   introduced. If, in the context of a :term:`Build Directory`,
+   you want to examine the value of any of these variables, you can
+   use the ``bitbake-getvar`` command, explained in the
+   ":ref:`dev-manual/debugging:viewing variable values`" section.
+
 Yocto Project Components
 ========================
 
@@ -63,7 +71,7 @@ following commands::
 The most common usage for BitBake is ``bitbake recipename``, where
 ``recipename`` is the name of the recipe you want to build (referred
 to as the "target"). The target often equates to the first part of a
-recipe's filename (e.g. "foo" for a recipe named ``foo_1.3.0-r0.bb``).
+recipe's filename (e.g. "foo" for a recipe file named ``foo_1.3.0.bb``).
 So, to process the ``matchbox-desktop_1.2.3.bb`` recipe file, you might
 type the following::
 
@@ -205,12 +213,12 @@ The following figure shows an expanded representation of the "User
 Configuration" box of the :ref:`general workflow
 figure <overview-manual/concepts:openembedded build system concepts>`:
 
-.. image:: figures/user-configuration.png
+.. image:: svg/user-configuration.*
    :width: 100%
 
 BitBake needs some basic configuration files in order to complete a
 build. These files are ``*.conf`` files. The minimally necessary ones
-reside as example files in the ``build/conf`` directory of the
+reside as example files in the ``conf`` subdirectory of the
 :term:`Build Directory`.
 
 When you :ref:`initialize the build environment <dev-manual/start:Initializing
@@ -219,7 +227,7 @@ the Build Environment>`, you can specify which directory will be the
 
 Setting up the build environment creates a :term:`Build Directory`
 if one does not already exist. BitBake uses the :term:`Build Directory`
-for all its work during builds. The Build Directory has a ``conf`` directory
+for all its work during builds. The Build Directory has a ``conf`` subdirectory
 that contains default versions of your ``local.conf`` and ``bblayers.conf``
 configuration files. These default :term:`configuration files <Configuration
 File>` are created only if they do not already exist in the :term:`Build
@@ -353,9 +361,8 @@ The following figure shows an expanded representation of these three
 layers from the :ref:`general workflow figure
 <overview-manual/concepts:openembedded build system concepts>`:
 
-.. image:: figures/layer-input.png
-   :align: center
-   :width: 70%
+.. image:: svg/layer-input.*
+   :width: 100%
 
 In general, all layers have a similar structure. They all contain a
 licensing file (e.g. ``COPYING.MIT``) if the layer is to be distributed,
@@ -395,7 +402,8 @@ configurations into their own layer. Settings you provide in
 in your ``conf/local.conf`` file in the :term:`Build Directory`.
 
 The following list provides some explanation and references for what you
-typically find in a distribution layer:
+typically find in a distribution layer (recall that
+:yocto_git:`meta-poky </meta-yocto/tree/meta-poky>` is such a layer):
 
 -  *classes*, *classes-global*, *classes-recipe:* Class files (``.bbclass``)
    hold common functionality that
@@ -506,7 +514,7 @@ The remainder of this section provides a deeper look into the source
 files and the mirrors. Here is a more detailed look at the source file
 area of the :ref:`general workflow figure <overview-manual/concepts:openembedded build system concepts>`:
 
-.. image:: figures/source-input.png
+.. image:: svg/source-input.*
    :align: center
    :width: 70%
 
@@ -582,7 +590,7 @@ shows this package feeds area in the upper-right corner.
 This section looks a little closer into the package feeds area used by
 the build system. Here is a more detailed look at the area:
 
-.. image:: figures/package-feeds.png
+.. image:: svg/package-feeds.*
    :width: 100%
 
 Package feeds are an intermediary step in the build process. The
@@ -741,7 +749,8 @@ and the :term:`FILESPATH` variable
 to locate applicable patch files.
 
 Default processing for patch files assumes the files have either
-``*.patch`` or ``*.diff`` file types. You can use :term:`SRC_URI` parameters
+``*.patch`` or ``*.diff`` file types (or a compressed form of those
+file types). You can use :term:`SRC_URI` parameters
 to change the way the build system recognizes patch files. See the
 :ref:`ref-tasks-patch` task for more
 information.
@@ -779,17 +788,20 @@ to a holding area (staged) in preparation for packaging:
 This step in the build process consists of the following tasks:
 
 -  :ref:`ref-tasks-prepare_recipe_sysroot`:
-   This task sets up the two sysroots in
-   ``${``\ :term:`WORKDIR`\ ``}``
-   (i.e. ``recipe-sysroot`` and ``recipe-sysroot-native``) so that
-   during the packaging phase the sysroots can contain the contents of
-   the
-   :ref:`ref-tasks-populate_sysroot`
-   tasks of the recipes on which the recipe containing the tasks
-   depends. A sysroot exists for both the target and for the native
-   binaries, which run on the host system.
+   This task sets up the two sysroots in the ``${``\ :term:`WORKDIR`\ ``}`` (i.e.
+   ``recipe-sysroot`` and ``recipe-sysroot-native``) so that the subsequent tasks
+   of the recipe (notably :ref:`ref-tasks-configure` and :ref:`ref-tasks-compile`)
+   can access the libraries, headers, and similar files built by the recipes on
+   which it depends.
 
--  *do_configure*: This task configures the source by enabling and
+   -  ``recipe-sysroot``: contains target libraries, and associated headers and
+      other data needed to cross-build software from its sources
+
+   -  ``recipe-sysroot-native``: contains host-native executables with their libraries
+      and other data, so that they can be run directly on the build host when
+      that is required by the build process
+
+-  :ref:`ref-tasks-configure`: This task configures the source by enabling and
    disabling any build-time and configuration options for the software
    being built. Configurations can come from the recipe itself as well
    as from an inherited class. Additionally, the software itself might
@@ -808,7 +820,7 @@ This step in the build process consists of the following tasks:
    class, see the :ref:`ref-classes-autotools` class
    :oe_git:`here </openembedded-core/tree/meta/classes-recipe/autotools.bbclass>`.
 
--  *do_compile*: Once a configuration task has been satisfied,
+-  :ref:`ref-tasks-compile`: Once a configuration task has been satisfied,
    BitBake compiles the source using the
    :ref:`ref-tasks-compile` task.
    Compilation occurs in the directory pointed to by the
@@ -816,7 +828,7 @@ This step in the build process consists of the following tasks:
    :term:`B` directory is, by default, the same as the
    :term:`S` directory.
 
--  *do_install*: After compilation completes, BitBake executes the
+-  :ref:`ref-tasks-install`: After compilation completes, BitBake executes the
    :ref:`ref-tasks-install` task.
    This task copies files from the :term:`B` directory and places them in a
    holding area pointed to by the :term:`D`
@@ -907,7 +919,7 @@ root filesystem on the target, and must *not* make a reference to the variable
 .. note::
 
    The list of files for a package is defined using the override syntax by
-   separating :term:`FILES` and the package name by a semi-colon (``:``).
+   separating :term:`FILES` and the package name by a colon (``:``).
 
 A given file can only ever be in one package. By iterating from the leftmost to
 rightmost package in :term:`PACKAGES`, each file matching one of the patterns
@@ -959,7 +971,7 @@ Image Generation
 Once packages are split and stored in the Package Feeds area, the build
 system uses BitBake to generate the root filesystem image:
 
-.. image:: figures/image-generation.png
+.. image:: svg/image-generation.*
    :width: 100%
 
 The image generation process consists of several stages and depends on
@@ -1075,7 +1087,7 @@ The OpenEmbedded build system uses BitBake to generate the Software
 Development Kit (SDK) installer scripts for both the standard SDK and
 the extensible SDK (eSDK):
 
-.. image:: figures/sdk-generation.png
+.. image:: svg/sdk-generation.*
    :width: 100%
 
 .. note::
@@ -1105,7 +1117,7 @@ host part is the part of the SDK that runs on the
 :term:`SDKMACHINE`.
 
 The :ref:`ref-tasks-populate_sdk_ext` task helps create the extensible SDK and
-handles host and target parts differently than its counter part does for
+handles host and target parts differently than its counterpart does for
 the standard SDK. For the extensible SDK, the task encapsulates the
 build system, which includes everything needed (host and target) for the
 SDK.
@@ -1239,6 +1251,12 @@ variable is the function that determines whether a given dependency
 needs to be followed, and whether for any given relationship the
 function needs to be passed. The function returns a True or False value.
 
+.. note::
+
+   It is possible to sign these artifacts with :wikipedia:`GPG
+   <GNU_Privacy_Guard>`. See :doc:`/security-manual/sstate-signing` in the Yocto
+   Project Security Manual for more information.
+
 Images
 ------
 
@@ -1249,9 +1267,9 @@ the :ref:`general workflow figure
 output, in part, consists of images. This section takes a closer look at
 this output:
 
-.. image:: figures/images.png
+.. image:: svg/images.*
    :align: center
-   :width: 75%
+   :width: 100%
 
 .. note::
 
@@ -1307,7 +1325,7 @@ SDK (e.g. ``bitbake -c populate_sdk_ext`` imagename) or a standard SDK
 (e.g. ``bitbake -c populate_sdk`` imagename). This section takes a
 closer look at this output:
 
-.. image:: figures/sdk.png
+.. image:: svg/sdk.*
    :width: 100%
 
 The specific form of this output is a set of files that includes a
@@ -1424,7 +1442,7 @@ creates these necessary toolchains for you.
 The following figure shows a high-level build environment regarding
 toolchain construction and use.
 
-.. image:: figures/cross-development-toolchains.png
+.. image:: svg/cross-development-toolchains.*
    :width: 100%
 
 Most of the work occurs on the Build Host. This is the machine used to
@@ -1764,7 +1782,8 @@ adding shared state wrapping to a task is as simple as this
        sstate_setscene(d)
    }
    addtask do_deploy_setscene
-   do_deploy[dirs] = "${DEPLOYDIR} ${B}"
+   do_deploy[dirs] = "${B}"
+   do_deploy[cleandirs] = "${DEPLOYDIR}"
    do_deploy[stamp-extra-info] = "${MACHINE_ARCH}"
 
 The following list explains the previous example:
@@ -1809,9 +1828,16 @@ The following list explains the previous example:
    information, see the ":ref:`bitbake-user-manual/bitbake-user-manual-execution:setscene`"
    section in the BitBake User Manual.
 
--  The ``do_deploy[dirs] = "${DEPLOYDIR} ${B}"`` line creates ``${DEPLOYDIR}``
-   and ``${B}`` before the :ref:`ref-tasks-deploy` task runs, and also sets the
-   current working directory of :ref:`ref-tasks-deploy` to ``${B}``. For more
+-  The ``do_deploy[dirs] = "${B}"`` line creates the directory ``${B}``
+   before the :ref:`ref-tasks-deploy` task runs, and also sets the
+   current working directory of :ref:`ref-tasks-deploy` to ``${B}``.
+   (If the directory already exists, it is left as is.) For more
+   information, see the ":ref:`bitbake-user-manual/bitbake-user-manual-metadata:variable flags`"
+   section in the BitBake User Manual.
+
+-  The ``do_deploy[cleandirs] = "${DEPLOYDIR}"`` line creates the *empty*
+   directory ``${DEPLOYDIR}`` before the :ref:`ref-tasks-deploy` task runs.
+   (If the directory already exists, it is deleted and recreated empty.) For more
    information, see the ":ref:`bitbake-user-manual/bitbake-user-manual-metadata:variable flags`"
    section in the BitBake User Manual.
 

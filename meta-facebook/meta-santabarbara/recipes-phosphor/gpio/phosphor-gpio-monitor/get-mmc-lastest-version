@@ -1,30 +1,77 @@
 #!/bin/bash
 
-eids="10 20 30 40"
+retry_count=3
 retry_delay_sec=5
-lock_delay_sec=120
+host_eid=8
+version_prefixes=(
+    "flash hamsa BOOT0:"
+    "flash medha0 BOOT0:"
+    "flash medha1 BOOT0:"
+)
 
-eid_to_module() {
+instance_to_mctp_bus() {
     case "$1" in
-        10) echo 0 ;;
-        20) echo 1 ;;
-        30) echo 2 ;;
-        40) echo 3 ;;
+        0) echo mctpi2c102 ;;
+        1) echo mctpi2c103 ;;
+        2) echo mctpi2c104 ;;
+        3) echo mctpi2c105 ;;
         *) return 1 ;;
     esac
 }
 
-get_pldm_object_path() {
-    local eid=$1
-    local compid=$2
-    local module
-    local path
+mctp_bus_to_eid() {
+    local bus=$1
+    local routes
+    local eids
 
-    module=$(eid_to_module "$eid") || return 1
+    routes=$(mctp route 2>/dev/null) || {
+        echo "Failed to query mctp route" >&2
+        return 1
+    }
+
+    mapfile -t eids < <(
+        printf '%s\n' "$routes" |
+            awk -v bus="$bus" -v host_eid="$host_eid" '
+                $1 == "eid" {
+                    min = ""; max = ""; dev = ""
+                    for (i = 1; i <= NF; i++) {
+                        if ($i == "min") {
+                            min = $(i + 1)
+                        } else if ($i == "max") {
+                            max = $(i + 1)
+                        } else if ($i == "dev") {
+                            dev = $(i + 1)
+                        }
+                    }
+
+                    if (dev == bus && min == max && min != host_eid) {
+                        print min
+                    }
+                }
+            '
+    )
+
+    case "${#eids[@]}" in
+        1) echo "${eids[0]}" ;;
+        0)
+            echo "No MMC EID found for $bus from mctp route" >&2
+            return 1
+            ;;
+        *)
+            echo "Multiple MMC EIDs found for $bus from mctp route: ${eids[*]}" >&2
+            return 1
+            ;;
+    esac
+}
+
+get_pldm_object_path() {
+    local module=$1
+    local compid=$2
+    local path
 
     path=$(
         busctl tree xyz.openbmc_project.PLDM |
-        grep -m1 "/xyz/openbmc_project/software/Santa_Barbara_Rainbow_module_${module}_MMC_Component_${compid}_" |
+        grep -Ei -m1 "/xyz/openbmc_project/software/.*module_${module}.*MMC.*Component_${compid}_" |
         sed 's/^[^\/]*//'
     )
 
@@ -62,73 +109,79 @@ is_eid_idle() {
     return 1
 }
 
-declare -A processed
-declare -A locked_until
+instance=$1
+bus=$(instance_to_mctp_bus "$instance") || {
+    echo "Invalid MMC instance '$instance'. Expected 0-3." >&2
+    exit 1
+}
+module=$instance
+eid=$(mctp_bus_to_eid "$bus") || {
+    echo "Failed to resolve MMC instance '$instance' EID from mctp route dev $bus." >&2
+    exit 1
+}
+version_prefixes_json=$(jq -cn '$ARGS.positional' --args "${version_prefixes[@]}")
 
-remaining=0
+for ((attempt = 1; attempt <= retry_count; attempt++)); do
+    echo "EID $eid attempt $attempt/$retry_count"
 
-for eid in $eids; do
-    processed["$eid"]=0
-    locked_until["$eid"]=0
-    remaining=$((remaining + 1))
-done
+    if ! is_eid_idle "$eid"; then
+        [ "$attempt" -lt "$retry_count" ] && sleep "$retry_delay_sec"
+        continue
+    fi
 
-while [ "$remaining" -gt 0 ]; do
-    now=$(date +%s)
+    output=$(
+        pldmtool fw_update GetFirmwareParameters -m "$eid" 2>/dev/null |
+        jq -r --argjson prefixes "$version_prefixes_json" '
+            .ComponentParameterEntries[]
+            | select((.ActiveComponentVersionString // "") as $version | any($prefixes[]; . as $prefix | $version | startswith($prefix)))
+            | (.ComponentIdentifier | tostring) + "#" + (.ActiveComponentVersionString // "")
+        '
+    )
 
-    for eid in $eids; do
-        [ "${processed[$eid]}" -eq 1 ] && continue
+    if [ -z "$output" ]; then
+        echo "EID $eid failed to get firmware parameters"
+        [ "$attempt" -lt "$retry_count" ] && sleep "$retry_delay_sec"
+        continue
+    fi
 
-        if [ "$now" -lt "${locked_until[$eid]}" ]; then
-            continue
-        fi
+    updated=0
+    failed=0
 
-        if ! is_eid_idle "$eid"; then
-            locked_until["$eid"]=$((now + lock_delay_sec))
-            echo "EID $eid locked for ${lock_delay_sec}s"
-            continue
-        fi
-
-        output=$(
-            pldmtool fw_update GetFirmwareParameters -m "$eid" 2>/dev/null |
-            jq -r '
-                .ComponentParameterEntries[]
-                | select((.ActiveComponentVersionString // "") | startswith("flash hamsa BOOT0:"))
-                | (.ComponentIdentifier | tostring) + "#" + (.ActiveComponentVersionString // "")
-            '
-        )
-
-        if [ -z "$output" ]; then
-            continue
-        fi
-
-        IFS="#" read -r compId version <<< "$output"
-
-        if [[ "$version" == "flash hamsa BOOT0: 000000 00000000" || \
-              "$version" == "flash hamsa BOOT0: ffffff "* ]]; then
-            continue
-        fi
-
-        pldmObjPath=$(get_pldm_object_path "$eid" "$compId")
+    while IFS="#" read -r compId version; do
+        pldmObjPath=$(get_pldm_object_path "$module" "$compId")
 
         if [ -z "$pldmObjPath" ]; then
+            echo "EID $eid failed to find PLDM object path for component $compId"
+            busctl tree xyz.openbmc_project.PLDM |
+                grep -Ei "/xyz/openbmc_project/software/.*module_${module}.*MMC" |
+                sed 's/^[^\/]*//' |
+                sed 's/^/candidate PLDM path: /'
+            failed=1
             continue
         fi
 
-        echo "EID $eid: path=$pldmObjPath"
+        echo "EID $eid: path=$pldmObjPath" version="$version"
 
         if busctl set-property \
             xyz.openbmc_project.PLDM \
             "$pldmObjPath" \
             xyz.openbmc_project.Software.Version \
             Version s "$version"; then
-            echo "EID $eid updated: $version"
-            processed["$eid"]=1
-            remaining=$((remaining - 1))
+            echo "EID $eid updated component $compId: $version"
+            updated=$((updated + 1))
         else
-            echo "EID $eid failed to update"
+            echo "EID $eid failed to update component $compId"
+            failed=1
         fi
-    done
+    done <<< "$output"
 
-    [ "$remaining" -gt 0 ] && sleep "$retry_delay_sec"
+    if [ "$failed" -eq 0 ] && [ "$updated" -gt 0 ]; then
+        echo "EID $eid updated $updated components"
+        exit 0
+    fi
+
+    [ "$attempt" -lt "$retry_count" ] && sleep "$retry_delay_sec"
 done
+
+echo "EID $eid failed after $retry_count attempts"
+exit 1

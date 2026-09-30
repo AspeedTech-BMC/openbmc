@@ -10,6 +10,24 @@
         "Continue": true
     },
     {
+        "Name": "B0_M0_CPU_SHDN_OK_L-I",
+        "LineName": "B0_M0_CPU_SHDN_OK_L-I",
+          "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["cpu-shdn-ok.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "B1_M0_CPU_SHDN_OK_L-I",
+        "LineName": "B1_M0_CPU_SHDN_OK_L-I",
+          "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["cpu-shdn-ok.service"]
+        },
+        "Continue": true
+    },
+    {
         "Name": "HPM0-Run-Power-Good",
         "LineName": "B0_M0_RUN_POWER_PG-I",
         "EventMon": "BOTH",
@@ -22,10 +40,100 @@
     {
         "Name": "HPM1-Run-Power-Good",
         "LineName": "B1_M0_RUN_POWER_PG-I",
-          "EventMon": "BOTH",
+        "EventMon": "BOTH",
         "Targets": {
             "FALLING": ["run-power-good-deassert.service"],
             "RISING": ["run-power-good-assert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "HPM0-Thermtrip-Alert",
+        "LineName": "B0_M0_THERM_OVERT_L-I",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["thermtrip-assert-log@HPM0-Thermtrip-Alert.service"],
+            "RISING": ["thermtrip-deassert-log@HPM0-Thermtrip-Alert.service"]
+        },
+        "Continue": true
+    },
+        {
+        "Name": "HPM1-Thermtrip-Alert",
+        "LineName": "B1_M0_THERM_OVERT_L-I",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["thermtrip-assert-log@HPM1-Thermtrip-Alert.service"],
+            "RISING": ["thermtrip-deassert-log@HPM1-Thermtrip-Alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "HPM0-Prochot-Alert",
+        "LineName": "B0_M0_THERM_WARN_L-I",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["prochot-assert-log@HPM0-Prochot-Alert.service"],
+            "RISING": ["prochot-deassert-log@HPM0-Prochot-Alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "HPM1-Prochot-Alert",
+        "LineName": "B1_M0_THERM_WARN_L-I",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["prochot-assert-log@HPM1-Prochot-Alert.service"],
+            "RISING": ["prochot-deassert-log@HPM1-Prochot-Alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "HPM0-Chipthrot-Alert",
+        "LineName": "B0_CPU0_CHIPTHROT_L-I",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["prochot-assert-log@HPM0-Chipthrot-Alert.service"],
+            "RISING": ["prochot-deassert-log@HPM0-Chipthrot-Alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "HPM1-Chipthrot-Alert",
+        "LineName": "B1_CPU0_CHIPTHROT_L-I",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["prochot-assert-log@HPM1-Chipthrot-Alert.service"],
+            "RISING": ["prochot-deassert-log@HPM1-Chipthrot-Alert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "HMC_READY-I",
+        "LineName": "HMC_READY-I",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_HIGH": ["hmc-ready-assert.service"],
+            "RISING": ["hmc-ready-assert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "TRAY_PowerEnable_L",
+        "LineName": "FM_MAIN_PWREN_RMC_ISO_EN_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": [
+                "power-rail-assert-log@TRAY-PowerEnable-L.service",
+                "rmc-main-power-assert.service"
+            ],
+            "FALLING": [
+                "power-rail-assert-log@TRAY-PowerEnable-L.service",
+                "rmc-main-power-assert.service"
+            ],
+            "RISING": [
+                "power-rail-deassert-log@TRAY-PowerEnable-L.service",
+                "rmc-main-power-deassert.service"
+            ]
         },
         "Continue": true
     }

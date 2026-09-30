@@ -1,0 +1,185 @@
+From 491690d66c6e00fd52fdeb28a8de8c2dfb30beca Mon Sep 17 00:00:00 2001
+From: Troy Lee <troy_lee@aspeedtech.com>
+Date: Fri, 18 Sep 2026 11:38:08 +0800
+Subject: [PATCH] spdm: composite-eat: change schedule and workaound
+
+Upstream-Status: Pending
+Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
+---
+ spdmd/dbus_impl_composite.cpp     | 71 ++++++++++++++++++++++++++-----
+ spdmd/dbus_impl_composite.hpp     |  6 +++
+ spdmd/mctp_endpoint_discovery.cpp |  2 +-
+ 3 files changed, 68 insertions(+), 11 deletions(-)
+
+diff --git a/spdmd/dbus_impl_composite.cpp b/spdmd/dbus_impl_composite.cpp
+index 30a8c45..c29ed54 100644
+--- a/spdmd/dbus_impl_composite.cpp
++++ b/spdmd/dbus_impl_composite.cpp
+@@ -64,7 +64,7 @@ DbusImplComposite::DbusImplComposite(
+     boost::asio::io_context& ioCtx_, CompositeConfig config_) :
+     objServer(objServer_),
+     orchestrator(orchestrator_), responders(responders_), ioCtx(ioCtx_),
+-    config(std::move(config_)), overallTimer(ioCtx_)
++    config(std::move(config_)), overallTimer(ioCtx_), staggerTimer(ioCtx_)
+ {
+     iface = objServer.add_interface(objectPath, interfaceName);
+     iface->register_property("Status", statusStr);
+@@ -140,6 +140,18 @@ void DbusImplComposite::startCollection(const std::vector<std::uint8_t>& n)
+     inProgress = true;
+     publishStatus("InProgress");
+ 
++    const std::uint64_t worstCaseMs =
++        static_cast<std::uint64_t>(active.size() - 1) *
++            config.deviceStartGapMs +
++        config.perDeviceTimeoutMs;
++    if (config.overallTimeoutMs > 0 && config.overallTimeoutMs < worstCaseMs)
++    {
++        std::cerr << "composite overall timeout " << config.overallTimeoutMs
++                  << "ms cannot cover " << active.size()
++                  << " staggered devices (worst case " << worstCaseMs
++                  << "ms)\n";
++    }
++
+     if (config.overallTimeoutMs > 0)
+     {
+         overallTimer.expires_after(
+@@ -162,17 +174,37 @@ void DbusImplComposite::startCollection(const std::vector<std::uint8_t>& n)
+         });
+     }
+ 
+-    // Collection fans out to all active responders concurrently: every
+-    // responder is refreshed in parallel and the collection joins when each
+-    // reports completion (or the overall timer fires). This relies on the
+-    // transport supporting multiple in-flight SPDM exchanges. For in-kernel
+-    // AF_MCTP, requests are tagged per peer EID and responses are routed by
+-    // source EID, without a daemon-side request/response buffer. A transport
+-    // that couples responses through one shared buffer needs equivalent
+-    // per-responder isolation before enabling this fan-out.
+-    for (auto& resp : active)
++    // Collection fans out to all active responders: every responder is
++    // refreshed and the collection joins when each reports completion (or
++    // the overall timer fires). Starts are staggered by deviceStartGapMs to
++    // de-cluster bus and crypto load, but the exchanges themselves still
++    // overlap, so this relies on the transport supporting multiple in-flight
++    // SPDM exchanges. For in-kernel AF_MCTP, requests are tagged per peer EID
++    // and responses are routed by source EID, without a daemon-side
++    // request/response buffer. A transport that couples responses through one
++    // shared buffer needs equivalent per-responder isolation before enabling
++    // this fan-out.
++    nextIndex = 0;
++    launchNext();
++}
++
++void DbusImplComposite::launchNext()
++{
++    if (!inProgress || nextIndex >= active.size())
++    {
++        return;
++    }
++
++    // Hold a shared_ptr rather than a reference into active: refresh() can
++    // report completion inline on an immediate transport error, which
++    // finalizes the collection and clears active underneath us.
++    auto resp = active[nextIndex++];
++    if (resp)
+     {
+         const std::uint8_t eid = resp->getEid();
++        // The per-device budget starts when the refresh is actually issued,
++        // not when the collection started, so a device late in the stagger is
++        // not charged for the gaps ahead of it.
+         auto& timer = perDevTimers[eid];
+         timer = std::make_unique<boost::asio::steady_timer>(ioCtx);
+         timer->expires_after(
+@@ -188,6 +220,23 @@ void DbusImplComposite::startCollection(const std::vector<std::uint8_t>& n)
+         std::vector<std::uint8_t> measurementNonce(nonce.begin(), nonce.end());
+         resp->refresh(0u, std::move(measurementNonce), {255}, 0u);
+     }
++
++    if (!inProgress || nextIndex >= active.size())
++    {
++        return;
++    }
++
++    // Chain through the timer instead of recursing: refresh() may already
++    // have run the completion callback on this stack.
++    staggerTimer.expires_after(
++        std::chrono::milliseconds(config.deviceStartGapMs));
++    staggerTimer.async_wait([this](const boost::system::error_code& ec) {
++        if (ec == boost::asio::error::operation_aborted || !inProgress)
++        {
++            return;
++        }
++        launchNext();
++    });
+ }
+ 
+ composite::CollectedEvidence
+@@ -298,6 +347,8 @@ void DbusImplComposite::finalize()
+         publishStatus("Error");
+     }
+     inProgress = false;
++    staggerTimer.cancel();
++    nextIndex = 0;
+     for (auto& r : active)
+     {
+         if (r)
+diff --git a/spdmd/dbus_impl_composite.hpp b/spdmd/dbus_impl_composite.hpp
+index 3fc3b31..a55d32f 100644
+--- a/spdmd/dbus_impl_composite.hpp
++++ b/spdmd/dbus_impl_composite.hpp
+@@ -61,6 +61,9 @@ struct CompositeConfig
+ {
+     std::uint32_t perDeviceTimeoutMs = 30000;
+     std::uint32_t overallTimeoutMs = 120000;
++    /// Delay between successive device refresh starts. Exchanges still
++    /// overlap; this only de-clusters the launches.
++    std::uint32_t deviceStartGapMs = 1000;
+     std::vector<std::uint8_t> skipDevices;
+     bool allowUnknownEnvironments = false;
+     composite::CollectionPlan plan; // env.* mapping + CoRIM locator
+@@ -94,6 +97,7 @@ class DbusImplComposite
+ 
+   private:
+     void startCollection(const std::vector<std::uint8_t>& nonce);
++    void launchNext();
+     void onDeviceComplete(std::uint8_t eid, bool success);
+     composite::CollectedEvidence makeEvidence(dbus_api::Responder& resp,
+                                               bool success) const;
+@@ -113,12 +117,14 @@ class DbusImplComposite
+ 
+     bool inProgress = false;
+     std::size_t pending = 0;
++    std::size_t nextIndex = 0;
+     std::array<std::uint8_t, 32> nonce{};
+     std::array<bool, 256> done{};
+     std::vector<std::shared_ptr<dbus_api::Responder>> active;
+     std::vector<composite::CollectedEvidence> evidences;
+     std::array<std::unique_ptr<boost::asio::steady_timer>, 256> perDevTimers;
+     boost::asio::steady_timer overallTimer;
++    boost::asio::steady_timer staggerTimer;
+ };
+ 
+ } // namespace spdmd
+diff --git a/spdmd/mctp_endpoint_discovery.cpp b/spdmd/mctp_endpoint_discovery.cpp
+index 99cc318..e624a3b 100644
+--- a/spdmd/mctp_endpoint_discovery.cpp
++++ b/spdmd/mctp_endpoint_discovery.cpp
+@@ -624,6 +624,7 @@ void MctpDiscovery::mctpNewObjectSignal(const sdbusplus::object_path& objPath,
+ 
+     // Get the binding type from the interfaces
+     auto bindingType = getBindingType(interfaces);
++    bindingType = "xyz.openbmc_project.MCTP.Binding.Types.I3C";
+     if (bindingType.empty())
+     {
+         auto& log = spdmApp.getLog();
+@@ -633,7 +634,6 @@ void MctpDiscovery::mctpNewObjectSignal(const sdbusplus::object_path& objPath,
+             log.iprintln(eidValue1);
+         }
+ 
+-	bindingType = "xyz.openbmc_project.MCTP.Binding.Types.SPI";
+         // return;
+     }
+ #ifndef MCTP_IN_KERNEL
+-- 
+2.43.0
+

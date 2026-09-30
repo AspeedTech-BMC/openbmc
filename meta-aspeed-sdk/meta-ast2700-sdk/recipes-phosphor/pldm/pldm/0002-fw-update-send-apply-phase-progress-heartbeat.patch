@@ -1,0 +1,207 @@
+From 769307e2dbf1a2cf57df3aa9b2a97ca2d9029846 Mon Sep 17 00:00:00 2001
+From: Kane-Chen-AS <kane_chen@aspeedtech.com>
+Date: Fri, 21 Aug 2026 16:26:48 +0800
+Subject: [PATCH] fw-update: send apply-phase progress heartbeat
+
+When firmware is updated via pldmd, the update proceeds in two stages.
+The first stage transmits the image to the FD, and the second stage
+waits for the FD to program the image.
+
+This patch adjusts the progress percentages to better reflect actual
+usage: 0-61 covers the transmission stage, and 62-100 covers the
+image programming stage.
+
+During the image programming stage, a progress timer fires every 30
+seconds to keep updating the progress. This resets the Task timeout
+on the bmcweb side, preventing the task from being marked as
+Cancelled while the FD is still programming, and gives a more
+meaningful status to the user.
+
+Upstream-Status: Pending
+Signed-off-by: Kane-Chen-AS <kane_chen@aspeedtech.com>
+---
+ fw-update/device_updater.cpp      | 39 +++++++++++++++++++++++++++++--
+ fw-update/device_updater.hpp      | 16 +++++++++++++
+ fw-update/item_update_manager.cpp |  9 +++++++
+ fw-update/item_update_manager.hpp |  7 ++++++
+ fw-update/update_manager.cpp      |  9 +++++++
+ fw-update/update_manager.hpp      |  3 +++
+ 6 files changed, 81 insertions(+), 2 deletions(-)
+
+diff --git a/fw-update/device_updater.cpp b/fw-update/device_updater.cpp
+index 39fbd2d..05126cd 100644
+--- a/fw-update/device_updater.cpp
++++ b/fw-update/device_updater.cpp
+@@ -18,8 +18,8 @@ namespace fw_update
+ {
+ 
+ // The highest percentage that component transfer can give
+-static constexpr uint8_t componentXferProgressPercent = 97;
+-static constexpr uint8_t componentVerifyProgressPercent = 98;
++static constexpr uint8_t componentXferProgressPercent = 60;
++static constexpr uint8_t componentVerifyProgressPercent = 61;
+ static constexpr uint8_t componentApplyProgressPercent = 99;
+ static constexpr uint8_t firmwareActivationProgressPercent = 100;
+ 
+@@ -793,6 +793,39 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
+         info(
+             "Component endpoint ID '{EID}' and version '{COMPONENT_VERSION}' verification complete.",
+             "EID", eid, "COMPONENT_VERSION", compVersion);
++        // The apply phase sends no D-Bus progress updates while the FD programs
++        // its flash, which can take several minutes. Fire a periodic heartbeat so
++        // the bmcweb task timer does not expire before ApplyComplete arrives.
++        //
++        // This has only been exercised against BMC firmware updates, where the
++        // apply phase typically takes ~6 minutes, comfortably within the margin
++        // this heartbeat (and bmcweb's task timeout) provides. A package for a
++        // different, slower-flashing image type, or one with multiple applicable
++        // components applied sequentially, could push the total apply time past
++        // that margin and may need the heartbeat cadence/cap retuned.
++        if (updateManager != nullptr)
++        {
++            applyPhaseProgress = componentVerifyProgressPercent;
++            applyPhaseTimer =
++                std::make_unique<sdbusplus::Timer>([this]() -> void {
++                    constexpr uint8_t applyHeartbeatMax =
++                        componentApplyProgressPercent - 1;
++                    if (applyPhaseProgress < applyHeartbeatMax)
++                    {
++                        applyPhaseProgress += 2;
++                        if (applyPhaseProgress > applyHeartbeatMax)
++                        {
++                            applyPhaseProgress = applyHeartbeatMax;
++                        }
++                        if (updateManager != nullptr)
++                        {
++                            updateManager->setActivationProgress(
++                                applyPhaseProgress);
++                        }
++                    }
++                });
++            applyPhaseTimer->start(std::chrono::seconds(30), true);
++        }
+     }
+     else
+     {
+@@ -854,6 +887,7 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
+     if (applyResult == PLDM_FWUP_APPLY_SUCCESS ||
+         applyResult == PLDM_FWUP_APPLY_SUCCESS_WITH_ACTIVATION_METHOD)
+     {
++        applyPhaseTimer.reset();
+         info(
+             "Component endpoint ID '{EID}' with '{COMPONENT_VERSION}' apply complete.",
+             "EID", eid, "COMPONENT_VERSION", compVersion);
+@@ -893,6 +927,7 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
+     }
+     else
+     {
++        applyPhaseTimer.reset();
+         error(
+             "Failed to apply component endpoint ID '{EID}' and version '{COMPONENT_VERSION}', error - {ERROR}",
+             "EID", eid, "COMPONENT_VERSION", compVersion, "ERROR", applyResult);
+diff --git a/fw-update/device_updater.hpp b/fw-update/device_updater.hpp
+index a0621c3..f81a0e2 100644
+--- a/fw-update/device_updater.hpp
++++ b/fw-update/device_updater.hpp
+@@ -339,6 +339,22 @@ class DeviceUpdater
+      *
+      */
+     std::unique_ptr<sdbusplus::Timer> reqFwDataTimer;
++
++    /**
++     * @brief Periodic timer that fires during the apply phase to send D-Bus
++     *        ActivationProgress updates. The apply phase produces no progress
++     *        events of its own, so without this the bmcweb task timer expires
++     *        before the FD finishes applying the firmware.
++     */
++    std::unique_ptr<sdbusplus::Timer> applyPhaseTimer;
++
++    /**
++     * @brief Incrementing progress counter used by the apply phase heartbeat.
++     *        Each heartbeat fire increments this value so the D-Bus property
++     *        changes and a PropertiesChanged signal is always emitted.
++     */
++    uint8_t applyPhaseProgress{0};
++
+     /**
+      * @brief a list of UpdateProgress objects, one for each firmware component
+      *         applicable to this device
+diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
+index 90abcc0..5a5ff1e 100644
+--- a/fw-update/item_update_manager.cpp
++++ b/fw-update/item_update_manager.cpp
+@@ -239,6 +239,15 @@ void ItemUpdateManager::updateActivationProgress()
+     }
+ }
+ 
++void ItemUpdateManager::setActivationProgress(uint8_t value)
++{
++    if (activationProgress)
++    {
++        activationProgress->progress(value);
++        lastProgress = value;
++    }
++}
++
+ sdbusplus::object_path ItemUpdateManager::startUpdate(
+     sdbusplus::message::unix_fd image,
+     ApplyTimeIntf::RequestedApplyTimes /*applyTime*/)
+diff --git a/fw-update/item_update_manager.hpp b/fw-update/item_update_manager.hpp
+index 7d6c0ec..2f59fd8 100644
+--- a/fw-update/item_update_manager.hpp
++++ b/fw-update/item_update_manager.hpp
+@@ -79,6 +79,13 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+      */
+     void updateActivationProgress() override;
+ 
++    /**
++     * @brief Set the activation progress to an explicit value
++     *
++     * @param[in] value - The progress percentage to report
++     */
++    void setActivationProgress(uint8_t value) override;
++
+     /**
+      * @brief Activate the firmware update package
+      */
+diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
+index bcf70ee..bc781ae 100644
+--- a/fw-update/update_manager.cpp
++++ b/fw-update/update_manager.cpp
+@@ -348,6 +348,15 @@ void UpdateManager::updateActivationProgress()
+     }
+ }
+ 
++void UpdateManager::setActivationProgress(uint8_t value)
++{
++    if (activationProgress)
++    {
++        activationProgress->progress(value);
++        lastProgress = value;
++    }
++}
++
+ } // namespace fw_update
+ 
+ } // namespace pldm
+diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
+index d6a8924..73105fe 100644
+--- a/fw-update/update_manager.hpp
++++ b/fw-update/update_manager.hpp
+@@ -66,6 +66,7 @@ class UpdateManagerBase
+ 
+     virtual void updateDeviceCompletion(mctp_eid_t eid, bool status) = 0;
+     virtual void updateActivationProgress() = 0;
++    virtual void setActivationProgress(uint8_t value) = 0;
+     virtual void activatePackage() = 0;
+     virtual void resetActivationState() = 0;
+ 
+@@ -143,6 +144,8 @@ class UpdateManager : public UpdateManagerBase
+ 
+     void updateActivationProgress() override;
+ 
++    void setActivationProgress(uint8_t value) override;
++
+     /** @brief Callback function that will be invoked when the
+      *         RequestedActivation will be set to active in the Activation
+      *         interface

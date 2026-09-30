@@ -1,0 +1,628 @@
+From d638dd148d53af97be8850ecdf40b1b63b45ebb1 Mon Sep 17 00:00:00 2001
+From: helloxiling <helloxiling@users.noreply.github.com>
+Date: Sun, 13 Sep 2026 20:58:34 -0700
+Subject: [PATCH] redfish: add ComponentIntegrity resources
+
+Upstream-Status: Pending
+---
+ config/meson.build                            |   1 +
+ meson.options                                 |   8 +
+ redfish-core/lib/component_integrity.hpp      | 348 ++++++++++++++++++
+ redfish-core/lib/service_root.hpp             |   6 +
+ redfish-core/src/redfish.cpp                  |   6 +
+ test/meson.build                              |   1 +
+ .../lib/component_integrity_test.cpp          | 132 +++++++
+ test/redfish-core/lib/service_root_test.cpp   |  15 +
+ 8 files changed, 517 insertions(+)
+ create mode 100644 redfish-core/lib/component_integrity.hpp
+ create mode 100644 test/redfish-core/lib/component_integrity_test.cpp
+
+diff --git a/config/meson.build b/config/meson.build
+index ac14660c8e..779cb888ed 100644
+--- a/config/meson.build
++++ b/config/meson.build
+@@ -29,6 +29,7 @@ feature_options = [
+     'redfish-allow-rotational-fans',
+     'redfish-allow-simple-update',
+     'redfish-bmc-journal',
++    'redfish-component-integrity',
+     'redfish-cpu-log',
+     'redfish-dbus-log',
+     'redfish-dump-log',
+diff --git a/meson.options b/meson.options
+index c0831ed50f..6a83378081 100644
+--- a/meson.options
++++ b/meson.options
+@@ -67,6 +67,14 @@ option(
+                     https://github.com/openbmc/bmcweb/blob/master/DEVELOPING.md#redfish.''',
+ )
+ 
++# BMCWEB_REDFISH_COMPONENT_INTEGRITY
++option(
++    'redfish-component-integrity',
++    type: 'feature',
++    value: 'disabled',
++    description: 'Enable Redfish ComponentIntegrity resources.',
++)
++
+ # BMCWEB_HOST_SERIAL_SOCKET
+ option(
+     'host-serial-socket',
+diff --git a/redfish-core/lib/component_integrity.hpp b/redfish-core/lib/component_integrity.hpp
+new file mode 100644
+index 0000000000..a76d30e5c4
+--- /dev/null
++++ b/redfish-core/lib/component_integrity.hpp
+@@ -0,0 +1,348 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++#pragma once
++
++#include "bmcweb_config.h"
++
++#include "app.hpp"
++#include "async_resp.hpp"
++#include "boost_formatters.hpp"
++#include "dbus_utility.hpp"
++#include "error_messages.hpp"
++#include "logging.hpp"
++#include "query.hpp"
++#include "registries/privilege_registry.hpp"
++#include "utils/collection.hpp"
++#include "utils/dbus_utils.hpp"
++#include "utils/time_utils.hpp"
++
++#include <boost/system/error_code.hpp>
++#include <boost/url/format.hpp>
++#include <sdbusplus/message/native_types.hpp>
++
++#include <algorithm>
++#include <array>
++#include <cerrno>
++#include <cstdint>
++#include <functional>
++#include <memory>
++#include <optional>
++#include <ranges>
++#include <span>
++#include <string>
++#include <string_view>
++#include <vector>
++
++namespace redfish
++{
++
++namespace component_integrity_utils
++{
++
++inline constexpr std::string_view componentIntegrityPath =
++    "/xyz/openbmc_project/component_integrity";
++inline constexpr std::string_view componentIntegrityInterface =
++    "xyz.openbmc_project.Attestation.ComponentIntegrity";
++inline constexpr std::array<std::string_view, 1> componentIntegrityInterfaces =
++    {componentIntegrityInterface};
++inline constexpr std::array<std::string_view, 5> targetInterfaces = {
++    "xyz.openbmc_project.Inventory.Item.Board",
++    "xyz.openbmc_project.Inventory.Item.Chassis",
++    "xyz.openbmc_project.Inventory.Item.Cpu",
++    "xyz.openbmc_project.Inventory.Item.Dimm",
++    "xyz.openbmc_project.Inventory.Item.PCIeDevice"};
++
++inline std::optional<std::string> translateSecurityTechnologyType(
++    std::string_view type)
++{
++    if (type.ends_with(".SPDM"))
++    {
++        return "SPDM";
++    }
++    if (type.ends_with(".TPM"))
++    {
++        return "TPM";
++    }
++    if (type.ends_with(".OEM"))
++    {
++        return "OEM";
++    }
++    return std::nullopt;
++}
++
++inline bool hasInterface(std::span<const std::string> interfaces,
++                         std::string_view expected)
++{
++    return std::ranges::find(interfaces, expected) != interfaces.end();
++}
++
++inline std::optional<std::string> targetComponentUri(
++    const sdbusplus::object_path& targetPath,
++    std::span<const std::string> interfaces)
++{
++    const std::string id = targetPath.filename();
++    if (id.empty())
++    {
++        return std::nullopt;
++    }
++
++    if (hasInterface(interfaces,
++                     "xyz.openbmc_project.Inventory.Item.Chassis") ||
++        hasInterface(interfaces, "xyz.openbmc_project.Inventory.Item.Board"))
++    {
++        return std::string(
++            boost::urls::format("/redfish/v1/Chassis/{}", id).buffer());
++    }
++    if (hasInterface(interfaces, "xyz.openbmc_project.Inventory.Item.Cpu"))
++    {
++        return std::string(
++            boost::urls::format("/redfish/v1/Systems/{}/Processors/{}",
++                                BMCWEB_REDFISH_SYSTEM_URI_NAME, id)
++                .buffer());
++    }
++    if (hasInterface(interfaces, "xyz.openbmc_project.Inventory.Item.Dimm"))
++    {
++        return std::string(
++            boost::urls::format("/redfish/v1/Systems/{}/Memory/{}",
++                                BMCWEB_REDFISH_SYSTEM_URI_NAME, id)
++                .buffer());
++    }
++    if (hasInterface(interfaces,
++                     "xyz.openbmc_project.Inventory.Item.PCIeDevice"))
++    {
++        return std::string(
++            boost::urls::format("/redfish/v1/Systems/{}/PCIeDevices/{}",
++                                BMCWEB_REDFISH_SYSTEM_URI_NAME, id)
++                .buffer());
++    }
++    return std::nullopt;
++}
++
++inline bool fillProperties(nlohmann::json& json,
++                           const dbus::utility::DBusPropertiesMap& properties)
++{
++    const bool* enabled = nullptr;
++    const std::string* type = nullptr;
++    const std::string* typeVersion = nullptr;
++    const uint64_t* lastUpdated = nullptr;
++
++    const bool success = sdbusplus::unpackPropertiesNoThrow(
++        dbus_utils::UnpackErrorPrinter(), properties, "Enabled", enabled,
++        "Type", type, "TypeVersion", typeVersion, "LastUpdated", lastUpdated);
++    if (!success || enabled == nullptr || type == nullptr ||
++        typeVersion == nullptr || lastUpdated == nullptr)
++    {
++        return false;
++    }
++
++    std::optional<std::string> redfishType =
++        translateSecurityTechnologyType(*type);
++    if (!redfishType)
++    {
++        return false;
++    }
++
++    json["ComponentIntegrityEnabled"] = *enabled;
++    json["ComponentIntegrityType"] = *redfishType;
++    json["ComponentIntegrityTypeVersion"] = *typeVersion;
++    if (*lastUpdated != 0)
++    {
++        json["LastUpdated"] = time_utils::getDateTimeUintMs(*lastUpdated);
++    }
++    return true;
++}
++
++} // namespace component_integrity_utils
++
++inline void afterGetComponentTargetObject(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& targetPath, const boost::system::error_code& ec,
++    const dbus::utility::MapperGetObject& object)
++{
++    if (ec || object.empty())
++    {
++        BMCWEB_LOG_ERROR(
++            "ComponentIntegrity target is missing or has no supported "
++            "inventory interface: {}",
++            ec);
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    for (const auto& [service, interfaces] : object)
++    {
++        static_cast<void>(service);
++        std::optional<std::string> target =
++            component_integrity_utils::targetComponentUri(targetPath,
++                                                          interfaces);
++        if (target)
++        {
++            asyncResp->res.jsonValue["TargetComponentURI"] = *target;
++            return;
++        }
++    }
++
++    BMCWEB_LOG_ERROR(
++        "Unable to map ComponentIntegrity target to a Redfish URI");
++    messages::internalError(asyncResp->res);
++}
++
++inline void afterGetComponentTarget(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const boost::system::error_code& ec,
++    const dbus::utility::MapperEndPoints& endpoints)
++{
++    if (ec)
++    {
++        BMCWEB_LOG_ERROR("Unable to read authenticating association: {}", ec);
++        messages::internalError(asyncResp->res);
++        return;
++    }
++    if (endpoints.size() != 1)
++    {
++        BMCWEB_LOG_ERROR("ComponentIntegrity has {} authenticating endpoints; "
++                         "exactly one is required",
++                         endpoints.size());
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    dbus::utility::getDbusObject(
++        endpoints.front(), component_integrity_utils::targetInterfaces,
++        std::bind_front(afterGetComponentTargetObject, asyncResp,
++                        endpoints.front()));
++}
++
++inline void afterGetComponentIntegrityProperties(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& objectPath, const boost::system::error_code& ec,
++    const dbus::utility::DBusPropertiesMap& properties)
++{
++    if (ec || !component_integrity_utils::fillProperties(
++                  asyncResp->res.jsonValue, properties))
++    {
++        BMCWEB_LOG_ERROR("Unable to read ComponentIntegrity properties: {}",
++                         ec);
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    dbus::utility::getAssociationEndPoints(
++        objectPath + "/authenticating",
++        std::bind_front(afterGetComponentTarget, asyncResp));
++}
++
++inline void getComponentIntegrityData(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& componentId, const std::string& service,
++    const std::string& objectPath)
++{
++    asyncResp->res.jsonValue["@odata.type"] =
++        "#ComponentIntegrity.v1_4_0.ComponentIntegrity";
++    asyncResp->res.jsonValue["@odata.id"] =
++        boost::urls::format("/redfish/v1/ComponentIntegrity/{}", componentId);
++    asyncResp->res.jsonValue["Id"] = componentId;
++    asyncResp->res.jsonValue["Name"] = "Component Integrity " + componentId;
++
++    dbus::utility::getAllProperties(
++        service, objectPath,
++        std::string(component_integrity_utils::componentIntegrityInterface),
++        std::bind_front(afterGetComponentIntegrityProperties, asyncResp,
++                        objectPath));
++}
++
++inline void afterGetComponentIntegrity(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& componentId, const boost::system::error_code& ec,
++    const dbus::utility::MapperGetSubTreeResponse& subtree)
++{
++    if (ec)
++    {
++        if (ec.value() == EBADR)
++        {
++            messages::resourceNotFound(asyncResp->res, "ComponentIntegrity",
++                                       componentId);
++            return;
++        }
++        BMCWEB_LOG_ERROR("Unable to enumerate ComponentIntegrity objects: {}",
++                         ec);
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    for (const auto& [objectPath, serviceMap] : subtree)
++    {
++        if (sdbusplus::object_path(objectPath).filename() != componentId)
++        {
++            continue;
++        }
++        for (const auto& [service, interfaces] : serviceMap)
++        {
++            if (std::ranges::find(
++                    interfaces,
++                    component_integrity_utils::componentIntegrityInterface) !=
++                interfaces.end())
++            {
++                getComponentIntegrityData(asyncResp, componentId, service,
++                                          objectPath);
++                return;
++            }
++        }
++    }
++
++    messages::resourceNotFound(asyncResp->res, "ComponentIntegrity",
++                               componentId);
++}
++
++inline void handleComponentIntegrityGet(
++    App& app, const crow::Request& req,
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& componentId)
++{
++    if (!redfish::setUpRedfishRoute(app, req, asyncResp))
++    {
++        return;
++    }
++
++    dbus::utility::getSubTree(
++        std::string(component_integrity_utils::componentIntegrityPath), 0,
++        component_integrity_utils::componentIntegrityInterfaces,
++        std::bind_front(afterGetComponentIntegrity, asyncResp, componentId));
++}
++
++inline void handleComponentIntegrityCollectionGet(
++    App& app, const crow::Request& req,
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp)
++{
++    if (!redfish::setUpRedfishRoute(app, req, asyncResp))
++    {
++        return;
++    }
++
++    asyncResp->res.jsonValue["@odata.type"] =
++        "#ComponentIntegrityCollection.ComponentIntegrityCollection";
++    asyncResp->res.jsonValue["@odata.id"] = "/redfish/v1/ComponentIntegrity";
++    asyncResp->res.jsonValue["Name"] = "Component Integrity Collection";
++    collection_util::getCollectionMembers(
++        asyncResp, boost::urls::url("/redfish/v1/ComponentIntegrity"),
++        component_integrity_utils::componentIntegrityInterfaces,
++        std::string(component_integrity_utils::componentIntegrityPath));
++}
++
++inline void requestRoutesComponentIntegrity(App& app)
++{
++    BMCWEB_ROUTE(app, "/redfish/v1/ComponentIntegrity/<str>/")
++        .privileges(redfish::privileges::getComponentIntegrity)
++        .methods(boost::beast::http::verb::get)(
++            std::bind_front(handleComponentIntegrityGet, std::ref(app)));
++}
++
++inline void requestRoutesComponentIntegrityCollection(App& app)
++{
++    BMCWEB_ROUTE(app, "/redfish/v1/ComponentIntegrity/")
++        .privileges(redfish::privileges::getComponentIntegrityCollection)
++        .methods(boost::beast::http::verb::get)(std::bind_front(
++            handleComponentIntegrityCollectionGet, std::ref(app)));
++}
++
++} // namespace redfish
+diff --git a/redfish-core/lib/service_root.hpp b/redfish-core/lib/service_root.hpp
+index 61932151fa..3bdd5ab7aa 100644
+--- a/redfish-core/lib/service_root.hpp
++++ b/redfish-core/lib/service_root.hpp
+@@ -85,6 +85,12 @@ inline void handleServiceRootGetImpl(
+     manager_utils::getServiceIdentification(asyncResp, true);
+     asyncResp->res.jsonValue["Cables"]["@odata.id"] = "/redfish/v1/Cables";
+ 
++    if constexpr (BMCWEB_REDFISH_COMPONENT_INTEGRITY)
++    {
++        asyncResp->res.jsonValue["ComponentIntegrity"]["@odata.id"] =
++            "/redfish/v1/ComponentIntegrity";
++    }
++
+     asyncResp->res.jsonValue["Links"]["ManagerProvidingService"]["@odata.id"] =
+         boost::urls::format("/redfish/v1/Managers/{}",
+                             BMCWEB_REDFISH_MANAGER_URI_NAME);
+diff --git a/redfish-core/src/redfish.cpp b/redfish-core/src/redfish.cpp
+index 6cfeea4859..d2c7e3f349 100644
+--- a/redfish-core/src/redfish.cpp
++++ b/redfish-core/src/redfish.cpp
+@@ -12,6 +12,7 @@
+ #include "cable.hpp"
+ #include "certificate_service.hpp"
+ #include "chassis.hpp"
++#include "component_integrity.hpp"
+ #include "environment_metrics.hpp"
+ #include "ethernet.hpp"
+ #include "event_service.hpp"
+@@ -114,6 +115,11 @@ RedfishService::RedfishService(App& app)
+     requestRoutesChassisResetAction(app);
+     requestRoutesChassisResetActionInfo(app);
+     requestRoutesChassisNetworkAdapter(app);
++    if constexpr (BMCWEB_REDFISH_COMPONENT_INTEGRITY)
++    {
++        requestRoutesComponentIntegrityCollection(app);
++        requestRoutesComponentIntegrity(app);
++    }
+     requestRoutesUpdateService(app);
+     requestRoutesStorage(app);
+     requestRoutesStorageController(app);
+diff --git a/test/meson.build b/test/meson.build
+index 91fe0b387e..45c70394d2 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -54,6 +54,7 @@ srcfiles_unittest = files(
+     'redfish-core/include/utils/time_utils_test.cpp',
+     'redfish-core/lib/account_service_test.cpp',
+     'redfish-core/lib/chassis_test.cpp',
++    'redfish-core/lib/component_integrity_test.cpp',
+     'redfish-core/lib/ethernet_test.cpp',
+     'redfish-core/lib/fabric_test.cpp',
+     'redfish-core/lib/log_services_dump_test.cpp',
+diff --git a/test/redfish-core/lib/component_integrity_test.cpp b/test/redfish-core/lib/component_integrity_test.cpp
+new file mode 100644
+index 0000000000..574b9d2f2a
+--- /dev/null
++++ b/test/redfish-core/lib/component_integrity_test.cpp
+@@ -0,0 +1,132 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++
++#include "bmcweb_config.h"
++
++#include "component_integrity.hpp"
++
++#include <cstdint>
++#include <optional>
++#include <string>
++#include <vector>
++
++#include <gtest/gtest.h>
++
++namespace redfish::component_integrity_utils
++{
++namespace
++{
++
++TEST(TranslateSecurityTechnologyType, MapsPublicInterfaceValues)
++{
++    EXPECT_EQ(translateSecurityTechnologyType(
++                  "xyz.openbmc_project.Attestation.ComponentIntegrity."
++                  "SecurityTechnologyType.SPDM"),
++              "SPDM");
++    EXPECT_EQ(translateSecurityTechnologyType(
++                  "xyz.openbmc_project.Attestation.ComponentIntegrity."
++                  "SecurityTechnologyType.TPM"),
++              "TPM");
++    EXPECT_EQ(translateSecurityTechnologyType(
++                  "xyz.openbmc_project.Attestation.ComponentIntegrity."
++                  "SecurityTechnologyType.OEM"),
++              "OEM");
++    EXPECT_EQ(translateSecurityTechnologyType(
++                  "xyz.openbmc_project.Attestation.ComponentIntegrity."
++                  "SecurityTechnologyType.Unknown"),
++              std::nullopt);
++}
++
++TEST(TargetComponentUri, MapsWellKnownInventoryTypes)
++{
++    const sdbusplus::object_path path(
++        "/xyz/openbmc_project/inventory/system/chassis/component0");
++    const std::vector<std::string> chassis = {
++        "xyz.openbmc_project.Inventory.Item.Chassis"};
++    const std::vector<std::string> board = {
++        "xyz.openbmc_project.Inventory.Item.Board"};
++    const std::vector<std::string> cpu = {
++        "xyz.openbmc_project.Inventory.Item.Cpu"};
++    const std::vector<std::string> dimm = {
++        "xyz.openbmc_project.Inventory.Item.Dimm"};
++    const std::vector<std::string> pcieDevice = {
++        "xyz.openbmc_project.Inventory.Item.PCIeDevice"};
++
++    EXPECT_EQ(targetComponentUri(path, chassis),
++              "/redfish/v1/Chassis/component0");
++    EXPECT_EQ(targetComponentUri(path, board),
++              "/redfish/v1/Chassis/component0");
++    EXPECT_EQ(targetComponentUri(path, cpu),
++              "/redfish/v1/Systems/" +
++                  std::string(BMCWEB_REDFISH_SYSTEM_URI_NAME) +
++                  "/Processors/component0");
++    EXPECT_EQ(targetComponentUri(path, dimm),
++              "/redfish/v1/Systems/" +
++                  std::string(BMCWEB_REDFISH_SYSTEM_URI_NAME) +
++                  "/Memory/component0");
++    EXPECT_EQ(targetComponentUri(path, pcieDevice),
++              "/redfish/v1/Systems/" +
++                  std::string(BMCWEB_REDFISH_SYSTEM_URI_NAME) +
++                  "/PCIeDevices/component0");
++}
++
++TEST(TargetComponentUri, RejectsUnknownOrEmptyTargets)
++{
++    const std::vector<std::string> inventoryItem = {
++        "xyz.openbmc_project.Inventory.Item"};
++    std::vector<std::string> targetInterfaceStrings;
++    targetInterfaceStrings.reserve(targetInterfaces.size());
++    for (std::string_view interface : targetInterfaces)
++    {
++        targetInterfaceStrings.emplace_back(interface);
++    }
++
++    EXPECT_EQ(
++        targetComponentUri(
++            sdbusplus::object_path("/xyz/openbmc_project/inventory/component0"),
++            inventoryItem),
++        std::nullopt);
++    EXPECT_EQ(
++        targetComponentUri(sdbusplus::object_path("/"), targetInterfaceStrings),
++        std::nullopt);
++}
++
++TEST(FillProperties, ProducesRequiredRedfishValues)
++{
++    dbus::utility::DBusPropertiesMap properties = {
++        {"Enabled", true},
++        {"Type",
++         std::string("xyz.openbmc_project.Attestation.ComponentIntegrity."
++                     "SecurityTechnologyType.SPDM")},
++        {"TypeVersion", std::string("1.2.0")},
++        {"LastUpdated", uint64_t{1000}}};
++    nlohmann::json json;
++
++    ASSERT_TRUE(fillProperties(json, properties));
++    EXPECT_EQ(json["ComponentIntegrityEnabled"], true);
++    EXPECT_EQ(json["ComponentIntegrityType"], "SPDM");
++    EXPECT_EQ(json["ComponentIntegrityTypeVersion"], "1.2.0");
++    EXPECT_EQ(json["LastUpdated"], time_utils::getDateTimeUintMs(1000));
++}
++
++TEST(FillProperties, RejectsUnknownOrMissingValues)
++{
++    dbus::utility::DBusPropertiesMap unknownType = {
++        {"Enabled", true},
++        {"Type",
++         std::string("xyz.openbmc_project.Attestation.ComponentIntegrity."
++                     "SecurityTechnologyType.Unknown")},
++        {"TypeVersion", std::string()},
++        {"LastUpdated", uint64_t{0}}};
++    nlohmann::json json;
++    EXPECT_FALSE(fillProperties(json, unknownType));
++
++    dbus::utility::DBusPropertiesMap missingType = {
++        {"Enabled", true},
++        {"TypeVersion", std::string("1.2.0")},
++        {"LastUpdated", uint64_t{0}}};
++    EXPECT_FALSE(fillProperties(json, missingType));
++}
++
++} // namespace
++} // namespace redfish::component_integrity_utils
+diff --git a/test/redfish-core/lib/service_root_test.cpp b/test/redfish-core/lib/service_root_test.cpp
+index 20d0c13f7f..03569988ec 100644
+--- a/test/redfish-core/lib/service_root_test.cpp
++++ b/test/redfish-core/lib/service_root_test.cpp
+@@ -24,6 +24,16 @@ void assertServiceRootGet(crow::Response& res)
+     nlohmann::json& json = res.jsonValue;
+     EXPECT_EQ(json["@odata.id"], "/redfish/v1");
+     EXPECT_EQ(json["@odata.type"], "#ServiceRoot.v1_15_0.ServiceRoot");
++    if constexpr (BMCWEB_REDFISH_COMPONENT_INTEGRITY)
++    {
++        EXPECT_EQ(json["ComponentIntegrity"]["@odata.id"],
++                  "/redfish/v1/ComponentIntegrity");
++        EXPECT_EQ(json["ComponentIntegrity"].size(), 1);
++    }
++    else
++    {
++        EXPECT_FALSE(json.contains("ComponentIntegrity"));
++    }
+ 
+     EXPECT_EQ(json["AccountService"]["@odata.id"],
+               "/redfish/v1/AccountService");
+@@ -120,6 +130,11 @@ void assertServiceRootGet(crow::Response& res)
+ 
+     size_t expectedSize = 22;
+ 
++    if constexpr (BMCWEB_REDFISH_COMPONENT_INTEGRITY)
++    {
++        expectedSize++;
++    }
++
+     if (BMCWEB_REDFISH_AGGREGATION)
+     {
+         EXPECT_EQ(json["AggregationService"]["@odata.id"],

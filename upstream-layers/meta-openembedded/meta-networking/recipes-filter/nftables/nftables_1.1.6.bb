@@ -12,13 +12,14 @@ DEPENDS = "libmnl libnftnl bison-native \
            ${@bb.utils.contains('PACKAGECONFIG', 'mini-gmp', '', 'gmp', d)}"
 
 SRC_URI = "http://www.netfilter.org/projects/nftables/files/${BP}.tar.xz \
+           file://0001-build-support-SOURCE_DATE_EPOCH-for-build-time-stamp.patch \
            file://run-ptest \
           "
 SRC_URI[sha256sum] = "372931bda8556b310636a2f9020adc710f9bab66f47efe0ce90bff800ac2530c"
 
-inherit autotools manpages pkgconfig ptest python3native
+inherit autotools manpages pkgconfig ptest python3native systemd
 
-PACKAGECONFIG ?= "python readline json"
+PACKAGECONFIG ?= "python readline json ${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}"
 PACKAGECONFIG[editline] = "--with-cli=editline, , libedit, , , linenoise readline"
 PACKAGECONFIG[json] = "--with-json, --without-json, jansson"
 PACKAGECONFIG[linenoise] = "--with-cli=linenoise, , linenoise, , , editline readline"
@@ -27,9 +28,13 @@ PACKAGECONFIG[mini-gmp] = "--with-mini-gmp, --without-mini-gmp"
 PACKAGECONFIG[python] = ""
 PACKAGECONFIG[readline] = "--with-cli=readline, , readline, , , editline linenoise"
 PACKAGECONFIG[xtables] = "--with-xtables, --without-xtables, iptables"
+PACKAGECONFIG[systemd] = "--with-unitdir=${systemd_system_unitdir}, --without-unitdir"
 
 EXTRA_OECONF = " \
     ${@bb.utils.contains_any('PACKAGECONFIG', 'editline linenoise readline', '', '--without-cli', d)}"
+
+SYSTEMD_SERVICE:${PN} = "${@bb.utils.contains('PACKAGECONFIG', 'systemd', 'nftables.service', '', d)}"
+SYSTEMD_AUTO_ENABLE:${PN} = "${@bb.utils.contains('PACKAGECONFIG', 'systemd', 'disable', '', d)}"
 
 PEP517_SOURCE_PATH = "${S}/py"
 
@@ -67,7 +72,10 @@ do_install() {
     fi
 }
 
-RDEPENDS:${PN}-ptest += " ${PN}-python bash coreutils make iproute2 iputils-ping procps python3-core python3-ctypes python3-json python3-misc sed util-linux"
+RDEPENDS:${PN}-ptest += " \
+	bash coreutils make iproute2 iputils-ping procps python3-core python3-ctypes python3-json python3-misc sed util-linux \
+	${@bb.utils.contains('PACKAGECONFIG', 'python', '${PN}-python', '', d)} \
+"
 
 
 # For ptests compile the kernel with CONFIG_NFT_TPROXY

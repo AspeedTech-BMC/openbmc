@@ -83,10 +83,9 @@ class SFTP(FetchMethod):
         """Fetch urls"""
 
         urlo = URI(ud.url)
-        basecmd = 'sftp -oBatchMode=yes'
-        port = ''
+        basecmd = ['sftp', '-oBatchMode=yes']
         if urlo.port:
-            port = '-P %d' % urlo.port
+            basecmd += ['-P', str(urlo.port)]
             urlo.port = None
 
         dldir = d.getVar('DL_DIR')
@@ -103,9 +102,9 @@ class SFTP(FetchMethod):
         if path[:3] == '/~/':
             path = path[3:]
 
-        remote = '"%s%s:%s"' % (user, urlo.hostname, path)
+        remote = '%s%s:%s' % (user, urlo.hostname, path)
 
-        cmd = '%s %s %s %s' % (basecmd, port, remote, lpath)
+        cmd = basecmd + [remote, lpath]
 
         bb.fetch2.check_network_access(d, cmd, ud.url)
         runfetchcmd(cmd, d)

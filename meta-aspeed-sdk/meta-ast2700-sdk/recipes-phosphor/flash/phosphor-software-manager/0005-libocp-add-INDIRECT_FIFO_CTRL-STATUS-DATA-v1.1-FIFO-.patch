@@ -1,0 +1,470 @@
+From 898335d154d85a63fd9bf4ad82bf4f73a260c61f Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Wed, 2 Sep 2026 11:02:57 +0800
+Subject: [PATCH] libocp: add INDIRECT_FIFO_CTRL/STATUS/DATA (v1.1 FIFO)
+ support
+
+Add the OCP Secure Firmware Recovery v1.1 FIFO indirect mechanism
+(spec 8.2.5, commands 0x2D/0x2E/0x2F), previously rejected outright
+with std::errc::not_supported:
+
+ - indirectFifoCtrl(): selects a FIFO CMS window, optionally resetting
+   its Write/Read indices, and declares the image size (rounded up to
+   4-byte units on the wire).
+ - indirectFifoStatus(): decodes empty/full, region type, Write/Read
+   Index, FIFO size and max transfer size (all 4-byte units), plus
+   spaceRemainingUnits() implementing the spec's exact
+   "(ReadIdx - (WriteIdx+1) + FifoSize) % FifoSize" formula in native
+   uint32_t so it stays correct if the free-running index counters
+   wrap.
+ - writeIndirectFifoData(): a single INDIRECT_FIFO_DATA write.
+ - writeImageFifo(): chunks a full image through
+   writeIndirectFifoData(), clamping to the device's advertised max
+   transfer size and polling indirectFifoStatus() for enough free FIFO
+   space before each chunk (flow control per spec's "monitor Write/
+   Read Index" option, rather than an ack bit - the FIFO model has no
+   ack bit).
+
+Target::recover() and the CLI's PerformOCPRecovery now pick this path
+automatically via ProtCap::fifoOnly() instead of refusing FIFO-only
+devices.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+
+Upstream-Status: Pending
+---
+ libocp/include/ocp/ocp_recovery.hpp | 113 +++++++++++++++---
+ libocp/src/ocp_recovery.cpp         | 170 ++++++++++++++++++++++++++--
+ libocp/tools/ocp_recovery_tool.cpp  |  15 ++-
+ 3 files changed, 272 insertions(+), 26 deletions(-)
+
+diff --git a/libocp/include/ocp/ocp_recovery.hpp b/libocp/include/ocp/ocp_recovery.hpp
+index 64cb737..2928e52 100644
+--- a/libocp/include/ocp/ocp_recovery.hpp
++++ b/libocp/include/ocp/ocp_recovery.hpp
+@@ -1,12 +1,17 @@
+ // SPDX-License-Identifier: Apache-2.0
+ 
+ /*
+- * ocp_fw_recovery - OCP Security WG "Secure Firmware Recovery" protocol
+- * (v1.0), indirect (CMS memory window) image push over I2C/SMBus block
+- * transfers.
++ * ocp_fw_recovery - OCP Security WG "Secure Firmware Recovery" protocol,
++ * indirect image push over I2C/SMBus block transfers or an equivalent
++ * transport (see Transport). Supports both the v1.0 memory-window
++ * mechanism (INDIRECT_CTRL/INDIRECT_STATUS/INDIRECT_DATA) and the v1.1
++ * FIFO mechanism (INDIRECT_FIFO_CTRL/INDIRECT_FIFO_STATUS/
++ * INDIRECT_FIFO_DATA); Target::recover() picks between them based on
++ * what PROT_CAP reports (see ProtCap::fifoOnly()).
+  *
+  * Spec:
+- * https://www.opencompute.org/documents/ocp-recovery-document-1p0-final-1-pdf
++ * v1.0: https://www.opencompute.org/documents/ocp-recovery-document-1p0-final-1-pdf
++ * v1.1: https://www.opencompute.org/documents/ocp-recovery-document-1p1-final-pdf
+  *
+  * Each SMBus transaction is:
+  *   write: [command, byte count, payload ...]      (single i2c_msg)
+@@ -15,15 +20,14 @@
+  *
+  * Every fallible operation returns std::expected<..., std::error_code>.
+  * Transport failures carry the underlying errno; malformed device
+- * responses map to std::errc::protocol_error; a device advertising only
+- * the v1.1 INDIRECT_FIFO mechanism maps to std::errc::not_supported;
+- * exhausted polling (blocking layer only) maps to std::errc::timed_out.
++ * responses map to std::errc::protocol_error; exhausted polling (blocking
++ * layer only) maps to std::errc::timed_out.
+  * Results are returned by value only on success, so no output is ever
+  * partially written.
+  *
+  * The single-transaction primitives never sleep; callers own all polling
+- * delays. The blocking convenience layer (Target::writeImage/recover)
+- * sleeps internally and must not be used inside an event loop.
++ * delays. The blocking convenience layer (Target::writeImage/writeImageFifo/
++ * recover) sleeps internally and must not be used inside an event loop.
+  */
+ 
+ #pragma once
+@@ -55,6 +59,9 @@ enum class Cmd : uint8_t
+     indirectStatus = 0x2A,
+     indirectData = 0x2B,
+     vendor = 0x2C,
++    indirectFifoCtrl = 0x2D,
++    indirectFifoStatus = 0x2E,
++    indirectFifoData = 0x2F,
+ };
+ 
+ /*
+@@ -171,9 +178,11 @@ struct ProtCap
+     uint8_t heartbeatPeriod; /* 2^n us */
+ 
+     /* True when the device positively advertises only the v1.1
+-     * INDIRECT_FIFO mechanism, which this library does not implement.
+-     * Devices commonly leave the capability bits unset, so absence of
+-     * capIndirectCtrl alone is not treated as unsupported. */
++     * INDIRECT_FIFO mechanism (Target::recover() uses this to select
++     * indirectFifoCtrl()/writeImageFifo() over indirectCtrl()/
++     * writeImage()). Devices commonly leave the capability bits unset,
++     * so absence of capIndirectCtrl alone is not treated as
++     * FIFO-required. */
+     [[nodiscard]] bool fifoOnly() const
+     {
+         return (caps & capIndirectFifo) != 0 && (caps & capIndirectCtrl) == 0;
+@@ -209,6 +218,53 @@ struct IndirectStatusInfo
+     }
+ };
+ 
++/* INDIRECT_FIFO_STATUS region type (byte 1) */
++enum class FifoRegionType : uint8_t
++{
++    code = 0b000,        /* code space for recovery, write only */
++    log = 0b001,          /* debug log format, read only */
++    vendorWrite = 0b100,
++    vendorRead = 0b101,
++    unsupported = 0b111, /* CMS index does not support this access type */
++};
++
++struct IndirectFifoStatusInfo
++{
++    bool empty;
++    bool full;
++    FifoRegionType type;
++    uint32_t writeIndexUnits; /* offset, 4-byte units, advanced by the RA */
++    uint32_t readIndexUnits;  /* offset, 4-byte units, advanced by the device */
++    uint32_t fifoSizeUnits;   /* FIFO window size, 4-byte units */
++    uint32_t maxTransferUnits; /* max INDIRECT_FIFO_DATA payload, 4-byte units */
++
++    [[nodiscard]] uint64_t fifoSizeBytes() const
++    {
++        return uint64_t{fifoSizeUnits} * 4;
++    }
++
++    [[nodiscard]] uint64_t maxTransferBytes() const
++    {
++        return uint64_t{maxTransferUnits} * 4;
++    }
++
++    /* FIFO space remaining, in 4-byte units, per the spec formula:
++     * (Read Index - (Write Index + 1) + FIFO Size) % FIFO Size.
++     * Deliberately done in native uint32_t (matching the wire field
++     * width) rather than a wider type: the indices are free-running
++     * counters that wrap at 2^32, and unsigned wraparound is what makes
++     * this formula give the right cyclic distance even after that. */
++    [[nodiscard]] uint32_t spaceRemainingUnits() const
++    {
++        if (fifoSizeUnits == 0)
++        {
++            return 0;
++        }
++        return (readIndexUnits - (writeIndexUnits + 1) + fifoSizeUnits) %
++               fifoSizeUnits;
++    }
++};
++
+ /* One bus transaction: write wbuf; a non-empty rbuf requests a
+  * repeated-start read into it. Returns a default-constructed (falsy)
+  * error_code on success. Implementations must accept writes up to one
+@@ -350,6 +406,24 @@ class Target
+     [[nodiscard]] std::expected<size_t, std::error_code> readIndirectData(
+         std::span<uint8_t> buf);
+ 
++    /* INDIRECT_FIFO_CTRL: select a FIFO-model CMS window. When reset is
++     * true the device's Write/Read indices are reset to their initial
++     * value (use this at the start of a fresh image push). imageSize is
++     * in bytes; the wire field is 4-byte units, so this rounds up. */
++    [[nodiscard]] std::expected<void, std::error_code> indirectFifoCtrl(
++        uint8_t window, bool reset, uint64_t imageSize);
++
++    [[nodiscard]] std::expected<IndirectFifoStatusInfo, std::error_code>
++        indirectFifoStatus();
++
++    /* INDIRECT_FIFO_DATA: append data at the FIFO's current Head Pointer.
++     * The device NACKs (surfaced as a transport error) a write that
++     * would advance the Write Index to equal the Read Index; callers
++     * doing their own chunking should check indirectFifoStatus() first,
++     * or use writeImageFifo() below. */
++    [[nodiscard]] std::expected<void, std::error_code> writeIndirectFifoData(
++        std::span<const uint8_t> data);
++
+     /* Blocking convenience layer (sleeps with std::this_thread; for tests
+      * and standalone tooling, NOT for use inside an event loop) */
+ 
+@@ -360,8 +434,16 @@ class Target
+     [[nodiscard]] std::expected<void, std::error_code> writeImage(
+         std::span<const uint8_t> image, const ProgressFn& progress = {});
+ 
++    /* Stream image into the currently configured FIFO CMS window via
++     * chunked INDIRECT_FIFO_DATA writes, polling indirectFifoStatus()
++     * for enough free space before each chunk rather than an ack bit. */
++    [[nodiscard]] std::expected<void, std::error_code> writeImageFifo(
++        std::span<const uint8_t> image, const ProgressFn& progress = {});
++
+     /* Full recovery sequence: PROT_CAP (tolerant) -> force recovery mode
+-     * if needed -> stage image -> activate -> poll for success. */
++     * if needed -> stage image (FIFO path when PROT_CAP positively
++     * reports FIFO-only support, memory-window path otherwise) ->
++     * activate -> poll for success. */
+     [[nodiscard]] std::expected<void, std::error_code> recover(
+         std::span<const uint8_t> image, const ProgressFn& progress = {});
+ 
+@@ -376,6 +458,11 @@ class Target
+ 
+     [[nodiscard]] std::expected<void, std::error_code> waitWriteAck();
+ 
++    /* Polls indirectFifoStatus() until at least neededBytes of FIFO
++     * space is free, or ackPollRetries is exhausted (std::errc::timed_out). */
++    [[nodiscard]] std::expected<void, std::error_code> waitFifoSpace(
++        size_t neededBytes);
++
+     Transport& transport;
+     size_t chunkSize;
+     uint8_t cms;
+diff --git a/libocp/src/ocp_recovery.cpp b/libocp/src/ocp_recovery.cpp
+index 0e7b8cc..b018893 100644
+--- a/libocp/src/ocp_recovery.cpp
++++ b/libocp/src/ocp_recovery.cpp
+@@ -15,6 +15,7 @@ constexpr size_t respLenProtCap = 16;
+ constexpr size_t respLenDeviceStatus = 25;
+ constexpr size_t respLenRecoveryStatus = 3;
+ constexpr size_t respLenIndirectStatus = 7;
++constexpr size_t respLenIndirectFifoStatus = 21;
+ 
+ /* One full SMBus block: byte count + up to 255 payload bytes */
+ constexpr size_t respLenBlockMax = 1 + 255;
+@@ -271,6 +272,59 @@ std::expected<size_t, std::error_code> Target::readIndirectData(
+     return len;
+ }
+ 
++std::expected<void, std::error_code> Target::indirectFifoCtrl(
++    uint8_t window, bool reset, uint64_t imageSize)
++{
++    /* Wire field is in 4-byte units; round up so the device reserves
++     * enough space for a size that isn't itself 4-byte aligned. */
++    const auto sizeUnits =
++        static_cast<uint32_t>((imageSize + 3) / 4);
++    const std::array<uint8_t, 6> payload = {
++        window,
++        static_cast<uint8_t>(reset ? 0x01 : 0x00),
++        static_cast<uint8_t>(sizeUnits & 0xFF),
++        static_cast<uint8_t>((sizeUnits >> 8) & 0xFF),
++        static_cast<uint8_t>((sizeUnits >> 16) & 0xFF),
++        static_cast<uint8_t>((sizeUnits >> 24) & 0xFF),
++    };
++
++    return command(Cmd::indirectFifoCtrl, payload);
++}
++
++std::expected<IndirectFifoStatusInfo, std::error_code>
++    Target::indirectFifoStatus()
++{
++    std::array<uint8_t, respLenIndirectFifoStatus> resp{};
++
++    const auto count = commandRead(Cmd::indirectFifoStatus, resp,
++                                   respLenIndirectFifoStatus - 1);
++    if (!count)
++    {
++        return std::unexpected(count.error());
++    }
++
++    return IndirectFifoStatusInfo{
++        .empty = (resp[1] & 0x01) != 0,
++        .full = (resp[1] & 0x02) != 0,
++        .type = FifoRegionType{resp[2]},
++        .writeIndexUnits = getLe32(std::span(resp).subspan(5)),
++        .readIndexUnits = getLe32(std::span(resp).subspan(9)),
++        .fifoSizeUnits = getLe32(std::span(resp).subspan(13)),
++        .maxTransferUnits = getLe32(std::span(resp).subspan(17)),
++    };
++}
++
++std::expected<void, std::error_code> Target::writeIndirectFifoData(
++    std::span<const uint8_t> data)
++{
++    if (data.empty() || data.size() > chunkSize || chunkSize > chunkSizeMax)
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    return command(Cmd::indirectFifoData, data);
++}
++
+ /* Blocking convenience layer */
+ 
+ std::expected<void, std::error_code> Target::waitWriteAck()
+@@ -338,21 +392,102 @@ std::expected<void, std::error_code> Target::writeImage(
+     return {};
+ }
+ 
+-std::expected<void, std::error_code> Target::recover(
++std::expected<void, std::error_code> Target::waitFifoSpace(
++    size_t neededBytes)
++{
++    for (unsigned int poll = 0; poll < ackPollRetries; poll++)
++    {
++        const auto status = indirectFifoStatus();
++        if (!status)
++        {
++            return std::unexpected(status.error());
++        }
++        if (uint64_t{status->spaceRemainingUnits()} * 4 >= neededBytes)
++        {
++            return {};
++        }
++        std::this_thread::sleep_for(ackPollInterval);
++    }
++
++    return failure(std::errc::timed_out);
++}
++
++std::expected<void, std::error_code> Target::writeImageFifo(
+     std::span<const uint8_t> image, const ProgressFn& progress)
+ {
+-    if (image.empty())
++    if (image.empty() || chunkSize == 0 || chunkSize > chunkSizeMax)
+     {
+         return failure(std::errc::invalid_argument);
+     }
+ 
+-    /* Tolerant: many devices do not implement PROT_CAP; only fail when
+-     * the device positively reports FIFO-only support. */
+-    if (const auto cap = getProtCap(); cap && cap->fifoOnly())
++    /* Clamp to the device-advertised max INDIRECT_FIFO_DATA payload, when
++     * it reports one; a fixed chunk size for the whole transfer keeps
++     * this simple and matches "transfers ... with size less than or
++     * equal to the max transfer size" from the spec. */
++    size_t chunk = chunkSize;
++    if (const auto status = indirectFifoStatus(); status)
+     {
+-        return failure(std::errc::not_supported);
++        const uint64_t maxTransfer = status->maxTransferBytes();
++        if (maxTransfer > 0 && maxTransfer < chunk)
++        {
++            chunk = static_cast<size_t>(maxTransfer);
++        }
+     }
+ 
++    size_t offset = 0;
++    while (offset < image.size())
++    {
++        const auto piece =
++            image.subspan(offset, std::min(chunk, image.size() - offset));
++
++        std::expected<void, std::error_code> result =
++            failure(std::errc::timed_out);
++
++        for (unsigned int attempt = 0; attempt < chunkWriteRetries; attempt++)
++        {
++            if (auto space = waitFifoSpace(piece.size()); !space)
++            {
++                result = space;
++                continue;
++            }
++
++            result = writeIndirectFifoData(piece);
++            if (result)
++            {
++                break;
++            }
++        }
++        if (!result)
++        {
++            return result;
++        }
++
++        offset += piece.size();
++
++        if (progress)
++        {
++            progress(offset, image.size());
++        }
++    }
++
++    return {};
++}
++
++std::expected<void, std::error_code> Target::recover(
++    std::span<const uint8_t> image, const ProgressFn& progress)
++{
++    if (image.empty())
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    /* Tolerant: many devices do not implement PROT_CAP. When it is
++     * implemented and the device advertises only the v1.1 FIFO indirect
++     * mechanism, stage the image through INDIRECT_FIFO_CTRL/DATA instead
++     * of the memory-window INDIRECT_CTRL/DATA pair. */
++    const auto cap = getProtCap();
++    const bool useFifo = cap && cap->fifoOnly();
++
+     auto status = getDeviceStatus();
+     if (!status)
+     {
+@@ -389,14 +524,27 @@ std::expected<void, std::error_code> Target::recover(
+         return ctrl;
+     }
+ 
+-    if (auto ctrl = indirectCtrl(cms, 0); !ctrl)
++    if (useFifo)
+     {
+-        return ctrl;
++        if (auto ctrl = indirectFifoCtrl(cms, true, image.size()); !ctrl)
++        {
++            return ctrl;
++        }
++        if (auto written = writeImageFifo(image, progress); !written)
++        {
++            return written;
++        }
+     }
+-
+-    if (auto written = writeImage(image, progress); !written)
++    else
+     {
+-        return written;
++        if (auto ctrl = indirectCtrl(cms, 0); !ctrl)
++        {
++            return ctrl;
++        }
++        if (auto written = writeImage(image, progress); !written)
++        {
++            return written;
++        }
+     }
+ 
+     if (auto ctrl =
+diff --git a/libocp/tools/ocp_recovery_tool.cpp b/libocp/tools/ocp_recovery_tool.cpp
+index 8a92c12..5163406 100644
+--- a/libocp/tools/ocp_recovery_tool.cpp
++++ b/libocp/tools/ocp_recovery_tool.cpp
+@@ -344,6 +344,15 @@ int cmdPerformRecovery(Target& target, uint8_t cms,
+         return rc;
+     }
+ 
++    // Devices that only implement the v1.1 FIFO indirect mechanism reject
++    // INDIRECT_CTRL/INDIRECT_DATA; PROT_CAP tells us which pair to use.
++    // Tolerant like Target::recover(): absent/unreadable PROT_CAP falls
++    // back to the v1.0 memory-window pair.
++    const auto cap = target.getProtCap();
++    const bool useFifo = cap && cap->fifoOnly();
++    std::cout << std::format("using indirect {} mode\n",
++                             useFifo ? "FIFO" : "memory-window");
++
+     size_t count = 0;
+     for (const auto& path : images)
+     {
+@@ -363,11 +372,13 @@ int cmdPerformRecovery(Target& target, uint8_t cms,
+             target.recoveryCtrl(cms, ImageSelection::fromCms, Activation::none);
+         if (result)
+         {
+-            result = target.indirectCtrl(cms, 0);
++            result = useFifo ? target.indirectFifoCtrl(cms, true, image.size())
++                             : target.indirectCtrl(cms, 0);
+         }
+         if (result)
+         {
+-            result = target.writeImage(image, makeProgress(lastPct));
++            result = useFifo ? target.writeImageFifo(image, makeProgress(lastPct))
++                             : target.writeImage(image, makeProgress(lastPct));
+         }
+         if (result)
+         {

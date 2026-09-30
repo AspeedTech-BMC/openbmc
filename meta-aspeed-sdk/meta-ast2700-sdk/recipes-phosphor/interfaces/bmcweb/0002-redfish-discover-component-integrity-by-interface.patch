@@ -1,0 +1,40 @@
+From 6b2d52c63a7b5d673a99c5c4f2974c02d6bf88aa Mon Sep 17 00:00:00 2001
+From: helloxiling <helloxiling@users.noreply.github.com>
+Date: Sun, 13 Sep 2026 21:10:58 -0700
+Subject: [PATCH] redfish: discover component integrity by interface
+
+Upstream-Status: Pending
+---
+ redfish-core/lib/component_integrity.hpp           | 2 +-
+ test/redfish-core/lib/component_integrity_test.cpp | 5 +++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/redfish-core/lib/component_integrity.hpp b/redfish-core/lib/component_integrity.hpp
+index a76d30e5c4..5d9b7e6658 100644
+--- a/redfish-core/lib/component_integrity.hpp
++++ b/redfish-core/lib/component_integrity.hpp
+@@ -40,7 +40,7 @@ namespace component_integrity_utils
+ {
+ 
+ inline constexpr std::string_view componentIntegrityPath =
+-    "/xyz/openbmc_project/component_integrity";
++    "/xyz/openbmc_project";
+ inline constexpr std::string_view componentIntegrityInterface =
+     "xyz.openbmc_project.Attestation.ComponentIntegrity";
+ inline constexpr std::array<std::string_view, 1> componentIntegrityInterfaces =
+diff --git a/test/redfish-core/lib/component_integrity_test.cpp b/test/redfish-core/lib/component_integrity_test.cpp
+index 574b9d2f2a..23f9997b3f 100644
+--- a/test/redfish-core/lib/component_integrity_test.cpp
++++ b/test/redfish-core/lib/component_integrity_test.cpp
+@@ -17,6 +17,11 @@ namespace redfish::component_integrity_utils
+ namespace
+ {
+ 
++TEST(ComponentIntegrityPath, SearchesPublicOpenBmcObjectTree)
++{
++    EXPECT_EQ(componentIntegrityPath, "/xyz/openbmc_project");
++}
++
+ TEST(TranslateSecurityTechnologyType, MapsPublicInterfaceValues)
+ {
+     EXPECT_EQ(translateSecurityTechnologyType(

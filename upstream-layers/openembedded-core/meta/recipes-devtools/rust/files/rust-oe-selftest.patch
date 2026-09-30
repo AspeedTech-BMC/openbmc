@@ -22,7 +22,7 @@ diff --git a/compiler/rustc_errors/src/markdown/tests/term.rs b/compiler/rustc_e
 diff --git a/compiler/rustc_interface/src/tests.rs b/compiler/rustc_interface/src/tests.rs
 --- a/compiler/rustc_interface/src/tests.rs
 +++ b/compiler/rustc_interface/src/tests.rs
-@@ -147,6 +147,7 @@ fn assert_non_crate_hash_different(x: &Options, y: &Options) {
+@@ -144,6 +144,7 @@ fn assert_non_crate_hash_different(x: &Options, y: &Options) {
 
  // When the user supplies --test we should implicitly supply --cfg test
  #[test]
@@ -30,7 +30,7 @@ diff --git a/compiler/rustc_interface/src/tests.rs b/compiler/rustc_interface/sr
  fn test_switch_implies_cfg_test() {
      sess_and_cfg(&["--test"], |_sess, cfg| {
          assert!(cfg.contains(&(sym::test, None)));
-@@ -155,6 +156,7 @@ fn test_switch_implies_cfg_test() {
+@@ -152,6 +153,7 @@ fn test_switch_implies_cfg_test() {
 
  // When the user supplies --test and --cfg test, don't implicitly add another --cfg test
  #[test]
@@ -38,7 +38,7 @@ diff --git a/compiler/rustc_interface/src/tests.rs b/compiler/rustc_interface/sr
  fn test_switch_implies_cfg_test_unless_cfg_test() {
      sess_and_cfg(&["--test", "--cfg=test"], |_sess, cfg| {
          let mut test_items = cfg.iter().filter(|&&(name, _)| name == sym::test);
-@@ -164,6 +166,7 @@ fn test_switch_implies_cfg_test_unless_cfg_test() {
+@@ -161,6 +163,7 @@ fn test_switch_implies_cfg_test_unless_cfg_test() {
  }
 
  #[test]
@@ -128,7 +128,7 @@ diff --git a/library/std/tests/sync/mutex.rs b/library/std/tests/sync/mutex.rs
  fn test_mutex_arc_poison_mapped() {
      let arc = Arc::new(Mutex::new(1));
      assert!(!arc.is_poisoned());
-@@ -457,6 +458,7 @@
+@@ -456,6 +457,7 @@
  
  #[test]
  #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
@@ -152,7 +152,7 @@ diff --git a/compiler/rustc_data_structures/src/tagged_ptr/tests.rs b/compiler/r
 index 160af8a65d..686f4607bb 100644
 --- a/compiler/rustc_data_structures/src/tagged_ptr/tests.rs
 +++ b/compiler/rustc_data_structures/src/tagged_ptr/tests.rs
-@@ -39,6 +39,7 @@ use crate::stable_hasher::{HashStable, StableHasher};
+@@ -43,6 +43,7 @@ use crate::stable_hasher::{HashStable, StableHasher};
  }
 
  #[test]
@@ -176,7 +176,7 @@ diff --git a/library/alloctests/tests/sort/tests.rs b/library/alloctests/tests/s
 index 14e6013f96..b670f27ab4 100644
 --- a/library/alloctests/tests/sort/tests.rs
 +++ b/library/alloctests/tests/sort/tests.rs
-@@ -922,12 +922,14 @@ gen_sort_test_fns_with_default_patterns_3_ty!(
+@@ -929,12 +929,14 @@ gen_sort_test_fns_with_default_patterns_3_ty!(
  macro_rules! instantiate_sort_test_inner {
      ($sort_impl:ty, miri_yes, $test_fn_name:ident) => {
          #[test]
@@ -195,7 +195,7 @@ diff --git a/compiler/rustc_data_structures/src/vec_cache/tests.rs b/compiler/ru
 index a05f274136..0e69b4cb98 100644
 --- a/compiler/rustc_data_structures/src/vec_cache/tests.rs
 +++ b/compiler/rustc_data_structures/src/vec_cache/tests.rs
-@@ -17,6 +17,7 @@ fn vec_cache_insert_and_check() {
+@@ -53,6 +53,7 @@ fn vec_cache_insert_and_check() {
  }
 
  #[test]
@@ -219,9 +219,10 @@ diff --git a/tests/ui/linking/executable-no-mangle-strip.rs b/tests/ui/linking/e
 index cc283dc53..73cbab9c0 100644
 --- a/tests/ui/linking/executable-no-mangle-strip.rs
 +++ b/tests/ui/linking/executable-no-mangle-strip.rs
-@@ -1,5 +1,7 @@
+@@ -1,6 +1,8 @@
  //@ run-pass
  //@ ignore-windows-gnu: only statics marked with used can be GC-ed on windows-gnu
+ //@ ignore-wasm: wasm, for better or worse, exports all #[no_mangle]
 +//@ ignore-powerpc: this test is not working on powerpc
 +//  bug report: https://github.com/rust-lang/rust/issues/144777
  
@@ -271,11 +272,42 @@ diff --git a/compiler/rustc/src/main.rs b/compiler/rustc/src/main.rs
 index 89c61cd..144ea0e 100644
 --- a/compiler/rustc/src/main.rs
 +++ b/compiler/rustc/src/main.rs
-@@ -38,6 +38,7 @@
+@@ -3,6 +3,7 @@
+ // Several crates are depended upon but unused so that they are present in the sysroot
+ #![expect(unused_crate_dependencies)]
+
++#[allow(unused_imports)]
+ use std::process::ExitCode;
+
+ // A note about jemalloc: rustc uses jemalloc when built for CI and
+@@ -41,6 +41,7 @@
  #[cfg(feature = "jemalloc")]
  use tikv_jemalloc_sys as _;
 
 +#[cfg(not(test))]
- fn main() {
+ fn main() -> ExitCode {
      rustc_driver::main()
  }
+diff --git a/tests/assembly-llvm/riscv-redundant-memory-stores.rs b/tests/assembly-llvm/riscv-redundant-memory-stores.rs
+index acdb69d..2220e6d 100644
+--- a/tests/assembly-llvm/riscv-redundant-memory-stores.rs
++++ b/tests/assembly-llvm/riscv-redundant-memory-stores.rs
+@@ -4,6 +4,7 @@
+ //@ compile-flags: -Copt-level=3 --target riscv64gc-unknown-linux-gnu
+ //@ needs-llvm-components: riscv
+ //@ only-riscv64
++//@ ignore-riscv64
+
+ pub struct SomeComplexType {
+     a: u64,
+diff --git a/tests/ui/c-variadic/same-program-multiple-abis-arm.rs b/tests/ui/c-variadic/same-program-multiple-abis-arm.rs
+index fbc5573..f259529 100644
+--- a/tests/ui/c-variadic/same-program-multiple-abis-arm.rs
++++ b/tests/ui/c-variadic/same-program-multiple-abis-arm.rs
+@@ -1,5 +1,6 @@
+ //@ run-pass
+ //@ only-arm
++//@ ignore-arm
+ //@ ignore-thumb (this test uses arm assembly)
+ //@ only-eabihf (the assembly below requires float hardware support)
+ #![feature(c_variadic, c_variadic_naked_functions)]

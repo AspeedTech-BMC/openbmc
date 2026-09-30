@@ -1,0 +1,129 @@
+From 751ff06f60503550a879f1457f47d64cdd2e9ad2 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Wed, 2 Sep 2026 11:11:44 +0800
+Subject: [PATCH] confirm DEVICE_STATUS=recoveryPending before activating
+
+Spec 7.6: "An image waiting for activation of the recovery image MUST
+report Recovery Pending in the DEVICE_STATUS." Both Target::recover()
+and the CLI's PerformOCPRecovery were sending RECOVERY_CTRL's
+Activation::activate right after the image write completed, without
+ever confirming the device actually reported that state first.
+
+Add Target::waitDeviceStatus(), and call it right before every
+Activation::activate. Also refactor recover()'s existing
+wait-for-recoveryMode-after-forceRecovery loop onto the same helper,
+removing the duplicated polling code.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+
+Upstream-Status: Pending
+---
+ libocp/include/ocp/ocp_recovery.hpp |  8 ++++++
+ libocp/src/ocp_recovery.cpp         | 41 ++++++++++++++++++++---------
+ libocp/tools/ocp_recovery_tool.cpp  |  7 +++++
+ 3 files changed, 43 insertions(+), 13 deletions(-)
+
+diff --git a/libocp/include/ocp/ocp_recovery.hpp b/libocp/include/ocp/ocp_recovery.hpp
+index 3c04b9c..c9159b4 100644
+--- a/libocp/include/ocp/ocp_recovery.hpp
++++ b/libocp/include/ocp/ocp_recovery.hpp
+@@ -394,6 +394,14 @@ class Target
+      * mastering enabled ([0x01, 0x0F, 0x01]). */
+     [[nodiscard]] std::expected<void, std::error_code> forceRecovery();
+ 
++    /* Polls DEVICE_STATUS (checking immediately, then every
++     * statusPollInterval) until it reports the given status, or
++     * statusPollRetries is exhausted (std::errc::timed_out). Per spec
++     * 7.6, callers MUST see DeviceStatus::recoveryPending here before
++     * sending RECOVERY_CTRL's Activation::activate. */
++    [[nodiscard]] std::expected<void, std::error_code> waitDeviceStatus(
++        DeviceStatus want);
++
+     [[nodiscard]] std::expected<void, std::error_code> recoveryCtrl(
+         uint8_t window, ImageSelection imageSel, Activation activation);
+ 
+diff --git a/libocp/src/ocp_recovery.cpp b/libocp/src/ocp_recovery.cpp
+index 543405a..4461bf6 100644
+--- a/libocp/src/ocp_recovery.cpp
++++ b/libocp/src/ocp_recovery.cpp
+@@ -201,6 +201,22 @@ std::expected<void, std::error_code> Target::forceRecovery()
+     return command(Cmd::deviceReset, payload);
+ }
+ 
++std::expected<void, std::error_code> Target::waitDeviceStatus(
++    DeviceStatus want)
++{
++    for (unsigned int poll = 0; poll < statusPollRetries; poll++)
++    {
++        if (const auto status = getDeviceStatus();
++            status && status->status == want)
++        {
++            return {};
++        }
++        std::this_thread::sleep_for(statusPollInterval);
++    }
++
++    return failure(std::errc::timed_out);
++}
++
+ std::expected<void, std::error_code> Target::recoveryCtrl(
+     uint8_t window, ImageSelection imageSel, Activation activation)
+ {
+@@ -521,20 +537,10 @@ std::expected<void, std::error_code> Target::recover(
+         {
+             return forced;
+         }
+-
+-        for (unsigned int poll = 0; poll < statusPollRetries; poll++)
++        if (auto waited = waitDeviceStatus(DeviceStatus::recoveryMode);
++            !waited)
+         {
+-            std::this_thread::sleep_for(statusPollInterval);
+-
+-            status = getDeviceStatus();
+-            if (status && status->status == DeviceStatus::recoveryMode)
+-            {
+-                break;
+-            }
+-        }
+-        if (!status || status->status != DeviceStatus::recoveryMode)
+-        {
+-            return failure(std::errc::timed_out);
++            return waited;
+         }
+     }
+ 
+@@ -568,6 +574,15 @@ std::expected<void, std::error_code> Target::recover(
+         }
+     }
+ 
++    /* Spec 7.6: "An image waiting for activation of the recovery image
++     * MUST report Recovery Pending in the DEVICE_STATUS" - confirm that
++     * before activating, rather than activating blind. */
++    if (auto waited = waitDeviceStatus(DeviceStatus::recoveryPending);
++        !waited)
++    {
++        return waited;
++    }
++
+     if (auto ctrl =
+             recoveryCtrl(cms, ImageSelection::fromCms, Activation::activate);
+         !ctrl)
+diff --git a/libocp/tools/ocp_recovery_tool.cpp b/libocp/tools/ocp_recovery_tool.cpp
+index 5163406..16d667d 100644
+--- a/libocp/tools/ocp_recovery_tool.cpp
++++ b/libocp/tools/ocp_recovery_tool.cpp
+@@ -381,6 +381,13 @@ int cmdPerformRecovery(Target& target, uint8_t cms,
+                              : target.writeImage(image, makeProgress(lastPct));
+         }
+         if (result)
++        {
++            // Spec 7.6: an image waiting for activation MUST report
++            // "Recovery Pending" in DEVICE_STATUS - confirm that before
++            // activating rather than activating blind.
++            result = target.waitDeviceStatus(DeviceStatus::recoveryPending);
++        }
++        if (result)
+         {
+             result = target.recoveryCtrl(cms, ImageSelection::fromCms,
+                                          Activation::activate);

@@ -561,7 +561,7 @@ New Features / Enhancements in |yocto-ver|
       :term:`IMAGE_EXTRA_PARTITION_FILES` variable for more information.
 
    -  The ``--diskid`` option was added to allow passing a :wikipedia:`MS-DOS
-      </MS-DOS>` or :wikipedia:`GPT <GUID_Partition_Table>`-formatted
+      <MS-DOS>` or :wikipedia:`GPT <GUID_Partition_Table>`-formatted
       disk IDs for a partition (for example: ``deadbeef-cafe-babe-f00d-cec2ea4eface``).
 
 -  SDK-related changes:
@@ -778,7 +778,7 @@ New Features / Enhancements in |yocto-ver|
       branch is no longer updated <migration-guides/migration-5.3:The Poky
       repository master branch is no longer updated>`.
 
--  :ref:`ref-classes-cve-check` class changes:
+-  ``cve-check`` class changes:
 
    -  ``cve-update-db-native``: FKIE: use Secondary metric if there is no
       Primary metric.

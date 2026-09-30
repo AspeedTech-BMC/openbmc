@@ -660,6 +660,30 @@ In addition, the command can take the following arguments:
 -  ``--setup-dir``: path to the :term:`Setup` to check to status for. Not
    required if :term:`BBPATH` is already configured.
 
+-  ``--url``: full URL to the buildtools SDK installer. Overrides the value
+   from the configuration file.
+
+-  ``--sha256``: SHA256 checksum of the buildtools installer. Overrides the
+   value from the configuration file.
+
+When ``url`` and ``sha256sum`` are set in the :term:`Configuration File`,
+the installer is downloaded via ``bb.fetch`` (cached in ``DL_DIR``) and its
+checksum is enforced. If no configuration is present, the script falls back
+to its built-in defaults::
+
+   "bitbake-setup": {
+       "configurations": [
+           {
+               "name": "my-config",
+               "install-buildtools": {
+                   "url": "https://example.com/buildtools/x86_64-buildtools-extended-nativesdk-standalone-5.0.sh",
+                   "sha256sum": "af76648b..."
+               },
+               ...
+           }
+       ]
+   }
+
 .. _ref-bbsetup-command-settings:
 
 ``bitbake-setup settings``
@@ -674,7 +698,7 @@ The ``bitbake-setup settings`` sub-command helps modifying the settings of
 
 Settings must be set with a section and a value, for example::
 
-   bitbake-setup setting set default top-dir-name bitbake-builds
+   bitbake-setup settings set default top-dir-name bitbake-builds
 
 Will set the value of ``top-dir-name`` in the ``default`` section to
 "bitbake-builds".
@@ -1057,6 +1081,12 @@ They contain the following sections:
       snippet. This is what is prompted during the
       :ref:`ref-bbsetup-command-init` command execution.
 
+   -  ``notes`` (*optional*): additional information written to
+      ``build/conf/conf-notes.txt`` when ``bitbake-setup`` generates the build
+      configuration from ``bb-layers``. This can be a string, or a list of
+      strings which will be written one per line. For ``oe-template``
+      configurations, this file is provided by the template.
+
    -  ``configurations``: Configurations can recursively contain as many nested
       configurations as needed. This will create more choices when running the
       :ref:`ref-bbsetup-command-init` command.
@@ -1067,6 +1097,12 @@ They contain the following sections:
       between themselves in other parameters. ``bitbake-setup`` will assemble
       configuration choices by putting together information from a leaf
       configuration and all of its ancestors.
+
+      When the same keyword is present in a nested configuration and in one of
+      its ancestors, the values are merged with Python ``+`` semantics. For
+      example, lists are appended and strings are concatenated directly. String
+      values such as ``description`` should include any needed separators in
+      the configuration data.
 
    -  ``bb-env-passthrough-additions`` (*optional*): List of environment
       variables to include in :term:`BB_ENV_PASSTHROUGH_ADDITIONS`.

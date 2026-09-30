@@ -1,0 +1,1621 @@
+From 28a438edf88d63c15054ecaa2608298d0c0dbc3e Mon Sep 17 00:00:00 2001
+From: P Arun Kumar Reddy <arunpapannagari23@gmail.com>
+Date: Wed, 12 Aug 2026 16:02:00 +0530
+Subject: [PATCH] libocp: add OCP Secure Firmware Recovery protocol library
+
+Add a C++ static library implementing the recovery agent side of the
+OCP Security WG "Secure Firmware Recovery" specification (v1.0
+indirect-write path) over I2C/SMBus block transfers [1].
+
+The library provides:
+- The recovery command set: PROT_CAP, DEVICE_ID, DEVICE_STATUS,
+  DEVICE_RESET (forced recovery), RECOVERY_CTRL, RECOVERY_STATUS,
+  INDIRECT_CTRL, INDIRECT_STATUS and chunked INDIRECT_DATA writes.
+  Every protocol code set (device status, recovery status, protocol
+  errors, recovery reason codes, image selection, activation) is a
+  distinct scoped enum so the overlapping numeric spaces cannot be
+  mixed up.
+- Single-transaction primitives that never sleep, so event-loop
+  callers (sdbusplus::async coroutines) can own all polling delays.
+  All fallible operations return std::expected values produced whole,
+  only on success; transport failures carry the underlying errno.
+- A blocking convenience layer (Target::writeImage/recover) for tests
+  and standalone tooling.
+- An abstract Transport interface; the built-in I2CTransport uses raw
+  ioctl(I2C_RDWR) write/write+read messages and owns its fd. Unit
+  tests drive the full protocol against a scripted mock transport,
+  including wire-format goldens, chunking (252-byte blocks with
+  acknowledge polling), vendor-length DEVICE_ID descriptors and error
+  propagation.
+
+Devices advertising only the v1.1 INDIRECT_FIFO mechanism are
+rejected with std::errc::not_supported for now.
+
+Tested: meson setup -Dtests=enabled && meson test (test_ocp_recovery,
+26 cases).
+
+[1] https://www.opencompute.org/documents/ocp-recovery-document-1p0-final-1-pdf
+
+Change-Id: I64e72b1741fbe941ac95c08b23068fecbf47e473
+Signed-off-by: P Arun Kumar Reddy <arunpapannagari23@gmail.com>
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-code-mgmt/+/92450]
+---
+ meson.build                         |   4 +
+ libocp/include/ocp/ocp_recovery.hpp | 336 +++++++++++++++++++
+ libocp/meson.build                  |  14 +
+ libocp/src/i2c_transport.cpp        | 109 ++++++
+ libocp/src/ocp_recovery.cpp         | 428 ++++++++++++++++++++++++
+ test/meson.build                    |   2 +
+ test/ocp/meson.build                |  12 +
+ test/ocp/mock_transport.cpp         |  63 ++++
+ test/ocp/mock_transport.hpp         |  28 ++
+ test/ocp/test_ocp_recovery.cpp      | 495 ++++++++++++++++++++++++++++
+ 10 files changed, 1491 insertions(+)
+ create mode 100644 libocp/include/ocp/ocp_recovery.hpp
+ create mode 100644 libocp/meson.build
+ create mode 100644 libocp/src/i2c_transport.cpp
+ create mode 100644 libocp/src/ocp_recovery.cpp
+ create mode 100644 test/ocp/meson.build
+ create mode 100644 test/ocp/mock_transport.cpp
+ create mode 100644 test/ocp/mock_transport.hpp
+ create mode 100644 test/ocp/test_ocp_recovery.cpp
+
+diff --git a/meson.build b/meson.build
+index 2a31a7c..12d859a 100644
+--- a/meson.build
++++ b/meson.build
+@@ -122,6 +122,10 @@ if common_build or build_tests.allowed()
+     subdir('common')
+ endif
+ 
++if build_tests.allowed()
++    subdir('libocp')
++endif
++
+ foreach dir : optioned_subdirs
+     subdir(dir)
+ endforeach
+diff --git a/libocp/include/ocp/ocp_recovery.hpp b/libocp/include/ocp/ocp_recovery.hpp
+new file mode 100644
+index 0000000..3e0a034
+--- /dev/null
++++ b/libocp/include/ocp/ocp_recovery.hpp
+@@ -0,0 +1,336 @@
++// SPDX-License-Identifier: Apache-2.0
++
++/*
++ * ocp_fw_recovery - OCP Security WG "Secure Firmware Recovery" protocol
++ * (v1.0), indirect (CMS memory window) image push over I2C/SMBus block
++ * transfers.
++ *
++ * Spec:
++ * https://www.opencompute.org/documents/ocp-recovery-document-1p0-final-1-pdf
++ *
++ * Each SMBus transaction is:
++ *   write: [command, byte count, payload ...]      (single i2c_msg)
++ *   read : [command] write + I2C_M_RD read message (one I2C_RDWR ioctl);
++ *          the response starts with the SMBus block byte count.
++ *
++ * Every fallible operation returns std::expected<..., std::error_code>.
++ * Transport failures carry the underlying errno; malformed device
++ * responses map to std::errc::protocol_error; a device advertising only
++ * the v1.1 INDIRECT_FIFO mechanism maps to std::errc::not_supported;
++ * exhausted polling (blocking layer only) maps to std::errc::timed_out.
++ * Results are returned by value only on success, so no output is ever
++ * partially written.
++ *
++ * The single-transaction primitives never sleep; callers own all polling
++ * delays. The blocking convenience layer (Target::writeImage/recover)
++ * sleeps internally and must not be used inside an event loop.
++ */
++
++#pragma once
++
++#include <chrono>
++#include <cstddef>
++#include <cstdint>
++#include <expected>
++#include <functional>
++#include <span>
++#include <string>
++#include <system_error>
++#include <vector>
++
++namespace ocp::recovery
++{
++
++/* Recovery command codes (OCP Secure Firmware Recovery 1.0, table 8) */
++enum class Cmd : uint8_t
++{
++    protCap = 0x22,
++    deviceId = 0x23,
++    deviceStatus = 0x24,
++    deviceReset = 0x25,
++    recoveryCtrl = 0x26,
++    recoveryStatus = 0x27,
++    hwStatus = 0x28,
++    indirectCtrl = 0x29,
++    indirectStatus = 0x2A,
++    indirectData = 0x2B,
++    vendor = 0x2C,
++};
++
++/*
++ * Protocol code sets. Each set is a distinct scoped enum so the
++ * overlapping numeric spaces cannot be mixed up (e.g. 0x03 is "recovery
++ * mode" as a device status but "success" as a recovery status).
++ * Reserved or vendor-defined wire values outside the enumerations are
++ * passed through unchanged.
++ */
++
++/* DEVICE_STATUS status codes */
++enum class DeviceStatus : uint8_t
++{
++    pending = 0x00,
++    healthy = 0x01,
++    deviceError = 0x02,
++    recoveryMode = 0x03,
++    recoveryPending = 0x04,
++    runningRecovery = 0x05,
++    bootFailure = 0x0E,
++    fatalError = 0x0F,
++};
++
++/* DEVICE_STATUS protocol error codes */
++enum class ProtocolError : uint8_t
++{
++    none = 0x00,
++    unsupportedCommand = 0x01,
++    unsupportedParameter = 0x02,
++    lengthWriteError = 0x03,
++    crcError = 0x04,
++    notResponding = 0x05,
++    general = 0xFF,
++};
++
++/* DEVICE_STATUS recovery reason codes (0x80+ are vendor unique) */
++enum class ReasonCode : uint16_t
++{
++    noFailure = 0x00,
++    hwError = 0x01,
++    hwSoftError = 0x02,
++    selfTestFailure = 0x03,
++    criticalDataCorrupt = 0x04,
++    keyManifestCorrupt = 0x05,
++    keyManifestAuthFailure = 0x06,
++    keyManifestAntiRollback = 0x07,
++    bootLoaderCorrupt = 0x08,
++    bootLoaderAuthFailure = 0x09,
++    bootLoaderAntiRollback = 0x0A,
++    mainImageCorrupt = 0x0B,
++    mainImageAuthFailure = 0x0C,
++    mainImageAntiRollback = 0x0D,
++    recoveryImageCorrupt = 0x0E,
++    recoveryImageAuthFailure = 0x0F,
++    recoveryImageAntiRollback = 0x10,
++    forcedRecovery = 0x11,
++};
++
++/* RECOVERY_STATUS status codes (low nibble) */
++enum class RecoveryStatus : uint8_t
++{
++    notInRecovery = 0x00,
++    awaitingImage = 0x01,
++    bootingImage = 0x02,
++    success = 0x03,
++    failed = 0x0C,
++    authError = 0x0D,
++    enteredRecovery = 0x0E,
++    invalidCms = 0x0F,
++};
++
++/* RECOVERY_CTRL recovery image selection */
++enum class ImageSelection : uint8_t
++{
++    none = 0x00,
++    fromCms = 0x01,
++    stored = 0x02,
++};
++
++/* RECOVERY_CTRL activation */
++enum class Activation : uint8_t
++{
++    none = 0x00,
++    activate = 0x0F,
++};
++
++/* Largest INDIRECT_DATA payload per SMBus block write */
++inline constexpr size_t chunkSizeMax = 252;
++
++inline constexpr uint8_t cmsDefault = 0;
++
++/* Poll budgets used by the blocking layer; exported so event-loop callers
++ * can implement the same policy with their own sleep primitive. Devices
++ * stall write acknowledgement while consuming a just-activated image;
++ * successful writes acknowledge on the first poll, so a long interval
++ * only costs time when the device is actually busy. */
++inline constexpr unsigned int ackPollRetries = 5;
++inline constexpr std::chrono::milliseconds ackPollInterval{1000};
++inline constexpr unsigned int chunkWriteRetries = 3;
++inline constexpr unsigned int statusPollRetries = 30;
++inline constexpr std::chrono::milliseconds statusPollInterval{1000};
++
++struct ProtCap
++{
++    static constexpr uint16_t capIndirectCtrl = 1U << 5;
++    static constexpr uint16_t capIndirectFifo = 1U << 12;
++
++    std::string magic; /* "OCP RECV" */
++    uint8_t major;
++    uint8_t minor;
++    uint16_t caps;
++    uint8_t numCms;
++    uint8_t maxRespTime;     /* 2^n us */
++    uint8_t heartbeatPeriod; /* 2^n us */
++
++    /* True when the device positively advertises only the v1.1
++     * INDIRECT_FIFO mechanism, which this library does not implement.
++     * Devices commonly leave the capability bits unset, so absence of
++     * capIndirectCtrl alone is not treated as unsupported. */
++    [[nodiscard]] bool fifoOnly() const
++    {
++        return (caps & capIndirectFifo) != 0 && (caps & capIndirectCtrl) == 0;
++    }
++};
++
++struct DeviceStatusInfo
++{
++    DeviceStatus status;
++    ProtocolError protocolError;
++    ReasonCode reason;
++};
++
++struct RecoveryStatusInfo
++{
++    RecoveryStatus status; /* low nibble */
++    uint8_t imageIndex;    /* high nibble */
++    uint8_t vendorStatus;
++};
++
++struct IndirectStatusInfo
++{
++    uint8_t status;     /* raw status byte (bit 2 = write acknowledge) */
++    bool ack;           /* write-acknowledge bit, decoded */
++    uint32_t sizeUnits; /* CMS size in 4-byte units; 0 when the device
++                           returned a short response without the size
++                           field (some implementations answer ack polls
++                           with a status-only payload) */
++
++    [[nodiscard]] uint64_t sizeBytes() const
++    {
++        return uint64_t{sizeUnits} * 4;
++    }
++};
++
++/* One bus transaction: write wbuf; a non-empty rbuf requests a
++ * repeated-start read into it. Returns a default-constructed (falsy)
++ * error_code on success. Implementations must accept writes up to one
++ * full protocol message (2 + chunkSizeMax bytes); the built-in
++ * I2CTransport rejects anything larger. */
++class Transport
++{
++  public:
++    Transport() = default;
++    virtual ~Transport() = default;
++    Transport(const Transport&) = delete;
++    Transport& operator=(const Transport&) = delete;
++    Transport(Transport&&) = delete;
++    Transport& operator=(Transport&&) = delete;
++
++    [[nodiscard]] virtual std::error_code transfer(
++        std::span<const uint8_t> wbuf, std::span<uint8_t> rbuf) = 0;
++};
++
++/* ioctl(I2C_RDWR) transport over /dev/i2c-<bus>; owns the fd. */
++class I2CTransport final : public Transport
++{
++  public:
++    [[nodiscard]] static std::expected<I2CTransport, std::error_code> open(
++        uint16_t bus, uint16_t addr);
++
++    ~I2CTransport() override;
++    I2CTransport(I2CTransport&& other) noexcept;
++    I2CTransport& operator=(I2CTransport&& other) noexcept;
++    I2CTransport(const I2CTransport&) = delete;
++    I2CTransport& operator=(const I2CTransport&) = delete;
++
++    std::error_code transfer(std::span<const uint8_t> wbuf,
++                             std::span<uint8_t> rbuf) override;
++
++  private:
++    I2CTransport(int fd, uint16_t addr) : fd(fd), addr(addr) {}
++
++    int fd = -1;
++    uint16_t addr = 0;
++};
++
++/* A recovery-capable device behind a Transport. */
++class Target
++{
++  public:
++    explicit Target(Transport& transport, size_t chunkSize = chunkSizeMax,
++                    uint8_t cms = cmsDefault) :
++        transport(transport), chunkSize(chunkSize), cms(cms)
++    {}
++
++    /* Single-transaction primitives (no sleeping) */
++
++    [[nodiscard]] std::expected<ProtCap, std::error_code> getProtCap();
++
++    /* Returns the device descriptor exactly as reported, truncated to
++     * maxLen. The default matches the fixed 24-byte PCI/UUID descriptor
++     * forms; devices with longer vendor-defined descriptors can be read
++     * with maxLen up to one full SMBus block (255 bytes). maxLen also
++     * sizes the bus read transaction, and some I2C adapters reject
++     * reads longer than their quirk limit - keep the default unless the
++     * device is known to report more. */
++    [[nodiscard]] std::expected<std::vector<uint8_t>, std::error_code>
++        getDeviceId(size_t maxLen = 24);
++
++    [[nodiscard]] std::expected<DeviceStatusInfo, std::error_code>
++        getDeviceStatus();
++
++    [[nodiscard]] std::expected<RecoveryStatusInfo, std::error_code>
++        getRecoveryStatus();
++
++    /* DEVICE_RESET: reset the device into recovery mode with interface
++     * mastering enabled ([0x01, 0x0F, 0x01]). */
++    [[nodiscard]] std::expected<void, std::error_code> forceRecovery();
++
++    [[nodiscard]] std::expected<void, std::error_code> recoveryCtrl(
++        uint8_t window, ImageSelection imageSel, Activation activation);
++
++    [[nodiscard]] std::expected<void, std::error_code> indirectCtrl(
++        uint8_t window, uint32_t offset);
++
++    [[nodiscard]] std::expected<IndirectStatusInfo, std::error_code>
++        indirectStatus();
++
++    [[nodiscard]] std::expected<void, std::error_code> writeIndirectData(
++        std::span<const uint8_t> data);
++
++    /* Block-read from the current indirect window (set with indirectCtrl),
++     * e.g. to retrieve CMS log regions. Returns the number of bytes the
++     * device produced (0 when drained). */
++    [[nodiscard]] std::expected<size_t, std::error_code> readIndirectData(
++        std::span<uint8_t> buf);
++
++    /* Blocking convenience layer (sleeps with std::this_thread; for tests
++     * and standalone tooling, NOT for use inside an event loop) */
++
++    using ProgressFn = std::function<void(size_t written, size_t total)>;
++
++    /* Stream image into the currently configured CMS window via chunked
++     * INDIRECT_DATA writes with per-chunk acknowledge polling. */
++    [[nodiscard]] std::expected<void, std::error_code> writeImage(
++        std::span<const uint8_t> image, const ProgressFn& progress = {});
++
++    /* Full recovery sequence: PROT_CAP (tolerant) -> force recovery mode
++     * if needed -> stage image -> activate -> poll for success. */
++    [[nodiscard]] std::expected<void, std::error_code> recover(
++        std::span<const uint8_t> image, const ProgressFn& progress = {});
++
++  private:
++    [[nodiscard]] std::expected<void, std::error_code> command(
++        Cmd cmd, std::span<const uint8_t> payload);
++
++    /* Returns the SMBus block byte count of the payload in resp[1..];
++     * counts below minCount are protocol errors. */
++    [[nodiscard]] std::expected<size_t, std::error_code> commandRead(
++        Cmd cmd, std::span<uint8_t> resp, size_t minCount = 1);
++
++    [[nodiscard]] std::expected<void, std::error_code> waitWriteAck();
++
++    Transport& transport;
++    size_t chunkSize;
++    uint8_t cms;
++};
++
++} // namespace ocp::recovery
+diff --git a/libocp/meson.build b/libocp/meson.build
+new file mode 100644
+index 0000000..a70e58b
+--- /dev/null
++++ b/libocp/meson.build
+@@ -0,0 +1,14 @@
++libocp_fw_recovery_inc = include_directories('include')
++
++libocp_fw_recovery = static_library(
++    'ocp_fw_recovery',
++    'src/i2c_transport.cpp',
++    'src/ocp_recovery.cpp',
++    include_directories: libocp_fw_recovery_inc,
++    install: false,
++)
++
++libocp_fw_recovery_dep = declare_dependency(
++    link_with: libocp_fw_recovery,
++    include_directories: libocp_fw_recovery_inc,
++)
+diff --git a/libocp/src/i2c_transport.cpp b/libocp/src/i2c_transport.cpp
+new file mode 100644
+index 0000000..df6badb
+--- /dev/null
++++ b/libocp/src/i2c_transport.cpp
+@@ -0,0 +1,109 @@
++// SPDX-License-Identifier: Apache-2.0
++
++#include "ocp/ocp_recovery.hpp"
++
++#include <fcntl.h>
++#include <linux/i2c-dev.h>
++#include <linux/i2c.h>
++#include <sys/ioctl.h>
++#include <unistd.h>
++
++#include <algorithm>
++#include <array>
++#include <cerrno>
++#include <format>
++#include <utility>
++
++namespace ocp::recovery
++{
++
++static std::error_code errnoCode(int fallback)
++{
++    return std::error_code((errno != 0) ? errno : fallback,
++                           std::generic_category());
++}
++
++std::expected<I2CTransport, std::error_code> I2CTransport::open(uint16_t bus,
++                                                                uint16_t addr)
++{
++    const std::string path = std::format("/dev/i2c-{}", bus);
++
++    const int fd = ::open(path.c_str(), O_RDWR | O_CLOEXEC);
++    if (fd < 0)
++    {
++        return std::unexpected(errnoCode(EIO));
++    }
++
++    return I2CTransport(fd, addr);
++}
++
++I2CTransport::~I2CTransport()
++{
++    if (fd >= 0)
++    {
++        ::close(fd);
++    }
++}
++
++I2CTransport::I2CTransport(I2CTransport&& other) noexcept :
++    fd(std::exchange(other.fd, -1)), addr(other.addr)
++{}
++
++I2CTransport& I2CTransport::operator=(I2CTransport&& other) noexcept
++{
++    if (this != &other)
++    {
++        if (fd >= 0)
++        {
++            ::close(fd);
++        }
++        fd = std::exchange(other.fd, -1);
++        addr = other.addr;
++    }
++    return *this;
++}
++
++std::error_code I2CTransport::transfer(std::span<const uint8_t> wbuf,
++                                       std::span<uint8_t> rbuf)
++{
++    /* Largest write message: [command, byte count, payload...] */
++    std::array<uint8_t, 2 + chunkSizeMax> wcopy{};
++
++    if (fd < 0 || wbuf.empty() || wbuf.size() > wcopy.size() ||
++        rbuf.size() > UINT16_MAX)
++    {
++        return std::make_error_code(std::errc::invalid_argument);
++    }
++
++    /* The kernel message buffer is not const-qualified; stage the write
++     * in a local copy rather than casting constness away. */
++    std::ranges::copy(wbuf, wcopy.begin());
++
++    std::array<i2c_msg, 2> msgs{};
++
++    msgs[0].addr = addr;
++    msgs[0].flags = 0;
++    msgs[0].len = static_cast<uint16_t>(wbuf.size());
++    msgs[0].buf = wcopy.data();
++
++    if (!rbuf.empty())
++    {
++        msgs[1].addr = addr;
++        msgs[1].flags = I2C_M_RD;
++        msgs[1].len = static_cast<uint16_t>(rbuf.size());
++        msgs[1].buf = rbuf.data();
++    }
++
++    i2c_rdwr_ioctl_data xfer{};
++    xfer.msgs = msgs.data();
++    xfer.nmsgs = rbuf.empty() ? 1 : 2;
++
++    if (ioctl(fd, I2C_RDWR, &xfer) < 0)
++    {
++        return errnoCode(EIO);
++    }
++
++    return {};
++}
++
++} // namespace ocp::recovery
+diff --git a/libocp/src/ocp_recovery.cpp b/libocp/src/ocp_recovery.cpp
+new file mode 100644
+index 0000000..0e7b8cc
+--- /dev/null
++++ b/libocp/src/ocp_recovery.cpp
+@@ -0,0 +1,428 @@
++// SPDX-License-Identifier: Apache-2.0
++
++#include "ocp/ocp_recovery.hpp"
++
++#include <algorithm>
++#include <array>
++#include <thread>
++#include <utility>
++
++namespace ocp::recovery
++{
++
++/* SMBus block responses lead with the byte count */
++constexpr size_t respLenProtCap = 16;
++constexpr size_t respLenDeviceStatus = 25;
++constexpr size_t respLenRecoveryStatus = 3;
++constexpr size_t respLenIndirectStatus = 7;
++
++/* One full SMBus block: byte count + up to 255 payload bytes */
++constexpr size_t respLenBlockMax = 1 + 255;
++
++constexpr uint8_t indirectStatusAckMask = 0x04;
++
++constexpr std::array<uint8_t, 8> protCapMagic = {'O', 'C', 'P', ' ',
++                                                 'R', 'E', 'C', 'V'};
++
++namespace
++{
++
++std::unexpected<std::error_code> failure(std::errc code)
++{
++    return std::unexpected(std::make_error_code(code));
++}
++
++uint16_t getLe16(std::span<const uint8_t> b)
++{
++    return static_cast<uint16_t>(b[0] | (uint16_t{b[1]} << 8));
++}
++
++uint32_t getLe32(std::span<const uint8_t> b)
++{
++    return b[0] | (uint32_t{b[1]} << 8) | (uint32_t{b[2]} << 16) |
++           (uint32_t{b[3]} << 24);
++}
++
++} // namespace
++
++std::expected<void, std::error_code> Target::command(
++    Cmd cmd, std::span<const uint8_t> payload)
++{
++    std::array<uint8_t, 2 + chunkSizeMax> buf{};
++
++    if (payload.size() > chunkSizeMax)
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    buf[0] = std::to_underlying(cmd);
++    buf[1] = static_cast<uint8_t>(payload.size());
++    std::ranges::copy(payload, buf.begin() + 2);
++
++    if (auto ec =
++            transport.transfer(std::span(buf).first(2 + payload.size()), {}))
++    {
++        return std::unexpected(ec);
++    }
++    return {};
++}
++
++std::expected<size_t, std::error_code> Target::commandRead(
++    Cmd cmd, std::span<uint8_t> resp, size_t minCount)
++{
++    const std::array<uint8_t, 1> wbuf = {std::to_underlying(cmd)};
++
++    if (resp.size() < 2)
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    if (auto ec = transport.transfer(wbuf, resp))
++    {
++        return std::unexpected(ec);
++    }
++
++    /* resp[0] is the SMBus block byte count of the payload that follows */
++    const size_t count = resp[0];
++    if (count < minCount || count > resp.size() - 1)
++    {
++        return failure(std::errc::protocol_error);
++    }
++
++    return count;
++}
++
++std::expected<ProtCap, std::error_code> Target::getProtCap()
++{
++    std::array<uint8_t, respLenProtCap> resp{};
++
++    const auto count = commandRead(Cmd::protCap, resp);
++    if (!count)
++    {
++        return std::unexpected(count.error());
++    }
++
++    const auto magic = std::span(resp).subspan(1, protCapMagic.size());
++    if (*count < respLenProtCap - 1 || !std::ranges::equal(magic, protCapMagic))
++    {
++        return failure(std::errc::protocol_error);
++    }
++
++    return ProtCap{
++        .magic = std::string(magic.begin(), magic.end()),
++        .major = resp[9],
++        .minor = resp[10],
++        .caps = getLe16(std::span(resp).subspan(11)),
++        .numCms = resp[13],
++        .maxRespTime = resp[14],
++        .heartbeatPeriod = resp[15],
++    };
++}
++
++std::expected<std::vector<uint8_t>, std::error_code> Target::getDeviceId(
++    size_t maxLen)
++{
++    std::array<uint8_t, respLenBlockMax> resp{};
++
++    if (maxLen == 0 || maxLen > respLenBlockMax - 1)
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    const auto count =
++        commandRead(Cmd::deviceId, std::span(resp).first(maxLen + 1));
++    if (!count)
++    {
++        return std::unexpected(count.error());
++    }
++
++    /* Pass the descriptor through exactly as reported, up to maxLen;
++     * vendor-specific IDs may use any length up to a full SMBus block. */
++    const auto id = std::span(resp).subspan(1, std::min(*count, maxLen));
++    return std::vector<uint8_t>(id.begin(), id.end());
++}
++
++std::expected<DeviceStatusInfo, std::error_code> Target::getDeviceStatus()
++{
++    std::array<uint8_t, respLenDeviceStatus> resp{};
++
++    const auto count = commandRead(Cmd::deviceStatus, resp);
++    if (!count)
++    {
++        return std::unexpected(count.error());
++    }
++
++    if (*count < 4)
++    {
++        return failure(std::errc::protocol_error);
++    }
++
++    return DeviceStatusInfo{
++        .status = DeviceStatus{resp[1]},
++        .protocolError = ProtocolError{resp[2]},
++        .reason = ReasonCode{getLe16(std::span(resp).subspan(3))},
++    };
++}
++
++std::expected<RecoveryStatusInfo, std::error_code> Target::getRecoveryStatus()
++{
++    std::array<uint8_t, respLenRecoveryStatus> resp{};
++
++    const auto count = commandRead(Cmd::recoveryStatus, resp);
++    if (!count)
++    {
++        return std::unexpected(count.error());
++    }
++
++    return RecoveryStatusInfo{
++        .status = RecoveryStatus{static_cast<uint8_t>(resp[1] & 0x0F)},
++        .imageIndex = static_cast<uint8_t>((resp[1] >> 4) & 0x0F),
++        .vendorStatus = static_cast<uint8_t>((*count >= 2) ? resp[2] : 0),
++    };
++}
++
++std::expected<void, std::error_code> Target::forceRecovery()
++{
++    /* device reset, enter recovery on reset, enable interface mastering */
++    constexpr std::array<uint8_t, 3> payload = {0x01, 0x0F, 0x01};
++
++    return command(Cmd::deviceReset, payload);
++}
++
++std::expected<void, std::error_code> Target::recoveryCtrl(
++    uint8_t window, ImageSelection imageSel, Activation activation)
++{
++    const std::array<uint8_t, 3> payload = {
++        window, std::to_underlying(imageSel), std::to_underlying(activation)};
++
++    return command(Cmd::recoveryCtrl, payload);
++}
++
++std::expected<void, std::error_code> Target::indirectCtrl(uint8_t window,
++                                                          uint32_t offset)
++{
++    const std::array<uint8_t, 6> payload = {
++        window,
++        0x00, /* reserved */
++        static_cast<uint8_t>(offset & 0xFF),
++        static_cast<uint8_t>((offset >> 8) & 0xFF),
++        static_cast<uint8_t>((offset >> 16) & 0xFF),
++        static_cast<uint8_t>((offset >> 24) & 0xFF),
++    };
++
++    return command(Cmd::indirectCtrl, payload);
++}
++
++std::expected<IndirectStatusInfo, std::error_code> Target::indirectStatus()
++{
++    std::array<uint8_t, respLenIndirectStatus> resp{};
++
++    const auto count = commandRead(Cmd::indirectStatus, resp);
++    if (!count)
++    {
++        return std::unexpected(count.error());
++    }
++
++    /* Some devices answer acknowledge polls with a short, status-only
++     * payload; tolerate that and report the size only when present. */
++    return IndirectStatusInfo{
++        .status = resp[1],
++        .ack = (resp[1] & indirectStatusAckMask) != 0,
++        .sizeUnits = (*count >= respLenIndirectStatus - 1)
++                         ? getLe32(std::span(resp).subspan(3))
++                         : 0,
++    };
++}
++
++std::expected<void, std::error_code> Target::writeIndirectData(
++    std::span<const uint8_t> data)
++{
++    if (data.empty() || data.size() > chunkSize || chunkSize > chunkSizeMax)
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    return command(Cmd::indirectData, data);
++}
++
++std::expected<size_t, std::error_code> Target::readIndirectData(
++    std::span<uint8_t> buf)
++{
++    std::array<uint8_t, respLenBlockMax> resp{};
++
++    if (buf.empty())
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    const size_t want = std::min(buf.size(), respLenBlockMax - 1);
++
++    /* A zero byte count is valid here: it means the window is drained. */
++    const auto count =
++        commandRead(Cmd::indirectData, std::span(resp).first(want + 1), 0);
++    if (!count)
++    {
++        return std::unexpected(count.error());
++    }
++
++    const size_t len = std::min(*count, want);
++    std::ranges::copy(std::span(resp).subspan(1, len), buf.begin());
++
++    return len;
++}
++
++/* Blocking convenience layer */
++
++std::expected<void, std::error_code> Target::waitWriteAck()
++{
++    for (unsigned int poll = 0; poll < ackPollRetries; poll++)
++    {
++        const auto status = indirectStatus();
++        if (!status)
++        {
++            return std::unexpected(status.error());
++        }
++        if (status->ack)
++        {
++            return {};
++        }
++        std::this_thread::sleep_for(ackPollInterval);
++    }
++
++    return failure(std::errc::timed_out);
++}
++
++std::expected<void, std::error_code> Target::writeImage(
++    std::span<const uint8_t> image, const ProgressFn& progress)
++{
++    if (image.empty() || chunkSize == 0 || chunkSize > chunkSizeMax)
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    size_t offset = 0;
++    while (offset < image.size())
++    {
++        const auto chunk =
++            image.subspan(offset, std::min(chunkSize, image.size() - offset));
++
++        std::expected<void, std::error_code> result =
++            failure(std::errc::timed_out);
++
++        for (unsigned int attempt = 0; attempt < chunkWriteRetries; attempt++)
++        {
++            if (auto written = writeIndirectData(chunk); !written)
++            {
++                return written;
++            }
++
++            result = waitWriteAck();
++            if (result || result.error() != std::errc::timed_out)
++            {
++                break;
++            }
++        }
++        if (!result)
++        {
++            return result;
++        }
++
++        offset += chunk.size();
++
++        if (progress)
++        {
++            progress(offset, image.size());
++        }
++    }
++
++    return {};
++}
++
++std::expected<void, std::error_code> Target::recover(
++    std::span<const uint8_t> image, const ProgressFn& progress)
++{
++    if (image.empty())
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
++    /* Tolerant: many devices do not implement PROT_CAP; only fail when
++     * the device positively reports FIFO-only support. */
++    if (const auto cap = getProtCap(); cap && cap->fifoOnly())
++    {
++        return failure(std::errc::not_supported);
++    }
++
++    auto status = getDeviceStatus();
++    if (!status)
++    {
++        return std::unexpected(status.error());
++    }
++
++    if (status->status != DeviceStatus::recoveryMode)
++    {
++        if (auto forced = forceRecovery(); !forced)
++        {
++            return forced;
++        }
++
++        for (unsigned int poll = 0; poll < statusPollRetries; poll++)
++        {
++            std::this_thread::sleep_for(statusPollInterval);
++
++            status = getDeviceStatus();
++            if (status && status->status == DeviceStatus::recoveryMode)
++            {
++                break;
++            }
++        }
++        if (!status || status->status != DeviceStatus::recoveryMode)
++        {
++            return failure(std::errc::timed_out);
++        }
++    }
++
++    if (auto ctrl =
++            recoveryCtrl(cms, ImageSelection::fromCms, Activation::none);
++        !ctrl)
++    {
++        return ctrl;
++    }
++
++    if (auto ctrl = indirectCtrl(cms, 0); !ctrl)
++    {
++        return ctrl;
++    }
++
++    if (auto written = writeImage(image, progress); !written)
++    {
++        return written;
++    }
++
++    if (auto ctrl =
++            recoveryCtrl(cms, ImageSelection::fromCms, Activation::activate);
++        !ctrl)
++    {
++        return ctrl;
++    }
++
++    for (unsigned int poll = 0; poll < statusPollRetries; poll++)
++    {
++        if (const auto rec = getRecoveryStatus(); rec)
++        {
++            if (rec->status == RecoveryStatus::success)
++            {
++                return {};
++            }
++            if (rec->status >= RecoveryStatus::failed)
++            {
++                return failure(std::errc::io_error);
++            }
++        }
++        std::this_thread::sleep_for(statusPollInterval);
++    }
++
++    return failure(std::errc::timed_out);
++}
++
++} // namespace ocp::recovery
+diff --git a/test/meson.build b/test/meson.build
+index 14735cb..e317c51 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -3,3 +3,5 @@ subdir('create_package')
+ gtest_main = dependency('gtest_main', main: true, required: true)
+ 
+ subdir('common')
++
++subdir('ocp')
+diff --git a/test/ocp/meson.build b/test/ocp/meson.build
+new file mode 100644
+index 0000000..9dace2a
+--- /dev/null
++++ b/test/ocp/meson.build
+@@ -0,0 +1,12 @@
++testcases = ['test_ocp_recovery']
++
++foreach t : testcases
++    test(
++        t,
++        executable(
++            t,
++            [f'@t@.cpp', 'mock_transport.cpp'],
++            dependencies: [gtest_main, libocp_fw_recovery_dep],
++        ),
++    )
++endforeach
+diff --git a/test/ocp/mock_transport.cpp b/test/ocp/mock_transport.cpp
+new file mode 100644
+index 0000000..435afa5
+--- /dev/null
++++ b/test/ocp/mock_transport.cpp
+@@ -0,0 +1,63 @@
++#include "mock_transport.hpp"
++
++#include <algorithm>
++
++std::vector<uint8_t> MockTransport::commandSequence() const
++{
++    std::vector<uint8_t> seq;
++    seq.reserve(writes.size());
++    for (const auto& w : writes)
++    {
++        seq.push_back(w[0]);
++    }
++    return seq;
++}
++
++std::error_code MockTransport::transfer(std::span<const uint8_t> wbuf,
++                                        std::span<uint8_t> rbuf)
++{
++    const uint8_t cmd = wbuf[0];
++
++    if (transferError)
++    {
++        return transferError;
++    }
++
++    if (auto errIt = commandErrors.find(cmd); errIt != commandErrors.end())
++    {
++        return errIt->second;
++    }
++
++    writes.emplace_back(wbuf.begin(), wbuf.end());
++
++    if (rbuf.empty())
++    {
++        return {};
++    }
++
++    reads.push_back(rbuf.size());
++
++    std::ranges::fill(rbuf, uint8_t{0});
++
++    if (auto queueIt = queuedResponses.find(cmd);
++        queueIt != queuedResponses.end() && !queueIt->second.empty())
++    {
++        const auto& resp = queueIt->second.front();
++        std::ranges::copy(
++            std::span(resp).first(std::min(rbuf.size(), resp.size())),
++            rbuf.begin());
++        queueIt->second.pop_front();
++        return {};
++    }
++
++    if (auto respIt = staticResponses.find(cmd);
++        respIt != staticResponses.end())
++    {
++        const auto& resp = respIt->second;
++        std::ranges::copy(
++            std::span(resp).first(std::min(rbuf.size(), resp.size())),
++            rbuf.begin());
++    }
++
++    return {};
++}
+diff --git a/test/ocp/mock_transport.hpp b/test/ocp/mock_transport.hpp
+new file mode 100644
+index 0000000..867985c
+--- /dev/null
++++ b/test/ocp/mock_transport.hpp
+@@ -0,0 +1,28 @@
++#pragma once
++
++#include <ocp/ocp_recovery.hpp>
++
++#include <cstdint>
++#include <deque>
++#include <map>
++#include <span>
++#include <system_error>
++#include <vector>
++
++/* Register-level scripted transport: records every write message and
++ * answers reads per command code, either from a queue (consumed in order)
++ * or from a static response. */
++struct MockTransport : ocp::recovery::Transport
++{
++    std::vector<std::vector<uint8_t>> writes;
++    std::vector<size_t> reads; /* requested read lengths, in order */
++    std::map<uint8_t, std::vector<uint8_t>> staticResponses;
++    std::map<uint8_t, std::deque<std::vector<uint8_t>>> queuedResponses;
++    std::map<uint8_t, std::error_code> commandErrors;
++    std::error_code transferError;
++
++    [[nodiscard]] std::vector<uint8_t> commandSequence() const;
++
++    std::error_code transfer(std::span<const uint8_t> wbuf,
++                             std::span<uint8_t> rbuf) override;
++};
+diff --git a/test/ocp/test_ocp_recovery.cpp b/test/ocp/test_ocp_recovery.cpp
+new file mode 100644
+index 0000000..bf20b11
+--- /dev/null
++++ b/test/ocp/test_ocp_recovery.cpp
+@@ -0,0 +1,495 @@
++#include "mock_transport.hpp"
++
++#include <ocp/ocp_recovery.hpp>
++
++#include <cstdint>
++#include <string>
++#include <system_error>
++#include <utility>
++#include <vector>
++
++#include <gtest/gtest.h>
++
++namespace
++{
++
++using namespace ocp::recovery;
++
++constexpr uint8_t cmd(Cmd c)
++{
++    return std::to_underlying(c);
++}
++
++std::vector<uint8_t> validProtCap(uint16_t caps)
++{
++    return {15,
++            'O',
++            'C',
++            'P',
++            ' ',
++            'R',
++            'E',
++            'C',
++            'V',
++            1,
++            0,
++            static_cast<uint8_t>(caps & 0xFF),
++            static_cast<uint8_t>(caps >> 8),
++            2, /* num_cms */
++            10 /* max_resp_time */,
++            0 /* heartbeat */};
++}
++
++std::vector<uint8_t> deviceStatusResponse(DeviceStatus status)
++{
++    return {4, std::to_underlying(status), 0x00, 0x00, 0x00};
++}
++
++std::vector<uint8_t> recoveryStatusResponse(RecoveryStatus status)
++{
++    return {2, std::to_underlying(status), 0x00};
++}
++
++std::vector<uint8_t> indirectStatusResponse(uint8_t statusByte)
++{
++    return {6, statusByte, 0x00, 0x40, 0x00, 0x00, 0x00};
++}
++
++const std::error_code ioError = std::make_error_code(std::errc::io_error);
++
++class OCPRecoveryTest : public ::testing::Test
++{
++  protected:
++    MockTransport mock;
++    Target target{mock};
++};
++
++TEST_F(OCPRecoveryTest, ForceRecoveryEncoding)
++{
++    ASSERT_TRUE(target.forceRecovery().has_value());
++
++    const std::vector<uint8_t> expected{0x25, 0x03, 0x01, 0x0F, 0x01};
++    ASSERT_EQ(mock.writes.size(), 1U);
++    EXPECT_EQ(mock.writes[0], expected);
++}
++
++TEST_F(OCPRecoveryTest, RecoveryCtrlEncoding)
++{
++    ASSERT_TRUE(
++        target.recoveryCtrl(1, ImageSelection::fromCms, Activation::activate)
++            .has_value());
++
++    const std::vector<uint8_t> expected{0x26, 0x03, 0x01, 0x01, 0x0F};
++    ASSERT_EQ(mock.writes.size(), 1U);
++    EXPECT_EQ(mock.writes[0], expected);
++}
++
++TEST_F(OCPRecoveryTest, IndirectCtrlEncoding)
++{
++    ASSERT_TRUE(target.indirectCtrl(0, 0).has_value());
++    ASSERT_TRUE(target.indirectCtrl(2, 0x12345678).has_value());
++
++    const std::vector<uint8_t> zeroOffset{0x29, 0x06, 0x00, 0x00,
++                                          0x00, 0x00, 0x00, 0x00};
++    const std::vector<uint8_t> leOffset{0x29, 0x06, 0x02, 0x00,
++                                        0x78, 0x56, 0x34, 0x12};
++    ASSERT_EQ(mock.writes.size(), 2U);
++    EXPECT_EQ(mock.writes[0], zeroOffset);
++    EXPECT_EQ(mock.writes[1], leOffset);
++}
++
++TEST_F(OCPRecoveryTest, IndirectDataFraming)
++{
++    const std::vector<uint8_t> data{0xDE, 0xAD, 0xBE, 0xEF};
++    ASSERT_TRUE(target.writeIndirectData(data).has_value());
++
++    const std::vector<uint8_t> expected{0x2B, 0x04, 0xDE, 0xAD, 0xBE, 0xEF};
++    ASSERT_EQ(mock.writes.size(), 1U);
++    EXPECT_EQ(mock.writes[0], expected);
++}
++
++TEST_F(OCPRecoveryTest, IndirectDataRejectsOversizedChunk)
++{
++    const std::vector<uint8_t> data(chunkSizeMax + 1, 0xAA);
++    auto result = target.writeIndirectData(data);
++    ASSERT_FALSE(result.has_value());
++    EXPECT_EQ(result.error(), std::errc::invalid_argument);
++
++    Target narrow(mock, 32);
++    const std::vector<uint8_t> chunk(33, 0xBB);
++    result = narrow.writeIndirectData(chunk);
++    ASSERT_FALSE(result.has_value());
++    EXPECT_EQ(result.error(), std::errc::invalid_argument);
++}
++
++TEST_F(OCPRecoveryTest, ProtCapDecode)
++{
++    mock.staticResponses[cmd(Cmd::protCap)] =
++        validProtCap(ProtCap::capIndirectCtrl);
++
++    const auto cap = target.getProtCap();
++    ASSERT_TRUE(cap.has_value());
++
++    EXPECT_EQ(cap->magic, "OCP RECV");
++    EXPECT_EQ(cap->major, 1);
++    EXPECT_EQ(cap->minor, 0);
++    EXPECT_EQ(cap->caps, ProtCap::capIndirectCtrl);
++    EXPECT_EQ(cap->numCms, 2);
++    EXPECT_EQ(cap->maxRespTime, 10);
++    EXPECT_FALSE(cap->fifoOnly());
++}
++
++TEST_F(OCPRecoveryTest, ProtCapBadMagic)
++{
++    auto resp = validProtCap(0);
++    resp[1] = 'X';
++    mock.staticResponses[cmd(Cmd::protCap)] = resp;
++
++    const auto cap = target.getProtCap();
++    ASSERT_FALSE(cap.has_value());
++    EXPECT_EQ(cap.error(), std::errc::protocol_error);
++}
++
++TEST_F(OCPRecoveryTest, FifoOnlyDetection)
++{
++    ProtCap cap{};
++
++    cap.caps = 0;
++    EXPECT_FALSE(cap.fifoOnly());
++
++    cap.caps = ProtCap::capIndirectCtrl;
++    EXPECT_FALSE(cap.fifoOnly());
++
++    cap.caps = ProtCap::capIndirectCtrl | ProtCap::capIndirectFifo;
++    EXPECT_FALSE(cap.fifoOnly());
++
++    cap.caps = ProtCap::capIndirectFifo;
++    EXPECT_TRUE(cap.fifoOnly());
++}
++
++TEST_F(OCPRecoveryTest, DeviceStatusDecode)
++{
++    mock.staticResponses[cmd(Cmd::deviceStatus)] = {
++        4, std::to_underlying(DeviceStatus::recoveryMode), 0x02, 0x34, 0x12};
++
++    const auto info = target.getDeviceStatus();
++    ASSERT_TRUE(info.has_value());
++
++    EXPECT_EQ(info->status, DeviceStatus::recoveryMode);
++    EXPECT_EQ(info->protocolError, ProtocolError::unsupportedParameter);
++    EXPECT_EQ(info->reason, ReasonCode{0x1234});
++}
++
++TEST_F(OCPRecoveryTest, RecoveryStatusDecode)
++{
++    mock.staticResponses[cmd(Cmd::recoveryStatus)] = {2, 0x13, 0xAB};
++
++    const auto info = target.getRecoveryStatus();
++    ASSERT_TRUE(info.has_value());
++
++    EXPECT_EQ(info->status, RecoveryStatus::success);
++    EXPECT_EQ(info->imageIndex, 0x01);
++    EXPECT_EQ(info->vendorStatus, 0xAB);
++}
++
++TEST_F(OCPRecoveryTest, DeviceIdDefaultReadLength)
++{
++    /* The default read clocks exactly 25 bytes on the wire (count +
++     * 24-byte descriptor), matching the fixed PCI/UUID forms. */
++    std::vector<uint8_t> resp{24};
++    for (uint8_t i = 0; i < 24; i++)
++    {
++        resp.push_back(i);
++    }
++    mock.staticResponses[cmd(Cmd::deviceId)] = resp;
++
++    const auto id = target.getDeviceId();
++    ASSERT_TRUE(id.has_value());
++    ASSERT_EQ(id->size(), 24U);
++    EXPECT_EQ(mock.reads.back(), 25U);
++}
++
++TEST_F(OCPRecoveryTest, DeviceIdPassesThroughVendorLength)
++{
++    /* A 40-byte vendor-defined descriptor: longer than the fixed-size
++     * PCI/UUID forms, passed through unmodified when the caller asks
++     * for a longer read. */
++    std::vector<uint8_t> resp{40};
++    for (uint8_t i = 0; i < 40; i++)
++    {
++        resp.push_back(i);
++    }
++    mock.staticResponses[cmd(Cmd::deviceId)] = resp;
++
++    const auto id = target.getDeviceId(255);
++    ASSERT_TRUE(id.has_value());
++    ASSERT_EQ(id->size(), 40U);
++    EXPECT_EQ((*id)[0], 0);
++    EXPECT_EQ((*id)[39], 39);
++}
++
++TEST_F(OCPRecoveryTest, OversizedBlockCountRejected)
++{
++    /* A count larger than the clocked read is a protocol error. */
++    mock.staticResponses[cmd(Cmd::deviceStatus)] = {200, 0x01, 0x00, 0x00,
++                                                    0x00};
++
++    const auto info = target.getDeviceStatus();
++    ASSERT_FALSE(info.has_value());
++    EXPECT_EQ(info.error(), std::errc::protocol_error);
++}
++
++TEST_F(OCPRecoveryTest, IndirectStatusAckBit)
++{
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x04);
++
++    auto info = target.indirectStatus();
++    ASSERT_TRUE(info.has_value());
++    EXPECT_TRUE(info->ack);
++    EXPECT_EQ(info->sizeUnits, 0x40U);
++    EXPECT_EQ(info->sizeBytes(), 0x100U);
++
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x01);
++    info = target.indirectStatus();
++    ASSERT_TRUE(info.has_value());
++    EXPECT_FALSE(info->ack);
++}
++
++TEST_F(OCPRecoveryTest, IndirectDataRead)
++{
++    mock.staticResponses[cmd(Cmd::indirectData)] = {4, 'L', 'O', 'G', 'S'};
++
++    std::vector<uint8_t> buf(16);
++    const auto len = target.readIndirectData(buf);
++    ASSERT_TRUE(len.has_value());
++    EXPECT_EQ(*len, 4U);
++    EXPECT_EQ(std::string(buf.begin(), buf.begin() + 4), "LOGS");
++}
++
++TEST_F(OCPRecoveryTest, RecoverHappyPathSequenceAndChunking)
++{
++    mock.staticResponses[cmd(Cmd::protCap)] =
++        validProtCap(ProtCap::capIndirectCtrl);
++    mock.staticResponses[cmd(Cmd::deviceStatus)] =
++        deviceStatusResponse(DeviceStatus::recoveryMode);
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x04);
++    mock.staticResponses[cmd(Cmd::recoveryStatus)] =
++        recoveryStatusResponse(RecoveryStatus::success);
++
++    const std::vector<uint8_t> image(1000, 0x5A);
++
++    size_t lastWritten = 0;
++    ASSERT_TRUE(
++        target
++            .recover(image, [&lastWritten](size_t written,
++                                           size_t) { lastWritten = written; })
++            .has_value());
++    EXPECT_EQ(lastWritten, image.size());
++
++    const std::vector<uint8_t> expectedSequence{
++        cmd(Cmd::protCap),      cmd(Cmd::deviceStatus),
++        cmd(Cmd::recoveryCtrl), cmd(Cmd::indirectCtrl),
++        cmd(Cmd::indirectData), cmd(Cmd::indirectStatus),
++        cmd(Cmd::indirectData), cmd(Cmd::indirectStatus),
++        cmd(Cmd::indirectData), cmd(Cmd::indirectStatus),
++        cmd(Cmd::indirectData), cmd(Cmd::indirectStatus),
++        cmd(Cmd::recoveryCtrl), cmd(Cmd::recoveryStatus),
++    };
++    EXPECT_EQ(mock.commandSequence(), expectedSequence);
++
++    /* 1000 bytes -> 252 + 252 + 252 + 244 */
++    std::vector<size_t> chunkSizes;
++    for (const auto& w : mock.writes)
++    {
++        if (w[0] == cmd(Cmd::indirectData))
++        {
++            chunkSizes.push_back(w[1]);
++        }
++    }
++    const std::vector<size_t> expectedChunks{252, 252, 252, 244};
++    EXPECT_EQ(chunkSizes, expectedChunks);
++
++    /* activation is the last RECOVERY_CTRL write */
++    const std::vector<uint8_t> activate{
++        0x26, 0x03, cmsDefault, std::to_underlying(ImageSelection::fromCms),
++        std::to_underlying(Activation::activate)};
++    EXPECT_EQ(mock.writes[mock.writes.size() - 2], activate);
++}
++
++TEST_F(OCPRecoveryTest, RecoverToleratesMissingProtCap)
++{
++    mock.commandErrors[cmd(Cmd::protCap)] = ioError;
++    mock.staticResponses[cmd(Cmd::deviceStatus)] =
++        deviceStatusResponse(DeviceStatus::recoveryMode);
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x04);
++    mock.staticResponses[cmd(Cmd::recoveryStatus)] =
++        recoveryStatusResponse(RecoveryStatus::success);
++
++    const std::vector<uint8_t> image(16, 0xA5);
++    EXPECT_TRUE(target.recover(image).has_value());
++}
++
++TEST_F(OCPRecoveryTest, RecoverRejectsFifoOnlyDevice)
++{
++    mock.staticResponses[cmd(Cmd::protCap)] =
++        validProtCap(ProtCap::capIndirectFifo);
++
++    const std::vector<uint8_t> image(16, 0xA5);
++    const auto result = target.recover(image);
++    ASSERT_FALSE(result.has_value());
++    EXPECT_EQ(result.error(), std::errc::not_supported);
++}
++
++TEST_F(OCPRecoveryTest, WriteImageAckTimeout)
++{
++    /* device never acknowledges the chunk */
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x00);
++
++    const std::vector<uint8_t> image(16, 0xA5);
++    const auto result = target.writeImage(image);
++    ASSERT_FALSE(result.has_value());
++    EXPECT_EQ(result.error(), std::errc::timed_out);
++}
++
++TEST_F(OCPRecoveryTest, TransportErrorPropagates)
++{
++    mock.transferError = ioError;
++
++    const auto forced = target.forceRecovery();
++    ASSERT_FALSE(forced.has_value());
++    EXPECT_EQ(forced.error(), ioError);
++
++    const auto status = target.getDeviceStatus();
++    ASSERT_FALSE(status.has_value());
++    EXPECT_EQ(status.error(), ioError);
++
++    const std::vector<uint8_t> image(16, 0xA5);
++    const auto written = target.writeImage(image);
++    ASSERT_FALSE(written.has_value());
++    EXPECT_EQ(written.error(), ioError);
++}
++
++TEST_F(OCPRecoveryTest, CustomChunkSizeHonored)
++{
++    Target narrow(mock, 32);
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x04);
++
++    const std::vector<uint8_t> image(70, 0x11);
++    ASSERT_TRUE(narrow.writeImage(image).has_value());
++
++    std::vector<size_t> chunkSizes;
++    for (const auto& w : mock.writes)
++    {
++        if (w[0] == cmd(Cmd::indirectData))
++        {
++            chunkSizes.push_back(w[1]);
++        }
++    }
++    const std::vector<size_t> expectedChunks{32, 32, 6};
++    EXPECT_EQ(chunkSizes, expectedChunks);
++}
++
++TEST_F(OCPRecoveryTest, ShortIndirectStatusStillAcks)
++{
++    /* Status-only acknowledge response (count = 1, no size field):
++     * tolerated, size reported as 0. */
++    mock.staticResponses[cmd(Cmd::indirectStatus)] = {1, 0x04};
++
++    const auto info = target.indirectStatus();
++    ASSERT_TRUE(info.has_value());
++    EXPECT_TRUE(info->ack);
++    EXPECT_EQ(info->sizeUnits, 0U);
++}
++
++TEST_F(OCPRecoveryTest, WriteImageRetriesThenSucceeds)
++{
++    /* First chunk write is not acknowledged within the poll budget;
++     * the retry write is. Scripted via the response queue: one no-ack
++     * response per poll of the first attempt, then acks. */
++    for (unsigned int poll = 0; poll < ackPollRetries; poll++)
++    {
++        mock.queuedResponses[cmd(Cmd::indirectStatus)].push_back(
++            indirectStatusResponse(0x00));
++    }
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x04);
++
++    const std::vector<uint8_t> image(16, 0xA5);
++    ASSERT_TRUE(target.writeImage(image).has_value());
++
++    /* two INDIRECT_DATA writes: the unacknowledged attempt + the retry */
++    size_t dataWrites = 0;
++    for (const auto& w : mock.writes)
++    {
++        if (w[0] == cmd(Cmd::indirectData))
++        {
++            dataWrites++;
++        }
++    }
++    EXPECT_EQ(dataWrites, 2U);
++}
++
++TEST_F(OCPRecoveryTest, RecoverForcesRecoveryMode)
++{
++    /* Device starts in a fatal state; recover() must issue DEVICE_RESET
++     * and poll until the device reports recovery mode. */
++    mock.queuedResponses[cmd(Cmd::deviceStatus)].push_back(
++        deviceStatusResponse(DeviceStatus::fatalError));
++    mock.staticResponses[cmd(Cmd::deviceStatus)] =
++        deviceStatusResponse(DeviceStatus::recoveryMode);
++    mock.staticResponses[cmd(Cmd::protCap)] =
++        validProtCap(ProtCap::capIndirectCtrl);
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x04);
++    mock.staticResponses[cmd(Cmd::recoveryStatus)] =
++        recoveryStatusResponse(RecoveryStatus::success);
++
++    const std::vector<uint8_t> image(16, 0xA5);
++    ASSERT_TRUE(target.recover(image).has_value());
++
++    const std::vector<uint8_t> forceReset{0x25, 0x03, 0x01, 0x0F, 0x01};
++    bool sawReset = false;
++    for (const auto& w : mock.writes)
++    {
++        if (w == forceReset)
++        {
++            sawReset = true;
++        }
++    }
++    EXPECT_TRUE(sawReset);
++}
++
++TEST_F(OCPRecoveryTest, RecoverFailsOnRecoveryError)
++{
++    mock.staticResponses[cmd(Cmd::deviceStatus)] =
++        deviceStatusResponse(DeviceStatus::recoveryMode);
++    mock.staticResponses[cmd(Cmd::indirectStatus)] =
++        indirectStatusResponse(0x04);
++    mock.staticResponses[cmd(Cmd::recoveryStatus)] =
++        recoveryStatusResponse(RecoveryStatus::authError);
++
++    const std::vector<uint8_t> image(16, 0xA5);
++    const auto result = target.recover(image);
++    ASSERT_FALSE(result.has_value());
++    EXPECT_EQ(result.error(), std::errc::io_error);
++}
++
++TEST_F(OCPRecoveryTest, DrainedIndirectReadReturnsZero)
++{
++    /* A zero block count on INDIRECT_DATA reads means the window is
++     * drained, not a protocol error. */
++    mock.staticResponses[cmd(Cmd::indirectData)] = {0};
++
++    std::vector<uint8_t> buf(16);
++    const auto len = target.readIndirectData(buf);
++    ASSERT_TRUE(len.has_value());
++    EXPECT_EQ(*len, 0U);
++}
++
++} // namespace

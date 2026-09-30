@@ -126,7 +126,7 @@ index 241ee4f..fb04150 100644
 -static const std::string GetMatchRule()
 +static const std::string GetMatchRule(const std::string& node)
  {
-     using namespace sdbusplus::bus::match::rules;
+     using namespace sdbusplus::match_rules;
  
 +    if (!node.empty())
 +    {

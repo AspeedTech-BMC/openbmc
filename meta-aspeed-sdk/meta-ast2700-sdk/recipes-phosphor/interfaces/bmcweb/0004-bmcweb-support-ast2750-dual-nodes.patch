@@ -1,6 +1,6 @@
 From b6024a9a05e2e12b8bb792936ccbe88c9098a4ec Mon Sep 17 00:00:00 2001
 From: Vince Chang <vince_chang@aspeedtech.com>
-Date: Thu, 13 Jun 2024 10:44:20 +0800
+Date: Fri, 26 Jun 2026 16:06:40 +0800
 Subject: [PATCH] bmcweb: support ast2750 dual nodes.
 
 Supoort AST2750 dual nodes
@@ -28,7 +28,7 @@ Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
  create mode 100644 include/vm1_websocket.hpp
 
 diff --git a/features/kvm/kvm_websocket.hpp b/features/kvm/kvm_websocket.hpp
-index adf4c5e0..15a7224f 100644
+index 8fef1b40..0d3b68de 100644
 --- a/features/kvm/kvm_websocket.hpp
 +++ b/features/kvm/kvm_websocket.hpp
 @@ -29,11 +29,11 @@ static constexpr const uint maxSessions = 4;
@@ -44,9 +44,9 @@ index adf4c5e0..15a7224f 100644
 -            boost::asio::ip::make_address("127.0.0.1"), 5900);
 +            boost::asio::ip::make_address("127.0.0.1"), port);
          hostSocket.async_connect(
+             // ast-grep-ignore: long-lambda
              endpoint, [this, &connIn](const boost::system::error_code& ec) {
-                 if (ec)
-@@ -168,6 +168,7 @@ class KvmSession : public std::enable_shared_from_this<KvmSession>
+@@ -169,6 +169,7 @@ class KvmSession : public std::enable_shared_from_this<KvmSession>
      }
  
      crow::websocket::Connection& conn;
@@ -54,7 +54,7 @@ index adf4c5e0..15a7224f 100644
      boost::asio::ip::tcp::socket hostSocket;
      boost::beast::flat_static_buffer<1024UL * 50UL> outputBuffer;
      boost::beast::flat_static_buffer<1024UL> inputBuffer;
-@@ -195,7 +196,33 @@ inline void requestRoutes(App& app)
+@@ -197,7 +198,33 @@ inline void requestRoutes(App& app)
                  return;
              }
  
@@ -535,7 +535,7 @@ index 00000000..874f0e73
 +
 +inline void afterGetSocket(
 +    crow::websocket::Connection& conn,
-+    const sdbusplus::message::object_path& path,
++    const sdbusplus::object_path& path,
 +    const boost::system::error_code& ec,
 +    const dbus::utility::DBusPropertiesMap& propertiesList)
 +{
@@ -731,10 +731,10 @@ index 00000000..874f0e73
 +
 +} // namespace crow
 diff --git a/src/webserver_run.cpp b/src/webserver_run.cpp
-index feda8ad4..a676fd35 100644
+index 44bbfd33..53d83547 100644
 --- a/src/webserver_run.cpp
 +++ b/src/webserver_run.cpp
-@@ -22,6 +22,7 @@
+@@ -23,6 +23,7 @@
  #include "redfish_aggregator.hpp"
  #include "user_monitor.hpp"
  #include "vm_websocket.hpp"
@@ -742,7 +742,7 @@ index feda8ad4..a676fd35 100644
  #include "watchdog.hpp"
  #include "webassets.hpp"
  
-@@ -109,6 +110,7 @@ int run()
+@@ -110,6 +111,7 @@ int run()
      }
  
      crow::obmc_vm::requestRoutes(app);
@@ -752,4 +752,3 @@ index feda8ad4..a676fd35 100644
      {
 -- 
 2.43.0
-

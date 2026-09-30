@@ -1,0 +1,116 @@
+From 3d2d38492ce26196f5076ca2ff66cf82c37a822f Mon Sep 17 00:00:00 2001
+From: xilingsun <xilingsun@microsoft.com>
+Date: Tue, 15 Sep 2026 18:54:55 -0700
+Subject: [PATCH] http: prefer literal routes over parameters
+
+Upstream-Status: Pending
+---
+ http/routing/trie.hpp     | 34 +++++++++++++++----------------
+ test/http/router_test.cpp | 42 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 17 deletions(-)
+
+diff --git a/http/routing/trie.hpp b/http/routing/trie.hpp
+index 8bb5593b3f..defea193ab 100644
+--- a/http/routing/trie.hpp
++++ b/http/routing/trie.hpp
+@@ -156,6 +156,23 @@ class Trie
+             return {node.ruleIndex, params};
+         }
+ 
++        for (const typename ContainedType::ChildMap::value_type& kv :
++             node.children)
++        {
++            const std::string& fragment = kv.first;
++            const ContainedType& child = nodes[kv.second];
++
++            if (reqUrl.starts_with(fragment))
++            {
++                FindResult ret =
++                    findHelper(reqUrl.substr(fragment.size()), child, params);
++                if (ret.ruleIndex != 0U)
++                {
++                    return {ret.ruleIndex, std::move(ret.params)};
++                }
++            }
++        }
++
+         if (node.stringParamChild != 0U)
+         {
+             size_t epos = 0;
+@@ -191,23 +208,6 @@ class Trie
+             params.pop_back();
+         }
+ 
+-        for (const typename ContainedType::ChildMap::value_type& kv :
+-             node.children)
+-        {
+-            const std::string& fragment = kv.first;
+-            const ContainedType& child = nodes[kv.second];
+-
+-            if (reqUrl.starts_with(fragment))
+-            {
+-                FindResult ret =
+-                    findHelper(reqUrl.substr(fragment.size()), child, params);
+-                if (ret.ruleIndex != 0U)
+-                {
+-                    return {ret.ruleIndex, std::move(ret.params)};
+-                }
+-            }
+-        }
+-
+         return {0U, std::vector<std::string>()};
+     }
+ 
+diff --git a/test/http/router_test.cpp b/test/http/router_test.cpp
+index 62668ccafa..0165331bd3 100644
+--- a/test/http/router_test.cpp
++++ b/test/http/router_test.cpp
+@@ -92,6 +92,48 @@ TEST(Router, OverlapingRoutes)
+     EXPECT_TRUE(barCalled);
+ }
+ 
++TEST(Router, PrefersLiteralRouteOverStringParameter)
++{
++    bool memberCalled = false;
++    auto memberCallback =
++        [&memberCalled](const Request&,
++                        const std::shared_ptr<bmcweb::AsyncResp>&,
++                        const std::string& memberId) {
++            memberCalled = true;
++            EXPECT_EQ(memberId, "smc0");
++        };
++    bool resultCalled = false;
++    auto resultCallback =
++        [&resultCalled](const Request&,
++                        const std::shared_ptr<bmcweb::AsyncResp>&) {
++            resultCalled = true;
++        };
++
++    Router router;
++    std::error_code ec;
++
++    router.newRuleTagged<getParameterTag("/foo/<str>/")>("/foo/<str>/")(
++        memberCallback);
++    router.newRuleTagged<getParameterTag("/foo/CompositeEATBundle/")>(
++        "/foo/CompositeEATBundle/")(resultCallback);
++    router.validate();
++
++    auto resultRequest = std::make_shared<Request>(
++        Request::Body{boost::beast::http::verb::get,
++                      "/foo/CompositeEATBundle", 11},
++        ec);
++    router.handle(resultRequest, std::make_shared<bmcweb::AsyncResp>());
++    EXPECT_TRUE(resultCalled);
++    EXPECT_FALSE(memberCalled);
++
++    resultCalled = false;
++    auto memberRequest = std::make_shared<Request>(
++        Request::Body{boost::beast::http::verb::get, "/foo/smc0", 11}, ec);
++    router.handle(memberRequest, std::make_shared<bmcweb::AsyncResp>());
++    EXPECT_TRUE(memberCalled);
++    EXPECT_FALSE(resultCalled);
++}
++
+ TEST(Router, 404)
+ {
+     bool notFoundCalled = false;

@@ -228,10 +228,16 @@ gbmc_br_gw_src_hook() {
     [[ $route == *" metric $primary_rt_metric "* ]] && return
     # ignore RA from systemd on standard RA
     [[ $route == *" proto ra "* && $route == *" dev l2br "* ]] && return
-    if [[ $route =~ ^(.*)( +expires +[^ ]+)(.*)$ ]]; then
+    # ignore dead route and linkdown route
+    [[ $route == *" dead "* ]] && return
+    [[ $route == *" linkdown "* ]] && return
+
+    local expires_regex='^(.*)( +expires +[^ ]+)(.*)$'
+    if [[ $route =~ $expires_regex ]]; then
       route="${BASH_REMATCH[1]}${BASH_REMATCH[3]}"
     fi
-    if [[ $route =~ ^(.*)( +proto +[^ ]+)(.*)$ ]]; then
+    local proto_regex='^(.*)( +proto +[^ ]+)(.*)$'
+    if [[ $route =~ $proto_regex ]]; then
       route="${BASH_REMATCH[1]}${BASH_REMATCH[3]}"
     fi
     if [[ $action == add && -z ${gbmc_br_gw_src_routes["$route"]} ]]; then
@@ -271,12 +277,26 @@ gbmc_br_gw_src_hook() {
       gbmc_br_gw_src_ips["$ip"]="$non_zero"
     elif [[ $action == del ]]; then
       unset 'gbmc_br_gw_src_ips[$ip]'
+      # The kernel will remove source addresses on routes if none of the interfaces
+      # have the source address any longer. Just assume it is pruned and
+      # it will end up getting fixed later.
+      for route in "${!gbmc_br_gw_src_routes[@]}"; do
+        if [[ $route == *" src $ip "* ]]; then
+          unset 'gbmc_br_gw_src_routes[$route]'
+          local route_regex='^(.*) src [^ ]+(.*)$'
+          if [[ $route =~ $route_regex ]]; then
+            new_route_key="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
+            gbmc_br_gw_src_routes["$new_route_key"]=1
+          fi
+        fi
+      done
     fi
     gbmc_br_gw_src_update
   # check route on gbmcbr with /124 address
   elif [[ $change == route && $route =~ ^[0-9a-f:]+'/124 '.*' dev gbmcbr ' ]]; then
     local expires='0sec'
-    if [[ $route =~ ^(.*)( +expires +[^ ]+)(.*)$ ]]; then
+    local br_expires_regex='^(.*)( +expires +[^ ]+)(.*)$'
+    if [[ $route =~ $br_expires_regex ]]; then
       route="${BASH_REMATCH[1]}${BASH_REMATCH[3]}"
       expires="${BASH_REMATCH[2]}"
     fi

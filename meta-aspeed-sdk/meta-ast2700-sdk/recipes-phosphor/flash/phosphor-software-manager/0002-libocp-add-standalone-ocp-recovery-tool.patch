@@ -1,0 +1,670 @@
+From faa0257be77c3fbf2cb6507a61f6a033165faf90 Mon Sep 17 00:00:00 2001
+From: P Arun Kumar Reddy <arunpapannagari23@gmail.com>
+Date: Wed, 12 Aug 2026 16:02:00 +0530
+Subject: [PATCH] libocp: add standalone ocp-recovery-tool
+
+Add a CLI11-based command-line front end for libocp, for bring-up and
+scripted recovery of devices parked in their recovery ROM without any
+D-Bus involvement. The command surface follows the established OCP
+recovery tooling conventions (case-insensitive subcommands, decoded
+status output, CMS log retrieval):
+
+  ocp-recovery-tool -b BUS -s ADDR [options] SUBCOMMAND
+
+  GetDeviceID          read and dump the DEVICE_ID record
+  GetDeviceStatus      decode PROT_CAP, device status, protocol error
+                       and the recovery reason code
+  GetRecoveryStatus    decode RECOVERY_STATUS and the image index
+  SetForceRecovery     reset the device into recovery mode
+  PerformOCPRecovery   recover with -i IMAGE (repeatable; each image is
+                       staged into the CMS and activated in order, then
+                       RECOVERY_STATUS is polled for success). Exits 1
+                       (skipped) when the device is already operational.
+  GetCMSLogs           dump a CMS log window (-w, default 2) to a file
+                       via chunked INDIRECT_DATA reads, bounded by the
+                       INDIRECT_STATUS region size
+
+The tool is gated by the new 'ocp-recovery-tool' meson feature and
+installs to bindir.
+
+Tested: on nvl32-obmc against a GB202 GPU recovery target:
+  # ocp-recovery-tool -b 50 -s 0x69 GetDeviceStatus
+  PROT_CAP: magic='OCP RECV' version=1.0 caps=0x01bb cms=3
+  Device status:   0x01 (device healthy)
+  Protocol error:  0x00 (no protocol error)
+  Recovery reason: 0x0000 (no boot failure detected)
+
+Change-Id: I4d53e48d0e84bd0a5d6103649201eaeb63f60ab4
+Signed-off-by: P Arun Kumar Reddy <arunpapannagari23@gmail.com>
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-code-mgmt/+/92451]
+---
+ meson.build                        |   2 +-
+ libocp/meson.build                 |   4 +
+ libocp/tools/meson.build           |  12 +
+ libocp/tools/ocp_recovery_tool.cpp | 553 +++++++++++++++++++++++++++++
+ meson.options                      |   7 +
+ 5 files changed, 577 insertions(+), 1 deletion(-)
+ create mode 100644 libocp/tools/meson.build
+ create mode 100644 libocp/tools/ocp_recovery_tool.cpp
+
+diff --git a/meson.build b/meson.build
+index 12d859a..89fcae7 100644
+--- a/meson.build
++++ b/meson.build
+@@ -122,7 +122,7 @@ if common_build or build_tests.allowed()
+     subdir('common')
+ endif
+ 
+-if build_tests.allowed()
++if get_option('ocp-recovery-tool').allowed() or build_tests.allowed()
+     subdir('libocp')
+ endif
+ 
+diff --git a/libocp/meson.build b/libocp/meson.build
+index a70e58b..f11b7e1 100644
+--- a/libocp/meson.build
++++ b/libocp/meson.build
+@@ -12,3 +12,7 @@ libocp_fw_recovery_dep = declare_dependency(
+     link_with: libocp_fw_recovery,
+     include_directories: libocp_fw_recovery_inc,
+ )
++
++if get_option('ocp-recovery-tool').allowed()
++    subdir('tools')
++endif
+diff --git a/libocp/tools/meson.build b/libocp/tools/meson.build
+new file mode 100644
+index 0000000..d7c9cc0
+--- /dev/null
++++ b/libocp/tools/meson.build
+@@ -0,0 +1,12 @@
++if cpp.has_header('CLI/CLI.hpp')
++    cli11_dep = declare_dependency()
++else
++    cli11_dep = dependency('CLI11')
++endif
++
++executable(
++    'ocp-recovery-tool',
++    'ocp_recovery_tool.cpp',
++    dependencies: [libocp_fw_recovery_dep, cli11_dep],
++    install: true,
++)
+diff --git a/libocp/tools/ocp_recovery_tool.cpp b/libocp/tools/ocp_recovery_tool.cpp
+new file mode 100644
+index 0000000..f92d945
+--- /dev/null
++++ b/libocp/tools/ocp_recovery_tool.cpp
+@@ -0,0 +1,553 @@
++// SPDX-License-Identifier: Apache-2.0
++
++/*
++ * ocp-recovery-tool - manual OCP Secure Firmware Recovery over I2C.
++ *
++ * A command-line front end for the ocp_fw_recovery library, intended
++ * for bring-up and scripted recovery of devices parked in their
++ * recovery ROM. The regular update path is the
++ * phosphor-ocp-recovery-software-update daemon; this tool talks the
++ * same protocol without any D-Bus involvement.
++ */
++
++#include <CLI/CLI.hpp>
++#include <ocp/ocp_recovery.hpp>
++
++#include <chrono>
++#include <cstdint>
++#include <format>
++#include <fstream>
++#include <iostream>
++#include <string>
++#include <thread>
++#include <utility>
++#include <vector>
++
++namespace
++{
++
++using namespace ocp::recovery;
++
++// Result convention shared with existing OCP recovery tooling:
++// 0 success, 1 recovery skipped (device operational), 2 failure.
++enum RecoveryReturnCode : int
++{
++    success = 0,
++    skipped = 1,
++    failure = 2,
++};
++
++constexpr unsigned int forceRecoveryTimeoutSec = 30;
++
++std::string deviceStatusStr(DeviceStatus status)
++{
++    switch (status)
++    {
++        case DeviceStatus::pending:
++            return "status pending";
++        case DeviceStatus::healthy:
++            return "device healthy";
++        case DeviceStatus::deviceError:
++            return "device error";
++        case DeviceStatus::recoveryMode:
++            return "recovery mode - ready to accept recovery image";
++        case DeviceStatus::recoveryPending:
++            return "recovery pending, waiting for device/platform reset";
++        case DeviceStatus::runningRecovery:
++            return "recovery image running";
++        case DeviceStatus::bootFailure:
++            return "boot failure";
++        case DeviceStatus::fatalError:
++            return "fatal error";
++        default:
++            return "reserved";
++    }
++}
++
++std::string protocolErrorStr(ProtocolError err)
++{
++    switch (err)
++    {
++        case ProtocolError::none:
++            return "no protocol error";
++        case ProtocolError::unsupportedCommand:
++            return "unsupported/read-only command";
++        case ProtocolError::unsupportedParameter:
++            return "unsupported parameter";
++        case ProtocolError::lengthWriteError:
++            return "length write error";
++        case ProtocolError::crcError:
++            return "CRC error";
++        case ProtocolError::notResponding:
++            return "device not responding";
++        case ProtocolError::general:
++            return "general protocol error";
++        default:
++            return "reserved";
++    }
++}
++
++std::string reasonCodeStr(ReasonCode reason)
++{
++    switch (reason)
++    {
++        case ReasonCode::noFailure:
++            return "no boot failure detected";
++        case ReasonCode::hwError:
++            return "generic hardware error";
++        case ReasonCode::hwSoftError:
++            return "generic hardware soft error";
++        case ReasonCode::selfTestFailure:
++            return "self-test failure";
++        case ReasonCode::criticalDataCorrupt:
++            return "corrupted/missing critical data";
++        case ReasonCode::keyManifestCorrupt:
++            return "missing/corrupt key manifest";
++        case ReasonCode::keyManifestAuthFailure:
++            return "authentication failure on key manifest";
++        case ReasonCode::keyManifestAntiRollback:
++            return "anti-rollback failure on key manifest";
++        case ReasonCode::bootLoaderCorrupt:
++            return "missing/corrupt boot loader firmware image";
++        case ReasonCode::bootLoaderAuthFailure:
++            return "authentication failure on boot loader firmware image";
++        case ReasonCode::bootLoaderAntiRollback:
++            return "anti-rollback failure on boot loader firmware image";
++        case ReasonCode::mainImageCorrupt:
++            return "missing/corrupt main/management firmware image";
++        case ReasonCode::mainImageAuthFailure:
++            return "authentication failure on main/management firmware image";
++        case ReasonCode::mainImageAntiRollback:
++            return "anti-rollback failure on main/management firmware image";
++        case ReasonCode::recoveryImageCorrupt:
++            return "missing/corrupt recovery firmware";
++        case ReasonCode::recoveryImageAuthFailure:
++            return "authentication failure on recovery firmware";
++        case ReasonCode::recoveryImageAntiRollback:
++            return "anti-rollback failure on recovery firmware";
++        case ReasonCode::forcedRecovery:
++            return "forced recovery";
++        default:
++            return (std::to_underlying(reason) >= 0x80 &&
++                    std::to_underlying(reason) <= 0xFF)
++                       ? "vendor unique"
++                       : "reserved";
++    }
++}
++
++std::string recoveryStatusStr(RecoveryStatus status)
++{
++    switch (status)
++    {
++        case RecoveryStatus::notInRecovery:
++            return "not in recovery mode";
++        case RecoveryStatus::awaitingImage:
++            return "awaiting recovery image";
++        case RecoveryStatus::bootingImage:
++            return "booting recovery image";
++        case RecoveryStatus::success:
++            return "recovery successful";
++        case RecoveryStatus::failed:
++            return "recovery failed";
++        case RecoveryStatus::authError:
++            return "recovery image authentication error";
++        case RecoveryStatus::enteredRecovery:
++            return "error entering recovery mode";
++        case RecoveryStatus::invalidCms:
++            return "invalid component memory space";
++        default:
++            return "reserved";
++    }
++}
++
++Target::ProgressFn makeProgress(unsigned int& lastPct)
++{
++    return [&lastPct](size_t written, size_t total) {
++        const auto pct = static_cast<unsigned int>((written * 100) / total);
++
++        if (pct / 10 != lastPct / 10 || written == total)
++        {
++            std::cout << std::format("  {}/{} bytes ({}%)\n", written, total,
++                                     pct)
++                      << std::flush;
++            lastPct = pct;
++        }
++    };
++}
++
++void sleepSec(unsigned int sec)
++{
++    std::this_thread::sleep_for(std::chrono::seconds(sec));
++}
++
++bool readImage(const std::string& path, std::vector<uint8_t>& image)
++{
++    std::ifstream f(path, std::ios::binary | std::ios::ate);
++    if (!f)
++    {
++        std::cerr << std::format("cannot open '{}'\n", path);
++        return false;
++    }
++
++    auto size = f.tellg();
++    if (size <= 0)
++    {
++        std::cerr << std::format("'{}' is empty\n", path);
++        return false;
++    }
++
++    image.resize(static_cast<size_t>(size));
++    f.seekg(0);
++    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
++    if (!f.read(reinterpret_cast<char*>(image.data()), size))
++    {
++        std::cerr << std::format("cannot read '{}'\n", path);
++        return false;
++    }
++
++    return true;
++}
++
++int cmdGetDeviceId(Target& target)
++{
++    const auto id = target.getDeviceId();
++    if (!id)
++    {
++        std::cerr << std::format("DEVICE_ID read failed: {}\n",
++                                 id.error().message());
++        return failure;
++    }
++
++    std::cout << std::format("DEVICE_ID ({} bytes):", id->size());
++    for (const uint8_t byte : *id)
++    {
++        std::cout << std::format(" {:02x}", byte);
++    }
++    std::cout << "\n";
++    return success;
++}
++
++int cmdGetDeviceStatus(Target& target)
++{
++    if (const auto cap = target.getProtCap())
++    {
++        std::cout << std::format(
++            "PROT_CAP: magic='{}' version={}.{} caps={:#06x} cms={}\n",
++            cap->magic, cap->major, cap->minor, cap->caps, cap->numCms);
++    }
++
++    const auto info = target.getDeviceStatus();
++    if (!info)
++    {
++        std::cerr << std::format("DEVICE_STATUS read failed: {}\n",
++                                 info.error().message());
++        return failure;
++    }
++
++    std::cout << std::format("Device status:   {:#04x} ({})\n",
++                             std::to_underlying(info->status),
++                             deviceStatusStr(info->status));
++    std::cout << std::format("Protocol error:  {:#04x} ({})\n",
++                             std::to_underlying(info->protocolError),
++                             protocolErrorStr(info->protocolError));
++    std::cout << std::format("Recovery reason: {:#06x} ({})\n",
++                             std::to_underlying(info->reason),
++                             reasonCodeStr(info->reason));
++    return success;
++}
++
++int cmdGetRecoveryStatus(Target& target)
++{
++    const auto info = target.getRecoveryStatus();
++    if (!info)
++    {
++        std::cerr << std::format("RECOVERY_STATUS read failed: {}\n",
++                                 info.error().message());
++        return failure;
++    }
++
++    std::cout << std::format("Recovery status: {:#04x} ({})\n",
++                             std::to_underlying(info->status),
++                             recoveryStatusStr(info->status));
++    std::cout << std::format("Image index:     {}\n", info->imageIndex);
++    std::cout << std::format("Vendor status:   {:#04x}\n", info->vendorStatus);
++    return success;
++}
++
++int cmdSetForceRecovery(Target& target)
++{
++    if (const auto forced = target.forceRecovery(); !forced)
++    {
++        std::cerr << std::format("DEVICE_RESET write failed: {}\n",
++                                 forced.error().message());
++        return failure;
++    }
++    std::cout << "forced recovery requested\n";
++    return success;
++}
++
++int enterRecoveryMode(Target& target)
++{
++    auto info = target.getDeviceStatus();
++    if (!info)
++    {
++        std::cerr << std::format("DEVICE_STATUS read failed: {}\n",
++                                 info.error().message());
++        return failure;
++    }
++
++    if (info->status == DeviceStatus::recoveryMode)
++    {
++        return success;
++    }
++
++    if (info->status == DeviceStatus::healthy)
++    {
++        std::cout << "device is operational; skipping recovery\n";
++        return skipped;
++    }
++
++    std::cout << std::format("device status {:#04x} ({}); forcing recovery\n",
++                             std::to_underlying(info->status),
++                             deviceStatusStr(info->status));
++    if (const auto forced = target.forceRecovery(); !forced)
++    {
++        std::cerr << std::format("DEVICE_RESET write failed: {}\n",
++                                 forced.error().message());
++        return failure;
++    }
++
++    for (unsigned int i = 0; i < forceRecoveryTimeoutSec; i++)
++    {
++        sleepSec(1);
++        info = target.getDeviceStatus();
++        if (info && info->status == DeviceStatus::recoveryMode)
++        {
++            return success;
++        }
++    }
++
++    std::cerr << std::format(
++        "device did not enter recovery mode (status {:#04x})\n",
++        info ? std::to_underlying(info->status) : 0xFF);
++    return failure;
++}
++
++int cmdPerformRecovery(Target& target, uint8_t cms,
++                       const std::vector<std::string>& images)
++{
++    int rc = enterRecoveryMode(target);
++    if (rc != success)
++    {
++        return rc;
++    }
++
++    size_t count = 0;
++    for (const auto& path : images)
++    {
++        unsigned int lastPct = 100; // force first progress line
++        std::vector<uint8_t> image;
++
++        if (!readImage(path, image))
++        {
++            return failure;
++        }
++
++        count++;
++        std::cout << std::format("[{}/{}] writing '{}' ({} bytes) to CMS {}\n",
++                                 count, images.size(), path, image.size(), cms);
++
++        auto result =
++            target.recoveryCtrl(cms, ImageSelection::fromCms, Activation::none);
++        if (result)
++        {
++            result = target.indirectCtrl(cms, 0);
++        }
++        if (result)
++        {
++            result = target.writeImage(image, makeProgress(lastPct));
++        }
++        if (result)
++        {
++            result = target.recoveryCtrl(cms, ImageSelection::fromCms,
++                                         Activation::activate);
++        }
++
++        if (!result)
++        {
++            std::cerr << std::format("recovery of '{}' failed: {}\n", path,
++                                     result.error().message());
++            return failure;
++        }
++    }
++
++    for (unsigned int poll = 0; poll < statusPollRetries; poll++)
++    {
++        if (const auto info = target.getRecoveryStatus())
++        {
++            if (info->status == RecoveryStatus::success)
++            {
++                std::cout << "recovery successful\n";
++                return success;
++            }
++            if (info->status >= RecoveryStatus::failed)
++            {
++                std::cerr << std::format("recovery failed: {:#04x} ({})\n",
++                                         std::to_underlying(info->status),
++                                         recoveryStatusStr(info->status));
++                return failure;
++            }
++        }
++        sleepSec(1);
++    }
++
++    std::cerr << "recovery did not complete in time\n";
++    return failure;
++}
++
++int cmdGetCmsLogs(Target& target, uint8_t window, std::string outfile)
++{
++    constexpr size_t readLimit = 1024UL * 1024UL;
++    std::vector<uint8_t> buf(255);
++    size_t limit = readLimit;
++    size_t total = 0;
++
++    if (outfile.empty())
++    {
++        outfile = std::format("cms{}_log.bin", window);
++    }
++
++    if (const auto ctrl = target.indirectCtrl(window, 0); !ctrl)
++    {
++        std::cerr << std::format("INDIRECT_CTRL write failed: {}\n",
++                                 ctrl.error().message());
++        return failure;
++    }
++
++    if (const auto status = target.indirectStatus();
++        status && status->sizeBytes() > 0 && status->sizeBytes() < limit)
++    {
++        limit = status->sizeBytes();
++    }
++
++    std::ofstream f(outfile, std::ios::binary);
++    if (!f)
++    {
++        std::cerr << std::format("cannot open '{}'\n", outfile);
++        return failure;
++    }
++
++    while (total < limit)
++    {
++        const auto len = target.readIndirectData(buf);
++        if (!len)
++        {
++            std::cerr << std::format("INDIRECT_DATA read failed: {}\n",
++                                     len.error().message());
++            return failure;
++        }
++        if (*len == 0)
++        {
++            break;
++        }
++        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
++        if (!f.write(reinterpret_cast<const char*>(buf.data()),
++                     static_cast<std::streamsize>(*len)))
++        {
++            std::cerr << std::format("cannot write '{}'\n", outfile);
++            return failure;
++        }
++        total += *len;
++    }
++
++    std::cout << std::format("wrote {} bytes of CMS {} logs to '{}'\n", total,
++                             window, outfile);
++    return success;
++}
++
++} // namespace
++
++int main(int argc, char** argv)
++{
++    CLI::App app{"OCP Secure Firmware Recovery tool"};
++
++    uint16_t bus = 0;
++    uint8_t address = 0;
++    uint8_t cms = cmsDefault;
++    size_t chunk = chunkSizeMax;
++    uint8_t window = 2;
++    std::string outfile;
++    std::vector<std::string> images;
++
++    app.add_option("-b,--bus", bus, "I2C bus number")->required();
++    app.add_option("-s,--slave", address, "7-bit device address (e.g. 0x69)")
++        ->required();
++    app.add_option("-c,--cms", cms, "Component memory space index (default 0)");
++    app.add_option("-k,--chunk", chunk,
++                   std::format("Block write payload size, 1-{} (default {})",
++                               chunkSizeMax, chunkSizeMax))
++        ->check(CLI::Range(size_t(1), chunkSizeMax));
++
++    auto* getDeviceId =
++        app.add_subcommand("GetDeviceID", "Read and dump the DEVICE_ID record");
++    auto* getDeviceStatus = app.add_subcommand(
++        "GetDeviceStatus", "Decode PROT_CAP and DEVICE_STATUS");
++    auto* getRecoveryStatus =
++        app.add_subcommand("GetRecoveryStatus", "Decode RECOVERY_STATUS");
++    auto* setForceRecovery = app.add_subcommand(
++        "SetForceRecovery", "Reset the device into recovery mode");
++    auto* performRecovery =
++        app.add_subcommand("PerformOCPRecovery", "Perform OCP recovery");
++    performRecovery
++        ->add_option("-i,--image", images,
++                     "Recovery image(s), staged and activated in order")
++        ->required();
++    auto* getCmsLogs =
++        app.add_subcommand("GetCMSLogs", "Retrieve CMS logs to a file");
++    getCmsLogs->add_option("-w,--window", window,
++                           "Log window index (default 2)");
++    getCmsLogs->add_option("-o,--outfile", outfile,
++                           "Output file (default cms<w>_log.bin)");
++
++    app.require_subcommand(1)->ignore_case();
++
++    CLI11_PARSE(app, argc, argv);
++
++    auto transport = ocp::recovery::I2CTransport::open(bus, address);
++    if (!transport)
++    {
++        std::cerr << std::format("cannot open i2c bus {}: {}\n", bus,
++                                 transport.error().message());
++        return failure;
++    }
++
++    Target target(*transport, chunk, cms);
++
++    int ret = failure;
++    if (getDeviceId->parsed())
++    {
++        ret = cmdGetDeviceId(target);
++    }
++    else if (getDeviceStatus->parsed())
++    {
++        ret = cmdGetDeviceStatus(target);
++    }
++    else if (getRecoveryStatus->parsed())
++    {
++        ret = cmdGetRecoveryStatus(target);
++    }
++    else if (setForceRecovery->parsed())
++    {
++        ret = cmdSetForceRecovery(target);
++    }
++    else if (performRecovery->parsed())
++    {
++        ret = cmdPerformRecovery(target, cms, images);
++    }
++    else if (getCmsLogs->parsed())
++    {
++        ret = cmdGetCmsLogs(target, window, outfile);
++    }
++
++    return ret;
++}
+diff --git a/meson.options b/meson.options
+index cb11655..ab85048 100644
+--- a/meson.options
++++ b/meson.options
+@@ -106,6 +106,13 @@ option(
+     description: 'Enable TPM software update support.',
+ )
+ 
++option(
++    'ocp-recovery-tool',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Build the standalone OCP Secure Firmware Recovery CLI tool.',
++)
++
+ # Variables
+ option(
+     'active-bmc-max-allowed',

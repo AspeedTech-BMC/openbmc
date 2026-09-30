@@ -21,8 +21,8 @@
 #include "spdm_emu.h"
 #endif
 
-#define DEFAULT_MCTP_DST_SKT 0x8
-#define DEFAULT_MCTP_NETWORK 0x4
+#define DEFAULT_MCTP_DST_SKT 0x7b
+#define DEFAULT_MCTP_NETWORK 0x1
 #define VENDOR_DEFINED_MSG_TYPE 0x7e
 #define INTEL_MESSAGE_OPCODE 0xa
 #define PCIE_VENDOR_ID htons(0x8086)

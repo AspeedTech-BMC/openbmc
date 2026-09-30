@@ -16,9 +16,9 @@ REQUIRED_DISTRO_FEATURES = "x11 pam"
 # out-of-tree builds.
 B = "${S}"
 
-SRCREV = "b555312d70d7ff017f866649a7e7167af4eb8fca"
+SRCREV = "be6e25fca026ce715d5be1d7ba40ef49bebbde51"
 
-SRC_URI = "git://github.com/TigerVNC/tigervnc.git;branch=1.16-branch;protocol=https;tag=v${PV} \
+SRC_URI = "git://github.com/TigerVNC/tigervnc.git;branch=master;protocol=https \
            file://0001-do-not-build-tests-sub-directory.patch \
            file://0002-add-missing-dynamic-library-to-FLTK_LIBRARIES.patch \
            file://0003-tigervnc-add-fPIC-option-to-COMPILE_FLAGS.patch \
@@ -26,10 +26,10 @@ SRC_URI = "git://github.com/TigerVNC/tigervnc.git;branch=1.16-branch;protocol=ht
 
 # Keep sync with xorg-server in oe-core
 XORG_PN ?= "xorg-server"
-XORG_PV ?= "21.1.21"
+XORG_PV ?= "21.1.23"
 SRC_URI += "${XORG_MIRROR}/individual/xserver/${XORG_PN}-${XORG_PV}.tar.xz;name=xorg"
 XORG_S = "${UNPACKDIR}/${XORG_PN}-${XORG_PV}"
-SRC_URI[xorg.sha256sum] = "c0cbe5545b3f645bae6024b830d1d1154a956350683a4e52b2fff5b0fa1ab519"
+SRC_URI[xorg.sha256sum] = "e39832e5617dadaf072fdf9f0e19e5d2e1c2a13607ac280bac1aba9f8fe14634"
 
 # It is the directory containing the Xorg source for the
 # machine on which you are building TigerVNC.

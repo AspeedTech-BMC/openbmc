@@ -153,15 +153,15 @@
 				label = "u-boot-env";
 			};
 			kernel@420000 {
-				reg = <0x420000 0x900000>; // 9MB
+				reg = <0x420000 0xC00000>; // 12MB
 				label = "kernel";
 			};
-			rofs@d20000 {
-				reg = <0xd20000 0x24a0000>; // 36.625MB
+			rofs@1020000 {
+				reg = <0x1020000 0x26a0000>; // 38.625MB
 				label = "rofs";
 			};
-			rwfs@31c0000 {
-				reg = <0x31c0000 0xD40000>; // 13.25MB
+			rwfs@36c0000 {
+				reg = <0x36c0000 0x840000>; // 8.25MB
 				label = "rwfs";
 			};
 			pfm@3F00000 {

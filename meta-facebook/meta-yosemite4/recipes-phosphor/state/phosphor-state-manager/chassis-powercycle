@@ -122,12 +122,11 @@ chassis-power-cycle()
     # Block until allowed
     while true; do
         if acquire_lock; then
-          break
+            break
         fi
         sleep 1
     done
     trap lock_cleanup EXIT
-    trap lock_cleanup SIGINT SIGTERM SIGHUP SIGQUIT
 
     if [ "$CHASSIS_ID" -le 8  ]
     then
@@ -185,9 +184,9 @@ chassis-power-cycle()
             busctl set-property "$CHASSIS_BUS_NAME""$CHASSIS_ID" "$CHASSIS_OBJ_PATH""$CHASSIS_ID" "$CHASSIS_INTF_NAME" "$CHASSIS_PROPERTY_NAME" s "$CHASSIS_ON_PROPERTY"
             /usr/libexec/phosphor-state-manager/wait-until-mctp-connection-done "$CHASSIS_ID"
             systemctl restart "phosphor-discover-system-state@$CHASSIS_ID.service"
+            systemctl --no-block restart "log-chassis-powercycle-sel@$CHASSIS_ID.service"
             msg="Chassis$CHASSIS_ID is AC power on"
             echo "${msg}"
-            lock_cleanup
             exit 0;
         else
             # Set host state to off
@@ -196,13 +195,11 @@ chassis-power-cycle()
             msg="Chassis$CHASSIS_ID AC power cycle failed, Chassis$CHASSIS_ID is AC power off"
             echo "${msg}"
             add_sel "${msg}" "Error"
-            lock_cleanup
             exit 1;
         fi
     fi
 
     echo "Invalid slot id"
-    lock_cleanup
     exit 1;
 }
 
@@ -248,6 +245,7 @@ else
         add_sel "${msg}" "Error"
         exit 1
     fi
+    systemctl stop "log-chassis-powercycle-sel@$CHASSIS_ID.service"
     echo "Starting chassis$1 AC power cycle"
     chassis-power-cycle "$1"
 fi

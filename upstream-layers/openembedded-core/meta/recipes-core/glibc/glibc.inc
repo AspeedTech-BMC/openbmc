@@ -9,7 +9,10 @@ HASHEQUIV_HASH_VERSION .= ".1"
 
 PROVIDES = "virtual/libc"
 PROVIDES += "virtual/libintl virtual/libiconv"
-inherit autotools texinfo systemd
+
+inherit autotools texinfo
+
+inherit_defer ${@bb.utils.contains('PACKAGECONFIG', 'nscd', 'systemd update-rc.d', '', d)}
 
 LEAD_SONAME = "libc.so"
 
@@ -21,9 +24,6 @@ CACHED_CONFIGUREVARS += " \
   libc_cv_slibdir=${base_libdir} \
   libc_cv_rootsbindir=${base_sbindir} \
   libc_cv_localedir=${localedir} \
-  libc_cv_ssp_strong=no \
-  libc_cv_ssp_all=no \
-  libc_cv_ssp=no \
   libc_cv_include_x86_isa_level=no \
 "
 
@@ -48,6 +48,9 @@ EXTRA_OEMAKE += "SHELL=/bin/bash"
 # We do not need bash to run tzselect script, the default is to use
 # bash but it can be configured by setting KSHELL Makefile variable
 EXTRA_OEMAKE += "KSHELL=/bin/sh"
+
+TARGET_CC_ARCH:append:toolchain-gcc = " -fno-link-libatomic"
+SDK_CC_ARCH:append:toolchain-gcc = " -fno-link-libatomic"
 
 do_configure:prepend() {
 	sed -e "s#/bin/bash#/bin/sh#" -i ${S}/elf/ldd.bash.in

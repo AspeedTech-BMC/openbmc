@@ -135,6 +135,16 @@ overview of their function and contents.
       Specifies the path to a log file into which BitBake's user interface
       writes output during the build.
 
+      This variable's value remains persistent during the entire execution of
+      the BitBake server. Changes to this variable will only take effect
+      after a server restart, which can be accomplished with the ``bitbake
+      --kill-server`` command.
+
+      .. note::
+
+         For more details on how to make the BitBake server persistent, see the
+         :term:`BB_SERVER_TIMEOUT` variable.
+
    :term:`BB_CURRENTTASK`
       Contains the name of the currently running task. The name does not
       include the ``do_`` prefix.
@@ -349,8 +359,9 @@ overview of their function and contents.
    :term:`BB_GIT_SHALLOW`
       Setting this variable to "1" enables the support for fetching, using and
       generating mirror tarballs of `shallow git repositories <https://riptutorial.com/git/example/4584/shallow-clone>`_.
-      The external `git-make-shallow <https://git.openembedded.org/bitbake/tree/bin/git-make-shallow>`_
-      script is used for shallow mirror tarball creation.
+      A git shallow fetch is used for shallow mirror tarball creation (i.e.
+      ``git fetch --depth <depth> ...`` or
+      ``git fetch --shallow-exclude=<revs> ...``.
 
       When :term:`BB_GIT_SHALLOW` is enabled, bitbake will attempt to fetch a shallow
       mirror tarball. If the shallow mirror tarball cannot be fetched, it will
@@ -1415,6 +1426,58 @@ overview of their function and contents.
       upstream source, and then locations specified by :term:`MIRRORS` in that
       order.
 
+      This variable has a specific syntax. Each line must contain a regular
+      expression matching the original source URL and a replacement URL for it.
+      For example::
+
+         MIRRORS:prepend = " \
+             git://git.openembedded.org/.* git:///mirrors/openembedded/BASENAME \
+         "
+
+      In the above example:
+
+      -  The leftmost part means that any Git repository (``git://`` fetcher)
+         whose URL starts with ``git.openembedded.org/`` will be matched.
+
+      -  The rightmost part is the replacement URL for the original repository,
+         which is hosted locally in the ``/mirrors/openembedded`` directory. It
+         also uses the ``BASENAME`` keyword which is detailed below.
+
+      The rightmost part of each line can contain keywords which are
+      automatically replaced by BitBake. These keywords can contain either a
+      sub-part of the original URL or meta-information about it.
+
+      For what follows, let's take the following URL as an example for the
+      original source (matched by the leftmost part of the line):
+      ``git://git.openembedded.org/project/repo.git``.
+
+      A replacement for this URL can be created using the following keywords:
+
+      -  ``TYPE``: the URL scheme or fetcher type. For the example above: ``git``.
+      -  ``HOST``: the URL host. For the example above: ``git.openembedded.org``.
+      -  ``PATH``: the URL path. For the example above: ``/project/repo.git``.
+      -  ``BASENAME``: the URL basename. For the example above: ``repo.git``.
+      -  ``MIRRORNAME``: a translation of the host and path with common
+         characters substituted to dots (``.``). For the example above:
+         ``git.openembedded.org.project.repo.git``.
+
+      The rightmost part of the line can also be a bare URL that uses no special
+      keywords (usually ``https://`` or ``file://``). For example::
+
+         MIRRORS:prepend = " \
+             git://git.openembedded.org/.* file:///mirrors/openembedded/ \
+         "
+
+      In the above example, the fetcher will try to find a mirror tarball in the
+      ``/mirrors/openembedded`` directory. The name of this tarball should follow
+      the name of the tarball created by BitBake (for Git repositories,
+      the :term:`BB_GENERATE_MIRROR_TARBALLS` variable must be set to "1" to
+      generate them).
+
+      If we take ``git://git.openembedded.org/project/repo.git`` as an example,
+      the tarball would have to be named
+      ``git2_git.openembedded.org.project.repo.git.tar.gz``.
+
    :term:`OVERRIDES`
       A colon-separated list that BitBake uses to control what variables are
       overridden after BitBake parses recipes and configuration files.
@@ -1542,6 +1605,10 @@ overview of their function and contents.
       HTTPS requests and direct them to the ``http://`` sources mirror. You can
       use ``file://`` URLs to point to local directories or network shares as
       well.
+
+      The syntax of the :term:`PREMIRRORS` variable is the same as
+      :term:`MIRRORS`. See the definition of the :term:`MIRRORS` for more
+      details.
 
    :term:`PROVIDES`
       A list of aliases by which a particular recipe can be known. By
