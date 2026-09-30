@@ -838,10 +838,10 @@ index c75b1c12b12a..cd3baebd2266 100644
  	cdev_del(&priv->cdev);
 diff --git a/drivers/net/mctp/mctp-i3c-target.c b/drivers/net/mctp/mctp-i3c-target.c
 new file mode 100644
-index 000000000000..92b45f49c36f
+index 000000000000..a4102d235421
 --- /dev/null
 +++ b/drivers/net/mctp/mctp-i3c-target.c
-@@ -0,0 +1,278 @@
+@@ -0,0 +1,295 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/* MCTP over I3C, local target side (DMTF DSP0233). */
 +
@@ -871,7 +871,9 @@ index 000000000000..92b45f49c36f
 +	bool stopping;
 +	/* Transfers may be DMA mapped, so do not put their buffers on stack. */
 +	u8 *tx_buf;
-+	u8 mdb;
++	/* MDB, optionally followed by its PEC byte. */
++	u8 *ibi_buf;
++	u8 ibi_len;
 +};
 +
 +static u8 mctp_i3c_target_pec(u8 addr, const u8 *data, size_t len)
@@ -952,8 +954,12 @@ index 000000000000..92b45f49c36f
 +						     priv->tx_buf, skb->len);
 +	data.data.out = priv->tx_buf;
 +	data.len = skb->len + 1;
-+	ibi.data.out = &priv->mdb;
-+	ibi.len = 1;
++	/* Controllers such as AST1060 and AST2600 require PEC after the MDB. */
++	if (priv->ibi_len > 1)
++		priv->ibi_buf[1] = mctp_i3c_target_pec((info.dyn_addr << 1) | 1,
++						       priv->ibi_buf, 1);
++	ibi.data.out = priv->ibi_buf;
++	ibi.len = priv->ibi_len;
 +	ret = i3c_device_pending_read_notify(priv->i3c, &data, &ibi);
 +	if (ret) {
 +		ndev->stats.tx_errors++;
@@ -1065,16 +1071,26 @@ index 000000000000..92b45f49c36f
 +		free_netdev(ndev);
 +		return -ENOMEM;
 +	}
++	/* PIO loads the PEC byte after the MDB as a complete word. */
++	priv->ibi_buf = kzalloc(2 * sizeof(u32), GFP_KERNEL);
++	if (!priv->ibi_buf) {
++		kfree(priv->tx_buf);
++		free_netdev(ndev);
++		return -ENOMEM;
++	}
 +	priv->i3c = i3c;
 +	priv->ndev = ndev;
 +	priv->stopping = true;
-+	priv->mdb = MCTP_I3C_TARGET_MDB;
++	priv->ibi_buf[0] = MCTP_I3C_TARGET_MDB;
++	priv->ibi_len = of_property_read_bool(dev->parent->of_node,
++					      "ibi-append-pec") ? 2 : 1;
 +	INIT_WORK(&priv->tx_work, mctp_i3c_target_tx_work);
 +	skb_queue_head_init(&priv->tx_queue);
 +	i3cdev_set_drvdata(i3c, priv);
 +	ret = mctp_register_netdev(ndev, NULL, MCTP_PHYS_BINDING_I3C);
 +	if (ret) {
 +		i3cdev_set_drvdata(i3c, NULL);
++		kfree(priv->ibi_buf);
 +		kfree(priv->tx_buf);
 +		free_netdev(ndev);
 +	}
@@ -1086,6 +1102,7 @@ index 000000000000..92b45f49c36f
 +	struct mctp_i3c_target *priv = i3cdev_get_drvdata(i3c);
 +
 +	mctp_unregister_netdev(priv->ndev);
++	kfree(priv->ibi_buf);
 +	kfree(priv->tx_buf);
 +	free_netdev(priv->ndev);
 +	i3cdev_set_drvdata(i3c, NULL);
@@ -1121,14 +1138,15 @@ index 000000000000..92b45f49c36f
 +MODULE_DESCRIPTION("MCTP I3C target network transport");
 +MODULE_LICENSE("GPL");
 diff --git a/arch/arm64/boot/dts/aspeed/ast2700-dcscm.dts b/arch/arm64/boot/dts/aspeed/ast2700-dcscm.dts
-index 4a603e517d96..af762a294b9e 100644
+index 4a603e517d96..b54155a1d865 100644
 --- a/arch/arm64/boot/dts/aspeed/ast2700-dcscm.dts
 +++ b/arch/arm64/boot/dts/aspeed/ast2700-dcscm.dts
-@@ -145,6 +145,7 @@ &i3c4 {
+@@ -145,6 +145,8 @@ &i3c4 {
  	initial-role = "target";
  	pid = <0x000007ec 0x06000000>;
  	dcr = /bits/ 8 <0xcc>;
 +	mctp-controller;
++	ibi-append-pec;
  	status = "okay";
  };
  
