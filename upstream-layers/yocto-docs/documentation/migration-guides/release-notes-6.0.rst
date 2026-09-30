@@ -38,67 +38,6 @@ New Features / Enhancements in |yocto-ver|
 
 -  Minimum Python version required on the host: 3.9.
 
--  New variables:
-
-   -  The :term:`OPENSSH_HOST_KEY_DIR` variable can be used to specify the
-      directory where OpenSSH host keys are stored. The default value is
-      ``/etc/ssh`` (:oecore_rev:`addd80ddfd892eb4513f323d369d210935416e05`)
-
-   -  The :term:`OPENSSH_HOST_KEY_DIR_READONLY_CONFIG` variable can be used to
-      specify the directory where OpenSSH host keys are stored when the device
-      uses a read-only filesystem. The default value is ``/var/run/ssh``
-      (:oecore_rev:`addd80ddfd892eb4513f323d369d210935416e05`)
-
-   -  The :term:`SPDX_INCLUDE_KERNEL_CONFIG` can be set to "1" to export the Linux
-      kernel configuration (``CONFIG_*`` parameters) into the SPDX document when
-      using the :ref:`ref-classes-create-spdx` class
-      (:oecore_rev:`228a968e7c47d811c06143279bdb0f9c5f374bef`)
-
-   -  The :term:`SPDX_INCLUDE_PACKAGECONFIG` variable can be set to "1" to
-      export a recipe's :term:`PACKAGECONFIG` features (enabled/disabled) into
-      the SPDX document when using the :ref:`ref-classes-create-spdx` class
-      (:oecore_rev:`228a968e7c47d811c06143279bdb0f9c5f374bef`)
-
-   -  The :term:`SPDX_PACKAGE_URL` allows specifying a space-separated list of
-      Package URLs (purls) for the software Package when using the
-      :ref:`ref-classes-create-spdx` class
-      (:oecore_rev:`874b2d301d3cac617b1028bc6ce91b1f916a6508`)
-
-   -  The :term:`SPDX_GIT_PURL_MAPPINGS` variable allows mapping domain names to
-      PURLs (Package URLs) in SPDX documents
-      (:oecore_rev:`9f1825e74d0f70917676201286b148aea84cc660`)
-
-   -  The :term:`SPDX_CONCLUDED_LICENSE` allows specifying the
-      ``hasConcludedLicense`` object of individual SBOM packages when using the
-      :ref:`ref-classes-create-spdx` class
-      (:oecore_rev:`bb21c6a429a2ecec82a8afe7d79502291ccaef01`)
-
-   -  The :term:`FIT_MKIMAGE_EXTRA_OPTS` variable allows passing extra options
-      to the ``mkimage`` command when creating a FIT image with the
-      :ref:`ref-classes-kernel-fit-image` class
-      (:oecore_rev:`d925d67061ef5d7a8abe15c715614650094d50c6`)
-
-   -  The :term:`FIT_CONF_MAPPINGS` variable allows mapping extra configurations
-      to existing ones or rename an existing configuration in FIT images created
-      with the :ref:`ref-classes-kernel-fit-image` class (:oecore_rev:`e30f809a50c2151e525424879383c02325a7ec9a`)
-
-   -  The :term:`UBOOT_CONFIG_FRAGMENTS` and :term:`UBOOT_FRAGMENTS` allow
-      supplying additional configuration fragments to the existing U-Boot
-      configuration. See the definition of the variables for more information,
-      and the documentation of the :ref:`ref-classes-uboot-config` class
-      (:oecore_rev:`9e96d3dedee47657657686310508e0aaee7f4e02`)
-
-   -  The :term:`IMAGE_EXTRA_PARTITION_FILES` allows specifying extra files from
-      the deploy directory (:term:`DEPLOY_DIR_IMAGE`) to install in a WIC
-      partition created with the ``extra_partition`` plugin
-      (:oecore_rev:`e1526079d205dac6e3cff6d8e5cb37f68b631009`)
-
-   -  The :term:`FIT_LOADABLES`, :term:`FIT_LOADABLE_FILENAME`,
-      :term:`FIT_LOADABLE_TYPE`, :term:`FIT_LOADABLE_ARCH`,
-      :term:`FIT_LOADABLE_OS` and :term:`FIT_LOADABLE_LOADADDRESS` variables can
-      be used to specify arbitrary ``loadables`` in a FIT image
-      (:oecore_rev:`2535427d8de07f6e432d08cbdc046bdfd8788911`)
-
 -  Kernel-related changes:
 
    -  :ref:`ref-classes-kernel-fit-image`: Support arbitrary loadables
@@ -185,10 +124,77 @@ New Features / Enhancements in |yocto-ver|
    -  :ref:`ref-classes-sbom-cve-check-recipe`: Class for post-build CVE
       analysis of recipes (using the recipe SBOM, meaning building the
       software provided by the recipe is not needed), which uses the
-      `sbom-cve-check <github.com/bootlin/sbom-cve-check>`__ tool internally
-      (:oecore_rev:`e2518b1eaabef13c9f8d44b52b8ec9d4dd4ed916`)
+      `sbom-cve-check <github.com/bootlin/sbom-cve-check>`__ tool internally.
+      This also obsoletes the ``cve-check`` class.
+      (:oecore_rev:`e2518b1eaabef13c9f8d44b52b8ec9d4dd4ed916`,
+      :oecore_rev:`00de455f8d3aeca880129d23e8cfb7e246404699`)
+
+-  New variables:
+
+   -  The :term:`OPENSSH_HOST_KEY_DIR` variable can be used to specify the
+      directory where OpenSSH host keys are stored. The default value is
+      ``/etc/ssh`` (:oecore_rev:`addd80ddfd892eb4513f323d369d210935416e05`)
+
+   -  The :term:`OPENSSH_HOST_KEY_DIR_READONLY_CONFIG` variable can be used to
+      specify the directory where OpenSSH host keys are stored when the device
+      uses a read-only filesystem. The default value is ``/var/run/ssh``
+      (:oecore_rev:`addd80ddfd892eb4513f323d369d210935416e05`)
+
+   -  The :term:`SPDX_INCLUDE_KERNEL_CONFIG` can be set to "1" to export the Linux
+      kernel configuration (``CONFIG_*`` parameters) into the SPDX document when
+      using the :ref:`ref-classes-create-spdx` class
+      (:oecore_rev:`228a968e7c47d811c06143279bdb0f9c5f374bef`)
+
+   -  The :term:`SPDX_INCLUDE_PACKAGECONFIG` variable can be set to "1" to
+      export a recipe's :term:`PACKAGECONFIG` features (enabled/disabled) into
+      the SPDX document when using the :ref:`ref-classes-create-spdx` class
+      (:oecore_rev:`228a968e7c47d811c06143279bdb0f9c5f374bef`)
+
+   -  The :term:`SPDX_PACKAGE_URL` allows specifying a space-separated list of
+      Package URLs (purls) for the software Package when using the
+      :ref:`ref-classes-create-spdx` class
+      (:oecore_rev:`874b2d301d3cac617b1028bc6ce91b1f916a6508`)
+
+   -  The :term:`SPDX_GIT_PURL_MAPPINGS` variable allows mapping domain names to
+      PURLs (Package URLs) in SPDX documents
+      (:oecore_rev:`9f1825e74d0f70917676201286b148aea84cc660`)
+
+   -  The :term:`SPDX_CONCLUDED_LICENSE` allows specifying the
+      ``hasConcludedLicense`` object of individual SBOM packages when using the
+      :ref:`ref-classes-create-spdx` class
+      (:oecore_rev:`bb21c6a429a2ecec82a8afe7d79502291ccaef01`)
+
+   -  The :term:`FIT_MKIMAGE_EXTRA_OPTS` variable allows passing extra options
+      to the ``mkimage`` command when creating a FIT image with the
+      :ref:`ref-classes-kernel-fit-image` class
+      (:oecore_rev:`d925d67061ef5d7a8abe15c715614650094d50c6`)
+
+   -  The :term:`FIT_CONF_MAPPINGS` variable allows mapping extra configurations
+      to existing ones or rename an existing configuration in FIT images created
+      with the :ref:`ref-classes-kernel-fit-image` class (:oecore_rev:`e30f809a50c2151e525424879383c02325a7ec9a`)
+
+   -  The :term:`UBOOT_CONFIG_FRAGMENTS` and :term:`UBOOT_FRAGMENTS` allow
+      supplying additional configuration fragments to the existing U-Boot
+      configuration. See the definition of the variables for more information,
+      and the documentation of the :ref:`ref-classes-uboot-config` class
+      (:oecore_rev:`9e96d3dedee47657657686310508e0aaee7f4e02`)
+
+   -  The :term:`IMAGE_EXTRA_PARTITION_FILES` allows specifying extra files from
+      the deploy directory (:term:`DEPLOY_DIR_IMAGE`) to install in a WIC
+      partition created with the ``extra_partition`` plugin
+      (:oecore_rev:`e1526079d205dac6e3cff6d8e5cb37f68b631009`)
+
+   -  The :term:`FIT_LOADABLES`, :term:`FIT_LOADABLE_FILENAME`,
+      :term:`FIT_LOADABLE_TYPE`, :term:`FIT_LOADABLE_ARCH`,
+      :term:`FIT_LOADABLE_OS` and :term:`FIT_LOADABLE_LOADADDRESS` variables can
+      be used to specify arbitrary ``loadables`` in a FIT image
+      (:oecore_rev:`2535427d8de07f6e432d08cbdc046bdfd8788911`)
 
 -  Global configuration changes:
+
+   -  Changes in :term:`DISTRO_FEATURES` default values and how
+      :term:`DISTRO_FEATURES` and :term:`MACHINE_FEATURES` are provided, see
+      :doc:`/migration-guides/migration-6.0` for more information.
 
    -  ``base-passwd``: Add a ``clock`` group as `systemd` version v258 introduces
       this group to `enable applications like linuxptp to open clocks without
@@ -219,25 +225,23 @@ New Features / Enhancements in |yocto-ver|
       (:oecore_rev:`722897f96d30e978b20e140419fb044d850f5c74`)
 
    -  The :oe_git:`no-static-libs.inc
-      <openembedded-core/tree/meta/conf/distro/include/no-static-libs.inc>`
+      </openembedded-core/tree/meta/conf/distro/include/no-static-libs.inc>`
       file, disabling most static libraries in various recipes, is now included
       by default in the default distro setup (appearing as the ``nodistro``
       :term:`DISTRO`) (:oecore_rev:`03fc931bfe9ea3fa9f33553e6020cbc067b24291`)
 
    -  The :oe_git:`security_flags.inc
-      <openembedded-core/tree/meta/conf/distro/include/security_flags.inc>`
+      </openembedded-core/tree/meta/conf/distro/include/security_flags.inc>`
       file, adding various security related flags to the default compiler and
       linker, is now included by default in the default distro setup (appearing
       as ``nodistro`` :term:`DISTRO`)
       (:oecore_rev:`4c2d64c10a5b0437ab1ea04df22386f0f95124d1`)
 
    -  The :oe_git:`yocto-space-optimize.inc
-      <openembedded-core/tree/meta/conf/distro/include/yocto-space-optimize.inc>`
+      </openembedded-core/tree/meta/conf/distro/include/yocto-space-optimize.inc>`
       file, adding various space optimization tweaks, is now included by default
       in the default distro setup (appearing as ``nodistro`` :term:`DISTRO`)
       (:oecore_rev:`175fcf9fad699dd122680d3f6961af9bf8487046`)
-
--  Architecture-specific changes:
 
 -  QEMU / ``runqemu`` changes:
 
@@ -264,8 +268,8 @@ New Features / Enhancements in |yocto-ver|
 -  Documentation changes:
 
    -  The documentation build now fetches the list of active and inactive
-      version of the documentation from the remote `releases.json
-      <dashboard.yoctoproject.org/releases.json>`__ file. This also applies to
+      versions of the documentation from the remote `releases.json
+      <https://dashboard.yoctoproject.org/releases.json>`__ file. This also applies to
       the :term:`BitBake` documentation.
 
 -  Go changes:
@@ -289,6 +293,9 @@ New Features / Enhancements in |yocto-ver|
    -  Enable dynamic LLVM linking by default
       (:oecore_rev:`d0671c3dad87a063b3a41dd07cde89b5684e692c`)
 
+   -  Enable fully static linking when :term:`TCLIBC` is set to ``musl``
+      (:oecore_rev:`75409c60e9e63fdcbb9d4f54130052991362ec08`)
+
 -  Wic Image Creator changes:
 
    -  ``wic/engine``: Fix copying directories into wic image with ``ext*``
@@ -297,7 +304,13 @@ New Features / Enhancements in |yocto-ver|
    -  Re-implement sector-size support
       (:oecore_rev:`b50d6debf7baa555fbfb3521c4f952675bba2d37`)
 
--  SDK-related changes:
+   -  The Wic tool is now maintained in a separate project, no longer part of
+      :term:`OpenEmbedded-Core (OE-Core)`: :yocto_git:`/wic/`
+
+   -  A new ``wicenv`` type can be added to :term:`IMAGE_FSTYPES` to place the
+      ``.env`` file generate by Wic in the deployment directory
+      (:term:`DEPLOY_DIR_IMAGE`)
+      (:oecore_rev:`e4d49702f21fb75444d58f419432649a04e351c9`)
 
 -  Testing-related changes:
 
@@ -374,6 +387,9 @@ New Features / Enhancements in |yocto-ver|
       -  Update data if CVE exists (:oecore_rev:`9ea6d9209b95f8d31975d71315fb52343e6aa729`)
       -  Validate that cve details field exists (:oecore_rev:`80ff4903ea1b839f9cd9393b314c3adfbb80b765`)
 
+   -  ``oe-pkgdata-util``: improve the ``lookup-pkg`` error message for
+      :term:`RPROVIDES` packages
+      (:oecore_rev:`46ff3a8d2c18fcba87c711bb23dbdabae20eef84`)
 
 -  BitBake changes:
 
@@ -463,7 +479,9 @@ New Features / Enhancements in |yocto-ver|
       configuration options when fetching Git repositories
       (:bitbake_rev:`4c378445969853d6aff4694d937b9af47c7f7300`)
 
--  Packaging changes:
+   -  When using the ``subpath`` parameter with the Git fetcher in an
+      :term:`SRC_URI`, properly make the ``HEAD`` point to the value specified
+      in :term:`SRCREV`.
 
 -  Clang/LLVM related changes:
 
@@ -498,9 +516,8 @@ New Features / Enhancements in |yocto-ver|
    -  Add suport for package URLs (PURLs) through :term:`SPDX_PACKAGE_URL`
       (:oecore_rev:`874b2d301d3cac617b1028bc6ce91b1f916a6508`)
 
-   -  ``create-spdx-2.2``: Add CVEs in :term:`CVE_CHECK_IGNORE`
-      to the list of fixed CVEs in the output SBOM
-      (:oecore_rev:`f8525224cb825b1aad2be240731eabafdde7612d`)
+   -  Support only SPDX 3 and removed SPDX 2.2 support.
+      (:oecore_rev:`12abd0574c267bade0962ecb39d9e8da8c56842b`)
 
    -  The :ref:`ref-classes-create-spdx` class used to include `VEX
       <https://cyclonedx.org/capabilities/vex/>`__ statements in the SPDX documents
@@ -516,7 +533,6 @@ New Features / Enhancements in |yocto-ver|
       The inclusion of VEX statements in SPDX documents can be controlled with the
       :term:`SPDX_INCLUDE_VEX` variable
       (:oecore_rev:`d999ac407c86b462134008818d5863ecb577f3c6`)
-
 
 -  ``devtool`` changes:
 
@@ -572,10 +588,7 @@ New Features / Enhancements in |yocto-ver|
       :doc:`/security-reference/index`. It is intended to document how to report
       vulnerabilities to the Yocto Project security team.
 
--  :ref:`ref-classes-cve-check`-related changes:
-
-   -  ``cve-update-nvd2-native``: Use maximum CVSS score when extracting it from
-      multiple sources (:oecore_rev:`4f6192f3165de0bc2499e045607c7e7ffd878a4b`)
+-  :ref:`ref-classes-sbom-cve-check`-related changes:
 
    -  Escape special characters in CPE 2.3 strings
       (:oecore_rev:`9dd9c0038907340ba08ff4c8ee06a8748c1ac00a`)
@@ -583,6 +596,7 @@ New Features / Enhancements in |yocto-ver|
 -  New :term:`PACKAGECONFIG` options for individual recipes:
 
    -  ``curl``: ``schannel``
+   -  ``gstreamer1.0-plugins-bad``: ``fdkaac``
    -  ``gstreamer1.0-plugins-good``: ``qt6``
    -  ``libinput``: ``lua``, ``libwacom``, ``mtdev``
    -  ``librepo``: ``sequoia``
@@ -593,6 +607,8 @@ New Features / Enhancements in |yocto-ver|
    -  ``python3``: ``freethreading`` (experimental, see
       :oecore_rev:`c56990178b31b893fbf695eaf6b67de501e9d2e9`)
    -  ``python3-cryptography``: ``legacy-openssl``
+   -  ``systemd``: ``osc-context``
+   -  ``systemtap``: ``readline``
 
 -  systemd related changes:
 
@@ -736,11 +752,37 @@ New Features / Enhancements in |yocto-ver|
    -  :ref:`ref-classes-archiver`: Don't try to preserve all attributes when
       copying files (:oecore_rev:`6e8313688fa994c82e4c846993ed8da0d1f4db0e`)
 
+   -  :ref:`ref-classes-useradd`: allow inheriting the class with only
+      :term:`USERADD_DEPENDS` set, when a recipe only depends on users/groups
+      created by another (:oecore_rev:`09a901b9874f76e665fb4ba9e537703a792011e3`)
+
+   -  ``vim``: disable `GTK+3` UI by default
+      (:oecore_rev:`a07763f03d4faacca4470e4f1f80f766ed068296`)
+
 Known Issues in |yocto-ver|
 ---------------------------
 
+Referencing an unset variable in :term:`DISTRO_FEATURES` causes
+:term:`DISTRO_FEATURES_NATIVE` and :term:`DISTRO_FEATURES_NATIVESDK` to be set
+incorrectly. The leads to confusing errors, such as:
+
+-  ``Nothing PROVIDES 'libseccomp-native'``
+
+-  ``Required build target 'glibc' has no buildable providers.``
+
+To resolve these errors, ensure that all variables referenced in
+:term:`DISTRO_FEATURES` are set. Variables may be set to an empty string if not
+needed.
+
+A fix for this issue is in progress and should be included in Yocto Project
+6.0.1. See Yocto bug :yocto_bug:`16275` for further details.
+
 Recipe License changes in |yocto-ver|
 -------------------------------------
+
+..
+   Going through commits on OE-Core filtered by License-Update:
+   git log -U0 --patch --grep "License-Update:" yocto-5.3..origin/master
 
 The following changes have been made to the :term:`LICENSE` values set by recipes:
 
@@ -748,15 +790,36 @@ The following changes have been made to the :term:`LICENSE` values set by recipe
    :widths: 20 40 40
    :header-rows: 1
 
-   * - Recipe
+   * - Recipe(s)
      - Previous value
      - New value
-   * - ``recipe name``
-     - Previous value
-     - New value
+   * - ``libxcrypt-compat``, ``libxcrypt``
+     - ``LGPL-2.1-only``
+     - ``LGPL-2.1-only & 0BSD & BSD-3-Clause``
+   * - ``libpcre2``
+     - ``BSD-3-Clause``
+     - ``BSD-3-Clause & BSD-2-Clause & MIT``
+   * - ``libtest-fatal-perl``
+     - ``Artistic-1.0 | GPL-1.0-or-later``
+     - ``Artistic-1.0-Perl | GPL-1.0-or-later``
+   * - ``python3-cffi``
+     - ``MIT``
+     - ``MIT-0``
+   * - ``icu``
+     - ``ICU``
+     - ``ICU & MIT``
+   * - ``iso-code``
+     - ``LGPL-2.1-only``
+     - ``LGPL-2.1-or-later``
+   * - ``ruby``
+     - ``Ruby | BSD-2-Clause | BSD-3-Clause | GPL-2.0-only | ISC | MIT``
+     - ``Ruby | BSD-2-Clause | BSD-3-Clause | GPL-2.0-only | ISC | MIT | BSL-1.0 | Apache-2.0``
 
 Security Fixes in |yocto-ver|
 -----------------------------
+
+..
+   Generated with documentation/tools/gen-cve-release-notes
 
 The following CVEs have been fixed:
 
@@ -766,11 +829,77 @@ The following CVEs have been fixed:
 
    * - Recipe
      - CVE IDs
-   * - ``recipe name``
-     - :cve_nist:`xxx-xxxx`, ...
+   * - ``avahi``
+     - :cve_nist:`2025-59529`, :cve_nist:`2026-34933`
+   * - ``binutils``
+     - :cve_nist:`2025-69644`, :cve_nist:`2025-69647`, :cve_nist:`2025-69648`, :cve_nist:`2025-69649`, :cve_nist:`2025-69650`, :cve_nist:`2025-69651`, :cve_nist:`2025-69652`, :cve_nist:`2026-3441`, :cve_nist:`2026-3442`, :cve_nist:`2026-4647`
+   * - ``binutils-cross-x86_64``
+     - :cve_nist:`2025-69644`, :cve_nist:`2025-69647`, :cve_nist:`2025-69648`, :cve_nist:`2025-69649`, :cve_nist:`2025-69650`, :cve_nist:`2025-69651`, :cve_nist:`2025-69652`, :cve_nist:`2026-3441`, :cve_nist:`2026-3442`, :cve_nist:`2026-4647`
+   * - ``binutils-testsuite``
+     - :cve_nist:`2025-69644`, :cve_nist:`2025-69647`, :cve_nist:`2025-69648`, :cve_nist:`2025-69649`, :cve_nist:`2025-69650`, :cve_nist:`2025-69651`, :cve_nist:`2025-69652`, :cve_nist:`2026-3441`, :cve_nist:`2026-3442`, :cve_nist:`2026-4647`
+   * - ``cargo``
+     - :cve_nist:`2026-39837`, :cve_nist:`2026-39839`, :cve_nist:`2026-39840`, :cve_nist:`2026-39841`
+   * - ``cups``
+     - :cve_nist:`2026-34978`, :cve_nist:`2026-34979`, :cve_nist:`2026-34980`, :cve_nist:`2026-34990`, :cve_nist:`2026-39314`, :cve_nist:`2026-39316`
+   * - ``ffmpeg``
+     - :cve_nist:`2025-69693`, :cve_nist:`2026-40962`
+   * - ``glibc``
+     - :cve_nist:`2026-4046`, :cve_nist:`2026-4437`, :cve_nist:`2026-4438`
+   * - ``go``
+     - :cve_nist:`2026-27140`, :cve_nist:`2026-27143`, :cve_nist:`2026-27144`, :cve_nist:`2026-32280`, :cve_nist:`2026-32281`, :cve_nist:`2026-32282`, :cve_nist:`2026-32283`, :cve_nist:`2026-32288`, :cve_nist:`2026-32289`
+   * - ``go-binary-native``
+     - :cve_nist:`2026-27140`, :cve_nist:`2026-27143`, :cve_nist:`2026-27144`, :cve_nist:`2026-32280`, :cve_nist:`2026-32281`, :cve_nist:`2026-32282`, :cve_nist:`2026-32283`, :cve_nist:`2026-32288`, :cve_nist:`2026-32289`
+   * - ``go-cross-x86-64-v3``
+     - :cve_nist:`2026-27140`, :cve_nist:`2026-27143`, :cve_nist:`2026-27144`, :cve_nist:`2026-32280`, :cve_nist:`2026-32281`, :cve_nist:`2026-32282`, :cve_nist:`2026-32283`, :cve_nist:`2026-32288`, :cve_nist:`2026-32289`
+   * - ``go-runtime``
+     - :cve_nist:`2026-27140`, :cve_nist:`2026-27143`, :cve_nist:`2026-27144`, :cve_nist:`2026-32280`, :cve_nist:`2026-32281`, :cve_nist:`2026-32282`, :cve_nist:`2026-32283`, :cve_nist:`2026-32288`, :cve_nist:`2026-32289`
+   * - ``gstreamer1.0``
+     - :cve_nist:`2026-2920`, :cve_nist:`2026-2921`, :cve_nist:`2026-2922`, :cve_nist:`2026-2923`, :cve_nist:`2026-3081`, :cve_nist:`2026-3082`, :cve_nist:`2026-3083`, :cve_nist:`2026-3084`, :cve_nist:`2026-3085`, :cve_nist:`2026-3086`
+   * - ``libarchive``
+     - :cve_nist:`2026-5121`
+   * - ``libexif``
+     - :cve_nist:`2026-40385`, :cve_nist:`2026-40386`
+   * - ``libinput``
+     - :cve_nist:`2026-35093`, :cve_nist:`2026-35094`
+   * - ``libpng``
+     - :cve_nist:`2026-33416`, :cve_nist:`2026-33636`
+   * - ``libsndfile1``
+     - :cve_nist:`2024-50613`, :cve_nist:`2025-52194`
+   * - ``libsoup``
+     - :cve_nist:`2026-1467`, :cve_nist:`2026-1536`, :cve_nist:`2026-1539`, :cve_nist:`2026-1801`, :cve_nist:`2026-2443`, :cve_nist:`2026-3099`, :cve_nist:`2026-3632`, :cve_nist:`2026-3633`, :cve_nist:`2026-3634`, :cve_nist:`2026-4271`, :cve_nist:`2026-5119`
+   * - ``linux-yocto``
+     - :cve_nist:`2019-14899`, :cve_nist:`2021-3714`, :cve_nist:`2021-3864`, :cve_nist:`2022-0400`, :cve_nist:`2022-1247`, :cve_nist:`2022-4543`, :cve_nist:`2023-3397`, :cve_nist:`2023-3640`, :cve_nist:`2023-4010`, :cve_nist:`2023-6238`, :cve_nist:`2023-6240`, :cve_nist:`2025-40039`, :cve_nist:`2025-40040`, :cve_nist:`2025-40082`, :cve_nist:`2025-40149`, :cve_nist:`2025-40164`, :cve_nist:`2025-40251`, :cve_nist:`2025-68211`, :cve_nist:`2025-68214`, :cve_nist:`2025-68223`, :cve_nist:`2025-68333`, :cve_nist:`2025-68340`, :cve_nist:`2025-68351`, :cve_nist:`2025-68358`, :cve_nist:`2025-68365`, :cve_nist:`2025-68725`, :cve_nist:`2025-68749`, :cve_nist:`2025-68817`, :cve_nist:`2025-68823`, :cve_nist:`2025-71071`, :cve_nist:`2025-71072`, :cve_nist:`2025-71073`, :cve_nist:`2025-71074`, :cve_nist:`2025-71075`, :cve_nist:`2025-71076`, :cve_nist:`2025-71077`, :cve_nist:`2025-71078`, :cve_nist:`2025-71079`, :cve_nist:`2025-71080`, :cve_nist:`2025-71081`, :cve_nist:`2025-71082`, :cve_nist:`2025-71083`, :cve_nist:`2025-71084`, :cve_nist:`2025-71085`, :cve_nist:`2025-71086`, :cve_nist:`2025-71087`, :cve_nist:`2025-71088`, :cve_nist:`2025-71089`, :cve_nist:`2025-71091`, :cve_nist:`2025-71093`, :cve_nist:`2025-71094`, :cve_nist:`2025-71095`, :cve_nist:`2025-71096`, :cve_nist:`2025-71097`, :cve_nist:`2025-71098`, :cve_nist:`2025-71099`, :cve_nist:`2025-71100`, :cve_nist:`2025-71101`, :cve_nist:`2025-71102`, :cve_nist:`2025-71104`, :cve_nist:`2025-71105`, :cve_nist:`2025-71107`, :cve_nist:`2025-71108`, :cve_nist:`2025-71109`, :cve_nist:`2025-71111`, :cve_nist:`2025-71112`, :cve_nist:`2025-71113`, :cve_nist:`2025-71114`, :cve_nist:`2025-71115`, :cve_nist:`2025-71116`, :cve_nist:`2025-71117`, :cve_nist:`2025-71118`, :cve_nist:`2025-71119`, :cve_nist:`2025-71120`, :cve_nist:`2025-71121`, :cve_nist:`2025-71122`, :cve_nist:`2025-71124`, :cve_nist:`2025-71125`, :cve_nist:`2025-71126`, :cve_nist:`2025-71127`, :cve_nist:`2025-71128`, :cve_nist:`2025-71129`, :cve_nist:`2025-71130`, :cve_nist:`2025-71131`, :cve_nist:`2025-71132`, :cve_nist:`2025-71133`, :cve_nist:`2025-71134`, :cve_nist:`2025-71135`, :cve_nist:`2025-71136`, :cve_nist:`2025-71137`, :cve_nist:`2025-71138`, :cve_nist:`2025-71141`, :cve_nist:`2025-71142`, :cve_nist:`2025-71143`, :cve_nist:`2025-71147`, :cve_nist:`2025-71148`, :cve_nist:`2025-71149`, :cve_nist:`2025-71150`, :cve_nist:`2025-71151`, :cve_nist:`2025-71152`, :cve_nist:`2025-71153`, :cve_nist:`2025-71154`, :cve_nist:`2025-71156`, :cve_nist:`2025-71157`, :cve_nist:`2025-71158`, :cve_nist:`2025-71160`, :cve_nist:`2025-71161`, :cve_nist:`2025-71162`, :cve_nist:`2025-71163`, :cve_nist:`2025-71180`, :cve_nist:`2025-71182`, :cve_nist:`2025-71183`, :cve_nist:`2025-71184`, :cve_nist:`2025-71185`, :cve_nist:`2025-71186`, :cve_nist:`2025-71187`, :cve_nist:`2025-71188`, :cve_nist:`2025-71189`, :cve_nist:`2025-71190`, :cve_nist:`2025-71191`, :cve_nist:`2025-71200`, :cve_nist:`2025-71201`, :cve_nist:`2025-71202`, :cve_nist:`2025-71203`, :cve_nist:`2025-71204`, :cve_nist:`2025-71220`, :cve_nist:`2025-71221`, :cve_nist:`2025-71222`, :cve_nist:`2025-71223`, :cve_nist:`2025-71225`, :cve_nist:`2025-71227`, :cve_nist:`2025-71229`, :cve_nist:`2025-71230`, :cve_nist:`2025-71231`, :cve_nist:`2025-71232`, :cve_nist:`2025-71233`, :cve_nist:`2025-71234`, :cve_nist:`2025-71235`, :cve_nist:`2025-71236`, :cve_nist:`2025-71237`, :cve_nist:`2025-71238`, :cve_nist:`2026-22976`, :cve_nist:`2026-22977`, :cve_nist:`2026-22978`, :cve_nist:`2026-22979`, :cve_nist:`2026-22980`, :cve_nist:`2026-22981`, :cve_nist:`2026-22982`, :cve_nist:`2026-22984`, :cve_nist:`2026-22985`, :cve_nist:`2026-22986`, :cve_nist:`2026-22989`, :cve_nist:`2026-22990`, :cve_nist:`2026-22991`, :cve_nist:`2026-22992`, :cve_nist:`2026-22993`, :cve_nist:`2026-22994`, :cve_nist:`2026-22996`, :cve_nist:`2026-22997`, :cve_nist:`2026-22998`, :cve_nist:`2026-22999`, :cve_nist:`2026-23000`, :cve_nist:`2026-23001`, :cve_nist:`2026-23002`, :cve_nist:`2026-23003`, :cve_nist:`2026-23005`, :cve_nist:`2026-23006`, :cve_nist:`2026-23007`, :cve_nist:`2026-23008`, :cve_nist:`2026-23009`, :cve_nist:`2026-23010`, :cve_nist:`2026-23011`, :cve_nist:`2026-23013`, :cve_nist:`2026-23015`, :cve_nist:`2026-23017`, :cve_nist:`2026-23018`, :cve_nist:`2026-23019`, :cve_nist:`2026-23020`, :cve_nist:`2026-23021`, :cve_nist:`2026-23023`, :cve_nist:`2026-23025`, :cve_nist:`2026-23026`, :cve_nist:`2026-23060`, :cve_nist:`2026-23061`, :cve_nist:`2026-23062`, :cve_nist:`2026-23063`, :cve_nist:`2026-23064`, :cve_nist:`2026-23065`, :cve_nist:`2026-23066`, :cve_nist:`2026-23067`, :cve_nist:`2026-23068`, :cve_nist:`2026-23069`, :cve_nist:`2026-23070`, :cve_nist:`2026-23071`, :cve_nist:`2026-23072`, :cve_nist:`2026-23073`, :cve_nist:`2026-23074`, :cve_nist:`2026-23075`, :cve_nist:`2026-23076`, :cve_nist:`2026-23077`, :cve_nist:`2026-23078`, :cve_nist:`2026-23080`, :cve_nist:`2026-23081`, :cve_nist:`2026-23083`, :cve_nist:`2026-23084`, :cve_nist:`2026-23085`, :cve_nist:`2026-23086`, :cve_nist:`2026-23087`, :cve_nist:`2026-23088`, :cve_nist:`2026-23089`, :cve_nist:`2026-23090`, :cve_nist:`2026-23091`, :cve_nist:`2026-23092`, :cve_nist:`2026-23093`, :cve_nist:`2026-23094`, :cve_nist:`2026-23095`, :cve_nist:`2026-23096`, :cve_nist:`2026-23097`, :cve_nist:`2026-23098`, :cve_nist:`2026-23099`, :cve_nist:`2026-23100`, :cve_nist:`2026-23101`, :cve_nist:`2026-23102`, :cve_nist:`2026-23103`, :cve_nist:`2026-23104`, :cve_nist:`2026-23105`, :cve_nist:`2026-23107`, :cve_nist:`2026-23108`, :cve_nist:`2026-23109`, :cve_nist:`2026-23110`, :cve_nist:`2026-23111`, :cve_nist:`2026-23112`, :cve_nist:`2026-23113`, :cve_nist:`2026-23114`, :cve_nist:`2026-23115`, :cve_nist:`2026-23116`, :cve_nist:`2026-23118`, :cve_nist:`2026-23119`, :cve_nist:`2026-23120`, :cve_nist:`2026-23121`, :cve_nist:`2026-23122`, :cve_nist:`2026-23123`, :cve_nist:`2026-23124`, :cve_nist:`2026-23125`, :cve_nist:`2026-23126`, :cve_nist:`2026-23128`, :cve_nist:`2026-23129`, :cve_nist:`2026-23130`, :cve_nist:`2026-23131`, :cve_nist:`2026-23133`, :cve_nist:`2026-23135`, :cve_nist:`2026-23136`, :cve_nist:`2026-23137`, :cve_nist:`2026-23138`, :cve_nist:`2026-23139`, :cve_nist:`2026-23140`, :cve_nist:`2026-23141`, :cve_nist:`2026-23142`, :cve_nist:`2026-23143`, :cve_nist:`2026-23144`, :cve_nist:`2026-23146`, :cve_nist:`2026-23147`, :cve_nist:`2026-23148`, :cve_nist:`2026-23150`, :cve_nist:`2026-23151`, :cve_nist:`2026-23152`, :cve_nist:`2026-23154`, :cve_nist:`2026-23156`, :cve_nist:`2026-23157`, :cve_nist:`2026-23158`, :cve_nist:`2026-23160`, :cve_nist:`2026-23161`, :cve_nist:`2026-23163`, :cve_nist:`2026-23164`, :cve_nist:`2026-23166`, :cve_nist:`2026-23167`, :cve_nist:`2026-23168`, :cve_nist:`2026-23169`, :cve_nist:`2026-23170`, :cve_nist:`2026-23171`, :cve_nist:`2026-23172`, :cve_nist:`2026-23173`, :cve_nist:`2026-23186`, :cve_nist:`2026-23187`, :cve_nist:`2026-23188`, :cve_nist:`2026-23190`, :cve_nist:`2026-23191`, :cve_nist:`2026-23192`, :cve_nist:`2026-23193`, :cve_nist:`2026-23195`, :cve_nist:`2026-23196`, :cve_nist:`2026-23197`, :cve_nist:`2026-23198`, :cve_nist:`2026-23199`, :cve_nist:`2026-23201`, :cve_nist:`2026-23204`, :cve_nist:`2026-23205`, :cve_nist:`2026-23206`, :cve_nist:`2026-23208`, :cve_nist:`2026-23209`, :cve_nist:`2026-23210`, :cve_nist:`2026-23212`, :cve_nist:`2026-23213`, :cve_nist:`2026-23214`, :cve_nist:`2026-23215`, :cve_nist:`2026-23216`, :cve_nist:`2026-23217`, :cve_nist:`2026-23219`, :cve_nist:`2026-23220`, :cve_nist:`2026-23221`, :cve_nist:`2026-23222`, :cve_nist:`2026-23223`, :cve_nist:`2026-23224`, :cve_nist:`2026-23226`, :cve_nist:`2026-23227`, :cve_nist:`2026-23228`, :cve_nist:`2026-23229`, :cve_nist:`2026-23230`, :cve_nist:`2026-23231`, :cve_nist:`2026-23233`, :cve_nist:`2026-23234`, :cve_nist:`2026-23235`, :cve_nist:`2026-23236`, :cve_nist:`2026-23237`, :cve_nist:`2026-23238`
+   * - ``mesa``
+     - :cve_nist:`2026-40393`
+   * - ``nfs-utils``
+     - :cve_nist:`2025-12801`
+   * - ``nghttp2``
+     - :cve_nist:`2026-27135`
+   * - ``openssh``
+     - :cve_nist:`2026-35414`
+   * - ``python3``
+     - :cve_nist:`2026-4519`
+   * - ``python3-requests``
+     - :cve_nist:`2026-25645`
+   * - ``qemu``
+     - :cve_nist:`2024-6519`
+   * - ``qemu-system-native``
+     - :cve_nist:`2024-6519`
+   * - ``sqlite3``
+     - :cve_nist:`2025-70873`
+   * - ``systemd-boot``
+     - :cve_nist:`2026-29111`, :cve_nist:`2026-40226`
+   * - ``vim``
+     - :cve_nist:`2026-28417`, :cve_nist:`2026-28418`, :cve_nist:`2026-28419`, :cve_nist:`2026-28420`, :cve_nist:`2026-28421`, :cve_nist:`2026-28422`, :cve_nist:`2026-33412`, :cve_nist:`2026-34714`, :cve_nist:`2026-35177`
+   * - ``xz``
+     - :cve_nist:`2026-34743`
 
 Recipe Upgrades in |yocto-ver|
 ------------------------------
+
+..
+   Generated with https://layers.openembedded.org/layerindex/branch_comparison
+   With "rST" output selected
 
 The following recipes have been upgraded:
 
@@ -779,16 +908,1405 @@ The following recipes have been upgraded:
    :header-rows: 1
 
    * - Recipe
-     - Previous version
-     - New version
-   * - ``recipe name``
-     - Previous version
-     - New version
+     - Previous version(s)
+     - New version(s)
+   * - ``acpica``
+     - 20250807
+     - 20251212
+   * - ``adwaita-icon-theme``
+     - 48.0
+     - 49.0
+   * - ``alsa-lib``
+     - 1.2.14
+     - 1.2.15.3
+   * - ``alsa-tools``
+     - 1.2.14
+     - 1.2.15
+   * - ``alsa-ucm-conf``
+     - 1.2.14
+     - 1.2.15.3
+   * - ``alsa-utils``
+     - 1.2.14
+     - 1.2.15.2
+   * - ``appstream``
+     - 1.0.6
+     - 1.1.2
+   * - ``aspell``
+     - 0.60.8.1
+     - 0.60.8.2
+   * - ``at-spi2-core``
+     - 2.56.4
+     - 2.60.0
+   * - ``autoconf``
+     - 2.72
+     - 2.73
+   * - ``barebox``
+     - 2025.09.3
+     - 2026.04.0
+   * - ``barebox-tools``
+     - 2025.09.3
+     - 2026.04.0
+   * - ``base-passwd``
+     - 3.6.7
+     - 3.6.8
+   * - ``bash-completion``
+     - 2.16.0
+     - 2.17.0
+   * - ``bind``
+     - 9.20.15
+     - 9.20.22
+   * - ``binutils``
+     - 2.45.1+git
+     - 2.46
+   * - ``binutils-cross``
+     - 2.45.1+git
+     - 2.46
+   * - ``binutils-cross-canadian``
+     - 2.45.1+git
+     - 2.46
+   * - ``binutils-crosssdk``
+     - 2.45.1+git
+     - 2.46
+   * - ``binutils-testsuite``
+     - 2.45.1+git
+     - 2.46
+   * - ``bluez5``
+     - 5.84
+     - 5.86
+   * - ``boost``
+     - 1.89.0
+     - 1.90.0
+   * - ``boost-build-native``
+     - 1.89.0
+     - 1.90.0
+   * - ``btrfs-tools``
+     - 6.16
+     - 6.19.1
+   * - ``cargo``
+     - 1.90.0
+     - 1.94.1
+   * - ``cargo-c``
+     - 0.10.16+cargo-0.91.0
+     - 0.10.21+cargo-0.95.0
+   * - ``ccache``
+     - 4.12.3
+     - 4.13.2
+   * - ``clang``
+     - 21.1.7
+     - 22.1.3
+   * - ``cmake``
+     - 4.1.2
+     - 4.3.1
+   * - ``cmake-native``
+     - 4.1.2
+     - 4.3.1
+   * - ``compiler-rt``
+     - 21.1.7
+     - 22.1.3
+   * - ``compiler-rt-sanitizers``
+     - 21.1.7
+     - 22.1.3
+   * - ``connman``
+     - 1.45
+     - 2.0
+   * - ``coreutils``
+     - 9.7
+     - 9.10
+   * - ``createrepo-c``
+     - 1.2.1
+     - 1.2.3
+   * - ``cross-localedef-native``
+     - 2.42+git
+     - 2.43+git
+   * - ``cryptodev-linux``
+     - 1.14 (135cbff90af2…)
+     - 1.14 (08644db02d43…)
+   * - ``cryptodev-module``
+     - 1.14 (135cbff90af2…)
+     - 1.14 (08644db02d43…)
+   * - ``cryptodev-tests``
+     - 1.14 (135cbff90af2…)
+     - 1.14 (08644db02d43…)
+   * - ``cups``
+     - 2.4.15
+     - 2.4.16
+   * - ``curl``
+     - 8.17.0
+     - 8.19.0
+   * - ``dhcpcd``
+     - 10.2.4
+     - 10.3.0
+   * - ``diffoscope``
+     - 306
+     - 314
+   * - ``dmidecode``
+     - 3.6
+     - 3.7
+   * - ``dnf``
+     - 4.23.0
+     - 4.24.0
+   * - ``dos2unix``
+     - 7.5.2
+     - 7.5.4
+   * - ``dpkg``
+     - 1.22.21
+     - 1.23.7
+   * - ``dropbear``
+     - 2025.88
+     - 2025.89
+   * - ``e2fsprogs``
+     - 1.47.3
+     - 1.47.4
+   * - ``ed``
+     - 1.22.2
+     - 1.22.5
+   * - ``elfutils``
+     - 0.193
+     - 0.194
+   * - ``ell``
+     - 0.80
+     - 0.83
+   * - ``enchant2``
+     - 2.8.14
+     - 2.8.15
+   * - ``epiphany``
+     - 48.5
+     - 49.7
+   * - ``erofs-utils``
+     - 1.8.10
+     - 1.9.1
+   * - ``ethtool``
+     - 6.15
+     - 6.19
+   * - ``expat``
+     - 2.7.4
+     - 2.7.5
+   * - ``fastfloat``
+     - 8.0.2
+     - 8.2.4
+   * - ``ffmpeg``
+     - 8.0
+     - 8.0.1
+   * - ``file``
+     - 5.46
+     - 5.47
+   * - ``fmt``
+     - 11.2.0
+     - 12.1.0
+   * - ``font-alias``
+     - 1.0.5
+     - 1.0.6
+   * - ``freetype``
+     - 2.13.3
+     - 2.14.3
+   * - ``gawk``
+     - 5.3.2
+     - 5.4.0
+   * - ``gdb``
+     - 16.3
+     - 17.1
+   * - ``gdb-cross``
+     - 16.3
+     - 17.1
+   * - ``gdb-cross-canadian``
+     - 16.3
+     - 17.1
+   * - ``gdk-pixbuf``
+     - 2.42.12
+     - 2.44.5
+   * - ``gettext``
+     - 0.26
+     - 1.0
+   * - ``gettext-minimal-native``
+     - 0.26
+     - 1.0
+   * - ``gi-docgen``
+     - 2025.4
+     - 2026.1
+   * - ``git``
+     - 2.51.0
+     - 2.53.0
+   * - ``glew``
+     - 2.2.0
+     - 2.3.1
+   * - ``glib-2.0``
+     - 2.86.4
+     - 2.88.0
+   * - ``glib-2.0-initial``
+     - 2.86.4
+     - 2.88.0
+   * - ``glibc``
+     - 2.42+git
+     - 2.43+git
+   * - ``glibc-locale``
+     - 2.42+git
+     - 2.43+git
+   * - ``glibc-mtrace``
+     - 2.42+git
+     - 2.43+git
+   * - ``glibc-scripts``
+     - 2.42+git
+     - 2.43+git
+   * - ``glibc-testsuite``
+     - 2.42+git
+     - 2.43+git
+   * - ``glslang``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``gn``
+     - 0+git (81b24e01531e…)
+     - 0+git (9d19a7870add…)
+   * - ``gnu-efi``
+     - 4.0.2
+     - 4.0.4
+   * - ``gnupg``
+     - 2.5.11
+     - 2.5.17
+   * - ``gnutls``
+     - 3.8.10
+     - 3.8.12
+   * - ``go``
+     - 1.25.9
+     - 1.26.2
+   * - ``go-binary-native``
+     - 1.25.9
+     - 1.26.2
+   * - ``go-cross-canadian``
+     - 1.25.9
+     - 1.26.2
+   * - ``go-cross-core2-32``
+     - 1.25.9
+     - 1.26.2
+   * - ``go-crosssdk``
+     - 1.25.9
+     - 1.26.2
+   * - ``go-helloworld``
+     - 0.1 (8b405629c4a5…)
+     - 0.1 (7f05d217867b…)
+   * - ``go-runtime``
+     - 1.25.9
+     - 1.26.2
+   * - ``gobject-introspection``
+     - 1.84.0
+     - 1.86.0
+   * - ``groff``
+     - 1.23.0
+     - 1.24.0
+   * - ``grub``
+     - 2.12
+     - 2.14
+   * - ``grub-efi``
+     - 2.12
+     - 2.14
+   * - ``gsettings-desktop-schemas``
+     - 48.0
+     - 50.0
+   * - ``gst-devtools``
+     - 1.26.7
+     - 1.28.2
+   * - ``gst-examples``
+     - 1.26.7
+     - 1.28.2
+   * - ``gstreamer1.0``
+     - 1.26.7
+     - 1.28.2
+   * - ``gstreamer1.0-libav``
+     - 1.26.7
+     - 1.28.2
+   * - ``gstreamer1.0-plugins-bad``
+     - 1.26.7
+     - 1.28.2
+   * - ``gstreamer1.0-plugins-base``
+     - 1.26.7
+     - 1.28.2
+   * - ``gstreamer1.0-plugins-good``
+     - 1.26.7
+     - 1.28.2
+   * - ``gstreamer1.0-plugins-ugly``
+     - 1.26.7
+     - 1.28.2
+   * - ``gstreamer1.0-python``
+     - 1.26.7
+     - 1.28.2
+   * - ``gstreamer1.0-rtsp-server``
+     - 1.26.7
+     - 1.28.2
+   * - ``gtk-doc``
+     - 1.34.0
+     - 1.35.1
+   * - ``gtk4``
+     - 4.18.6
+     - 4.22.1
+   * - ``harfbuzz``
+     - 11.4.5
+     - 12.3.2
+   * - ``hwdata``
+     - 0.399
+     - 0.405
+   * - ``hwlatdetect``
+     - 2.9
+     - 2.10
+   * - ``icu``
+     - 77-1
+     - 78.3
+   * - ``ifupdown``
+     - 0.8.44
+     - 0.8.45
+   * - ``igt-gpu-tools``
+     - 2.1
+     - 2.3
+   * - ``inetutils``
+     - 2.6
+     - 2.7
+   * - ``iproute2``
+     - 6.16.0
+     - 6.19.0
+   * - ``iptables``
+     - 1.8.11
+     - 1.8.13
+   * - ``iso-codes``
+     - 4.18.0
+     - 4.20.1
+   * - ``kbd``
+     - 2.8.0
+     - 2.9.0
+   * - ``kea``
+     - 3.0.1
+     - 3.0.3
+   * - ``kern-tools-native``
+     - 0.3+git (f589e1df2325…)
+     - 0.3+git (a4a362d9f4f0…)
+   * - ``kexec-tools``
+     - 2.0.31
+     - 2.0.32
+   * - ``kmscube``
+     - 0.0.1+git (2c1f2646c5e5…)
+     - 0.0.1+git (f60e50e887d3…)
+   * - ``less``
+     - 679
+     - 692
+   * - ``libadwaita``
+     - 1.7.6
+     - 1.8.4
+   * - ``libarchive``
+     - 3.8.6
+     - 3.8.7
+   * - ``libatomic-ops``
+     - 7.8.4
+     - 7.10.0
+   * - ``libcap``
+     - 2.76
+     - 2.77
+   * - ``libcap-ng``
+     - 0.8.5
+     - 0.9.1
+   * - ``libcap-ng-python``
+     - 0.8.5
+     - 0.9.1
+   * - ``libclc``
+     - 21.1.7
+     - 22.1.3
+   * - ``libcomps``
+     - 0.1.22
+     - 0.1.24
+   * - ``libcxx``
+     - 21.1.7
+     - 22.1.3
+   * - ``libdisplay-info``
+     - 0.2.0
+     - 0.3.0
+   * - ``libdnf``
+     - 0.74.0
+     - 0.75.0
+   * - ``libdrm``
+     - 2.4.125
+     - 2.4.131
+   * - ``libedit``
+     - 20250104-3.1
+     - 20251016-3.1
+   * - ``libevdev``
+     - 1.13.5
+     - 1.13.6
+   * - ``libexif``
+     - 0.6.25
+     - 0.6.26
+   * - ``libfontenc``
+     - 1.1.8
+     - 1.1.9
+   * - ``libgcrypt``
+     - 1.11.2
+     - 1.12.1
+   * - ``libgit2``
+     - 1.9.1
+     - 1.9.2
+   * - ``libgloss``
+     - 4.5.0+git
+     - 4.6.0+git
+   * - ``libgpg-error``
+     - 1.56
+     - 1.59
+   * - ``libinput``
+     - 1.29.1
+     - 1.30.2
+   * - ``libjpeg-turbo``
+     - 3.1.2
+     - 3.1.3
+   * - ``libksba``
+     - 1.6.7
+     - 1.6.8
+   * - ``libnl``
+     - 3.11.0
+     - 3.12.0
+   * - ``libnotify``
+     - 0.8.6
+     - 0.8.8
+   * - ``libpam``
+     - 1.7.1
+     - 1.7.2
+   * - ``libpciaccess``
+     - 0.18.1
+     - 0.19
+   * - ``libpcre2``
+     - 10.46
+     - 10.47
+   * - ``libproxy``
+     - 0.5.10
+     - 0.5.12
+   * - ``librsvg``
+     - 2.61.0
+     - 2.61.3
+   * - ``libsolv``
+     - 0.7.35
+     - 0.7.36
+   * - ``libstd-rs``
+     - 1.90.0
+     - 1.94.1
+   * - ``libtasn1``
+     - 4.20.0
+     - 4.21.0
+   * - ``libtest-fatal-perl``
+     - 0.017
+     - 0.018
+   * - ``libtirpc``
+     - 1.3.6
+     - 1.3.7
+   * - ``libtraceevent``
+     - 1.8.4
+     - 1.9.0
+   * - ``libubootenv``
+     - 0.3.6
+     - 0.3.7
+   * - ``libunistring``
+     - 1.3
+     - 1.4.2
+   * - ``liburcu``
+     - 0.15.3
+     - 0.15.6
+   * - ``libuv``
+     - 1.51.0
+     - 1.52.1
+   * - ``libva``
+     - 2.22.0
+     - 2.23.0
+   * - ``libva-initial``
+     - 2.22.0
+     - 2.23.0
+   * - ``libva-utils``
+     - 2.22.0
+     - 2.23.0
+   * - ``libx11``
+     - 1.8.12
+     - 1.8.13
+   * - ``libx11-compose-data``
+     - 1.8.4
+     - 1.8.12
+   * - ``libxcomposite``
+     - 0.4.6
+     - 0.4.7
+   * - ``libxcrypt``
+     - 4.4.38
+     - 4.5.2
+   * - ``libxcrypt-compat``
+     - 4.4.38
+     - 4.5.2
+   * - ``libxdamage``
+     - 1.1.6
+     - 1.1.7
+   * - ``libxext``
+     - 1.3.6
+     - 1.3.7
+   * - ``libxinerama``
+     - 1.1.5
+     - 1.1.6
+   * - ``libxkbcommon``
+     - 1.11.0
+     - 1.13.1
+   * - ``libxkbfile``
+     - 1.1.3
+     - 1.2.0
+   * - ``libxml2``
+     - 2.14.6
+     - 2.15.2
+   * - ``libxmu``
+     - 1.2.1
+     - 1.3.1
+   * - ``libxpm``
+     - 3.5.17
+     - 3.5.18
+   * - ``libxrandr``
+     - 1.5.4
+     - 1.5.5
+   * - ``libxslt``
+     - 1.1.43
+     - 1.1.45
+   * - ``libxvmc``
+     - 1.0.14
+     - 1.0.15
+   * - ``libxxf86vm``
+     - 1.1.6
+     - 1.1.7
+   * - ``lighttpd``
+     - 1.4.81
+     - 1.4.82
+   * - ``linux-firmware``
+     - 20251111
+     - 20260410
+   * - ``linux-libc-headers``
+     - 6.17
+     - 6.18
+   * - ``linux-yocto``
+     - 6.12.69+git, 6.16.11+git
+     - 6.18.24+git
+   * - ``linux-yocto-dev``
+     - 6.18+git
+     - 7.0+git
+   * - ``linux-yocto-rt``
+     - 6.12.69+git, 6.16.11+git
+     - 6.18.24+git
+   * - ``linux-yocto-tiny``
+     - 6.12.69+git, 6.16.11+git
+     - 6.18.24+git
+   * - ``lld``
+     - 21.1.7
+     - 22.1.3
+   * - ``lldb``
+     - 21.1.7
+     - 22.1.3
+   * - ``llvm``
+     - 21.1.7
+     - 22.1.3
+   * - ``llvm-tblgen-native``
+     - 21.1.7
+     - 22.1.3
+   * - ``lsof``
+     - 4.99.5
+     - 4.99.6
+   * - ``ltp``
+     - 20250930
+     - 20260130
+   * - ``lttng-modules``
+     - 2.14.3
+     - 2.14.4
+   * - ``lttng-tools``
+     - 2.14.0
+     - 2.14.1
+   * - ``lua``
+     - 5.4.8
+     - 5.5.0
+   * - ``lzlib``
+     - 1.15
+     - 1.16
+   * - ``m4``
+     - 1.4.20
+     - 1.4.21
+   * - ``m4-native``
+     - 1.4.20
+     - 1.4.21
+   * - ``makedumpfile``
+     - 1.7.7
+     - 1.7.8
+   * - ``man-pages``
+     - 6.15
+     - 6.17
+   * - ``mdadm``
+     - 4.4
+     - 4.6
+   * - ``mesa``
+     - 25.2.8
+     - 26.0.5
+   * - ``mesa-gl``
+     - 25.2.8
+     - 26.0.5
+   * - ``meson``
+     - 1.9.1
+     - 1.10.2
+   * - ``mpg123``
+     - 1.33.2
+     - 1.33.4
+   * - ``msmtp``
+     - 1.8.31
+     - 1.8.32
+   * - ``mtd-utils``
+     - 2.3.0
+     - 2.3.1
+   * - ``musl``
+     - 1.2.5+git
+     - 1.2.6+git
+   * - ``nasm``
+     - 2.16.03
+     - 3.01
+   * - ``ncurses``
+     - 6.5
+     - 6.6
+   * - ``newlib``
+     - 4.5.0+git
+     - 4.6.0+git
+   * - ``nfs-utils``
+     - 2.8.4
+     - 2.8.7
+   * - ``nghttp2``
+     - 1.66.0
+     - 1.68.1
+   * - ``ninja``
+     - 1.13.1
+     - 1.13.2
+   * - ``ofono``
+     - 2.18
+     - 2.19
+   * - ``openmp``
+     - 21.1.7
+     - 22.1.3
+   * - ``opensbi``
+     - 1.7
+     - 1.8.1
+   * - ``openssh``
+     - 10.2p1
+     - 10.3p1
+   * - ``opkg``
+     - 0.8.0
+     - 0.9.0
+   * - ``orc``
+     - 0.4.41
+     - 0.4.42
+   * - ``ovmf``
+     - edk2-stable202508
+     - edk2-stable202511
+   * - ``p11-kit``
+     - 0.25.5
+     - 0.26.2
+   * - ``perl``
+     - 5.40.2
+     - 5.42.0
+   * - ``perlcross``
+     - 1.6.2
+     - 1.6.4
+   * - ``picolibc``
+     - 1.8.6+git
+     - 1.8.11+git
+   * - ``picolibc-helloworld``
+     - 1.8.6+git
+     - 1.8.11+git
+   * - ``procps``
+     - 4.0.5
+     - 4.0.6
+   * - ``pseudo``
+     - 1.9.3+git
+     - 1.9.5
+   * - ``puzzles``
+     - 0.0+git (a7c7826bce5c…)
+     - 0.0+git (ecb576fb2a0a…)
+   * - ``python3``
+     - 3.13.12
+     - 3.14.4
+   * - ``python3-attrs``
+     - 25.3.0
+     - 25.4.0
+   * - ``python3-babel``
+     - 2.17.0
+     - 2.18.0
+   * - ``python3-bcrypt``
+     - 4.3.0
+     - 5.0.0
+   * - ``python3-beartype``
+     - 0.21.0
+     - 0.22.9
+   * - ``python3-build``
+     - 1.3.0
+     - 1.4.0
+   * - ``python3-calver``
+     - 2025.04.17
+     - 2025.10.20
+   * - ``python3-certifi``
+     - 2025.8.3
+     - 2026.2.25
+   * - ``python3-cffi``
+     - 1.17.1
+     - 2.0.0
+   * - ``python3-chardet``
+     - 5.2.0
+     - 6.0.0.post1
+   * - ``python3-click``
+     - 8.2.2
+     - 8.3.1
+   * - ``python3-cryptography``
+     - 45.0.7
+     - 46.0.5
+   * - ``python3-cryptography-vectors``
+     - 45.0.7
+     - 46.0.5
+   * - ``python3-cython``
+     - 3.1.3
+     - 3.2.4
+   * - ``python3-dbusmock``
+     - 0.37.0
+     - 0.38.1
+   * - ``python3-docutils``
+     - 0.22
+     - 0.22.4
+   * - ``python3-dtschema``
+     - 2025.8
+     - 2025.12
+   * - ``python3-hatchling``
+     - 1.27.0
+     - 1.29.0
+   * - ``python3-hypothesis``
+     - 6.142.2
+     - 6.151.9
+   * - ``python3-imagesize``
+     - 1.4.1
+     - 2.0.0
+   * - ``python3-iniconfig``
+     - 2.1.0
+     - 2.3.0
+   * - ``python3-jsonschema``
+     - 4.25.1
+     - 4.26.0
+   * - ``python3-markdown``
+     - 3.9
+     - 3.10.2
+   * - ``python3-markupsafe``
+     - 3.0.2
+     - 3.0.3
+   * - ``python3-maturin``
+     - 1.9.4
+     - 1.12.4
+   * - ``python3-meson-python``
+     - 0.18.0
+     - 0.19.0
+   * - ``python3-numpy``
+     - 2.3.4
+     - 2.4.3
+   * - ``python3-packaging``
+     - 25.0
+     - 26.0
+   * - ``python3-pathspec``
+     - 0.12.1
+     - 1.0.4
+   * - ``python3-pbr``
+     - 7.0.1
+     - 7.0.3
+   * - ``python3-pdm``
+     - 2.25.9
+     - 2.26.6
+   * - ``python3-pdm-backend``
+     - 2.4.5
+     - 2.4.7
+   * - ``python3-pdm-build-locked``
+     - 0.3.5
+     - 0.3.7
+   * - ``python3-pip``
+     - 25.2
+     - 26.0.1
+   * - ``python3-poetry-core``
+     - 2.1.3
+     - 2.3.1
+   * - ``python3-psutil``
+     - 7.0.0
+     - 7.2.2
+   * - ``python3-pyasn1``
+     - 0.6.1
+     - 0.6.2
+   * - ``python3-pycairo``
+     - 1.28.0
+     - 1.29.0
+   * - ``python3-pycparser``
+     - 2.22
+     - 3.0
+   * - ``python3-pygobject``
+     - 3.52.3
+     - 3.56.1
+   * - ``python3-pyopenssl``
+     - 25.1.0
+     - 26.0.0
+   * - ``python3-pyparsing``
+     - 3.2.4
+     - 3.3.2
+   * - ``python3-pyproject-metadata``
+     - 0.9.1
+     - 0.11.0
+   * - ``python3-pytest``
+     - 8.4.2
+     - 9.0.2
+   * - ``python3-pytest-subtests``
+     - 0.14.2
+     - 0.15.0
+   * - ``python3-pytz``
+     - 2025.2
+     - 2026.1
+   * - ``python3-pyyaml``
+     - 6.0.2
+     - 6.0.3
+   * - ``python3-rdflib``
+     - 7.1.4
+     - 7.6.0
+   * - ``python3-rpds-py``
+     - 0.27.1
+     - 0.30.0
+   * - ``python3-ruamel-yaml``
+     - 0.18.15
+     - 0.19.1
+   * - ``python3-scons``
+     - 4.9.1
+     - 4.10.1
+   * - ``python3-setuptools``
+     - 80.9.0
+     - 82.0.1
+   * - ``python3-setuptools-scm``
+     - 8.3.1
+     - 9.2.2
+   * - ``python3-sphinx``
+     - 8.2.1
+     - 9.1.0
+   * - ``python3-sphinx-rtd-theme``
+     - 3.0.2
+     - 3.1.0
+   * - ``python3-testtools``
+     - 2.7.2
+     - 2.8.7
+   * - ``python3-trove-classifiers``
+     - 2025.9.11.17
+     - 2026.1.14.14
+   * - ``python3-unittest-automake-output``
+     - 0.3
+     - 0.4
+   * - ``python3-uritools``
+     - 5.0.0
+     - 6.0.1
+   * - ``python3-urllib3``
+     - 2.5.0
+     - 2.6.3
+   * - ``python3-wcwidth``
+     - 0.2.13
+     - 0.6.0
+   * - ``python3-webcolors``
+     - 24.11.1
+     - 25.10.0
+   * - ``python3-websockets``
+     - 15.0.1
+     - 16.0
+   * - ``python3-wheel``
+     - 0.46.1
+     - 0.46.3
+   * - ``python3-xmltodict``
+     - 0.15.1
+     - 1.0.4
+   * - ``python3-yamllint``
+     - 1.37.1
+     - 1.38.0
+   * - ``qemu``
+     - 10.0.6
+     - 10.2.0
+   * - ``qemu-native``
+     - 10.0.6
+     - 10.2.0
+   * - ``qemu-system-native``
+     - 10.0.6
+     - 10.2.0
+   * - ``quota``
+     - 4.10
+     - 4.11
+   * - ``re2c``
+     - 4.3
+     - 4.4
+   * - ``repo``
+     - 2.58
+     - 2.61.1
+   * - ``resolvconf``
+     - 1.93
+     - 1.94
+   * - ``rgb``
+     - 1.1.0
+     - 1.1.1
+   * - ``rpm-sequoia``
+     - 1.9.0
+     - 1.10.1
+   * - ``rpm-sequoia-crypto-policy``
+     - git (ae1df75b1155…)
+     - git (f3f5fa454345…)
+   * - ``rt-tests``
+     - 2.9
+     - 2.10
+   * - ``ruby``
+     - 3.4.5
+     - 4.0.2
+   * - ``rust``
+     - 1.90.0
+     - 1.94.1
+   * - ``rust-cross-canadian``
+     - 1.90.0
+     - 1.94.1
+   * - ``sbc``
+     - 2.1
+     - 2.2
+   * - ``scdoc``
+     - 1.11.3
+     - 1.11.4
+   * - ``seatd``
+     - 0.9.1
+     - 0.9.3
+   * - ``shaderc``
+     - 2025.3
+     - 2026.1
+   * - ``shadow``
+     - 4.18.0
+     - 4.19.4
+   * - ``socat``
+     - 1.8.0.3
+     - 1.8.1.1
+   * - ``spirv-headers``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``spirv-llvm-translator``
+     - 21.1.1
+     - 22.1.1
+   * - ``spirv-tools``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``sqlite3``
+     - 3.48.0
+     - 3.51.3
+   * - ``squashfs-tools``
+     - 4.7.2
+     - 4.7.5
+   * - ``strace``
+     - 6.16
+     - 6.19
+   * - ``stress-ng``
+     - 0.19.04
+     - 0.20.01
+   * - ``swig``
+     - 4.3.1
+     - 4.4.1
+   * - ``sysstat``
+     - 12.7.8
+     - 12.7.9
+   * - ``systemd``
+     - 257.8
+     - 259.5
+   * - ``systemd-boot``
+     - 257.8
+     - 259.5
+   * - ``systemd-boot-native``
+     - 257.8
+     - 259.5
+   * - ``systemd-systemctl-native``
+     - 257.8
+     - 259.5
+   * - ``systemtap``
+     - 5.3
+     - 5.4
+   * - ``systemtap-native``
+     - 5.3
+     - 5.4
+   * - ``taglib``
+     - 2.1.1
+     - 2.2.1
+   * - ``tcl``
+     - 9.0.2
+     - 9.0.3
+   * - ``texinfo``
+     - 7.2
+     - 7.3
+   * - ``ttyrun``
+     - 2.38.0
+     - 2.41.0
+   * - ``u-boot``
+     - 2025.10
+     - 2026.01
+   * - ``u-boot-tools``
+     - 2025.10
+     - 2026.01
+   * - ``usbutils``
+     - 018
+     - 019
+   * - ``utfcpp``
+     - 4.0.6
+     - 4.0.9
+   * - ``util-linux``
+     - 2.41.1
+     - 2.41.3
+   * - ``util-linux-libuuid``
+     - 2.41.1
+     - 2.41.3
+   * - ``valgrind``
+     - 3.25.1
+     - 3.26.0
+   * - ``vim``
+     - 9.1.1683
+     - 9.2.0340
+   * - ``vim-tiny``
+     - 9.1.1683
+     - 9.2.0340
+   * - ``virglrenderer``
+     - 1.1.1
+     - 1.2.0
+   * - ``vte``
+     - 0.82.1
+     - 0.82.2
+   * - ``vulkan-headers``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``vulkan-loader``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``vulkan-samples``
+     - git (d27205d14d01…)
+     - git (fa2cf45adde0…)
+   * - ``vulkan-tools``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``vulkan-utility-libraries``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``vulkan-validation-layers``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``vulkan-volk``
+     - 1.4.328.1
+     - 1.4.341.0
+   * - ``wayland-protocols``
+     - 1.45
+     - 1.47
+   * - ``wayland-utils``
+     - 1.2.0
+     - 1.3.0
+   * - ``webkitgtk``
+     - 2.50.4
+     - 2.50.6
+   * - ``weston``
+     - 14.0.2
+     - 15.0.0
+   * - ``wpebackend-fdo``
+     - 1.16.0
+     - 1.16.1
+   * - ``x264``
+     - r3039+git (31e19f92f00c…)
+     - r3039+git (0480cb05fa18…)
+   * - ``xauth``
+     - 1.1.4
+     - 1.1.5
+   * - ``xcb-util-cursor``
+     - 0.1.5
+     - 0.1.6
+   * - ``xeyes``
+     - 1.3.0
+     - 1.3.1
+   * - ``xkbcomp``
+     - 1.4.7
+     - 1.5.0
+   * - ``xkeyboard-config``
+     - 2.45
+     - 2.47
+   * - ``xorgproto``
+     - 2024.1
+     - 2025.1
+   * - ``xserver-xorg``
+     - 21.1.18
+     - 21.1.21
+   * - ``xwayland``
+     - 24.1.8
+     - 24.1.9
+   * - ``xz``
+     - 5.8.1
+     - 5.8.2
+   * - ``zlib``
+     - 1.3.1
+     - 1.3.2
 
 Contributors to |yocto-ver|
 ---------------------------
 
+..
+   List obtained with the following shell snippet:
+
+      authors=""
+      for repo in openembedded-core yocto-docs bitbake meta-yocto; do
+         authors="${authors}\n$(git --no-pager -C $repo log --format="-  %an" yocto-5.3..origin/master)"
+      done
+      echo $authors | sort | uniq
+
+   Email addresses and duplicates removed.
+
 Thanks to the following people who contributed to this release:
+
+-  Adam Blank
+-  Adam Duskett
+-  Adarsh Jagadish Kamini
+-  Aditya Kurdunkar
+-  Adrian Freihofer
+-  Ahmad Fatoum
+-  Alejandro Hernandez Samaniego
+-  Aleksandar Nikolic
+-  Alexander Kanavin
+-  Alexander Sverdlin
+-  Alex Bradbury
+-  Alex Kiernan
+-  Amaury Couderc
+-  Andrej Kozemcak
+-  Anibal Limon
+-  Ankur Tyagi
+-  Antonin Godard
+-  Ashish Kumar Mishra
+-  Ashish Sharma
+-  BELHADJ SALEM Talel
+-  Benjamin Robin
+-  Bruce Ashfield
+-  Changqing Li
+-  Chen Qi
+-  Clement Faure
+-  Colin Pinnell McAllister
+-  Corentin Guillevic
+-  Daiane Angolini
+-  Daniel Dragomir
+-  Daniel Turull
+-  Dan McGregor
+-  Deepesh Varatharajan
+-  Dmitry Baryshkov
+-  Dragomir, Daniel
+-  El Mehdi YOUNES
+-  Enrico Jörns
+-  Ernst Persson
+-  Etienne Cordonnier
+-  Fabio Berton
+-  Fabio Estevam
+-  Favazza, Samuele
+-  Florian Schmaus
+-  Francesco Valla
+-  Franz Schnyder
+-  Germann, Bastian
+-  Guðni Már Gilbert
+-  Gyorgy Sarvari
+-  Haiqing Bai
+-  Harish Sadineni
+-  Hemanth Kumar M D
+-  Het Patel
+-  Hiago De Franco
+-  Himanshu Jadon
+-  hongxu
+-  Hongxu Jia
+-  Jaeyoon Jung
+-  Jan Luebbe
+-  Jan Vermaete
+-  Jason Schonberg
+-  Javier Tia
+-  Jiaying Song
+-  Jinfeng Wang
+-  João Marcos Costa
+-  Jörg Sommer
+-  Jose Quaresma
+-  Joshua Watt
+-  Kai Kang
+-  Kamel Bouhara
+-  Kavinaya S
+-  Ken Kurematsu
+-  Khai Dang
+-  Khalifa Rouis
+-  Khem Raj
+-  Koen Kooi
+-  Kory Maincent
+-  Kristiyan Chakarov
+-  Krupal Ka Patel
+-  Lee Chee Yang
+-  Leon Anavi
+-  Le Qi
+-  Liu Yiding
+-  Livin Sunny
+-  Liyin Zhang
+-  Logan Gallois
+-  Louis Rannou
+-  Lucas Stach
+-  Luka Krstic
+-  Mahesh Angadi
+-  Mark Hatle
+-  Mark-Pk Tsai
+-  Markus Volk
+-  mark.yang
+-  Martin Jansa
+-  Martin Schwan
+-  Mathieu Dubois-Briand
+-  Matt Madison
+-  Maxin B. John
+-  Maxin John
+-  Max Krummenacher
+-  Miaoqing Pan
+-  Michael Arndt
+-  Michael Halstead
+-  Michael Opdenacker
+-  Michal Sieron
+-  Mikko Rapeli
+-  Ming Liu
+-  Mingli Yu
+-  Miroslav Cernak
+-  Mohammad Rafi Shaik
+-  Mohammad Rahimi
+-  Moritz Haase
+-  Naftaly RALAMBOARIVONY
+-  Naman Jain
+-  Nikhil R
+-  Niko Mauno
+-  Nora Schiffer
+-  Osama Abdelkader
+-  Patrick Vogelaar
+-  Patrick Wicki
+-  Paul Barker
+-  Pavel Löbl
+-  Peter Bergin
+-  Peter de Ridder
+-  Peter Kjellerstedt
+-  Peter Marko
+-  Peter Tatrai
+-  Philip Lorenz
+-  Pierre-Loup GOSSE
+-  Piotr Buliński
+-  Pratik Farkase
+-  Quentin Schulz
+-  Randolph Sapp
+-  Randy MacLeod
+-  Ricardo Salveti
+-  Ricardo Simoes
+-  Ricardo Ungerer
+-  Richard Purdie
+-  Robert Joslyn
+-  Robert P. J. Day
+-  Robert Yang
+-  Rob Woolley
+-  Ross Burton
+-  Rouven Rastetter
+-  Ryan Eatmon
+-  Sam Povilus
+-  Samuli Piippo
+-  Sandeep Gundlupet Raju
+-  Scott Murray
+-  Shaik Moin
+-  Shotaro Uchida
+-  Stefano Babic
+-  Stefano Tondo
+-  Sunil Dora
+-  sven.kalmbach
+-  Swami
+-  Telukula Jeevan Kumar Sahu
+-  Theo GAIGE
+-  Thomas Perrot
+-  Tim Orling
+-  Tom Geelen
+-  Trevor Gamblin
+-  Trevor Woerner
+-  Ulrich Ölmann
+-  Uwe Kleine-König
+-  Veeresh Kadasani
+-  Victor Kamensky
+-  Vijay Anusuri
+-  Viswanath Kraleti
+-  Vivek Puar
+-  Vyacheslav Yurkov
+-  Wang Mingyu
+-  Weisser, Pascal
+-  Xiangyu Chen
+-  Yanis BINARD
+-  Yann Dirson
+-  Yannic Moog
+-  Yash Gupta
+-  Yash Shinde
+-  Yasir Al-Latifi
+-  Yiding Liu
+-  Yi Zhao
+-  Yoann Congal
+-  Yongxin Liu
+-  Zhangfei Gao
+-  Zhang Peng
+-  Zk47T
+-  Zoltán Böszörményi
 
 Repositories / Downloads for Yocto-|yocto-ver|
 ----------------------------------------------
+
+yocto-docs
+
+-  Repository Location: :yocto_git:`/yocto-docs`
+-  Branch: :yocto_git:`wrynose </yocto-docs/log/?h=wrynose>`
+-  Tag:  :yocto_git:`yocto-6.0 </yocto-docs/log/?h=yocto-6.0>`
+-  Git Revision: :yocto_git:`eb74fdfd9e5e579a65e8872d1a73b51e77b14f63 </yocto-docs/commit/?id=eb74fdfd9e5e579a65e8872d1a73b51e77b14f63>`
+-  Release Artefact: yocto-docs-eb74fdfd9e5e579a65e8872d1a73b51e77b14f63
+-  sha: 50d7391b4b4d169649a5628a8f367443eb03fb78faa813b9c20d5214e49ce782
+-  Download Locations:
+
+   https://downloads.yoctoproject.org/releases/yocto/yocto-6.0/yocto-docs-eb74fdfd9e5e579a65e8872d1a73b51e77b14f63.tar.bz2
+
+   https://mirrors.edge.kernel.org/yocto/yocto/yocto-6.0/yocto-docs-eb74fdfd9e5e579a65e8872d1a73b51e77b14f63.tar.bz2
+
+openembedded-core
+
+-  Repository Location: :oe_git:`/openembedded-core`
+-  Branch: :oe_git:`wrynose </openembedded-core/log/?h=wrynose>`
+-  Tag:  :oe_git:`yocto-6.0 </openembedded-core/log/?h=yocto-6.0>`
+-  Git Revision: :oe_git:`42fa856a00ac16b2a7a83d7ecfa60a5be192b16c </openembedded-core/commit/?id=42fa856a00ac16b2a7a83d7ecfa60a5be192b16c>`
+-  Release Artefact: oecore-42fa856a00ac16b2a7a83d7ecfa60a5be192b16c
+-  sha: 14abd19071d1b31737f5d3946182f21825e0a7121468054bbaa68f207b018fb6
+-  Download Locations:
+
+   https://downloads.yoctoproject.org/releases/yocto/yocto-6.0/oecore-42fa856a00ac16b2a7a83d7ecfa60a5be192b16c.tar.bz2
+
+   https://mirrors.edge.kernel.org/yocto/yocto/yocto-6.0/oecore-42fa856a00ac16b2a7a83d7ecfa60a5be192b16c.tar.bz2
+
+meta-yocto
+
+-  Repository Location: :yocto_git:`/meta-yocto`
+-  Branch: :yocto_git:`wrynose </meta-yocto/log/?h=wrynose>`
+-  Tag:  :yocto_git:`yocto-6.0 </meta-yocto/log/?h=yocto-6.0>`
+-  Git Revision: :yocto_git:`904846ae078ee20de073040ebb77c86e19250f56 </meta-yocto/commit/?id=904846ae078ee20de073040ebb77c86e19250f56>`
+-  Release Artefact: meta-yocto-904846ae078ee20de073040ebb77c86e19250f56
+-  sha: d3470939772339d2d70a2bbdd4e01563357c376fdb496d5515a1f96bce4e2ea2
+-  Download Locations:
+
+   https://downloads.yoctoproject.org/releases/yocto/yocto-6.0/meta-yocto-904846ae078ee20de073040ebb77c86e19250f56.tar.bz2
+
+   https://mirrors.edge.kernel.org/yocto/yocto/yocto-6.0/meta-yocto-904846ae078ee20de073040ebb77c86e19250f56.tar.bz2
+
+meta-mingw
+
+-  Repository Location: :yocto_git:`/meta-mingw`
+-  Branch: :yocto_git:`wrynose </meta-mingw/log/?h=wrynose>`
+-  Tag:  :yocto_git:`yocto-6.0 </meta-mingw/log/?h=yocto-6.0>`
+-  Git Revision: :yocto_git:`a4ba674d6a0a17e4c0bc4c11bbb9d0ea9de2b315 </meta-mingw/commit/?id=a4ba674d6a0a17e4c0bc4c11bbb9d0ea9de2b315>`
+-  Release Artefact: meta-mingw-a4ba674d6a0a17e4c0bc4c11bbb9d0ea9de2b315
+-  sha: cea731150cd3caedd90ca6a82bf050a00c3705cea166d24a6077d07b1b7b2404
+-  Download Locations:
+
+   https://downloads.yoctoproject.org/releases/yocto/yocto-6.0/meta-mingw-a4ba674d6a0a17e4c0bc4c11bbb9d0ea9de2b315.tar.bz2
+
+   https://mirrors.edge.kernel.org/yocto/yocto/yocto-6.0/meta-mingw-a4ba674d6a0a17e4c0bc4c11bbb9d0ea9de2b315.tar.bz2
+
+bitbake
+
+-  Repository Location: :oe_git:`/bitbake`
+-  Branch: :oe_git:`2.18 </bitbake/log/?h=2.18>`
+-  Tag:  :oe_git:`yocto-6.0 </bitbake/log/?h=yocto-6.0>`
+-  Git Revision: :oe_git:`33581c84f3a85008239acbd940501a35de48dc91 </bitbake/commit/?id=33581c84f3a85008239acbd940501a35de48dc91>`
+-  Release Artefact: bitbake-33581c84f3a85008239acbd940501a35de48dc91
+-  sha: 8a0b0243b50b6e004f3350824628f69ee66be0d3a28bc25f3d96b35406015ba7
+-  Download Locations:
+
+   https://downloads.yoctoproject.org/releases/yocto/yocto-6.0/bitbake-33581c84f3a85008239acbd940501a35de48dc91.tar.bz2
+
+   https://mirrors.edge.kernel.org/yocto/yocto/yocto-6.0/bitbake-33581c84f3a85008239acbd940501a35de48dc91.tar.bz2
+

@@ -1,0 +1,51 @@
+From 696e0dbabb82bde324adc5c7fd877eb05622b2b8 Mon Sep 17 00:00:00 2001
+From: Kane-Chen-AS <kane_chen@aspeedtech.com>
+Date: Thu, 9 Jul 2026 18:14:03 +0800
+Subject: [PATCH] task: report failed tasks via TaskMonitor
+
+TaskMonitor previously returned 204 No Content even when a task
+entered the Exception or Cancelled state, making failures
+indistinguishable from successful completion.
+
+Return 500 Internal Server Error with the task details so clients
+can detect and report failed tasks.
+
+Tested: Failed firmware update tasks return 500 with task details;
+        successful tasks continue to return 204.
+
+Upstream-Status: Pending
+Signed-off-by: Kane-Chen-AS <kane_chen@aspeedtech.com>
+---
+ redfish-core/lib/task.hpp | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/redfish-core/lib/task.hpp b/redfish-core/lib/task.hpp
+index 3469441b..fb3b80ad 100644
+--- a/redfish-core/lib/task.hpp
++++ b/redfish-core/lib/task.hpp
+@@ -211,8 +211,24 @@ struct TaskData : std::enable_shared_from_this<TaskData>
+         }
+         else if (!gave204)
+         {
+-            res.result(boost::beast::http::status::no_content);
+             gave204 = true;
++            if (state == "Exception" || state == "Cancelled")
++            {
++                std::string strIdx = std::to_string(index);
++                res.result(
++                    boost::beast::http::status::internal_server_error);
++                res.jsonValue["@odata.type"] = "#Task.v1_4_3.Task";
++                res.jsonValue["Id"] = strIdx;
++                res.jsonValue["TaskState"] = state;
++                res.jsonValue["TaskStatus"] = status;
++                res.jsonValue["Messages"] = messages;
++                res.jsonValue["@odata.id"] = boost::urls::format(
++                    "/redfish/v1/TaskService/Tasks/{}", strIdx);
++            }
++            else
++            {
++                res.result(boost::beast::http::status::no_content);
++            }
+         }
+     }
+ 

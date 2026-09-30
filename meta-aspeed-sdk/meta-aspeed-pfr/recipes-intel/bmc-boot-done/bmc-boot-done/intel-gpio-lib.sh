@@ -37,11 +37,23 @@ read_id() {
     local FM_BOARD_SKU_ID5="${ltpi0_gpio} 32"     #BMC_GPI16
 
     local value=0
+    local pin val retry_count
     for pin in "$FM_BOARD_SKU_ID5" "$FM_BOARD_SKU_ID4" "$FM_BOARD_SKU_ID3" \
                "$FM_BOARD_SKU_ID2" "$FM_BOARD_SKU_ID1" "$FM_BOARD_SKU_ID0"; do
-        # shellcheck disable=SC2086
-        local val
-        val=$(gpioget $pin)
+        val=""
+        for retry_count in $(seq 1 5); do
+            # shellcheck disable=SC2086
+            if val=$(gpioget $pin 2>/dev/null); then
+                break
+            fi
+            val=""
+            sleep 0.1
+        done
+
+        if [ -z "$val" ]; then
+            echo "Failed to read GPIO $pin (device busy after 5 attempts)" >&2
+            return 1
+        fi
         value="${value}${val}"
     done
 

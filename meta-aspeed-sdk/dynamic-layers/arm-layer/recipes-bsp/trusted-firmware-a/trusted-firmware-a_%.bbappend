@@ -1,5 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
+SRCREV_tfa = "3723b8f14c71a28e3eecfa27a6b9510e65936aa3"
+
 FILES:${PN} += " \
     ${FIRMWARE_DIR}/*.map \
     ${FIRMWARE_DIR}/*.dump \

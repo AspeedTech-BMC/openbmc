@@ -23,6 +23,7 @@ import collections
 import subprocess
 import pickle
 import errno
+import shlex
 import bb.utils
 import bb.checksum
 import bb.process
@@ -50,7 +51,7 @@ class UntrustedUrl(BBFetchException):
     """Exception raised when encountering a host not listed in BB_ALLOWED_NETWORKS"""
     def __init__(self, url, message=''):
         if message:
-            msg = message
+            msg = str(message)
         else:
             msg = "The URL: '%s' is not trusted and cannot be used" % url
         self.url = url
@@ -303,7 +304,7 @@ class URI(object):
 
     def _query_str(self):
         return (
-            ''.join(['?', self._param_str_join(self.query, "&")])
+            ''.join(['?', self._query_str_join(self.query, "&")])
             if self.query else '')
 
     def _param_str_split(self, string, elmdelim, kvdelim="="):
@@ -312,8 +313,11 @@ class URI(object):
             ret[k] = v
         return ret
 
-    def _param_str_join(self, dict_, elmdelim, kvdelim="="):
+    def _query_str_join(self, dict_, elmdelim, kvdelim="="):
         return elmdelim.join([kvdelim.join([k, v]) if v else k for k, v in dict_.items()])
+
+    def _param_str_join(self, dict_, elmdelim, kvdelim="="):
+        return elmdelim.join([kvdelim.join([k, v]) for k, v in dict_.items()])
 
     @property
     def hostport(self):
@@ -907,6 +911,7 @@ FETCH_EXPORT_VARS = ['HOME', 'PATH',
                      'SSL_CERT_FILE',
                      'NODE_EXTRA_CA_CERTS',
                      'AWS_PROFILE',
+                     'AWS_SHARED_CREDENTIALS_FILE',
                      'AWS_ACCESS_KEY_ID',
                      'AWS_SECRET_ACCESS_KEY',
                      'AWS_ROLE_ARN',
@@ -929,7 +934,7 @@ def get_fetcher_environment(d):
             newenv[name] = value
     return newenv
 
-def runfetchcmd(cmd, d, quiet=False, cleanup=None, log=None, workdir=None):
+def runfetchcmd(cmd, d, quiet=False, cleanup=None, log=None, workdir=None, extraenv=None):
     """
     Run cmd returning the command output
     Raise an error if interrupted or cmd fails
@@ -954,13 +959,17 @@ def runfetchcmd(cmd, d, quiet=False, cleanup=None, log=None, workdir=None):
         d.setVar("PR", "fetcheravoidrecurse")
 
     origenv = d.getVar("BB_ORIGENV", False)
+    env = os.environ.copy()
     for var in exportvars:
         val = d.getVar(var) or (origenv and origenv.getVar(var))
         if val:
-            cmd = 'export ' + var + '=\"%s\"; %s' % (val, cmd)
+            env[var] = val
+
+    for var in (extraenv or []):
+        env[var] = extraenv[var]
 
     # Disable pseudo as it may affect ssh, potentially causing it to hang.
-    cmd = 'export PSEUDO_DISABLED=1; ' + cmd
+    env["PSEUDO_DISABLED"] = "1"
 
     if workdir:
         logger.debug("Running '%s' in %s" % (cmd, workdir))
@@ -971,7 +980,7 @@ def runfetchcmd(cmd, d, quiet=False, cleanup=None, log=None, workdir=None):
     error_message = ""
 
     try:
-        (output, errors) = bb.process.run(cmd, log=log, shell=True, stderr=subprocess.PIPE, cwd=workdir)
+        (output, errors) = bb.process.run(cmd, log=log, stderr=subprocess.PIPE, cwd=workdir, env=env)
         success = True
     except bb.process.NotFoundError as e:
         error_message = "Fetch command %s not found" % (e.command)
@@ -1048,6 +1057,8 @@ def build_mirroruris(origud, mirrors, ld):
                     newud = FetchData(newuri, ld)
                     newud.ignore_checksums = True
                     newud.setup_localpath(ld)
+                    if hasattr(ud, 'unpack_tracer'):
+                        newud.unpack_tracer = ud.unpack_tracer
                 except bb.fetch2.BBFetchException as e:
                     logger.debug("Mirror fetch failure for url %s (original url: %s)" % (newuri, origud.url))
                     logger.debug(str(e))
@@ -1531,74 +1542,10 @@ class FetchMethod(object):
             bb.fatal("Invalid value for 'unpack' parameter for %s: %s" %
                      (file, urldata.parm.get('unpack')))
 
-        base, ext = os.path.splitext(file)
-        if ext in ['.gz', '.bz2', '.Z', '.xz', '.lz', '.zst']:
-            efile = os.path.join(rootdir, os.path.basename(base))
-        else:
-            efile = file
-        cmd = None
-
-        if unpack:
-            tar_cmd = 'tar --extract --no-same-owner'
-            if 'striplevel' in urldata.parm:
-                tar_cmd += ' --strip-components=%s' %  urldata.parm['striplevel']
-            if file.endswith('.tar'):
-                cmd = '%s -f %s' % (tar_cmd, file)
-            elif file.endswith('.tgz') or file.endswith('.tar.gz') or file.endswith('.tar.Z'):
-                cmd = '%s -z -f %s' % (tar_cmd, file)
-            elif file.endswith('.tbz') or file.endswith('.tbz2') or file.endswith('.tar.bz2'):
-                cmd = 'bzip2 -dc %s | %s -f -' % (file, tar_cmd)
-            elif file.endswith('.gz') or file.endswith('.Z') or file.endswith('.z'):
-                cmd = 'gzip -dc %s > %s' % (file, efile)
-            elif file.endswith('.bz2'):
-                cmd = 'bzip2 -dc %s > %s' % (file, efile)
-            elif file.endswith('.txz') or file.endswith('.tar.xz'):
-                cmd = 'xz -dc %s | %s -f -' % (file, tar_cmd)
-            elif file.endswith('.xz'):
-                cmd = 'xz -dc %s > %s' % (file, efile)
-            elif file.endswith('.tar.lz'):
-                cmd = 'lzip -dc %s | %s -f -' % (file, tar_cmd)
-            elif file.endswith('.lz'):
-                cmd = 'lzip -dc %s > %s' % (file, efile)
-            elif file.endswith('.tar.7z'):
-                cmd = '7z x -so %s | %s -f -' % (file, tar_cmd)
-            elif file.endswith('.7z'):
-                cmd = '7za x -y %s 1>/dev/null' % file
-            elif file.endswith('.tzst') or file.endswith('.tar.zst'):
-                cmd = 'zstd --decompress --stdout %s | %s -f -' % (file, tar_cmd)
-            elif file.endswith('.zst'):
-                cmd = 'zstd --decompress --stdout %s > %s' % (file, efile)
-            elif file.endswith('.zip') or file.endswith('.jar'):
-                try:
-                    dos = bb.utils.to_boolean(urldata.parm.get('dos'), False)
-                except ValueError as exc:
-                    bb.fatal("Invalid value for 'dos' parameter for %s: %s" %
-                             (file, urldata.parm.get('dos')))
-                cmd = 'unzip -q -o'
-                if dos:
-                    cmd = '%s -a' % cmd
-                cmd = "%s '%s'" % (cmd, file)
-            elif file.endswith('.rpm') or file.endswith('.srpm'):
-                if 'extract' in urldata.parm:
-                    unpack_file = urldata.parm.get('extract')
-                    cmd = 'rpm2cpio.sh %s | cpio -id %s' % (file, unpack_file)
-                    iterate = True
-                    iterate_file = unpack_file
-                else:
-                    cmd = 'rpm2cpio.sh %s | cpio -id' % (file)
-            elif file.endswith('.deb') or file.endswith('.ipk'):
-                output = subprocess.check_output(['ar', '-t', file], preexec_fn=subprocess_setup)
-                datafile = None
-                if output:
-                    for line in output.decode().splitlines():
-                        if line.startswith('data.tar.') or line == 'data.tar':
-                            datafile = line
-                            break
-                    else:
-                        raise UnpackError("Unable to unpack deb/ipk package - does not contain data.tar* file", urldata.url)
-                else:
-                    raise UnpackError("Unable to unpack deb/ipk package - could not list contents", urldata.url)
-                cmd = 'ar x %s %s && %s -p -f %s && rm %s' % (file, datafile, tar_cmd, datafile, datafile)
+        env = os.environ.copy()
+        path = data.getVar('PATH')
+        if path:
+            env['PATH'] = path
 
         # If 'subdir' param exists, create a dir and use it as destination for unpack cmd
         if 'subdir' in urldata.parm:
@@ -1612,6 +1559,93 @@ class FetchMethod(object):
             bb.utils.mkdirhier(unpackdir)
         else:
             unpackdir = rootdir
+
+        def _run(cmd):
+            if isinstance(cmd, str):
+                ret = subprocess.call(cmd, preexec_fn=subprocess_setup, shell=True, cwd=unpackdir, env=env)
+            else:
+                ret = subprocess.call(cmd, preexec_fn=subprocess_setup, cwd=unpackdir, env=env)
+            if ret != 0:
+                raise UnpackError("Unpack command %s failed with return value %s" % (cmd, ret), urldata.url)
+
+        base, ext = os.path.splitext(file)
+        if ext in ['.gz', '.bz2', '.Z', '.xz', '.lz', '.zst']:
+            efile = os.path.join(rootdir, os.path.basename(base))
+        else:
+            efile = file
+        cmd = None
+
+        if unpack:
+            tar_cmd = ['tar', '--extract', '--no-same-owner']
+            if 'striplevel' in urldata.parm:
+                striplevel = urldata.parm['striplevel']
+                if not striplevel.isdigit():
+                    raise UnpackError("Invalid striplevel parameter: %s" % striplevel, urldata.url)
+                tar_cmd.append('--strip-components=%s' % striplevel)
+            if file.endswith('.tar'):
+                cmd = tar_cmd + ['-f', file]
+            elif file.endswith('.tgz') or file.endswith('.tar.gz') or file.endswith('.tar.Z'):
+                cmd = tar_cmd + ['-z', '-f', file]
+            elif file.endswith('.tbz') or file.endswith('.tbz2') or file.endswith('.tar.bz2'):
+                cmd = tar_cmd + ['-j', '-f', file]
+            elif file.endswith('.gz') or file.endswith('.Z') or file.endswith('.z'):
+                cmd = 'gzip -dc %s > %s' % (file, efile)
+            elif file.endswith('.bz2'):
+                cmd = 'bzip2 -dc %s > %s' % (file, efile)
+            elif file.endswith('.txz') or file.endswith('.tar.xz'):
+                cmd = tar_cmd + ['-J', '-f', file]
+            elif file.endswith('.xz'):
+                cmd = 'xz -dc %s > %s' % (file, efile)
+            elif file.endswith('.tar.lz'):
+                cmd = tar_cmd + ['--lzip', '-f', file]
+            elif file.endswith('.lz'):
+                cmd = 'lzip -dc %s > %s' % (file, efile)
+            elif file.endswith('.tar.7z'):
+                cmd = '7z x -so %s | %s -f -' % (file, shlex.join(tar_cmd))
+            elif file.endswith('.7z'):
+                cmd = '7za x -y %s 1>/dev/null' % file
+            elif file.endswith('.tzst') or file.endswith('.tar.zst'):
+                cmd = 'zstd --decompress --stdout %s | %s -f -' % (file, shlex.join(tar_cmd))
+            elif file.endswith('.zst'):
+                cmd = 'zstd --decompress --stdout %s > %s' % (file, efile)
+            elif file.endswith('.zip') or file.endswith('.jar'):
+                try:
+                    dos = bb.utils.to_boolean(urldata.parm.get('dos'), False)
+                except ValueError as exc:
+                    bb.fatal("Invalid value for 'dos' parameter for %s: %s" %
+                             (file, urldata.parm.get('dos')))
+                cmd = ['unzip', '-q', '-o']
+                if dos:
+                    cmd.append('-a')
+                cmd.append(file)
+            elif file.endswith('.rpm') or file.endswith('.srpm'):
+                if 'extract' in urldata.parm:
+                    unpack_file = urldata.parm.get('extract')
+                    cmd = 'rpm2cpio.sh %s | cpio --no-absolute-filenames -id %s' % (file, unpack_file)
+                    iterate = True
+                    iterate_file = unpack_file
+                else:
+                    cmd = 'rpm2cpio.sh %s | cpio --no-absolute-filenames -id' % (file)
+            elif file.endswith('.deb') or file.endswith('.ipk'):
+                output = subprocess.check_output(['ar', '-t', file], preexec_fn=subprocess_setup, env=env)
+                datafile = None
+                valid_datafiles = ('data.tar', 'data.tar.gz', 'data.tar.xz',
+                                   'data.tar.zst', 'data.tar.bz2', 'data.tar.lzma')
+                if output:
+                    for line in output.decode().splitlines():
+                        if line in valid_datafiles:
+                            datafile = line
+                            break
+                    else:
+                        raise UnpackError("Unable to unpack deb/ipk package - does not contain supported data.tar* file", urldata.url)
+                else:
+                    raise UnpackError("Unable to unpack deb/ipk package - could not list contents", urldata.url)
+                bb.note("Unpacking %s to %s/" % (file, unpackdir))
+                urldata.unpack_tracer.unpack("archive-extract", unpackdir)
+                _run(['ar', 'x', file, datafile])
+                _run(tar_cmd + ['-p' ,'-f', datafile])
+                os.remove(os.path.join(unpackdir, datafile))
+                return
 
         if not unpack or not cmd:
             urldata.unpack_tracer.unpack("file-copy", unpackdir)
@@ -1628,21 +1662,15 @@ class FetchMethod(object):
                     if urlpath.find("/") != -1:
                         destdir = urlpath.rsplit("/", 1)[0] + '/'
                         bb.utils.mkdirhier("%s/%s" % (unpackdir, destdir))
-                cmd = 'cp --force --preserve=timestamps --no-dereference --recursive -H "%s" "%s"' % (file, destdir)
+                cmd = ['cp', '--force', '--preserve=timestamps', '--no-dereference', '--recursive', '-H', file, destdir]
         else:
             urldata.unpack_tracer.unpack("archive-extract", unpackdir)
 
         if not cmd:
             return
 
-        path = data.getVar('PATH')
-        if path:
-            cmd = "PATH=\"%s\" %s" % (path, cmd)
         bb.note("Unpacking %s to %s/" % (file, unpackdir))
-        ret = subprocess.call(cmd, preexec_fn=subprocess_setup, shell=True, cwd=unpackdir)
-
-        if ret != 0:
-            raise UnpackError("Unpack command %s failed with return value %s" % (cmd, ret), urldata.url)
+        _run(cmd)
 
         if iterate is True:
             iterate_urldata = urldata
@@ -1724,7 +1752,7 @@ class FetchMethod(object):
     def generate_revision_key(self, ud, d, name):
         return self._revision_key(ud, d, name)
 
-    def latest_versionstring(self, ud, d):
+    def latest_versionstring(self, ud, d, filter_regex=None):
         """
         Compute the latest release name like "x.y.x" in "x.y.x+gitHASH"
         by searching through the tags output of ls-remote, comparing
@@ -1962,6 +1990,7 @@ class Fetch(object):
                 if e.errno in [errno.ESTALE]:
                     logger.error("Stale Error Observed %s." % u)
                     raise ChecksumError("Stale Error Detected")
+                raise
 
             except BBFetchException as e:
                 if isinstance(e, NoChecksumError):

@@ -21,12 +21,18 @@ import sys
 import textwrap
 import time
 
+__version__ = "2.19.0"
 
 bindir = os.path.abspath(os.path.dirname(__file__))
 sys.path[0:0] = [os.path.join(os.path.dirname(bindir), 'lib')]
 
 import bb.msg  # noqa: E402
 import bb.process  # noqa: E402
+from bb import __version__ as libbb_version # noqa: E402
+
+if __name__ == "__main__":
+    if __version__ != libbb_version:
+        sys.exit("Bitbake core library version and program version mismatch!")
 
 logger = bb.msg.logger_create('bitbake-setup', sys.stdout)
 
@@ -128,13 +134,13 @@ def write_sources_fixed_revisions(config_dir, layer_dir, config_data):
         os.symlink(os.path.relpath(json_path ,layer_dir), json_link)
 
 def commit_config(config_dir):
-    bb.process.run("git -C {} add .".format(config_dir))
-    bb.process.run("git -C {} commit --allow-empty --no-verify -a -m 'Configuration at {}'".format(config_dir, time.asctime()))
+    bb.process.run(['git', '-C', config_dir, 'add', '.'])
+    bb.process.run(['git', '-C', config_dir, 'commit', '--allow-empty', '--no-verify', '-a', '-m', 'Configuration at ' + time.asctime()])
 
 def _write_layer_list(dest, repodirs):
     layers = []
     for r in repodirs:
-        for root, dirs, files in os.walk(os.path.join(dest,r)):
+        for root, _, files in os.walk(os.path.join(dest,r)):
             if os.path.basename(root) == 'conf' and 'layer.conf' in files:
                 layers.append(os.path.relpath(os.path.dirname(root), dest))
     layers_f = os.path.join(dest, ".oe-layers.json")
@@ -248,11 +254,11 @@ bitbake-setup init -L {} /path/to/repo/checkout""".format(
 
     if oesetupbuild:
         links = {'setup-build': oesetupbuild, 'oe-scripts': os.path.dirname(oesetupbuild), 'oe-init-build-env-dir': oeinitbuildenvdir}
-        for l,t in links.items():
-            symlink = os.path.join(layerdir, l)
+        for link,item in links.items():
+            symlink = os.path.join(layerdir, link)
             if os.path.lexists(symlink):
                 os.remove(symlink)
-            os.symlink(os.path.relpath(t,layerdir),symlink)
+            os.symlink(os.path.relpath(item,layerdir),symlink)
 
     return layers_fixed_revisions
 
@@ -261,19 +267,19 @@ def setup_bitbake_build(bitbake_config, layerdir, setupdir, thisdir, update_bb_c
         os.makedirs(build_conf_dir)
         layers_s = []
 
-        for l in layers:
-            l = os.path.join(layerdir, l)
-            layers_s.append("  {} \\".format(l))
+        for layer in layers:
+            layer = os.path.join(layerdir, layer)
+            layers_s.append("  {} \\".format(layer))
 
-        for l in filerelative_layers:
+        for layer in filerelative_layers:
             if thisdir:
-                l = os.path.join(thisdir, l)
+                layer = os.path.join(thisdir, layer)
             else:
                 raise Exception("Configuration is using bb-layers-file-relative to specify " \
                 "a layer path relative to itself. This can be done only " \
                 "when the configuration is specified by its path on local " \
                 "disk, not when it's in a registry or is fetched over http.")
-            layers_s.append("  {} \\".format(l))
+            layers_s.append("  {} \\".format(layer))
 
         layers_s = "\n".join(layers_s)
         bblayers_conf = """BBLAYERS ?= " \\
@@ -301,7 +307,10 @@ def setup_bitbake_build(bitbake_config, layerdir, setupdir, thisdir, update_bb_c
             f.write(bitbake_config["description"] + "\n")
 
         with open(os.path.join(build_conf_dir, "conf-notes.txt"), 'w') as f:
-            f.write("")
+            notes = bitbake_config.get("notes")
+            if isinstance(notes, list):
+                notes = "\n".join(notes)
+            f.write(notes + "\n" if notes else "")
 
     def _make_init_build_env(builddir, oeinitbuildenvdir):
         builddir = os.path.realpath(builddir)
@@ -357,7 +366,7 @@ def setup_bitbake_build(bitbake_config, layerdir, setupdir, thisdir, update_bb_c
         _setup_build_conf(layers, filerelative_layers, bitbake_confdir)
 
     if template:
-        bb.process.run("{} setup -c {} -b {} --no-shell".format(oesetupbuild, template, bitbake_builddir))
+        bb.process.run([oesetupbuild, "setup", "-c", template, "-b", bitbake_builddir, "--no-shell"])
     else:
         oeinitbuildenvdir = os.path.join(layerdir, 'oe-init-build-env-dir')
         if not os.path.exists(os.path.join(oeinitbuildenvdir, "oe-init-build-env")):
@@ -377,7 +386,9 @@ def setup_bitbake_build(bitbake_config, layerdir, setupdir, thisdir, update_bb_c
     init_script = os.path.join(bitbake_builddir, "init-build-env")
     workspace_file = os.path.join(setupdir, "bitbake.code-workspace")
     shell = "bash"
-    fragments = bitbake_config.get("oe-fragments", []) + sorted(bitbake_config.get("oe-fragment-choices",{}).values())
+    # oe-fragments entries can be strings or dicts with 'name'/'description' keys
+    oe_fragments = [f["name"] if isinstance(f, dict) else f for f in bitbake_config.get("oe-fragments", [])]
+    fragments = oe_fragments + sorted(bitbake_config.get("oe-fragment-choices",{}).values())
     if fragments:
         bb.process.run("{} -c '. {} && bitbake-config-build enable-fragment {}'".format(shell, init_script, " ".join(fragments)))
 
@@ -415,12 +426,13 @@ def setup_bitbake_build(bitbake_config, layerdir, setupdir, thisdir, update_bb_c
 
     readme_extra = ""
     if init_vscode:
-        readme_extra = "\n\nTo edit the code in VSCode, open the workspace: code {}\n".format(workspace_file)
+        readme_extra = "\nTo edit the code in VSCode, open the workspace: code {}\n".format(workspace_file)
 
     readme = """{}\n\nAdditional information is in {} and {}\n
 Source the environment using '. {}' to run builds from the command line.\n
 {}\n
-The bitbake configuration files (local.conf, bblayers.conf and more) can be found in {}/conf{}""".format(
+The bitbake configuration files (local.conf, bblayers.conf and more) can be found in {}/conf
+{}""".format(
         bitbake_config["description"],
         os.path.join(bitbake_builddir,'conf/conf-summary.txt'),
         os.path.join(bitbake_builddir,'conf/conf-notes.txt'),
@@ -445,10 +457,10 @@ The bitbake configuration files (local.conf, bblayers.conf and more) can be foun
         configure_vscode(setupdir, layerdir, bitbake_builddir, init_script)
 
 def get_registry_config(registry_path, id):
-    for root, dirs, files in os.walk(registry_path):
-        for f in files:
-            if f.endswith('.conf.json') and id == get_config_name(f):
-                return os.path.join(root, f)
+    for root, _, files in os.walk(registry_path):
+        for file in files:
+            if file.endswith('.conf.json') and id == get_config_name(file):
+                return os.path.join(root, file)
     raise Exception("Unable to find {} in available configurations; use 'list' sub-command to see what is available".format(id))
 
 def merge_overrides_into_sources(sources, overrides):
@@ -857,11 +869,11 @@ def init_config(top_dir, settings, args):
     os.makedirs(confdir)
     os.makedirs(layerdir)
 
-    bb.process.run("git -C {} init -b main".format(confdir))
+    bb.process.run(["git", "-C", confdir, "init", "-b", "main"])
     # Make sure commiting doesn't fail if no default git user is configured on the machine
-    bb.process.run("git -C {} config user.name bitbake-setup".format(confdir))
-    bb.process.run("git -C {} config user.email bitbake-setup@not.set".format(confdir))
-    bb.process.run("git -C {} commit --no-verify --allow-empty -m 'Initial commit'".format(confdir))
+    bb.process.run(["git", "-C", confdir, "config", "user.name", "bitbake-setup"])
+    bb.process.run(["git", "-C", confdir, "config", "user.email", "bitbake-setup@not.set"])
+    bb.process.run(["git", "-C", confdir, "commit", "--no-verify", "--allow-empty", "-m", "Initial commit"])
 
     bb.event.register("bb.build.TaskProgress", handle_task_progress, data=d)
 
@@ -872,7 +884,7 @@ def init_config(top_dir, settings, args):
 
 def get_diff(file1, file2):
     try:
-        bb.process.run('diff {} -uNr {} {}'.format(get_diff_color_param(), file1, file2))
+        bb.process.run(["diff", get_diff_color_param(), "-uNr", file1, file2])
     except bb.process.ExecutionError as e:
         if e.exitcode == 1:
             return e.stdout
@@ -882,14 +894,14 @@ def get_diff(file1, file2):
 
 def are_layers_changed(layers, layerdir, d):
     def _is_git_remote_changed(r_remote, repodir):
-        from bb.fetch2.git import sha1_re
+        from bb.fetch2.git import git_hash_re
 
         rev = r_remote['rev']
         branch = r_remote.get('branch', None)
 
-        rev_parse_result = bb.process.run('git -C {} rev-parse HEAD'.format(os.path.join(layerdir, repodir)))
+        rev_parse_result = bb.process.run(['git', '-C', os.path.join(layerdir, repodir), "rev-parse", "HEAD"])
         local_revision = rev_parse_result[0].strip()
-        if sha1_re.match(rev):
+        if git_hash_re.match(rev):
             if rev != local_revision:
                 logger.info('Layer repository checked out into {} is at revision {} but should be at {}'.format(os.path.join(layerdir, repodir),local_revision, rev))
                 return True
@@ -937,7 +949,7 @@ def build_status(top_dir, settings, args, d, update=False):
     new_upstream_config = obtain_config(top_dir, registry, args, source_overrides, d)
 
     write_upstream_config(confdir, new_upstream_config)
-    config_diff = bb.process.run('git -C {} diff {}'.format(confdir, get_diff_color_param()))[0]
+    config_diff = bb.process.run(["git", "-C" , confdir, "diff", get_diff_color_param()])[0]
 
     if config_diff:
         logger.plain('\nConfiguration in {} has changed:\n{}'.format(setupdir, config_diff))
@@ -945,7 +957,7 @@ def build_status(top_dir, settings, args, d, update=False):
             update_build(new_upstream_config, confdir, setupdir, layerdir, d,
                          update_bb_conf=args.update_bb_conf, rebase_conflicts_strategy=args.rebase_conflicts_strategy)
         else:
-            bb.process.run('git -C {} restore config-upstream.json'.format(confdir))
+            bb.process.run(["git", "-C", confdir, "restore", "config-upstream.json"])
         return
 
     layer_config = merge_overrides_into_sources(current_upstream_config["data"]["sources"], current_upstream_config["source-overrides"]["sources"])
@@ -996,11 +1008,11 @@ def has_expired(expiry_date):
 def list_registry(registry_path, with_expired):
     json_data = {}
 
-    for root, dirs, files in os.walk(registry_path):
-        for f in files:
-            if f.endswith('.conf.json'):
-                config_name = get_config_name(f)
-                config_data = json.load(open(os.path.join(root, f)))
+    for root, _, files in os.walk(registry_path):
+        for file in files:
+            if file.endswith('.conf.json'):
+                config_name = get_config_name(file)
+                config_data = json.load(open(os.path.join(root, file)))
                 config_desc = config_data["description"]
                 expiry_date = config_data.get("expires", None)
                 if expiry_date:
@@ -1049,10 +1061,87 @@ def install_buildtools(top_dir, settings, args, d):
             return
         shutil.rmtree(buildtools_install_dir)
 
-    install_buildtools = os.path.join(args.setup_dir, 'layers/oe-scripts/install-buildtools')
-    buildtools_download_dir = add_unique_timestamp_to_path(os.path.join(args.setup_dir, 'buildtools-downloads/buildtools'))
-    logger.plain("Buildtools archive is downloaded into {} and its content installed into {}".format(buildtools_download_dir, buildtools_install_dir))
-    subprocess.check_call("{} -d {} --downloads-directory {}".format(install_buildtools, buildtools_install_dir, buildtools_download_dir), shell=True)
+    install_buildtools_script = os.path.join(args.setup_dir, 'layers/oe-scripts/install-buildtools')
+
+    buildtools_config = {}
+    upstream_config_path = os.path.join(args.setup_dir, 'config', 'config-upstream.json')
+    try:
+        with open(upstream_config_path) as f:
+            upstream_config = json.load(f)
+        buildtools_config = upstream_config.get('bitbake-config', {}).get('install-buildtools', {})
+    except FileNotFoundError:
+        pass
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse %s: %s" % (upstream_config_path, e))
+        sys.exit(1)
+
+    url = args.url if args.url is not None else buildtools_config.get('url')
+    sha256 = args.sha256 if args.sha256 is not None else buildtools_config.get('sha256sum')
+
+    buildtools_download_dir = add_unique_timestamp_to_path(
+        os.path.join(args.setup_dir, 'buildtools-downloads/buildtools'))
+
+    if args.default or (not url and not sha256):
+        # No config or --default: fall back to install-buildtools defaults
+        logger.plain("Using install-buildtools script defaults")
+        subprocess.check_call([install_buildtools_script,
+                               '-d', buildtools_install_dir,
+                               '--downloads-directory', buildtools_download_dir])
+        return
+
+    if not url:
+        logger.error("No buildtools URL configured. "
+                     "Set 'url' in the install-buildtools config section or pass --url.")
+        sys.exit(1)
+
+    if not sha256:
+        logger.error("No sha256sum configured for buildtools installer. "
+                     "Add 'sha256sum' to the install-buildtools config section or pass --sha256.\n"
+                     "You can obtain it with: sha256sum <installer-file>")
+        sys.exit(1)
+
+    # Download using bb.fetch with sha256 validation
+    src_uri = "{};sha256sum={}".format(url, sha256)
+
+    logger.plain("Fetching buildtools installer using bitbake fetcher")
+    logger.plain("    {}".format(url))
+
+    fetcher = bb.fetch.Fetch([src_uri], d)
+    try:
+        fetcher.download()
+    except bb.fetch2.ChecksumError as e:
+        logger.error("Checksum mismatch for buildtools installer. "
+                     "Verify the URL and downloaded file.\n%s" % str(e))
+        sys.exit(1)
+    except bb.fetch2.FetchError as e:
+        logger.error("Failed to download buildtools installer: %s" % str(e))
+        sys.exit(1)
+
+    # Unpack into the standard buildtools download location
+    os.makedirs(buildtools_download_dir, exist_ok=True)
+    fetcher.unpack(buildtools_download_dir)
+
+    filename = os.path.basename(url.rstrip('/'))
+    matches = glob.glob(os.path.join(buildtools_download_dir, '**', filename), recursive=True)
+    if not matches:
+        logger.error("Unpacked file not found: %s" % filename)
+        sys.exit(1)
+    local_path = matches[0]
+
+    logger.plain("Buildtools installer will be installed into {}".format(
+        buildtools_install_dir))
+
+    cmd = [
+        install_buildtools_script,
+        '--local-file', local_path,
+        '-d', buildtools_install_dir,
+    ]
+
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as e:
+        logger.error("install-buildtools failed with exit code %d" % e.returncode)
+        sys.exit(1)
 
 def create_siteconf(top_dir, non_interactive, settings):
     siteconfpath = os.path.join(top_dir, 'site.conf')
@@ -1240,6 +1329,7 @@ def main():
         )
     parser.add_argument('-d', '--debug', help='Enable debug output', action='store_true')
     parser.add_argument('-q', '--quiet', help='Print only errors', action='store_true')
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     parser.add_argument('--color', choices=['auto', 'always', 'never'], default='auto', help='Colorize output (where %(metavar)s is %(choices)s)', metavar='COLOR')
     parser.add_argument('--no-network', action='store_true', help='Do not check whether configuration repositories and layer repositories have been updated; use only the local cache.')
     parser.add_argument('--global-settings', action='store', metavar='PATH', help='Path to the global settings file.')
@@ -1282,6 +1372,9 @@ def main():
     parser_install_buildtools = subparsers.add_parser('install-buildtools', help='Install buildtools which can help fulfil missing or incorrect dependencies on the host machine')
     add_setup_dir_arg(parser_install_buildtools)
     parser_install_buildtools.add_argument('--force', action='store_true', help='Force a reinstall of buildtools over the previous installation.')
+    parser_install_buildtools.add_argument('--default', action='store_true', help='Use install-buildtools script defaults, ignoring any config.')
+    parser_install_buildtools.add_argument('--url', help='Full URL to the buildtools SDK installer. Overrides config value.')
+    parser_install_buildtools.add_argument('--sha256', help='SHA256 checksum of the buildtools installer. Overrides config value.')
     parser_install_buildtools.set_defaults(func=install_buildtools)
 
     parser_settings_arg_global = argparse.ArgumentParser(add_help=False)

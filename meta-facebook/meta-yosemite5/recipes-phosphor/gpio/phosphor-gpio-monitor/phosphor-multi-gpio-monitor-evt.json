@@ -4,8 +4,28 @@
         "LineName": "ID_RST_BTN_BMC_N",
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["reset_btn@RISING.service"],
-            "FALLING": ["reset_btn@FALLING.service"]
+            "RISING": ["reset_btn@RISING.service", "button-event-logger@Released_ID_RST_BTN_BMC_N.service"],
+            "FALLING": ["reset_btn@FALLING.service", "button-event-logger@Pressed_ID_RST_BTN_BMC_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "AC_PWR_BMC_BTN_N",
+        "LineName": "AC_PWR_BMC_BTN_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["button-event-logger@Released_AC_PWR_BMC_BTN_N.service"],
+            "FALLING": ["button-event-logger@Pressed_AC_PWR_BMC_BTN_N.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PWR_BTN_BMC_N",
+        "LineName": "PWR_BTN_BMC_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": ["button-event-logger@Released_PWR_BTN_BMC_N.service"],
+            "FALLING": ["button-event-logger@Pressed_PWR_BTN_BMC_N.service"]
         },
         "Continue": true
     },
@@ -14,8 +34,8 @@
         "LineName": "FM_BIOS_POST_CMPLT_N",
         "EventMon": "BOTH",
         "Targets": {
-            "RISING": ["deassert-host-ready.service", "mctp_remove.service"],
-            "FALLING": ["assert-host-ready.service", "mctp_setup@cxl_mctp.service"]
+            "RISING": ["deassert-host-ready.service"],
+            "FALLING": ["assert-host-ready.service"]
         },
         "Continue": true
     },
@@ -25,7 +45,7 @@
         "EventMon": "BOTH",
         "Targets": {
             "RISING": ["deassert-power-good-drop.service"],
-            "FALLING": ["assert-power-good-drop.service"]
+            "FALLING": ["assert-power-good-drop.service", "mctp_remove@cxl_mctp.service"]
         },
         "Continue": true
     },
@@ -556,6 +576,15 @@
         "Targets": {
             "RISING": ["power-rail-deassert-log@pdb_FM_SLOT6_HSC_FAULT.service"],
             "FALLING": ["power-rail-assert-log@pdb_FM_SLOT6_HSC_FAULT.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "NIC_PRSNT_N",
+        "LineName": "NIC_PRSNT_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "FALLING": ["hotplug-ac-cycle@FALLING.service"]
         },
         "Continue": true
     }

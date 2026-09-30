@@ -1,0 +1,6 @@
+{
+	"environments": [
+		{ "env": "env.smc0", "match": { "mctpEid": 32 } },
+		{ "env": "env.smc1", "match": { "mctpEid": 33 } }
+	]
+}

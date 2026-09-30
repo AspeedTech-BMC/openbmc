@@ -42,6 +42,9 @@ def exec_build_env_command(init_path, builddir, cmd, watch=False, **options):
         init_prefix = ''
     if watch:
         if sys.stdout.isatty():
+            import shutil
+            if not shutil.which('script'):
+                raise DevtoolError('The util-linux "script" command was not found')
             # Fool bitbake into thinking it's outputting to a terminal (because it is, indirectly)
             cmd = 'script -e -q -c "%s" /dev/null' % cmd
         return exec_watch('%s%s' % (init_prefix, cmd), **options)
@@ -200,7 +203,7 @@ def setup_git_repo(repodir, version, devbranch, basetag='devtool-base', d=None):
         bb.process.run('git add -f -A .', cwd=repodir)
         commit_cmd = ['git']
         oe.patch.GitApplyTree.gitCommandUserOptions(commit_cmd, d=d)
-        commit_cmd += ['commit', '-q']
+        commit_cmd += ['commit', '-q', '--no-gpg-sign']
         stdout, _ = bb.process.run('git status --porcelain', cwd=repodir)
         if not stdout:
             commit_cmd.append('--allow-empty')

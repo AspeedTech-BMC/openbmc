@@ -32,8 +32,6 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0008-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0010-configure-lookup-meson-exutable-from-PATH.patch \
            file://0011-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
-           file://0012-meson-fix-close_range-detection-on-older-glibc.patch \
-           file://0013-hw-scsi-vhost-scsi-include-standard-headers-for-vhost-worker-structs.patch \
            file://qemu-guest-agent.init \
            file://qemu-guest-agent.udev \
            file://0001-ui-sdl2.c-force-disable-SDL_HINT_VIDEO_X11_FORCE_EGL.patch \
@@ -42,7 +40,7 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
 UPSTREAM_CHECK_URI = "https://www.qemu.org"
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 
-SRC_URI[sha256sum] = "0d235f5820278d914a3155ec27af8e4258d697ea892895570807d69c0cb8cd64"
+SRC_URI[sha256sum] = "6ee1d1a61f68212476b27108c26da5f449dc09b626d42f8279ba0dc2e08fa858"
 
 CVE_STATUS[CVE-2007-0998] = "not-applicable-config: The VNC server can expose host files uder some circumstances. We don't enable it by default."
 
@@ -54,6 +52,7 @@ CVE_STATUS[CVE-2023-2680] = "not-applicable-platform: RHEL specific issue."
 
 # NVD DB has this CVE as version-less (with "-")
 CVE_STATUS[CVE-2024-6505] = "fixed-version: this CVE is fixed since 9.1.0"
+CVE_STATUS[CVE-2024-6519] = "fixed-version: this CVE is fixed since 11.0.0"
 CVE_STATUS[CVE-2024-8354] = "fixed-version: this CVE is fixed since 10.0.5"
 
 CVE_STATUS[CVE-2023-1386] = "disputed: not an issue as per https://bugzilla.redhat.com/show_bug.cgi?id=2223985"
@@ -63,8 +62,8 @@ COMPATIBLE_HOST:mipsarchn64 = "null"
 COMPATIBLE_HOST:riscv32 = "null"
 
 # QEMU 11.0.0+ requires a 64-bit host architecture for emulator builds
-COMPATIBLE_HOST:class-target = "(aarch64|x86_64|ppc64|riscv64|loongarch64|mips64|s390x|sparc64).*-linux"
-COMPATIBLE_HOST:class-nativesdk = "(aarch64|x86_64|ppc64|riscv64|loongarch64|mips64|s390x|sparc64).*-linux"
+COMPATIBLE_HOST:class-target = "(aarch64|x86_64|ppc64|ppc64le|riscv64|loongarch64|mips64|s390x|sparc64).*-linux"
+COMPATIBLE_HOST:class-nativesdk = "(aarch64|x86_64|ppc64|ppc64le|riscv64|loongarch64|mips64|s390x|sparc64).*-.*"
 
 # Per https://lists.nongnu.org/archive/html/qemu-devel/2020-09/msg03873.html
 # upstream states qemu doesn't work without optimization
@@ -143,6 +142,9 @@ do_configure() {
 }
 do_configure[cleandirs] += "${B}"
 
+# Use the Meson progress regex as qemu uses meson internally
+do_compile[progress] = "outof:^\[(\d+)/(\d+)\]\s+"
+
 do_install () {
 	export STRIP=""
 	oe_runmake 'DESTDIR=${D}' install
@@ -209,7 +211,6 @@ PACKAGECONFIG[spice] = "--enable-spice,--disable-spice,spice"
 PACKAGECONFIG[dbus-display] = "--enable-dbus-display,--disable-dbus-display,glib-2.0-native,dbus"
 PACKAGECONFIG[usb-redir] = "--enable-usb-redir,--disable-usb-redir,usbredir"
 PACKAGECONFIG[snappy] = "--enable-snappy,--disable-snappy,snappy"
-PACKAGECONFIG[glusterfs] = "--enable-glusterfs,--disable-glusterfs,glusterfs"
 PACKAGECONFIG[xkbcommon] = "--enable-xkbcommon,--disable-xkbcommon,libxkbcommon"
 PACKAGECONFIG[libudev] = "--enable-libudev,--disable-libudev,udev"
 PACKAGECONFIG[attr] = "--enable-attr,--disable-attr,attr,"

@@ -1,0 +1,267 @@
+{
+    "Exposes": [
+        {
+            "Address": "0x50",
+            "Bus": 12,
+            "Name": "AST2700 FRU",
+            "Type": "EEPROM"
+        },
+        {
+            "Address": "0x4d",
+            "Bus": 0,
+            "Name": "Ambient_Temp",
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 40
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 38
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 5
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 0
+                }
+            ],
+            "Type": "LM75A"
+        },
+        {
+            "Index": 0,
+            "Name": "ADC0_3V",
+            "ScaleFactor": 0.08333,
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 3.45
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 3.3
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 2.7
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 2.55
+                }
+            ],
+            "Type": "ADC"
+        },
+        {
+            "Index": 7,
+            "Name": "Battery",
+            "ScaleFactor": 0.33333,
+            "PollRate": 43200,
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 3.3
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 3.21
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 2.79
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 2.7
+                }
+            ],
+            "Type": "ADC"
+        },
+        {
+            "Index": 8,
+            "Name": "ADC8_3V",
+            "ScaleFactor": 0.08333,
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 3.45
+                },
+                {
+                    "Direction": "greater than",
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 3.3
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 2.7
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 2.55
+                }
+            ],
+            "Type": "ADC"
+        },
+        {
+            "Connector": {
+                "Name": "PWM 0 connector",
+                "Pwm": 0,
+                "PwmName": "Pwm_0",
+                "Tachs": [
+                    0
+                ]
+            },
+            "Name": "Fan 0",
+            "Index": 0,
+            "Thresholds": [
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 360
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 480
+                }
+            ],
+            "PowerState": "Always",
+            "Type": "AspeedFan"
+        },
+        {
+            "Connector": {
+                "Name": "PWM 1 connector",
+                "Pwm": 1,
+                "PwmName": "Pwm_1",
+                "Tachs": [
+                    1
+                ]
+            },
+            "Name": "Fan 1",
+            "Index": 1,
+            "Thresholds": [
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 360
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 480
+                }
+            ],
+            "PowerState": "Always",
+            "Type": "AspeedFan"
+        },
+        {
+            "Connector": {
+                "Name": "PWM 2 connector",
+                "Pwm": 2,
+                "PwmName": "Pwm_2",
+                "Tachs": [
+                    2
+                ]
+            },
+            "Name": "Fan 2",
+            "Index": 2,
+            "Thresholds": [
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 360
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 480
+                }
+            ],
+            "PowerState": "Always",
+            "Type": "AspeedFan"
+        },
+        {
+            "Connector": {
+                "Name": "PWM 3 connector",
+                "Pwm": 3,
+                "PwmName": "Pwm_3",
+                "Tachs": [
+                    3
+                ]
+            },
+            "Name": "Fan 3",
+            "Index": 3,
+            "Thresholds": [
+                {
+                    "Direction": "less than",
+                    "Name": "lower critical",
+                    "Severity": 1,
+                    "Value": 360
+                },
+                {
+                    "Direction": "less than",
+                    "Name": "lower non critical",
+                    "Severity": 0,
+                    "Value": 480
+                }
+            ],
+            "PowerState": "Always",
+            "Type": "AspeedFan"
+        },
+        {
+            "Class": "Aspeed2600_Hwmon",
+            "Name": "Chassis Intrusion Sensor",
+            "Type": "ChassisIntrusionSensor"
+        }
+    ],
+    "xyz.openbmc_project.Inventory.Decorator.FruDevice": {
+        "Address": 80,
+        "Bus": 12
+    },
+    "xyz.openbmc_project.Inventory.Decorator.Ipmi": {
+        "EntityId": 7,
+        "EntityInstance": 0
+    },
+    "Name": "AST2700 EVB",
+    "Probe": "TRUE",
+    "Type": "Board"
+}

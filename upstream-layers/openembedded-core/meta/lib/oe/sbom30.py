@@ -638,6 +638,7 @@ class ObjectSet(oe.spdx30.SHACLObjectSet):
     def new_file(self, _id, name, path, *, purposes=[], hashfile=True):
         if hashfile:
             sha256_hash = bb.utils.sha256_file(path)
+            sha512_hash = bb.utils.sha512_file(path)
 
             for f in self.by_sha256_hash.get(sha256_hash, []):
                 if not isinstance(f, oe.spdx30.software_File):
@@ -684,6 +685,12 @@ class ObjectSet(oe.spdx30.SHACLObjectSet):
                     hashValue=sha256_hash,
                 )
             )
+            spdx_file.verifiedUsing.append(
+                oe.spdx30.Hash(
+                    algorithm=oe.spdx30.HashAlgorithm.sha512,
+                    hashValue=sha512_hash,
+                )
+            )
 
         return self.add(spdx_file)
 
@@ -705,7 +712,7 @@ class ObjectSet(oe.spdx30.SHACLObjectSet):
         return self.add(v)
 
     def new_vex_patched_relationship(self, from_, to, notes: None):
-        props = {'security_statusNotes': notes} if notes else {}
+        props = {"security_statusNotes": notes} if notes else {}
         return self._new_relationship(
             oe.spdx30.security_VexFixedVulnAssessmentRelationship,
             from_,
@@ -717,7 +724,7 @@ class ObjectSet(oe.spdx30.SHACLObjectSet):
         )
 
     def new_vex_unpatched_relationship(self, from_, to, notes: None):
-        props = {'security_statusNotes': notes} if notes else {}
+        props = {"security_statusNotes": notes} if notes else {}
         return self._new_relationship(
             oe.spdx30.security_VexAffectedVulnAssessmentRelationship,
             from_,
@@ -730,7 +737,7 @@ class ObjectSet(oe.spdx30.SHACLObjectSet):
         )
 
     def new_vex_ignored_relationship(self, from_, to, *, impact_statement, notes: None):
-        props = {'security_statusNotes': notes} if notes else {}
+        props = {"security_statusNotes": notes} if notes else {}
         return self._new_relationship(
             oe.spdx30.security_VexNotAffectedVulnAssessmentRelationship,
             from_,

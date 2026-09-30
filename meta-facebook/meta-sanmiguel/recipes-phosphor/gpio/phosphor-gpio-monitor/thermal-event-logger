@@ -1,0 +1,73 @@
+#!/bin/bash
+
+HELP="
+Usage: thermal-event-logger <type> <gpio name>
+<event> is the event type,
+e.g. assert/deassert.
+
+<gpio-name> is defined in json file,
+e.g. cpu0-thermtrip-alert
+"
+
+# check if parameters are missing
+if [[ -z "$1" || -z "$2" ]]; then
+    echo "Missing required arguments: event type, gpio name."
+    echo "$HELP"
+    exit 1
+fi
+
+# Check current Host status. Do nothing when the Host is currently not ON
+HOST_STATE=$(busctl get-property xyz.openbmc_project.State.Host \
+    /xyz/openbmc_project/state/host0 xyz.openbmc_project.State.Host \
+    CurrentHostState | awk -F'"' '{print $2}')
+if [ "$HOST_STATE" != "xyz.openbmc_project.State.Host.HostState.Running" ]; then
+    exit 0
+fi
+
+# get some parameters
+GPIO_NAME=$2
+case $1-$2 in
+    assert-HPM*-Thermtrip-Alert)
+    MSG_ID="xyz.openbmc_project.State.Thermal.DeviceOverOperatingTemperatureFault"
+    ;;
+    deassert-HPM*-Thermtrip-Alert | assert-HPM*-Prochot-Alert | assert-HPM*-Chipthrot-Alert)
+    MSG_ID="xyz.openbmc_project.State.Thermal.DeviceOverOperatingTemperature"
+    ;;
+    deassert-HPM*-Prochot-Alert | deassert-HPM*-Chipthrot-Alert)
+    MSG_ID="xyz.openbmc_project.State.Thermal.DeviceOperatingNormalTemperature"
+    ;;
+    *)
+    echo "Unrecognized event type or gpio name."
+    exit 1
+esac
+
+DEVICE_PATH="/xyz/openbmc_project/State/Thermal/${GPIO_NAME}"
+STASH_FILE="/run/${GPIO_NAME}.log_entry"
+
+case $1-$2 in
+    assert-*)
+        if [ ! -s "$STASH_FILE" ]; then
+                /usr/bin/log-create "$MSG_ID" --json \
+                    "{ \"DEVICE\": \"${DEVICE_PATH}\", \"FAILURE_DATA\": \"${GPIO_NAME}\"}" \
+                    > "${STASH_FILE}"
+        fi
+        ;;
+
+    deassert-HPM*-Thermtrip-Alert)
+        if [ -e "${STASH_FILE}" ]; then
+                log-resolve -p "$(< "${STASH_FILE}")" && rm "${STASH_FILE}"
+        fi
+        ;;
+
+    deassert-HPM*-Prochot-Alert)
+        if [ -e "${STASH_FILE}" ]; then
+            log-resolve -p "$(< "${STASH_FILE}")" && rm "${STASH_FILE}"
+        fi
+        /usr/bin/log-create "$MSG_ID" --json \
+            "{ \"DEVICE\": \"${DEVICE_PATH}\"}"
+        ;;
+    *)
+        echo "Unrecognized thermal event."
+        exit 1
+esac
+

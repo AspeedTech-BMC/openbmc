@@ -18,10 +18,13 @@ SRC_URI = "https://archive.mesa3d.org/mesa-${PV}.tar.xz \
            file://0001-meson-misdetects-64bit-atomics-on-mips-clang.patch \
            file://0001-freedreno-don-t-encode-build-path-into-binaries.patch \
            file://0001-gallivm-Fix-armhf-build-against-LLVM-22.patch \
-"
+           file://0001-src-intel-compiler-jay-jay_ir.h-do-not-used-typed-en.patch \
+           file://0001-src-intel-compiler-jay-fix-GCC-10-case-label-declara.patch \
+           file://0001-src-util-u_math.c-do-not-use-arm-fpu-instructions-if.patch \
+           "
 
-SRC_URI[sha256sum] = "d229c9937d9a25ca0a8958c59f425174563d300ec42acbea2dbe84a055023368"
-PV = "26.0.5"
+SRC_URI[sha256sum] = "072705caa9adf4740f1489194b13e278ad959166863b5271fe423a86353c9ab6"
+PV = "26.1.4"
 
 UPSTREAM_CHECK_GITTAGREGEX = "mesa-(?P<pver>\d+(\.\d+)+)"
 
@@ -50,6 +53,22 @@ inherit meson pkgconfig python3native gettext features_check rust
 ANY_OF_DISTRO_FEATURES = "opencl opengl vulkan"
 
 PLATFORMS ??= "${@bb.utils.filter('PACKAGECONFIG', 'x11 wayland', d)}"
+
+replace_llvm_config_path() {
+    if [ -f "${STAGING_BINDIR_CROSS}/llvm-config" ]; then
+        sed -i \
+            's#@LLVM_CONFIG_PATH@#${STAGING_BINDIR_NATIVE}/llvm-config#g' \
+            ${STAGING_BINDIR_CROSS}/llvm-config
+    fi
+}
+
+do_configure:prepend:class-target() {
+    replace_llvm_config_path
+}
+
+do_configure:prepend:class-nativesdk() {
+    replace_llvm_config_path
+}
 
 # set the MESA_BUILD_TYPE to either 'release' (default) or 'debug'
 # by default the upstream mesa sources build a debug release
@@ -345,7 +364,7 @@ FILES:${PN}-tools = "${bindir} ${datadir}"
 ALLOW_EMPTY:${PN}-tools = "1"
 
 # All DRI drivers are symlinks to libdril_dri.so
-INSANE_SKIP:${PN}-megadriver += "dev-so"
+INSANE_SKIP:${MLPREFIX}mesa-megadriver += "dev-so"
 
 # OpenCL ICDs package also ship correspondig .so files, there is no -dev package
 INSANE_SKIP:libopencl-mesa += "dev-so"

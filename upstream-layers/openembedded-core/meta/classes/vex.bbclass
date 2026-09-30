@@ -73,9 +73,6 @@ CVE_CHECK_LAYER_INCLUDELIST ??= ""
 CVE_VERSION_SUFFIX ??= ""
 
 python () {
-    if bb.data.inherits_class("cve-check", d):
-        raise bb.parse.SkipRecipe("Skipping recipe: found incompatible combination of cve-check and vex enabled at the same time.")
-
     from oe.cve_check import extend_cve_status
     extend_cve_status(d)
 }
@@ -211,7 +208,7 @@ python vex_write_rootfs_manifest () {
     bb.plain("Image VEX JSON report stored in: %s" % manifest_name)
 }
 
-ROOTFS_POSTPROCESS_COMMAND:prepend = "vex_write_rootfs_manifest; "
+ROOTFS_POSTUNINSTALL_COMMAND:prepend = "vex_write_rootfs_manifest "
 do_rootfs[recrdeptask] += "do_generate_vex "
 do_populate_sdk[recrdeptask] += "do_generate_vex "
 

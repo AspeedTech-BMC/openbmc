@@ -1,0 +1,1209 @@
+From aa4e9e6ebe4a04e1bd63ad01c13852ab728a00f4 Mon Sep 17 00:00:00 2001
+From: Steven Lee <steven_lee@aspeedtech.com>
+Date: Tue, 22 Sep 2026 04:32:43 +0000
+Subject: [PATCH] mctp: add AST2700 I3C target network transport
+
+Add an AF_MCTP point-to-point network interface for local I3C targets
+selected by the mctp-controller property. Implement software PEC and
+worker-based pending-read notification with a baseline transmit MTU.
+
+Add synchronized target receive callbacks, initialize target hardware
+before probing its client, and handle AST2700 transfer errors and cleanup.
+Keep character-device and network target bindings mutually exclusive.
+Enable the transport for AST2700 DC-SCM and document setup and limitations.
+Disable the legacy controller and target MCTP character-device drivers in
+aspeed_g7_defconfig, retaining both AF_MCTP I3C transports.
+
+Upstream-Status: Pending
+
+Signed-off-by: Steven Lee <steven_lee@aspeedtech.com>
+---
+diff --git a/Documentation/networking/index.rst b/Documentation/networking/index.rst
+index c775cababc8c..3e5ed66e1596 100644
+--- a/Documentation/networking/index.rst
++++ b/Documentation/networking/index.rst
+@@ -74,6 +74,7 @@ Contents:
+    lapb-module
+    mac80211-injection
+    mctp
++   mctp-i3c-target
+    mpls-sysctl
+    mptcp
+    mptcp-sysctl
+diff --git a/Documentation/networking/mctp-i3c-target.rst b/Documentation/networking/mctp-i3c-target.rst
+new file mode 100644
+index 000000000000..35267e1442d7
+--- /dev/null
++++ b/Documentation/networking/mctp-i3c-target.rst
+@@ -0,0 +1,115 @@
++.. SPDX-License-Identifier: GPL-2.0
++
++MCTP over I3C in target mode
++===========================
++
++The ``mctp-i3c-target`` driver connects a local I3C target to AF_MCTP. It
++creates an interface named ``mctpi3ctN``, where N is the I3C bus number,
++matching the ``mctpi3cN`` convention of the controller-side driver. The
++underlying target device is also reachable as ``parentdev N-target`` in
++``ip -d link show``. The interface has one physical
++upstream peer, the external I3C controller, and no link-layer address.
++All outgoing MCTP packets go to that controller, including packets whose
++destination EID is behind a bridge. No local MCTP neighbour entry is needed.
++
++This implementation uses the vendor kernel's I3C target API. Currently the
++AST2700 HCI driver implements the required atomic device-info operation.
++It does not change the I3C bus role or implement controller role handoff.
++
++Configuration
++-------------
++
++Enable ``CONFIG_MCTP``, ``CONFIG_I3C``, the AST2700 HCI driver, and
++``CONFIG_MCTP_TRANSPORT_I3C_TARGET``. The latter may also be a module,
++``mctp-i3c-target.ko``. It is enabled in ``aspeed_g7_defconfig``; an existing
++Yocto configuration may need an additional kernel config fragment.
++
++Select target mode and the network transport in the controller node::
++
++    &i3c4 {
++        initial-role = "target";
++        pid = <0x000007ec 0x06000000>;
++        dcr = /bits/ 8 <0xcc>;
++        mctp-controller;
++        status = "okay";
++    };
++
++The PID must be unique on the bus. The AST2700 DC-SCM base DTS contains
++this configuration. An overlay or derived DTS which removes
++``initial-role`` changes this controller back to primary mode and must
++not be used to test the target transport.
++
++``CONFIG_I3C_TARGET_MCTP`` may remain enabled. Its character-device driver
++declines target nodes with ``mctp-controller``, reserving them for this
++network driver irrespective of module load order. Without the property,
++the existing character-device behaviour is retained. With the property
++but without the new network driver, neither target MCTP interface binds.
++
++The external controller must assign a dynamic address and enable IBI
++before the target can transmit. This driver neither initiates DAA nor
++enables its own IBI. Target DCR is 0xcc; the IBI contains MDB 0xae, without
++the AST2600-specific extra MDB PEC workaround. Data packets have a software
++PEC covering the target address, direction bit, and MCTP packet bytes.
++
++Example setup with the ``mctp`` utility, using local EID 8 and controller
++EID 9 (substitute the actual interface name and assigned EIDs)::
++
++    mctp link show
++    mctp link set mctpi3ct0 up
++    mctp address add 8 dev mctpi3ct0
++    mctp route add 9 via mctpi3ct0
++
++Configure the corresponding route and neighbour on the external
++controller. A Linux controller running ``mctp-i3c`` uses the target's
++six-byte PID as its neighbour address. EID assignment and MCTP control
++commands remain the responsibility of userspace; the driver does not
++implement an MCTP control responder.
++
++Limits and error handling
++-------------------------
++
++The transmit MTU is fixed at 68 bytes: 64 bytes of MCTP payload plus its
++four-byte transport header. The core fragments larger messages. The
++additional PEC byte is not part of the MTU. Incoming packet lengths are
++bounded by the hardware receive buffer and current MWL. Probe requires
++MRL and MWL to support at least 69 bytes; transmit rechecks the current
++MRL on each packet.
++
++TX is serialized through a worker and uses the target pending-read API.
++It prepares data, sends an IBI, then waits for the controller's private
++read. IBI and pending-read waits are each bounded by one second. Missing
++DA, disabled IBI, inadequate MRL, and transport errors drop the packet and
++update network statistics. AF_MCTP send success means the packet was
++queued; it does not guarantee delivery to the remote endpoint.
++
++There is no transport retransmission queue in this first implementation.
++An IBI rejection or interrupted read is reported as a failed transfer;
++the application must retry its request as appropriate. Dynamic addresses
++are read from hardware for each RX/TX. An address change while a packet
++is already pending can invalidate its PEC; quiesce traffic during bus
++reconfiguration and retry requests afterwards. Polling-only operation,
++automatic role switching, and the AST2600 controller MDB workaround are
++not implemented.
++
++Validation on hardware
++----------------------
++
++* Verify the active DT still selects target mode, the I3C target device
++  binds to ``mctp-i3c-target``, and ``mctp link show`` lists its interface.
++* Have the external controller assign DA and enable IBI. Exchange MCTP
++  control or PLDM requests and responses with an AF_MCTP application.
++  Confirm the target sends MDB 0xae followed by a separate private read.
++* Exchange messages larger than 64 bytes to exercise core fragmentation
++  and reassembly. Check PEC in both directions with a bus trace.
++* Inject corrupt PEC, short packets, and oversized writes; verify drops
++  and statistics without memory corruption.
++* Disable IBI, reject an IBI, omit a private read, and terminate a read
++  early. Check that TX recovers for a subsequent valid transaction and
++  does not report failed transfers as successes.
++* Exercise RSTDAA and address reassignment, then resume traffic. Test
++  interface down/up and driver unbind/rebind with an outstanding TX.
++* Exercise both PIO and DMA paths on the relevant AST2700 revision.
++
++Compilation does not validate hardware timing, PEC register semantics,
++CCC handling, or DMA abort behaviour. Those checks require a board and
++the external controller firmware.
+diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
+index e1e0deb855d3..a7c867718e67 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/hci.h
++++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
+@@ -54,6 +54,8 @@ struct i3c_hci {
+ 	spinlock_t lock;
+ 	bool irq_inactive;
+ 	struct mutex control_mutex;
++	struct mutex target_xfer_lock;
++	int irq;
+ 	atomic_t next_cmd_tid;
+ 	u32 caps;
+ 	unsigned int quirks;
+@@ -71,6 +73,8 @@ struct i3c_hci {
+ 	void *vendor_data;
+ 	struct completion ibi_comp;
+ 	struct completion pending_r_comp;
++	int ibi_status;
++	int pending_r_status;
+ 	struct work_struct halt_rst_work;
+ 
+ 	/* Used for handling private write */
+diff --git a/include/linux/i3c/device.h b/include/linux/i3c/device.h
+index ff009143938a..0a60e386616d 100644
+--- a/include/linux/i3c/device.h
++++ b/include/linux/i3c/device.h
+@@ -410,10 +410,15 @@ int i3c_device_dbgopcode_rd_ccc(struct i3c_device *dev, struct i3c_device_info *
+ 				u8 *data, u8 len);
+ 
+ struct i3c_target_read_setup {
++	/* Runs in atomic context; must not register/unregister itself. */
+ 	void (*handler)(struct i3c_device *dev, const u8 *data, size_t len);
+ };
+ 
+ int i3c_target_read_register(struct i3c_device *dev, const struct i3c_target_read_setup *setup);
++void i3c_target_read_unregister(struct i3c_device *dev);
++void i3c_target_read_received(struct i3c_device *dev, const u8 *data, size_t len);
++/* Atomic snapshot of target address and transfer limits, without bus locks. */
++int i3c_target_get_info(struct i3c_device *dev, struct i3c_device_info *info);
+ 
+ int i3c_device_control_pec(struct i3c_device *dev, bool pec);
+ 
+diff --git a/include/linux/i3c/master.h b/include/linux/i3c/master.h
+index 2949450cabde..15b190e1cf03 100644
+--- a/include/linux/i3c/master.h
++++ b/include/linux/i3c/master.h
+@@ -197,10 +197,12 @@ struct i3c_dev_boardinfo {
+ 
+ /**
+  * struct i3c_target_info - target information attached to a specific device
+- * @read handler: handler specified at i3c_target_read_register() call time.
++ * @lock: serializes receive callbacks and their registration/removal
++ * @read_handler: atomic handler specified at i3c_target_read_register() call time
+  */
+ 
+ struct i3c_target_info {
++	spinlock_t lock;
+ 	void (*read_handler)(struct i3c_device *dev, const u8 *data, size_t len);
+ };
+ 
+diff --git a/include/linux/i3c/target.h b/include/linux/i3c/target.h
+index 8c86a65315a0..e970eb90e2b9 100644
+--- a/include/linux/i3c/target.h
++++ b/include/linux/i3c/target.h
+@@ -23,6 +23,8 @@ struct i3c_target_ops {
+ 	bool (*is_ibi_enabled)(struct i3c_dev_desc *dev);
+ 	u8 (*get_dyn_addr)(struct i3c_master_controller *master);
+ 	bool (*is_hj_enabled)(struct i3c_dev_desc *dev);
++	/* Must not sleep: also used by target receive callbacks. */
++	void (*get_info)(struct i3c_dev_desc *dev, struct i3c_device_info *info);
+ };
+ 
+ int i3c_target_register(struct i3c_master_controller *master, struct device *parent,
+diff --git a/drivers/i3c/master.c b/drivers/i3c/master.c
+index cd4d49c15dd6..9bbf3b8ba6bb 100644
+--- a/drivers/i3c/master.c
++++ b/drivers/i3c/master.c
+@@ -3720,7 +3720,7 @@ static void i3c_target_device_release(struct device *dev)
+ 	kfree(desc);
+ }
+ 
+-static void
++static int
+ i3c_target_register_new_i3c_dev(struct i3c_master_controller *master, struct i3c_device_info info)
+ {
+ 	struct i3c_dev_desc *desc;
+@@ -3728,12 +3728,12 @@ i3c_target_register_new_i3c_dev(struct i3c_master_controller *master, struct i3c
+ 
+ 	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
+ 	if (!desc)
+-		return;
++		return -ENOMEM;
+ 
+ 	desc->dev = kzalloc(sizeof(*desc->dev), GFP_KERNEL);
+ 	if (!desc->dev) {
+ 		kfree(desc);
+-		return;
++		return -ENOMEM;
+ 	}
+ 
+ 	desc->dev->bus = &master->bus;
+@@ -3744,23 +3744,36 @@ i3c_target_register_new_i3c_dev(struct i3c_master_controller *master, struct i3c
+ 	desc->dev->dev.release = i3c_target_device_release;
+ 	desc->info = info;
+ 	desc->common.master = master;
++	spin_lock_init(&desc->target_info.lock);
++	device_initialize(&desc->dev->dev);
+ 	dev_set_name(&desc->dev->dev, "%d-target", master->bus.id);
++	master->this = desc;
+ 
+-	ret = device_register(&desc->dev->dev);
++	/* The target driver may start I/O as soon as device_add() probes it. */
++	ret = i3c_target_bus_init(master);
+ 	if (ret)
+-		dev_err(&master->dev, "Failed to add I3C target device (err = %d)\n", ret);
++		goto err_put;
++	ret = device_add(&desc->dev->dev);
++	if (ret) {
++		i3c_target_bus_cleanup(master);
++		goto err_put;
++	}
++	return 0;
+ 
+-	master->this = desc;
++err_put:
++	put_device(&desc->dev->dev);
++	master->this = NULL;
++	return ret;
+ }
+ 
+ static void i3c_target_unregister_i3c_dev(struct i3c_master_controller *master)
+ {
+ 	struct i3c_dev_desc *i3cdev = master->this;
+ 
+-	if (device_is_registered(&i3cdev->dev->dev))
+-		device_unregister(&i3cdev->dev->dev);
+-	else
+-		put_device(&i3cdev->dev->dev);
++	device_del(&i3cdev->dev->dev);
++	i3c_target_bus_cleanup(master);
++	put_device(&i3cdev->dev->dev);
++	master->this = NULL;
+ }
+ 
+ static void i3c_target_read_device_info(struct device_node *np, struct i3c_device_info *info)
+@@ -3834,7 +3847,7 @@ int i3c_target_register(struct i3c_master_controller *master, struct device *par
+ 			const struct i3c_target_ops *ops)
+ {
+ 	struct i3c_bus *i3cbus = i3c_master_get_bus(master);
+-	struct i3c_device_info info;
++	struct i3c_device_info info = {};
+ 	int ret;
+ 
+ 	ret = i3c_target_check_ops(ops);
+@@ -3868,21 +3881,20 @@ int i3c_target_register(struct i3c_master_controller *master, struct device *par
+ 
+ 	ret = device_add(&master->dev);
+ 	if (ret)
+-		goto err_put_device;
++		goto err_destroy_wq;
+ 
+ 	i3c_target_read_device_info(master->dev.of_node, &info);
+ 
+-	i3c_target_register_new_i3c_dev(master, info);
+-
+-	ret = i3c_target_bus_init(master);
++	ret = i3c_target_register_new_i3c_dev(master, info);
+ 	if (ret)
+-		goto err_cleanup_bus;
++		goto err_del_device;
+ 
+ 	return 0;
+ 
+-err_cleanup_bus:
+-	i3c_target_bus_cleanup(master);
+-
++err_del_device:
++	device_del(&master->dev);
++err_destroy_wq:
++	destroy_workqueue(master->wq);
+ err_put_device:
+ 	put_device(&master->dev);
+ 
+@@ -3893,7 +3905,7 @@ EXPORT_SYMBOL_GPL(i3c_target_register);
+ int i3c_target_unregister(struct i3c_master_controller *master)
+ {
+ 	i3c_target_unregister_i3c_dev(master);
+-	i3c_target_bus_cleanup(master);
++	destroy_workqueue(master->wq);
+ 	device_unregister(&master->dev);
+ 
+ 	return 0;
+@@ -3902,12 +3914,57 @@ EXPORT_SYMBOL_GPL(i3c_target_unregister);
+ 
+ int i3c_target_read_register(struct i3c_device *dev, const struct i3c_target_read_setup *setup)
+ {
+-	dev->desc->target_info.read_handler = setup->handler;
++	struct i3c_target_info *target = &dev->desc->target_info;
++	unsigned long flags;
++	int ret = 0;
+ 
+-	return 0;
++	spin_lock_irqsave(&target->lock, flags);
++	if (target->read_handler)
++		ret = -EBUSY;
++	else
++		target->read_handler = setup->handler;
++	spin_unlock_irqrestore(&target->lock, flags);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(i3c_target_read_register);
+ 
++void i3c_target_read_unregister(struct i3c_device *dev)
++{
++	struct i3c_target_info *target = &dev->desc->target_info;
++	unsigned long flags;
++
++	/* Also waits for an in-flight receive callback to finish. */
++	spin_lock_irqsave(&target->lock, flags);
++	target->read_handler = NULL;
++	spin_unlock_irqrestore(&target->lock, flags);
++}
++EXPORT_SYMBOL_GPL(i3c_target_read_unregister);
++
++void i3c_target_read_received(struct i3c_device *dev, const u8 *data, size_t len)
++{
++	struct i3c_target_info *target = &dev->desc->target_info;
++	unsigned long flags;
++
++	spin_lock_irqsave(&target->lock, flags);
++	if (target->read_handler)
++		target->read_handler(dev, data, len);
++	spin_unlock_irqrestore(&target->lock, flags);
++}
++EXPORT_SYMBOL_GPL(i3c_target_read_received);
++
++int i3c_target_get_info(struct i3c_device *dev, struct i3c_device_info *info)
++{
++	struct i3c_master_controller *master = i3c_dev_get_master(dev->desc);
++
++	if (!master->target || !master->target_ops->get_info)
++		return -EOPNOTSUPP;
++	*info = (struct i3c_device_info) {};
++	master->target_ops->get_info(dev->desc, info);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(i3c_target_get_info);
++
+ int i3c_register(struct i3c_master_controller *master,
+ 		 struct device *parent,
+ 		 const struct i3c_master_controller_ops *master_ops,
+diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
+index 99cce553ad19..a1eadd9a5796 100644
+--- a/drivers/i3c/master/dw-i3c-master.c
++++ b/drivers/i3c/master/dw-i3c-master.c
+@@ -2416,8 +2416,8 @@ static void dw_i3c_target_handle_response_ready(struct dw_i3c_master *master)
+ 
+ 		dw_i3c_master_read_rx_fifo(master, master->target.rx.buf, nbytes);
+ 
+-		if (tid == TID_TARGET_MASTER_WR_DATA && desc->target_info.read_handler)
+-			desc->target_info.read_handler(desc->dev, master->target.rx.buf, nbytes);
++		if (tid == TID_TARGET_MASTER_WR_DATA)
++			i3c_target_read_received(desc->dev, master->target.rx.buf, nbytes);
+ 		else if (tid == TID_TARGET_RD_DATA)
+ 			complete(&master->target.rdata_comp);
+ 	}
+diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
+index b448497a92f5..849e5ed30c44 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/core.c
++++ b/drivers/i3c/master/mipi-i3c-hci/core.c
+@@ -1027,6 +1027,9 @@ static int ast2700_i3c_target_bus_init(struct i3c_master_controller *m)
+ 	}
+ 	ast_inhouse_write(ASPEED_I3C_SLV_CHAR_CTRL, reg);
+ 	reg = ast_inhouse_read(ASPEED_I3C_SLV_CAP_CTRL);
++	/* The MCTP network transport appends and verifies packet PEC itself. */
++	if (of_property_read_bool(m->dev.of_node, "mctp-controller"))
++		reg &= ~ASPEED_I3C_SLV_CAP_CTRL_PEC_EN;
+ 	/* Make slave will sned the ibi when bus idle */
+ 	ast_inhouse_write(ASPEED_I3C_SLV_CAP_CTRL,
+ 			  reg | ASPEED_I3C_SLV_CAP_CTRL_IBI_WAIT |
+@@ -1049,13 +1052,14 @@ static int ast2700_i3c_target_bus_init(struct i3c_master_controller *m)
+ 
+ 	init_completion(&hci->ibi_comp);
+ 	init_completion(&hci->pending_r_comp);
++	mutex_init(&hci->target_xfer_lock);
+ 	ret = hci->io->init(hci);
+ 	if (ret)
+ 		return ret;
+ 
+ 	/* Enable internal error interrupt to detect the i3c halt caused by the hardware error */
+-	reg_write(INTR_SIGNAL_ENABLE, INTR_HC_INTERNAL_ERR);
+ 	INIT_WORK(&hci->halt_rst_work, i3c_hci_halt_rst_work);
++	reg_write(INTR_SIGNAL_ENABLE, INTR_HC_INTERNAL_ERR);
+ 
+ 	reg_set(HC_CONTROL, HC_CONTROL_BUS_ENABLE);
+ 	dev_dbg(&hci->master.dev, "HC_CONTROL = %#x", reg_read(HC_CONTROL));
+@@ -1068,8 +1072,13 @@ static void ast2700_i3c_target_bus_cleanup(struct i3c_master_controller *m)
+ 	struct i3c_hci *hci = to_i3c_hci(m);
+ 
+ 	reg_clear(HC_CONTROL, HC_CONTROL_BUS_ENABLE);
++	reg_write(INTR_SIGNAL_ENABLE, 0);
++	disable_irq(hci->irq);
++	cancel_work_sync(&hci->halt_rst_work);
++	reg_write(INTR_SIGNAL_ENABLE, 0);
+ 	hci->io->cleanup(hci);
+ 	kfree(hci->target_rx.buf);
++	enable_irq(hci->irq);
+ }
+ 
+ static struct hci_xfer *
+@@ -1085,13 +1094,20 @@ ast2700_i3c_target_priv_xfers(struct i3c_dev_desc *dev,
+ 
+ 	dev_dbg(&hci->master.dev, "nxfers = %d", nxfers);
+ 
++	if (nxfers < 1)
++		return ERR_PTR(-EINVAL);
+ 	xfer = hci_alloc_xfer(nxfers);
+ 	if (!xfer)
+-		return xfer;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	size_limit = 1U << (16 + FIELD_GET(HC_CAP_MAX_DATA_LENGTH, hci->caps));
+ 
+ 	for (i = 0; i < nxfers; i++) {
++		if (i3c_xfers[i].rnw || !i3c_xfers[i].len ||
++		    i3c_xfers[i].len > size_limit) {
++			hci_free_xfer(xfer, nxfers);
++			return ERR_PTR(-EINVAL);
++		}
+ 		if (!i3c_xfers[i].rnw) {
+ 			xfer[i].data_len = i3c_xfers[i].len;
+ 			xfer[i].rnw = i3c_xfers[i].rnw;
+@@ -1101,6 +1117,8 @@ ast2700_i3c_target_priv_xfers(struct i3c_dev_desc *dev,
+ 				hci->cmd->prep_ibi_xfer(hci, dev, &xfer[i]);
+ 				xfer[i].data += 1;
+ 				xfer[i].data_len -= 1;
++				if (!xfer[i].data_len)
++					xfer[i].data = NULL;
+ 			} else {
+ 				hci->cmd->prep_i3c_xfer(hci, dev, &xfer[i]);
+ 			}
+@@ -1113,7 +1131,7 @@ ast2700_i3c_target_priv_xfers(struct i3c_dev_desc *dev,
+ 	if (ret) {
+ 		dev_err(&hci->master.dev, "queue xfer error %d", ret);
+ 		hci_free_xfer(xfer, nxfers);
+-		return NULL;
++		return ERR_PTR(ret);
+ 	}
+ 
+ 	return xfer;
+@@ -1130,8 +1148,8 @@ static int ast2700_i3c_target_put_rdata(struct i3c_dev_desc *dev,
+ 	reinit_completion(&hci->pending_r_comp);
+ 	read_xfer = ast2700_i3c_target_priv_xfers(dev, i3c_xfers, nxfers,
+ 						  TID_TARGET_RD_DATA);
+-	if (!read_xfer)
+-		return -EINVAL;
++	if (IS_ERR(read_xfer))
++		return PTR_ERR(read_xfer);
+ 
+ 	if (!wait_for_completion_interruptible_timeout(&hci->pending_r_comp,
+ 						       msecs_to_jiffies(1000))) {
+@@ -1158,6 +1176,7 @@ static int ast2700_i3c_target_generate_ibi(struct i3c_dev_desc *dev, const u8 *d
+ 		return -EPERM;
+ 
+ 	reinit_completion(&hci->ibi_comp);
++	hci->ibi_status = -ETIMEDOUT;
+ 	reg = ast_inhouse_read(ASPEED_I3C_SLV_CAP_CTRL);
+ 	ast_inhouse_write(ASPEED_I3C_SLV_CAP_CTRL,
+ 			  reg | ASPEED_I3C_SLV_CAP_CTRL_IBI_REQ);
+@@ -1165,10 +1184,10 @@ static int ast2700_i3c_target_generate_ibi(struct i3c_dev_desc *dev, const u8 *d
+ 	if (!wait_for_completion_timeout(&hci->ibi_comp,
+ 					 msecs_to_jiffies(1000))) {
+ 		dev_warn(&hci->master.dev, "timeout waiting for completion\n");
+-		return -EINVAL;
++		return -ETIMEDOUT;
+ 	}
+ 
+-	return 0;
++	return READ_ONCE(hci->ibi_status);
+ }
+ 
+ static int ast2700_i3c_target_hj_req(struct i3c_dev_desc *dev)
+@@ -1209,6 +1228,9 @@ ast2700_i3c_target_pending_read_notify(struct i3c_dev_desc *dev,
+ 	struct i3c_hci *hci = to_i3c_hci(m);
+ 	struct hci_xfer *ibi_xfer, *pending_read_xfer;
+ 	u32 reg;
++	int ret;
++
++	guard(mutex)(&hci->target_xfer_lock);
+ 
+ 	if (!pending_read || !ibi_notify)
+ 		return -EINVAL;
+@@ -1217,25 +1239,43 @@ ast2700_i3c_target_pending_read_notify(struct i3c_dev_desc *dev,
+ 	if ((reg & ASPEED_I3C_SLV_STS1_IBI_EN) == 0)
+ 		return -EPERM;
+ 	reinit_completion(&hci->pending_r_comp);
++	hci->pending_r_status = -ETIMEDOUT;
+ 	ibi_xfer = ast2700_i3c_target_priv_xfers(dev, ibi_notify, 1,
+ 						 TID_TARGET_IBI);
+-	if (!ibi_xfer)
+-		return -EINVAL;
++	if (IS_ERR(ibi_xfer))
++		return PTR_ERR(ibi_xfer);
+ 	pending_read_xfer = ast2700_i3c_target_priv_xfers(dev, pending_read, 1,
+ 							  TID_TARGET_RD_DATA);
+-	if (!pending_read_xfer)
+-		return -EINVAL;
+-	ast2700_i3c_target_generate_ibi(dev, NULL, 0);
+-	hci_free_xfer(ibi_xfer, 1);
++	if (IS_ERR(pending_read_xfer)) {
++		ret = PTR_ERR(pending_read_xfer);
++		goto out_ibi;
++	}
++	ret = ast2700_i3c_target_generate_ibi(dev, NULL, 0);
++	if (ret)
++		goto out_read;
+ 	if (!wait_for_completion_timeout(&hci->pending_r_comp,
+ 					 msecs_to_jiffies(1000))) {
+ 		dev_warn(&hci->master.dev, "timeout waiting for master read\n");
+-		mipi_i3c_hci_pio_reset(hci);
+-		return -EINVAL;
++		ret = -ETIMEDOUT;
++	} else {
++		ret = READ_ONCE(hci->pending_r_status);
+ 	}
++
++out_read:
++	/* Detach queued transfers before their descriptors/buffers are freed. */
++	if (ret)
++		hci->io->dequeue_xfer(hci, pending_read_xfer, 1);
++	synchronize_irq(hci->irq);
+ 	hci_free_xfer(pending_read_xfer, 1);
++out_ibi:
++	if (ret) {
++		hci->io->dequeue_xfer(hci, ibi_xfer, 1);
++		mipi_i3c_hci_pio_reset(hci);
++	}
++	synchronize_irq(hci->irq);
++	hci_free_xfer(ibi_xfer, 1);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static bool ast2700_i3c_target_is_ibi_enabled(struct i3c_dev_desc *dev)
+@@ -1258,6 +1298,24 @@ static bool ast2700_i3c_target_is_hj_enabled(struct i3c_dev_desc *dev)
+ 	return !!(reg & ASPEED_I3C_SLV_STS1_HJ_EN);
+ }
+ 
++static void ast2700_i3c_target_get_info(struct i3c_dev_desc *dev,
++				       struct i3c_device_info *info)
++{
++	struct i3c_hci *hci = to_i3c_hci(i3c_dev_get_master(dev));
++	u32 reg;
++
++	info->pid = dev->info.pid;
++	info->dcr = dev->info.dcr;
++	info->bcr = dev->info.bcr;
++	reg = ast_inhouse_read(ASPEED_I3C_STS);
++	if (reg & ASPEED_I3C_STS_SLV_DYNAMIC_ADDRESS_VALID)
++		info->dyn_addr = FIELD_GET(ASPEED_I3C_STS_SLV_DYNAMIC_ADDRESS, reg);
++	reg = ast_inhouse_read(ASPEED_I3C_SLV_STS2);
++	info->max_read_len = FIELD_GET(ASPEED_I3C_SLV_STS2_MRL, reg);
++	info->max_write_len = min_t(u16, hci->target_rx.max_len,
++				   FIELD_GET(ASPEED_I3C_SLV_STS2_MWL, reg));
++}
++
+ static const struct i3c_target_ops ast2700_i3c_target_ops = {
+ 	.bus_init = ast2700_i3c_target_bus_init,
+ 	.bus_cleanup = ast2700_i3c_target_bus_cleanup,
+@@ -1267,6 +1325,7 @@ static const struct i3c_target_ops ast2700_i3c_target_ops = {
+ 	.pending_read_notify = ast2700_i3c_target_pending_read_notify,
+ 	.is_ibi_enabled = ast2700_i3c_target_is_ibi_enabled,
+ 	.is_hj_enabled = ast2700_i3c_target_is_hj_enabled,
++	.get_info = ast2700_i3c_target_get_info,
+ };
+ 
+ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
+@@ -1619,6 +1678,9 @@ static int i3c_hci_probe(struct platform_device *pdev)
+ 	WRITE_ONCE(hci->irq_inactive, true);
+ 
+ 	irq = platform_get_irq(pdev, 0);
++	if (irq < 0)
++		return irq;
++	hci->irq = irq;
+ 	ret = devm_request_irq(&pdev->dev, irq, i3c_aspeed_irq_handler,
+ 			       0, NULL, hci);
+ 	if (ret)
+diff --git a/drivers/i3c/master/mipi-i3c-hci/dma.c b/drivers/i3c/master/mipi-i3c-hci/dma.c
+index b814eedbedc7..570c1daea229 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/dma.c
++++ b/drivers/i3c/master/mipi-i3c-hci/dma.c
+@@ -635,14 +635,18 @@ static void hci_dma_xfer_done(struct i3c_hci *hci, struct hci_rh_data *rh)
+ 					TARGET_RESP_CCC_HDR(resp),
+ 					TARGET_RESP_DATA_LENGTH(resp));
+ 				/* ibi or master read or HDR read */
+-				if (!TARGET_RESP_STATUS(resp) &&
+-				    !TARGET_RESP_CCC_INDICATE(resp)) {
++				if (!TARGET_RESP_CCC_INDICATE(resp)) {
++					int status = TARGET_RESP_STATUS(resp) ? -EIO : 0;
++
+ 					if (TARGET_RESP_TID(resp) ==
+-					    TID_TARGET_IBI)
++					    TID_TARGET_IBI) {
++						WRITE_ONCE(hci->ibi_status, status);
+ 						complete(&hci->ibi_comp);
+-					else if (TARGET_RESP_TID(resp) ==
+-						 TID_TARGET_RD_DATA)
++					} else if (TARGET_RESP_TID(resp) ==
++						 TID_TARGET_RD_DATA) {
++						WRITE_ONCE(hci->pending_r_status, status);
+ 						complete(&hci->pending_r_comp);
++					}
+ 				}
+ 
+ 				if (TARGET_RESP_STATUS(resp) >=
+@@ -822,6 +826,9 @@ static void hci_dma_process_ibi(struct i3c_hci *hci, struct hci_rh_data *rh)
+ 		}
+ 		deq_ptr = last_ptr + 1;
+ 		deq_ptr %= rh->ibi_status_entries;
++		if (hci->master.target &&
++		    (ibi_size > hci->target_rx.max_len || TARGET_RESP_STATUS(ibi_status)))
++			goto done;
+ 		if (!hci->master.target) {
+ 			if (ibi_status_error) {
+ 				dev_err(&hci->master.dev, "IBI error from %#x\n",
+@@ -921,11 +928,9 @@ static void hci_dma_process_ibi(struct i3c_hci *hci, struct hci_rh_data *rh)
+ 		}
+ 		if (hci->master.target) {
+ 			/* Bypass the priv_xfer data to target layer */
+-			if (dev->target_info.read_handler &&
+-			    !TARGET_RESP_CCC_INDICATE(ibi_status))
+-				dev->target_info.read_handler(dev->dev,
+-							      hci->target_rx.buf,
+-							      ibi_size);
++			if (!TARGET_RESP_CCC_INDICATE(ibi_status))
++				i3c_target_read_received(dev->dev, hci->target_rx.buf,
++							 ibi_size);
+ 			if (TARGET_RESP_CCC_INDICATE(ibi_status))
+ 				aspeed_i3c_ccc_handler(hci, TARGET_RESP_CCC_HDR(ibi_status));
+ 		} else {
+diff --git a/drivers/i3c/master/mipi-i3c-hci/pio.c b/drivers/i3c/master/mipi-i3c-hci/pio.c
+index 657f5708f18d..85321eadcc07 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/pio.c
++++ b/drivers/i3c/master/mipi-i3c-hci/pio.c
+@@ -304,6 +304,15 @@ static void ast2700_target_read_rx_fifo(struct i3c_hci *hci, unsigned int count)
+ {
+ 	u32 *p = hci->target_rx.buf;
+ 
++	if (count > hci->target_rx.max_len) {
++		/* Drain malformed transfers without overflowing the receive buffer. */
++		unsigned int words = DIV_ROUND_UP(count, 4);
++
++		while (words--)
++			pio_reg_read(XFER_DATA_PORT);
++		return;
++	}
++
+ 	if (count >= 4) {
+ 		unsigned int nr_words = count / 4;
+ 
+@@ -588,6 +597,30 @@ static bool hci_pio_process_resp(struct i3c_hci *hci, struct hci_pio_data *pio)
+ 		struct i3c_dev_desc *desc = hci->master.this;
+ 		u32 resp = pio_reg_read(RESPONSE_QUEUE_PORT);
+ 		size_t nbytes = TARGET_RESP_DATA_LENGTH(resp);
++		bool valid_rx = !TARGET_RESP_STATUS(resp) &&
++				nbytes <= hci->target_rx.max_len;
++		unsigned int tid = aspeed_get_i3c_revision_id(hci) ?
++			TARGET_RESP_TID(resp) : TARGET_RESP_TID_A0(resp);
++		int status = TARGET_RESP_STATUS(resp) ? -EIO : 0;
++
++		if (nbytes > hci->target_rx.max_len && TARGET_RESP_XFER_TYPE(resp)) {
++			ast2700_target_read_rx_fifo(hci, nbytes);
++			return false;
++		}
++
++		/* Wake senders on errors as well as successful completions. */
++		if (!TARGET_RESP_XFER_TYPE(resp) &&
++		    (aspeed_get_i3c_revision_id(hci) ?
++		     !TARGET_RESP_CCC_INDICATE(resp) :
++		     (!TARGET_RESP_CCC_HDR(resp) || TARGET_RESP_CCC_HDR(resp) & 0x80))) {
++			if (tid == TID_TARGET_IBI) {
++				WRITE_ONCE(hci->ibi_status, status);
++				complete(&hci->ibi_comp);
++			} else if (tid == TID_TARGET_RD_DATA) {
++				WRITE_ONCE(hci->pending_r_status, status);
++				complete(&hci->pending_r_comp);
++			}
++		}
+ 
+ 		if (!aspeed_get_i3c_revision_id(hci)) {
+ 			dev_dbg(&hci->master.dev, a0_debug_s,
+@@ -600,25 +633,13 @@ static bool hci_pio_process_resp(struct i3c_hci *hci, struct hci_pio_data *pio)
+ 				ast2700_target_read_rx_fifo(hci, nbytes);
+ 				dev_dbg(&hci->master.dev, "got: %*ph",
+ 					(u32)nbytes, hci->target_rx.buf);
+-				if (!TARGET_RESP_CCC_HDR(resp)) {
++				if (!TARGET_RESP_CCC_HDR(resp) && valid_rx) {
+ 					/* Bypass the priv_xfer data to target layer */
+-					if (desc->target_info.read_handler)
+-						desc->target_info.read_handler(desc->dev,
+-									       hci->target_rx.buf,
+-									       nbytes);
++					i3c_target_read_received(desc->dev,
++							 hci->target_rx.buf, nbytes);
+ 				} else {
+ 					aspeed_i3c_ccc_handler(hci, TARGET_RESP_CCC_HDR(resp));
+ 				}
+-			} else {
+-				/* ibi or master read or HDR read */
+-				if (!TARGET_RESP_STATUS(resp) &&
+-				    (!TARGET_RESP_CCC_HDR(resp) ||
+-				     TARGET_RESP_CCC_HDR(resp) & 0x80)) {
+-					if (TARGET_RESP_TID_A0(resp) == TID_TARGET_IBI)
+-						complete(&hci->ibi_comp);
+-					else if (TARGET_RESP_TID_A0(resp) == TID_TARGET_RD_DATA)
+-						complete(&hci->pending_r_comp);
+-				}
+ 			}
+ 		} else {
+ 			dev_dbg(&hci->master.dev, a1_debug_s,
+@@ -643,17 +664,9 @@ static bool hci_pio_process_resp(struct i3c_hci *hci, struct hci_pio_data *pio)
+ 				dev_dbg(&hci->master.dev, "got: %*ph",
+ 					(u32)nbytes, hci->target_rx.buf);
+ 				/* Bypass the priv_xfer data to target layer */
+-				if (desc->target_info.read_handler)
+-					desc->target_info.read_handler(desc->dev,
+-								       hci->target_rx.buf,
+-								       nbytes);
+-			} else {
+-				/* TODO: Pass the HDR command to user space */
+-				if (TARGET_RESP_TID(resp) == TID_TARGET_IBI)
+-					complete(&hci->ibi_comp);
+-				else if (TARGET_RESP_TID(resp) ==
+-					 TID_TARGET_RD_DATA)
+-					complete(&hci->pending_r_comp);
++				if (valid_rx)
++					i3c_target_read_received(desc->dev,
++								 hci->target_rx.buf, nbytes);
+ 			}
+ 		}
+ 		if (TARGET_RESP_STATUS(resp) >= TARGET_RESP_ERR_CRC &&
+@@ -736,6 +749,10 @@ static void hci_pio_queue_resp(struct i3c_hci *hci, struct hci_pio_data *pio)
+ 	struct hci_xfer *xfer = pio->curr_xfer;
+ 	struct hci_xfer *prev_queue_tail;
+ 
++	/* Target responses use the target TIDs and their own completions. */
++	if (hci->master.target)
++		return;
++
+ 	if (!(xfer->cmd_desc[0] & CMD_0_ROC) &&
+ 	    ((xfer->cmd_desc[0] & CMD_0_ATTR) != CMD_0_ATTR_M))
+ 		return;
+diff --git a/drivers/i3c/mctp/i3c-target-mctp.c b/drivers/i3c/mctp/i3c-target-mctp.c
+index c75b1c12b12a..cd3baebd2266 100644
+--- a/drivers/i3c/mctp/i3c-target-mctp.c
++++ b/drivers/i3c/mctp/i3c-target-mctp.c
+@@ -10,6 +10,7 @@
+ #include <linux/crc8.h>
+ 
+ #include <linux/i3c/device.h>
++#include <linux/of.h>
+ 
+ #define I3C_CRC8_POLYNOMIAL	0x07
+ DECLARE_CRC8_TABLE(i3c_crc8_table);
+@@ -375,6 +376,10 @@ static int i3c_target_mctp_probe(struct i3c_device *i3cdev)
+ 	struct device *dev;
+ 	int ret;
+ 
++	/* The network transport owns targets explicitly selected by DT. */
++	if (of_property_read_bool(parent->parent->of_node, "mctp-controller"))
++		return -ENODEV;
++
+ 	priv = devm_kzalloc(parent, sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+@@ -439,6 +444,7 @@ static void i3c_target_mctp_remove(struct i3c_device *i3cdev)
+ {
+ 	struct i3c_target_mctp *priv = dev_get_drvdata(i3cdev_to_dev(i3cdev));
+ 
++	i3c_target_read_unregister(i3cdev);
+ 	device_destroy(i3c_target_mctp_class,
+ 		       MKDEV(MAJOR(i3c_target_mctp_devt), priv->id));
+ 	cdev_del(&priv->cdev);
+diff --git a/drivers/net/mctp/mctp-i3c-target.c b/drivers/net/mctp/mctp-i3c-target.c
+new file mode 100644
+index 000000000000..a4102d235421
+--- /dev/null
++++ b/drivers/net/mctp/mctp-i3c-target.c
+@@ -0,0 +1,295 @@
++// SPDX-License-Identifier: GPL-2.0
++/* MCTP over I3C, local target side (DMTF DSP0233). */
++
++#include <linux/crc8.h>
++#include <linux/i3c/device.h>
++#include <linux/i3c/master.h>
++#include <linux/module.h>
++#include <linux/netdevice.h>
++#include <linux/of.h>
++#include <linux/slab.h>
++#include <linux/workqueue.h>
++#include <net/mctp.h>
++#include <net/mctpdevice.h>
++#include <uapi/linux/if_arp.h>
++
++/* Baseline payload plus the four-byte MCTP transport header. */
++#define MCTP_I3C_TARGET_MTU	68
++#define MCTP_I3C_TARGET_MDB	0xae
++
++DECLARE_CRC8_TABLE(mctp_i3c_target_crc);
++
++struct mctp_i3c_target {
++	struct i3c_device *i3c;
++	struct net_device *ndev;
++	struct work_struct tx_work;
++	struct sk_buff_head tx_queue;
++	bool stopping;
++	/* Transfers may be DMA mapped, so do not put their buffers on stack. */
++	u8 *tx_buf;
++	/* MDB, optionally followed by its PEC byte. */
++	u8 *ibi_buf;
++	u8 ibi_len;
++};
++
++static u8 mctp_i3c_target_pec(u8 addr, const u8 *data, size_t len)
++{
++	u8 pec = crc8(mctp_i3c_target_crc, &addr, 1, 0);
++
++	return crc8(mctp_i3c_target_crc, data, len, pec);
++}
++
++static void mctp_i3c_target_rx(struct i3c_device *i3c, const u8 *data,
++			       size_t len)
++{
++	struct mctp_i3c_target *priv = i3cdev_get_drvdata(i3c);
++	struct net_device *ndev = priv->ndev;
++	struct i3c_device_info info;
++	struct sk_buff *skb;
++
++	if (READ_ONCE(priv->stopping))
++		return;
++	if (i3c_target_get_info(i3c, &info) || !info.dyn_addr)
++		goto drop;
++	if (len < sizeof(struct mctp_hdr) + 1 || len > info.max_write_len) {
++		ndev->stats.rx_length_errors++;
++		goto drop;
++	}
++	if (mctp_i3c_target_pec(info.dyn_addr << 1, data, len - 1) !=
++	    data[len - 1]) {
++		ndev->stats.rx_crc_errors++;
++		goto drop;
++	}
++
++	skb = netdev_alloc_skb(ndev, len - 1);
++	if (!skb)
++		goto drop;
++	skb_put_data(skb, data, len - 1);
++	skb->protocol = htons(ETH_P_MCTP);
++	skb_reset_mac_header(skb);
++	skb_reset_network_header(skb);
++	/* The sole physical next hop is the upstream I3C controller. */
++	__mctp_cb(skb)->halen = 0;
++	if (netif_rx(skb) == NET_RX_SUCCESS) {
++		ndev->stats.rx_packets++;
++		ndev->stats.rx_bytes += len - 1;
++	} else {
++		ndev->stats.rx_dropped++;
++	}
++	return;
++drop:
++	ndev->stats.rx_dropped++;
++}
++
++static const struct i3c_target_read_setup mctp_i3c_target_rx_setup = {
++	.handler = mctp_i3c_target_rx,
++};
++
++static void mctp_i3c_target_tx_work(struct work_struct *work)
++{
++	struct mctp_i3c_target *priv = container_of(work, typeof(*priv), tx_work);
++	struct net_device *ndev = priv->ndev;
++	struct i3c_device_info info;
++	struct i3c_priv_xfer data = {}, ibi = {};
++	struct sk_buff *skb;
++	int ret;
++
++	skb = skb_dequeue(&priv->tx_queue);
++	if (!skb)
++		return;
++	ret = i3c_target_get_info(priv->i3c, &info);
++	if (ret || !info.dyn_addr || READ_ONCE(priv->stopping))
++		goto drop;
++	if (!i3c_device_is_ibi_enabled(priv->i3c))
++		goto drop;
++	if (skb->len + 1 > info.max_read_len)
++		goto drop;
++	if (skb_copy_bits(skb, 0, priv->tx_buf, skb->len))
++		goto drop;
++	priv->tx_buf[skb->len] = mctp_i3c_target_pec((info.dyn_addr << 1) | 1,
++						     priv->tx_buf, skb->len);
++	data.data.out = priv->tx_buf;
++	data.len = skb->len + 1;
++	/* Controllers such as AST1060 and AST2600 require PEC after the MDB. */
++	if (priv->ibi_len > 1)
++		priv->ibi_buf[1] = mctp_i3c_target_pec((info.dyn_addr << 1) | 1,
++						       priv->ibi_buf, 1);
++	ibi.data.out = priv->ibi_buf;
++	ibi.len = priv->ibi_len;
++	ret = i3c_device_pending_read_notify(priv->i3c, &data, &ibi);
++	if (ret) {
++		ndev->stats.tx_errors++;
++		goto drop;
++	}
++	ndev->stats.tx_packets++;
++	ndev->stats.tx_bytes += skb->len;
++	goto done;
++drop:
++	ndev->stats.tx_dropped++;
++done:
++	dev_kfree_skb(skb);
++	if (!READ_ONCE(priv->stopping))
++		netif_wake_queue(ndev);
++}
++
++static netdev_tx_t mctp_i3c_target_xmit(struct sk_buff *skb,
++					struct net_device *ndev)
++{
++	struct mctp_i3c_target *priv = netdev_priv(ndev);
++
++	if (skb->len < sizeof(struct mctp_hdr) || skb->len > ndev->mtu) {
++		ndev->stats.tx_dropped++;
++		dev_kfree_skb(skb);
++		return NETDEV_TX_OK;
++	}
++	netif_stop_queue(ndev);
++	skb_queue_tail(&priv->tx_queue, skb);
++	schedule_work(&priv->tx_work);
++	return NETDEV_TX_OK;
++}
++
++static int mctp_i3c_target_open(struct net_device *ndev)
++{
++	struct mctp_i3c_target *priv = netdev_priv(ndev);
++	int ret;
++
++	WRITE_ONCE(priv->stopping, false);
++	ret = i3c_target_read_register(priv->i3c, &mctp_i3c_target_rx_setup);
++	if (ret) {
++		WRITE_ONCE(priv->stopping, true);
++		return ret;
++	}
++	netif_start_queue(ndev);
++	return 0;
++}
++
++static int mctp_i3c_target_stop(struct net_device *ndev)
++{
++	struct mctp_i3c_target *priv = netdev_priv(ndev);
++
++	WRITE_ONCE(priv->stopping, true);
++	netif_stop_queue(ndev);
++	i3c_target_read_unregister(priv->i3c);
++	cancel_work_sync(&priv->tx_work);
++	netif_stop_queue(ndev);
++	skb_queue_purge(&priv->tx_queue);
++	return 0;
++}
++
++static const struct net_device_ops mctp_i3c_target_netdev_ops = {
++	.ndo_open = mctp_i3c_target_open,
++	.ndo_stop = mctp_i3c_target_stop,
++	.ndo_start_xmit = mctp_i3c_target_xmit,
++};
++
++static void mctp_i3c_target_setup(struct net_device *ndev)
++{
++	ndev->type = ARPHRD_MCTP;
++	ndev->flags = IFF_POINTOPOINT | IFF_NOARP;
++	ndev->mtu = MCTP_I3C_TARGET_MTU;
++	ndev->min_mtu = MCTP_I3C_TARGET_MTU;
++	ndev->max_mtu = MCTP_I3C_TARGET_MTU;
++	ndev->tx_queue_len = 100;
++	ndev->netdev_ops = &mctp_i3c_target_netdev_ops;
++	/* No synthetic MAC header or neighbour entry is required. */
++	ndev->addr_len = 0;
++	ndev->hard_header_len = 0;
++}
++
++static int mctp_i3c_target_probe(struct i3c_device *i3c)
++{
++	struct device *dev = i3cdev_to_dev(i3c);
++	struct mctp_i3c_target *priv;
++	struct i3c_device_info info;
++	struct net_device *ndev;
++	char namebuf[IFNAMSIZ];
++	int ret;
++
++	if (!of_property_read_bool(dev->parent->of_node, "mctp-controller"))
++		return -ENODEV;
++	ret = i3c_target_get_info(i3c, &info);
++	if (ret)
++		return dev_err_probe(dev, ret, "Target lacks atomic device info\n");
++	if (info.max_write_len < MCTP_I3C_TARGET_MTU + 1 ||
++	    info.max_read_len < MCTP_I3C_TARGET_MTU + 1)
++		return dev_err_probe(dev, -EINVAL, "Target transfer limits below 69 bytes\n");
++	/* Name after the I3C bus, matching the controller-side mctp-i3c. */
++	snprintf(namebuf, sizeof(namebuf), "mctpi3ct%d", i3c->bus->id);
++	ndev = alloc_netdev(sizeof(*priv), namebuf, NET_NAME_ENUM,
++			    mctp_i3c_target_setup);
++	if (!ndev)
++		return -ENOMEM;
++	SET_NETDEV_DEV(ndev, dev);
++	priv = netdev_priv(ndev);
++	/* PIO accesses complete words, DMA needs a separately allocated buffer. */
++	priv->tx_buf = kzalloc(ALIGN(MCTP_I3C_TARGET_MTU + 1, 4), GFP_KERNEL);
++	if (!priv->tx_buf) {
++		free_netdev(ndev);
++		return -ENOMEM;
++	}
++	/* PIO loads the PEC byte after the MDB as a complete word. */
++	priv->ibi_buf = kzalloc(2 * sizeof(u32), GFP_KERNEL);
++	if (!priv->ibi_buf) {
++		kfree(priv->tx_buf);
++		free_netdev(ndev);
++		return -ENOMEM;
++	}
++	priv->i3c = i3c;
++	priv->ndev = ndev;
++	priv->stopping = true;
++	priv->ibi_buf[0] = MCTP_I3C_TARGET_MDB;
++	priv->ibi_len = of_property_read_bool(dev->parent->of_node,
++					      "ibi-append-pec") ? 2 : 1;
++	INIT_WORK(&priv->tx_work, mctp_i3c_target_tx_work);
++	skb_queue_head_init(&priv->tx_queue);
++	i3cdev_set_drvdata(i3c, priv);
++	ret = mctp_register_netdev(ndev, NULL, MCTP_PHYS_BINDING_I3C);
++	if (ret) {
++		i3cdev_set_drvdata(i3c, NULL);
++		kfree(priv->ibi_buf);
++		kfree(priv->tx_buf);
++		free_netdev(ndev);
++	}
++	return ret;
++}
++
++static void mctp_i3c_target_remove(struct i3c_device *i3c)
++{
++	struct mctp_i3c_target *priv = i3cdev_get_drvdata(i3c);
++
++	mctp_unregister_netdev(priv->ndev);
++	kfree(priv->ibi_buf);
++	kfree(priv->tx_buf);
++	free_netdev(priv->ndev);
++	i3cdev_set_drvdata(i3c, NULL);
++}
++
++static const struct i3c_device_id mctp_i3c_target_ids[] = {
++	I3C_CLASS(0xcc, NULL),
++	{},
++};
++MODULE_DEVICE_TABLE(i3c, mctp_i3c_target_ids);
++
++static struct i3c_driver mctp_i3c_target_driver = {
++	.driver.name = "mctp-i3c-target",
++	.id_table = mctp_i3c_target_ids,
++	.probe = mctp_i3c_target_probe,
++	.remove = mctp_i3c_target_remove,
++	.target = true,
++};
++
++static int __init mctp_i3c_target_init(void)
++{
++	crc8_populate_msb(mctp_i3c_target_crc, 0x07);
++	return i3c_driver_register(&mctp_i3c_target_driver);
++}
++module_init(mctp_i3c_target_init);
++
++static void __exit mctp_i3c_target_exit(void)
++{
++	i3c_driver_unregister(&mctp_i3c_target_driver);
++}
++module_exit(mctp_i3c_target_exit);
++
++MODULE_DESCRIPTION("MCTP I3C target network transport");
++MODULE_LICENSE("GPL");
+diff --git a/arch/arm64/boot/dts/aspeed/ast2700-dcscm.dts b/arch/arm64/boot/dts/aspeed/ast2700-dcscm.dts
+index 4a603e517d96..b54155a1d865 100644
+--- a/arch/arm64/boot/dts/aspeed/ast2700-dcscm.dts
++++ b/arch/arm64/boot/dts/aspeed/ast2700-dcscm.dts
+@@ -145,6 +145,8 @@ &i3c4 {
+ 	initial-role = "target";
+ 	pid = <0x000007ec 0x06000000>;
+ 	dcr = /bits/ 8 <0xcc>;
++	mctp-controller;
++	ibi-append-pec;
+ 	status = "okay";
+ };
+ 
+diff --git a/arch/arm64/configs/aspeed_g7_defconfig b/arch/arm64/configs/aspeed_g7_defconfig
+index 2c4acf7a1460..9cf52270ad98 100644
+--- a/arch/arm64/configs/aspeed_g7_defconfig
++++ b/arch/arm64/configs/aspeed_g7_defconfig
+@@ -118,6 +118,7 @@ CONFIG_CAN_ASPEED=y
+ CONFIG_CAN_DEBUG_DEVICES=y
+ CONFIG_MCTP_TRANSPORT_I2C=y
+ CONFIG_MCTP_TRANSPORT_I3C=y
++CONFIG_MCTP_TRANSPORT_I3C_TARGET=y
+ CONFIG_MCTP_TRANSPORT_USB=y
+ CONFIG_MCTP_TRANSPORT_PCIE_VDM=y
+ CONFIG_USB_USBNET=y
+@@ -158,8 +159,8 @@ CONFIG_I2C_SLAVE=y
+ CONFIG_I2C_SLAVE_EEPROM=y
+ CONFIG_I3C=y
+ CONFIG_I3CDEV=y
+-CONFIG_I3C_MCTP=y
+-CONFIG_I3C_TARGET_MCTP=y
++# CONFIG_I3C_MCTP is not set
++# CONFIG_I3C_TARGET_MCTP is not set
+ CONFIG_DW_I3C_MASTER=y
+ CONFIG_AST2600_I3C_MASTER=y
+ CONFIG_MIPI_I3C_HCI=y
+diff --git a/drivers/net/mctp/Kconfig b/drivers/net/mctp/Kconfig
+index 1e149651316a..44339d38d442 100644
+--- a/drivers/net/mctp/Kconfig
++++ b/drivers/net/mctp/Kconfig
+@@ -47,6 +47,17 @@ config MCTP_TRANSPORT_I3C
+ 	  A MCTP protocol network device is created for each I3C bus
+ 	  having a "mctp-controller" devicetree property.
+ 
++config MCTP_TRANSPORT_I3C_TARGET
++	tristate "MCTP I3C target transport"
++	depends on I3C
++	select CRC8
++	help
++	  Provide an AF_MCTP network interface for a local I3C target with
++	  DCR 0xcc and the mctp-controller devicetree property. The target
++	  controller must implement the atomic get_info operation (AST2700).
++	  Each interface has one upstream controller and no hardware address.
++	  Uses the baseline 64-byte MCTP payload size, with software PEC.
++
+ config MCTP_TRANSPORT_USB
+ 	tristate "MCTP USB transport"
+ 	depends on USB
+diff --git a/drivers/net/mctp/Makefile b/drivers/net/mctp/Makefile
+index ded0c7b7e82e..ba3900d18364 100644
+--- a/drivers/net/mctp/Makefile
++++ b/drivers/net/mctp/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_MCTP_SERIAL) += mctp-serial.o
+ obj-$(CONFIG_MCTP_TRANSPORT_I2C) += mctp-i2c.o
+ obj-$(CONFIG_MCTP_TRANSPORT_I3C) += mctp-i3c.o
++obj-$(CONFIG_MCTP_TRANSPORT_I3C_TARGET) += mctp-i3c-target.o
+ obj-$(CONFIG_MCTP_TRANSPORT_USB) += mctp-usb.o
+ obj-$(CONFIG_MCTP_TRANSPORT_PCIE_VDM) += mctp-pcie-vdm.o
+ obj-$(CONFIG_MCTP_TRANSPORT_ASPEED_MBOX) += mctp-aspeed-mbox.o

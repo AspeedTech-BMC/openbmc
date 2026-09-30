@@ -78,6 +78,7 @@ ast2700-a1-ufs
 ast2700-a1-abr
 ast2700-a1-dcscm
 ast2705-a0-default
+ast2705-a0-netboot
 ```
 
 1. **Kernel Version**

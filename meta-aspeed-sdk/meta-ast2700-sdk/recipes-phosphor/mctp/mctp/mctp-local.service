@@ -8,8 +8,24 @@ Type=oneshot
 ExecStart=mctp link set mctpmbox0 up
 ExecStart=mctp addr add 11 dev mctpmbox0
 ExecStart=mctp route add 10 via mctpmbox0
-ExecStart=ip link set dev mctpmbox0 mtu 32768
+ExecStart=ip link set dev mctpmbox0 mtu 2048
 ExecStart=busctl call au.com.codeconstruct.MCTP1 /au/com/codeconstruct/mctp1/interfaces/mctpmbox0 au.com.codeconstruct.MCTP.BusOwner1 LearnEndpoint ay 0
+
+ExecStart=mctp link set mctpi3c12 up mtu 68
+ExecStart=mctp addr add 12 dev mctpi3c12
+ExecStart=busctl call au.com.codeconstruct.MCTP1 /au/com/codeconstruct/mctp1/interfaces/mctpi3c12 au.com.codeconstruct.MCTP.BusOwner1 SetupEndpoint ay 6 0xff 0xfe 0x00 0x5a 0x00 0xa5
+
+ExecStart=mctp link set mctpi3c13 up mtu 68
+ExecStart=mctp addr add 13 dev mctpi3c13
+# ExecStart=busctl call au.com.codeconstruct.MCTP1 /au/com/codeconstruct/mctp1/interfaces/mctpi3c13 au.com.codeconstruct.MCTP.BusOwner1 SetupEndpoint ay 6 0xff 0xfe 0x00 0x5a 0x00 0xa5
+
+ExecStart=mctp link set mctpi3c14 up mtu 68
+ExecStart=mctp addr add 14 dev mctpi3c14
+#ExecStart=busctl call au.com.codeconstruct.MCTP1 /au/com/codeconstruct/mctp1/interfaces/mctpi3c14 au.com.codeconstruct.MCTP.BusOwner1 SetupEndpoint ay 6 0xff 0xfe 0x00 0x5a 0x00 0xa5
+
+ExecStart=mctp link set mctpi3c15 up mtu 68
+ExecStart=mctp addr add 15 dev mctpi3c15
+ExecStart=busctl call au.com.codeconstruct.MCTP1 /au/com/codeconstruct/mctp1/interfaces/mctpi3c15 au.com.codeconstruct.MCTP.BusOwner1 SetupEndpoint ay 6 0xff 0xfe 0x00 0x5a 0x00 0xa5
 RemainAfterExit=true
 
 [Install]

@@ -1,0 +1,6 @@
+{
+	"endpoints" : [
+		{ "eid": 32, "name": "smc0", "visible": false, "description": "AST1040 Satellite Management Controller" },
+		{ "eid": 33, "name": "smc1", "visible": false, "description": "AST1040 Satellite Management Controller" }
+	]
+}

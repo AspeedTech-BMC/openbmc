@@ -1,0 +1,109 @@
+From 69ff81e27ea92aa411898df5941d0437a06c830a Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Wed, 2 Sep 2026 11:14:42 +0800
+Subject: [PATCH] confirm RECOVERY_STATUS=awaitingImage between multi-stage
+ images
+
+PerformOCPRecovery's per-image loop called RECOVERY_CTRL's
+Activation::activate and immediately moved on to the next image's
+INDIRECT_(FIFO_)CTRL/DATA sequence, without ever confirming the device
+had actually finished processing the previous stage. Per spec 7.6, a
+device that expects another stage increments its image index and
+reports RecoveryStatus::awaitingImage only once it's ready; activating
+stage N+1 while the device is still "Booting recovery image" for stage
+N is a race.
+
+Add Target::waitRecoveryStatus(), which - unlike waitDeviceStatus() -
+also fails fast with std::errc::io_error on seeing
+RecoveryStatus::failed/authError/etc, since a real recovery failure is
+a common enough outcome here that it shouldn't have to wait out the
+full poll timeout to be reported. Call it after every activate except
+the last image in the list (the last stage's terminal state is
+success, already handled by the existing final poll loop).
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+
+Upstream-Status: Pending
+---
+ libocp/include/ocp/ocp_recovery.hpp | 12 ++++++++++++
+ libocp/src/ocp_recovery.cpp         | 22 ++++++++++++++++++++++
+ libocp/tools/ocp_recovery_tool.cpp  | 10 ++++++++++
+ 3 files changed, 44 insertions(+)
+
+diff --git a/libocp/include/ocp/ocp_recovery.hpp b/libocp/include/ocp/ocp_recovery.hpp
+index c9159b4..f1b24e7 100644
+--- a/libocp/include/ocp/ocp_recovery.hpp
++++ b/libocp/include/ocp/ocp_recovery.hpp
+@@ -402,6 +402,18 @@ class Target
+     [[nodiscard]] std::expected<void, std::error_code> waitDeviceStatus(
+         DeviceStatus want);
+ 
++    /* Polls RECOVERY_STATUS (checking immediately, then every
++     * statusPollInterval) until it reports the given status, fails fast
++     * with std::errc::io_error if it reports >= RecoveryStatus::failed
++     * first, or times out (std::errc::timed_out) after statusPollRetries.
++     * Per spec 7.6, a multi-stage recovery MUST see
++     * RecoveryStatus::awaitingImage (with the image index incremented)
++     * here after activating a non-final stage and before pushing the
++     * next one - activating stage N+1 while the device is still
++     * "Booting recovery image" for stage N is a race. */
++    [[nodiscard]] std::expected<void, std::error_code> waitRecoveryStatus(
++        RecoveryStatus want);
++
+     [[nodiscard]] std::expected<void, std::error_code> recoveryCtrl(
+         uint8_t window, ImageSelection imageSel, Activation activation);
+ 
+diff --git a/libocp/src/ocp_recovery.cpp b/libocp/src/ocp_recovery.cpp
+index 4461bf6..ebfb494 100644
+--- a/libocp/src/ocp_recovery.cpp
++++ b/libocp/src/ocp_recovery.cpp
+@@ -217,6 +217,28 @@ std::expected<void, std::error_code> Target::waitDeviceStatus(
+     return failure(std::errc::timed_out);
+ }
+ 
++std::expected<void, std::error_code> Target::waitRecoveryStatus(
++    RecoveryStatus want)
++{
++    for (unsigned int poll = 0; poll < statusPollRetries; poll++)
++    {
++        if (const auto status = getRecoveryStatus(); status)
++        {
++            if (status->status == want)
++            {
++                return {};
++            }
++            if (status->status >= RecoveryStatus::failed)
++            {
++                return failure(std::errc::io_error);
++            }
++        }
++        std::this_thread::sleep_for(statusPollInterval);
++    }
++
++    return failure(std::errc::timed_out);
++}
++
+ std::expected<void, std::error_code> Target::recoveryCtrl(
+     uint8_t window, ImageSelection imageSel, Activation activation)
+ {
+diff --git a/libocp/tools/ocp_recovery_tool.cpp b/libocp/tools/ocp_recovery_tool.cpp
+index b01f995..286edad 100644
+--- a/libocp/tools/ocp_recovery_tool.cpp
++++ b/libocp/tools/ocp_recovery_tool.cpp
+@@ -392,6 +392,16 @@ int cmdPerformRecovery(Target& target, uint8_t cms,
+             result = target.recoveryCtrl(cms, ImageSelection::fromCms,
+                                          Activation::activate);
+         }
++        if (result && count < images.size())
++        {
++            // Spec 7.6: after activating a non-final stage, the device
++            // increments its image index and reports "Awaiting recovery
++            // image" once it's actually ready for the next one - confirm
++            // that before pushing it, rather than racing a device that
++            // may still be "Booting recovery image" for this stage.
++            std::cout << "waiting for device to accept next stage...\n";
++            result = target.waitRecoveryStatus(RecoveryStatus::awaitingImage);
++        }
+ 
+         if (!result)
+         {

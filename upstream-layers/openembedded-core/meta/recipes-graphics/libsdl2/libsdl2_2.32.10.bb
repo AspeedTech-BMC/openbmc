@@ -21,7 +21,10 @@ LIC_FILES_CHKSUM:append = " ${@bb.utils.contains('PACKAGECONFIG', 'arm-neon', 'f
 
 PROVIDES = "virtual/libsdl2"
 
-SRC_URI = "https://www.libsdl.org/release/SDL2-${PV}.tar.gz"
+SRC_URI = "\
+    https://www.libsdl.org/release/SDL2-${PV}.tar.gz \
+    file://0001-directfb-Fix-CreateRenderer-callback-signature.patch \
+"
 
 S = "${UNPACKDIR}/SDL2-${PV}"
 
@@ -85,3 +88,5 @@ CFLAGS:append:class-native = " -DNO_SHARED_MEMORY"
 FILES:${PN} += "${datadir}/licenses/SDL2/LICENSE.txt"
 
 BBCLASSEXTEND = "native nativesdk"
+
+CVE_STATUS[CVE-2026-35444] = "cpe-incorrect: this CVE is for sdl_image"

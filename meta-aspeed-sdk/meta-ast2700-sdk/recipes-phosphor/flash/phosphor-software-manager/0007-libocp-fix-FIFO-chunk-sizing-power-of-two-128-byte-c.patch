@@ -1,0 +1,135 @@
+From 98f63eb90d52c55f0ef5728d12cb665fcd9bab4d Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Wed, 2 Sep 2026 11:06:03 +0800
+Subject: [PATCH] libocp: fix FIFO chunk sizing: power-of-two, 128-byte cap,
+ final chunk exempt
+
+Confirmed against a real target: INDIRECT_FIFO_DATA writes must be
+exactly a power of two, 128 bytes max (2/4/8/16/32/64/128) - the
+252-byte chunkSizeMax default (fine for the memory-window INDIRECT_DATA
+path) errors out here. The one exception is the final write of a
+transfer, which can be any length up to 128 bytes.
+
+writeIndirectFifoData() enforces only the 128-byte ceiling - it has no
+notion of "is this the last piece", so it can't enforce the
+power-of-two half of the rule itself. writeImageFifo() sends
+power-of-two pieces while more than one full piece remains, but once
+what's left fits in a single final write, it sends that remainder
+as-is (e.g. a 300-byte image becomes 128 + 128 + 44, not
+128 + 128 + 32 + 8 + 4).
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+
+Upstream-Status: Pending
+---
+ libocp/include/ocp/ocp_recovery.hpp | 19 ++++++++++---
+ libocp/src/ocp_recovery.cpp         | 42 ++++++++++++++++++++++++++---
+ 2 files changed, 53 insertions(+), 8 deletions(-)
+
+diff --git a/libocp/include/ocp/ocp_recovery.hpp b/libocp/include/ocp/ocp_recovery.hpp
+index d76904f..3c04b9c 100644
+--- a/libocp/include/ocp/ocp_recovery.hpp
++++ b/libocp/include/ocp/ocp_recovery.hpp
+@@ -151,6 +151,12 @@ enum class Activation : uint8_t
+ /* Largest INDIRECT_DATA payload per SMBus block write */
+ inline constexpr size_t chunkSizeMax = 252;
+ 
++/* INDIRECT_FIFO_DATA payloads must be exactly a power of two, 128 bytes
++ * max (2/4/8/16/32/64/128) - confirmed against a real target; unrelated
++ * to chunkSizeMax above, which governs the memory-window INDIRECT_DATA
++ * path only. */
++inline constexpr size_t fifoChunkMax = 128;
++
+ inline constexpr uint8_t cmsDefault = 0;
+ 
+ /* Poll budgets used by the blocking layer; exported so event-loop callers
+@@ -417,10 +423,15 @@ class Target
+         indirectFifoStatus();
+ 
+     /* INDIRECT_FIFO_DATA: append data at the FIFO's current Head Pointer.
+-     * The device NACKs (surfaced as a transport error) a write that
+-     * would advance the Write Index to equal the Read Index; callers
+-     * doing their own chunking should check indirectFifoStatus() first,
+-     * or use writeImageFifo() below. */
++     * data.size() MUST be <= fifoChunkMax (128 bytes) - confirmed against
++     * a real target; longer writes are rejected before they reach the
++     * transport. Within that ceiling, every write except the final one
++     * in a transfer must additionally be a power of two
++     * (2/4/8/16/32/64/128); this primitive has no notion of "final" so
++     * it does not enforce that half - writeImageFifo() below does.
++     * Prefer writeImageFifo() over chunking an image by hand against
++     * this. The device NACKs (surfaced as a transport error) a write
++     * that would advance the Write Index to equal the Read Index. */
+     [[nodiscard]] std::expected<void, std::error_code> writeIndirectFifoData(
+         std::span<const uint8_t> data);
+ 
+diff --git a/libocp/src/ocp_recovery.cpp b/libocp/src/ocp_recovery.cpp
+index 47cf105..543405a 100644
+--- a/libocp/src/ocp_recovery.cpp
++++ b/libocp/src/ocp_recovery.cpp
+@@ -44,6 +44,17 @@ uint32_t getLe32(std::span<const uint8_t> b)
+            (uint32_t{b[3]} << 24);
+ }
+ 
++/* Largest power of two <= v, or 0 when v < 1. */
++size_t roundDownPow2(size_t v)
++{
++    size_t p = 1;
++    while (p * 2 <= v)
++    {
++        p *= 2;
++    }
++    return v == 0 ? 0 : p;
++}
++
+ } // namespace
+ 
+ std::expected<void, std::error_code> Target::command(
+@@ -317,7 +328,13 @@ std::expected<IndirectFifoStatusInfo, std::error_code>
+ std::expected<void, std::error_code> Target::writeIndirectFifoData(
+     std::span<const uint8_t> data)
+ {
+-    if (data.empty() || data.size() > chunkSize || chunkSize > chunkSizeMax)
++    /* fifoChunkMax (128 bytes) is a hard ceiling confirmed against a real
++     * target. Within that ceiling, a non-final chunk of a multi-write
++     * transfer must additionally be a power of two (2/4/8/16/32/64/128),
++     * but the final chunk of a transfer is not - writeImageFifo() below
++     * picks sizes accordingly; this primitive only enforces the ceiling,
++     * since it has no notion of "is this the last piece". */
++    if (data.empty() || data.size() > fifoChunkMax)
+     {
+         return failure(std::errc::invalid_argument);
+     }
+@@ -425,12 +442,29 @@ std::expected<void, std::error_code> Target::writeImageFifo(
+      * pieces directly and rely on the spec's NACK flow-control option: a
+      * write the device can't accept surfaces as a transport error here,
+      * and gets retried after a short delay. Re-introduce waitFifoSpace()
+-     * calls here if that turns out not to be enough. */
++     * calls here if that turns out not to be enough.
++     *
++     * Confirmed against a real target: every non-final INDIRECT_FIFO_DATA
++     * write in a transfer must be a power-of-two length, up to
++     * fifoChunkMax bytes; the final write of the transfer is not
++     * constrained (any length up to fifoChunkMax works), so once what's
++     * left fits in one more full-size piece, send it as-is instead of
++     * decomposing it into smaller power-of-two pieces. */
++    const size_t fullPieceLen =
++        roundDownPow2(std::min(chunkSize, fifoChunkMax));
++    if (fullPieceLen < 1)
++    {
++        return failure(std::errc::invalid_argument);
++    }
++
+     size_t offset = 0;
+     while (offset < image.size())
+     {
+-        const auto piece = image.subspan(
+-            offset, std::min(chunkSize, image.size() - offset));
++        const size_t remaining = image.size() - offset;
++        const size_t pieceLen =
++            remaining > fullPieceLen ? fullPieceLen : remaining;
++
++        const auto piece = image.subspan(offset, pieceLen);
+ 
+         std::expected<void, std::error_code> result =
+             failure(std::errc::timed_out);

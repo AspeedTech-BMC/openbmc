@@ -246,11 +246,12 @@ def staging_populate_sysroot_dir(targetsysroot, nativesysroot, native, d):
 
     staging_processfixme(fixme, targetdir, targetsysroot, nativesysroot, d)
     for p in sorted(postinsts):
-        bb.note("Running postinst {}, output:\n{}".format(p, subprocess.check_output(p, shell=True, stderr=subprocess.STDOUT)))
+        bb.note("Running postinst {}, output:\n{}".format(p, subprocess.check_output([p], stderr=subprocess.STDOUT)))
+staging_populate_sysroot_dir[vardepsexclude] += "MACHINE_ARCH PACKAGE_EXTRA_ARCHS BUILD_ARCH"
 
 #
 # Manifests here are complicated. The main sysroot area has the unpacked sstate
-# which us unrelocated and tracked by the main sstate manifests. Each recipe
+# which is unrelocated and tracked by the main sstate manifests. Each recipe
 # specific sysroot has manifests for each dependency that is installed there.
 # The task hash is used to tell whether the data needs to be reinstalled. We
 # use a symlink to point to the currently installed hash. There is also a
@@ -630,7 +631,7 @@ python extend_recipe_sysroot() {
         staging_processfixme(fixme[f], f, recipesysroot, recipesysrootnative, d)
 
     for p in sorted(postinsts):
-        bb.note("Running postinst {}, output:\n{}".format(p, subprocess.check_output(p, shell=True, stderr=subprocess.STDOUT)))
+        bb.note("Running postinst {}, output:\n{}".format(p, subprocess.check_output([p], stderr=subprocess.STDOUT)))
 
     for dep in manifests:
         c = setscenedeps[dep][0]
@@ -643,7 +644,7 @@ python extend_recipe_sysroot() {
 
     bb.utils.unlockfile(lock)
 }
-extend_recipe_sysroot[vardepsexclude] += "MACHINE_ARCH PACKAGE_EXTRA_ARCHS SDK_ARCH BUILD_ARCH SDK_OS BB_TASKDEPDATA"
+extend_recipe_sysroot[vardepsexclude] += "BB_TASKDEPDATA SSTATETASKS"
 
 do_prepare_recipe_sysroot[deptask] = "do_populate_sysroot"
 python do_prepare_recipe_sysroot () {

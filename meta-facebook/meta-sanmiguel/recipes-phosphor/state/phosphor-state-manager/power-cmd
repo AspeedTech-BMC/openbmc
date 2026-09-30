@@ -19,7 +19,6 @@ out_run_pwr_en="RUN_POWER_EN-O"
 out_shdn_req_n="SHDN_REQ_L-O"
 out_shdn_force_n="SHDN_FORCE_L-O"
 out_e1s_pwr_en="E1S_PWR_EN-O"
-out_bmc_ssd0_rst_n="BMC_SSD0_RST_L-O"
 out_ssd0_pwrdis="SSD0_PWRDIS-O"
 
 #======================================
@@ -29,6 +28,9 @@ in_pdb_pwrsts="MAIN_PWR_OK-I"
 in_shdn_ok_n="CPU_SHDN_OK_L-I"
 in_cpu_rst_n="CPU_RST_L-I"
 in_run_pwr_pg="RUN_POWER_PG-I"
+in_rmc_main_pwr_en="FM_MAIN_PWREN_RMC_ISO_EN_N"
+in_leak_detect="vLeakDetect1Status0-I"
+in_leak_detect_fault="vLeakDetect1Status1-I"
 
 
 chassis_power_cycle()
@@ -115,9 +117,9 @@ cpu_reset_set_n_check()
     set_gpio "B0_M0_${out_pre_sys_rst_n}" "$GPIO_LOW"
     set_gpio "B1_M0_${out_pre_sys_rst_n}" "$GPIO_LOW"
 
-    sleep "$CPU_RESET_DELAY_SEC"
-
-    if [[ "$(plat_get_gpio "$in_cpu_rst_n")" -eq 1 ]]; then
+    local retry_cnt=11
+    local delay_secs="$CPU_RESET_DELAY_SEC"
+    if ! wait_gpios_value "$GPIO_LOW" "$retry_cnt" "$delay_secs" "$in_cpu_rst_n"; then
         echo "ERROR: CPUs failed to enter reset"
         return 1
     fi
@@ -131,9 +133,9 @@ cpu_reset_release_n_check()
     set_gpio "B0_M0_${out_pre_sys_rst_n}" "$GPIO_HIGH"
     set_gpio "B1_M0_${out_pre_sys_rst_n}" "$GPIO_HIGH"
 
-    sleep "$CPU_RESET_DELAY_SEC"
-
-    if [[ "$(plat_get_gpio "$in_cpu_rst_n")" -eq 0 ]]; then
+    local retry_cnt=11
+    local delay_secs="$CPU_RESET_DELAY_SEC"
+    if ! wait_gpios_value "$GPIO_HIGH" "$retry_cnt" "$delay_secs" "$in_cpu_rst_n"; then
         echo "ERROR: CPUs failed to exist reset"
         return 1
     fi
@@ -215,6 +217,16 @@ host_power_on()
 {
     echo "Power On Host"
 
+    # Check RMC main power status
+    if is_rmc_main_power_disable; then
+        return 2
+    fi
+
+    # Check tray leak detect status
+    if ! is_tray_leak_detect_normal; then
+        return 3
+    fi
+
     # Check Host Power Status
     if is_host_power_on; then
         echo "Host is already powered on"
@@ -222,7 +234,6 @@ host_power_on()
         set_gpio "B1_M0_${out_run_pwr_en}" "$GPIO_HIGH"
         set_gpio "${out_pdb_run_power_en}" "$GPIO_HIGH"
         set_gpio "${out_e1s_pwr_en}" "$GPIO_HIGH"
-        set_gpio "${out_bmc_ssd0_rst_n}" "$GPIO_HIGH"
         set_gpio "${out_smm_usb_pwr_en}" "$GPIO_HIGH"
         return 0
     fi
@@ -245,7 +256,6 @@ host_power_on()
     # Enable boot driver power
     set_gpio "${out_ssd0_pwrdis}" "$GPIO_LOW"
     set_gpio "${out_e1s_pwr_en}" "$GPIO_HIGH"
-    set_gpio "${out_bmc_ssd0_rst_n}" "$GPIO_HIGH"
 
     # Set RUN_POWER_EN, wait RUN_POWER_PG assert, 10s timeout
     if ! hpm_run_pwr_set_n_check; then
@@ -304,7 +314,6 @@ host_force_power_off()
         set_gpio "B1_M0_${out_run_pwr_en}" "$GPIO_LOW"
         set_gpio "${out_pdb_run_power_en}" "$GPIO_LOW"
         set_gpio "${out_e1s_pwr_en}" "$GPIO_LOW"
-        set_gpio "${out_bmc_ssd0_rst_n}" "$GPIO_LOW"
         set_gpio "${out_smm_usb_pwr_en}" "$GPIO_LOW"
         return 0
     fi
@@ -327,7 +336,6 @@ host_force_power_off()
 
     # Disable boot driver power
     set_gpio "${out_e1s_pwr_en}" "$GPIO_LOW"
-    set_gpio "${out_bmc_ssd0_rst_n}" "$GPIO_LOW"
     set_gpio "${out_ssd0_pwrdis}" "$GPIO_HIGH"
 
     # Release RUN_POWER_EN, wait RUN_POWER_PG deassert, 10s timeout
@@ -366,7 +374,6 @@ host_graceful_power_off()
         set_gpio "B1_M0_${out_run_pwr_en}" "$GPIO_LOW"
         set_gpio "${out_pdb_run_power_en}" "$GPIO_LOW"
         set_gpio "${out_e1s_pwr_en}" "$GPIO_LOW"
-        set_gpio "${out_bmc_ssd0_rst_n}" "$GPIO_LOW"
         set_gpio "${out_smm_usb_pwr_en}" "$GPIO_LOW"
         return 0
     fi
@@ -390,7 +397,6 @@ host_graceful_power_off()
 
     # Disable boot driver power
     set_gpio "${out_e1s_pwr_en}" "$GPIO_LOW"
-    set_gpio "${out_bmc_ssd0_rst_n}" "$GPIO_LOW"
     set_gpio "${out_ssd0_pwrdis}" "$GPIO_HIGH"
 
     # Release RUN_POWER_EN, wait RUN_POWER_PG deassert, 10s timeout
@@ -418,12 +424,23 @@ host_graceful_power_off()
 
 host_power_reset()
 {
+    # Set Shutdown Force, wait Shutdown OK assert
+    if ! shutdown_force_n_check; then
+        echo "Continuing with System Reset Sequence..."
+    fi
+
+    echo "De-asserting CPU Shutdown Force..."
+    set_gpio "B0_M0_${out_shdn_force_n}" "$GPIO_HIGH"
+    set_gpio "B1_M0_${out_shdn_force_n}" "$GPIO_HIGH"
 
     # Set CPUs reset and check
     if ! cpu_reset_set_n_check; then
+        set_gpio "B0_M0_${out_pre_sys_rst_n}" "$GPIO_HIGH"
+        set_gpio "B1_M0_${out_pre_sys_rst_n}" "$GPIO_HIGH"
         return 1
     fi
-    sleep 5
+
+    sleep 1
 
     # Release CPUs reset and check
     if ! cpu_reset_release_n_check; then
@@ -458,6 +475,39 @@ is_host_power_on()
 is_host_power_off()
 {
     [[ "$(host_power_status)" == "off" ]] && return 0
+    return 1
+}
+
+is_rmc_main_power_disable()
+{
+    # 0: rmc main power disabled
+    # 1: rmc main power enabled
+    [[ "$(plat_get_gpio "$in_rmc_main_pwr_en")" -eq 0 ]] && return 0
+    return 1
+}
+
+tray_leak_detect_status()
+{
+    if [[ "$(plat_get_gpio "B0_$in_leak_detect")" -ne 0 ]] || \
+       [[ "$(plat_get_gpio "B0_$in_leak_detect_fault")" -ne 0 ]]; then
+        echo "abnormal"
+        return
+    fi
+
+    if [[ "$(plat_get_gpio "B1_$in_leak_detect")" -ne 0 ]] || \
+       [[ "$(plat_get_gpio "B1_$in_leak_detect_fault")" -ne 0 ]]; then
+        echo "abnormal"
+        return
+    fi
+
+    echo "normal"
+}
+
+is_tray_leak_detect_normal()
+{
+    # 0: no leak detected
+    # 1: leak detected or fault
+    [[ "$(tray_leak_detect_status)" == "normal" ]] && return 0
     return 1
 }
 

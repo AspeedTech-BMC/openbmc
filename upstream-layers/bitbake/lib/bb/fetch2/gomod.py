@@ -135,13 +135,10 @@ class GoMod(Wget):
         unpackdir = os.path.dirname(unpackpath)
         bb.utils.mkdirhier(unpackdir)
         ud.unpack_tracer.unpack("file-copy", unpackdir)
-        cmd = f"cp {ud.localpath} {unpackpath}"
-        path = d.getVar('PATH')
-        if path:
-            cmd = f"PATH={path} {cmd}"
+        cmd = ['cp', ud.localpath, unpackpath]
         name = os.path.basename(unpackpath)
         bb.note(f"Unpacking {name} to {unpackdir}/")
-        subprocess.check_call(cmd, shell=True, preexec_fn=subprocess_setup)
+        runfetchcmd(cmd, d)
 
         if name.endswith('.zip'):
             # Unpack the go.mod file from the zip file
@@ -242,9 +239,9 @@ class GoModGit(Git):
         srcrev = ud.parm['srcrev']
         version = ud.parm['version']
         escaped_version = escape(version)
-        cmd = f"git ls-tree -r --name-only '{srcrev}'"
+        cmd = ['git', 'ls-tree', '-r', '--name-only', srcrev]
         if 'subpath' in ud.parm:
-            cmd += f" '{ud.parm['subpath']}'"
+            cmd.append(ud.parm['subpath'])
         files = runfetchcmd(cmd, d, workdir=repodir).split()
         name = escaped_version + '.mod'
         bb.note(f"Unpacking {name} to {unpackdir}/")

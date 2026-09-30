@@ -14,35 +14,39 @@ Upstream-Status: Pending
 Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
 Signed-off-by: Troy Lee <troy_lee@aspeedtech.com>
 ---
- ikvm_args.cpp    | 11 +++++++++--
+ ikvm_args.cpp    | 15 +++++++++++----
  ikvm_args.hpp    |  7 +++++++
  ikvm_manager.cpp |  2 +-
  ikvm_server.cpp  | 26 ++++++++++++++++++++++++++
  ikvm_video.cpp   | 39 ++++++++++++++++++++++++++++++++++++---
  ikvm_video.hpp   | 10 +++++++++-
- 6 files changed, 88 insertions(+), 7 deletions(-)
+ 6 files changed, 90 insertions(+), 9 deletions(-)
 
 diff --git a/ikvm_args.cpp b/ikvm_args.cpp
-index d5e18dd..e4745cf 100644
+index 11d19f0..5775e77 100644
 --- a/ikvm_args.cpp
 +++ b/ikvm_args.cpp
-@@ -8,12 +8,13 @@
+@@ -8,14 +8,15 @@
  namespace ikvm
  {
  Args::Args(int argc, char* argv[]) :
--    frameRate(30), subsampling(0), calcFrameCRC{false}, commandLine(argc, argv)
-+    frameRate(30), subsampling(0), format(0), calcFrameCRC{false}, commandLine(argc, argv)
+-    frameRate(30), subsampling(0), timeoutSeconds(-1), calcFrameCRC{false},
+-    commandLine(argc, argv)
++    frameRate(30), subsampling(0), format(0), timeoutSeconds(-1),
++    calcFrameCRC{false}, commandLine(argc, argv)
  {
      int option;
--    const char* opts = "f:s:h:k:p:u:v:c";
-+    const char* opts = "f:s:m:hk:p:u:v:c";
+-    const char* opts = "f:s:hk:p:u:v:ct:";
++    const char* opts = "f:s:m:hk:p:u:v:ct:";
      struct option lopts[] = {
-         {"frameRate", 1, nullptr, 'f'},   {"subsampling", 1, nullptr, 's'},
-+        {"format", 1, nullptr, 'm'},
-         {"help", 0, nullptr, 'h'},        {"keyboard", 1, nullptr, 'k'},
-         {"mouse", 1, nullptr, 'p'},       {"udcName", 1, nullptr, 'u'},
-         {"videoDevice", 1, nullptr, 'v'}, {"calcCRC", 0, nullptr, 'c'},
-@@ -33,6 +34,11 @@ Args::Args(int argc, char* argv[]) :
+         {"frameRate", 1, nullptr, 'f'},      {"subsampling", 1, nullptr, 's'},
+-        {"help", 0, nullptr, 'h'},           {"keyboard", 1, nullptr, 'k'},
++        {"format", 1, nullptr, 'm'},         {"help", 0, nullptr, 'h'},
++        {"keyboard", 1, nullptr, 'k'},
+         {"mouse", 1, nullptr, 'p'},          {"udcName", 1, nullptr, 'u'},
+         {"videoDevice", 1, nullptr, 'v'},    {"calcCRC", 0, nullptr, 'c'},
+         {"timeoutSeconds", 1, nullptr, 't'}, {nullptr, 0, nullptr, 0}};
+@@ -34,6 +35,11 @@ Args::Args(int argc, char* argv[]) :
                  if (subsampling < 0 || subsampling > 1)
                      subsampling = 0;
                  break;
@@ -54,7 +58,7 @@ index d5e18dd..e4745cf 100644
              case 'h':
                  printUsage();
                  exit(0);
-@@ -62,6 +68,7 @@ void Args::printUsage()
+@@ -68,6 +74,7 @@ void Args::printUsage()
      fprintf(stderr, "Usage: obmc-ikvm [options]\n");
      fprintf(stderr, "-f frame rate          try this frame rate\n");
      fprintf(stderr, "-s subsampling         try this subsampling\n");
@@ -63,7 +67,7 @@ index d5e18dd..e4745cf 100644
      fprintf(stderr, "-k device              HID keyboard gadget device\n");
      fprintf(stderr, "-p device              HID mouse gadget device\n");
 diff --git a/ikvm_args.hpp b/ikvm_args.hpp
-index 089c700..9d41966 100644
+index beca8d9..a02b6a9 100644
 --- a/ikvm_args.hpp
 +++ b/ikvm_args.hpp
 @@ -78,6 +78,11 @@ class Args
@@ -78,7 +82,7 @@ index 089c700..9d41966 100644
      /*
       * @brief Get the path to the USB keyboard device
       *
-@@ -139,6 +144,8 @@ class Args
+@@ -149,6 +154,8 @@ class Args
      int frameRate;
      /* @brief Desired subsampling (0: 444, 1: 420) */
      int subsampling;
@@ -88,11 +92,11 @@ index 089c700..9d41966 100644
      std::string keyboardPath;
      /* @brief Path to the USB mouse device */
 diff --git a/ikvm_manager.cpp b/ikvm_manager.cpp
-index b283b87..ae6e984 100644
+index fb8ebd3..6ced8aa 100644
 --- a/ikvm_manager.cpp
 +++ b/ikvm_manager.cpp
-@@ -8,7 +8,7 @@ Manager::Manager(const Args& args) :
-     continueExecuting(true), serverDone(false), videoDone(true),
+@@ -9,7 +9,7 @@ Manager::Manager(const Args& args) :
+     videoPaused(false),
      input(args.getKeyboardPath(), args.getPointerPath(), args.getUdcName()),
      video(args.getVideoPath(), input, args.getFrameRate(),
 -          args.getSubsampling()),
@@ -101,7 +105,7 @@ index b283b87..ae6e984 100644
  {}
  
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index 18eb507..31b9549 100644
+index abda182..ed49e7a 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
 @@ -9,6 +9,8 @@
@@ -113,7 +117,7 @@ index 18eb507..31b9549 100644
  namespace ikvm
  {
  
-@@ -115,6 +117,7 @@ void Server::run()
+@@ -138,6 +140,7 @@ void Server::run()
  void Server::sendFrame()
  {
      char* data = video.getData();
@@ -121,7 +125,7 @@ index 18eb507..31b9549 100644
      rfbClientIteratorPtr it;
      rfbClientPtr cl;
      int64_t frame_crc = -1;
-@@ -216,6 +219,29 @@ void Server::sendFrame()
+@@ -258,6 +261,29 @@ void Server::sendFrame()
                  rfbSendUpdateBuf(cl);
                  break;
  
@@ -152,7 +156,7 @@ index 18eb507..31b9549 100644
                  break;
          }
 diff --git a/ikvm_video.cpp b/ikvm_video.cpp
-index 02c2dc9..7d971ce 100644
+index d7db987..af18fe3 100644
 --- a/ikvm_video.cpp
 +++ b/ikvm_video.cpp
 @@ -30,11 +30,26 @@ using namespace phosphor::logging;
@@ -195,7 +199,7 @@ index 02c2dc9..7d971ce 100644
      memset(&fmt, 0, sizeof(v4l2_format));
      fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
      fd = open(path.c_str(), O_RDWR);
-@@ -73,7 +92,8 @@ void Video::probePixelFormat()
+@@ -75,7 +94,8 @@ void Video::probePixelFormat()
  
      if (pixelformat != V4L2_PIX_FMT_RGB24 && pixelformat != V4L2_PIX_FMT_JPEG &&
          pixelformat != V4L2_PIX_FMT_RGB565 &&
@@ -205,7 +209,7 @@ index 02c2dc9..7d971ce 100644
      {
          lg2::error("Pixel Format not supported {PIXELFORMAT}", "PIXELFORMAT",
                     pixelformat);
-@@ -482,6 +502,19 @@ void Video::start()
+@@ -485,6 +505,19 @@ void Video::start()
                  CALLOUT_DEVICE_PATH(path.c_str()));
      }
  
@@ -254,5 +258,4 @@ index d5f2859..de84b04 100644
      Video(const Video&) = default;
      Video& operator=(const Video&) = delete;
 -- 
-2.34.1
-
+2.43.0

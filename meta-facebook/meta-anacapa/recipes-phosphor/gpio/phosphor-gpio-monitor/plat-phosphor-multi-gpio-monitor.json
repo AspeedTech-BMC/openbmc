@@ -52,9 +52,19 @@
         "LineName": "DIMM_PMIC_PG_TIMEOUT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@DIMM_PMIC_PG_TIMEOUT:assert.service"],
-            "FALLING":  ["power-rail-logger@DIMM_PMIC_PG_TIMEOUT:assert.service"],
-            "RISING":   ["power-rail-logger@DIMM_PMIC_PG_TIMEOUT:deassert.service"]
+            "INIT_HIGH": ["dimm-power-fault-logger@DIMM_PMIC_PG_TIMEOUT.service"],
+            "RISING":   ["dimm-power-fault-logger@DIMM_PMIC_PG_TIMEOUT.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "R_RTM_SW_FLT",
+        "LineName": "R_RTM_SW_FLT",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_HIGH": ["power-rail-logger@R_RTM_SW_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@R_RTM_SW_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@R_RTM_SW_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -63,9 +73,9 @@
         "LineName": "L_RTM_SW_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@L_RTM_SW_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@L_RTM_SW_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@L_RTM_SW_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@L_RTM_SW_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@L_RTM_SW_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@L_RTM_SW_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -74,9 +84,9 @@
         "LineName": "L_BNIC0_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@L_BNIC0_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@L_BNIC0_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@L_BNIC0_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@L_BNIC0_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@L_BNIC0_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@L_BNIC0_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -85,9 +95,9 @@
         "LineName": "L_BNIC1_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@L_BNIC1_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@L_BNIC1_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@L_BNIC1_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@L_BNIC1_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@L_BNIC1_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@L_BNIC1_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -96,9 +106,9 @@
         "LineName": "L_BNIC2_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@L_BNIC2_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@L_BNIC2_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@L_BNIC2_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@L_BNIC2_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@L_BNIC2_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@L_BNIC2_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -107,9 +117,9 @@
         "LineName": "L_BNIC3_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@L_BNIC3_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@L_BNIC3_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@L_BNIC3_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@L_BNIC3_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@L_BNIC3_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@L_BNIC3_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -118,9 +128,9 @@
         "LineName": "R_BNIC0_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@R_BNIC0_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@R_BNIC0_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@R_BNIC0_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@R_BNIC0_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@R_BNIC0_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@R_BNIC0_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -129,9 +139,9 @@
         "LineName": "R_BNIC1_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@R_BNIC1_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@R_BNIC1_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@R_BNIC1_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@R_BNIC1_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@R_BNIC1_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@R_BNIC1_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -140,9 +150,9 @@
         "LineName": "R_BNIC2_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@R_BNIC2_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@R_BNIC2_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@R_BNIC2_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@R_BNIC2_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@R_BNIC2_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@R_BNIC2_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -151,9 +161,9 @@
         "LineName": "R_BNIC3_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@R_BNIC3_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@R_BNIC3_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@R_BNIC3_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@R_BNIC3_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@R_BNIC3_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@R_BNIC3_FLT:assert.service"]
         },
         "Continue": true
     },
@@ -162,21 +172,410 @@
         "LineName": "L_FNIC_FLT",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@L_FNIC_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@L_FNIC_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@L_FNIC_FLT:deassert.service"]
+            "INIT_HIGH": ["power-rail-logger@L_FNIC_FLT:assert.service"],
+            "FALLING":  ["power-rail-logger@L_FNIC_FLT:deassert.service"],
+            "RISING":   ["power-rail-logger@L_FNIC_FLT:assert.service"]
         },
         "Continue": true
     },
     {
-        "Name": "R_FNIC_FLT",
-        "LineName": "R_FNIC_FLT",
+        "Name": "FM_MAIN_PWREN_RMC_EN_ISO",
+        "LineName": "FM_MAIN_PWREN_RMC_EN_ISO",
         "EventMon": "BOTH",
         "Targets": {
-            "INIT_LOW": ["power-rail-logger@R_FNIC_FLT:assert.service"],
-            "FALLING":  ["power-rail-logger@R_FNIC_FLT:assert.service"],
-            "RISING":   ["power-rail-logger@R_FNIC_FLT:deassert.service"]
+            "INIT_LOW": ["power-rail-logger@FM_MAIN_PWREN_RMC_EN_ISO:assert.service"],
+            "FALLING":  ["power-rail-logger@FM_MAIN_PWREN_RMC_EN_ISO:assert.service"],
+            "RISING":   ["power-rail-logger@FM_MAIN_PWREN_RMC_EN_ISO:deassert.service"]
         },
         "Continue": true
+    },
+    {
+        "Name": "FM_BIOS_POST_CMPLT_R_N",
+        "LineName": "FM_BIOS_POST_CMPLT_R_N",
+        "EventMon": "BOTH",
+        "Targets": {
+            "RISING": [
+                "deassert-post-end.service"
+            ],
+            "FALLING": [
+                "assert-post-end.service"
+            ]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "HPM_PWR_FAIL",
+        "LineName": "HPM_PWR_FAIL",
+        "EventMon": "RISING",
+        "Targets": {
+            "RISING":   ["hpm-power-fault@HPM_PWR_FAIL.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "CPU_THERMTRIP_ASSERT",
+        "LineName": "CPU_THERMTRIP_ASSERT",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_HIGH": ["thermal-event-logger@CPU_THERMTRIP_ASSERT:assert.service"],
+            "FALLING":  ["thermal-event-logger@CPU_THERMTRIP_ASSERT:deassert.service"],
+            "RISING":   ["thermal-event-logger@CPU_THERMTRIP_ASSERT:assert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "AMC_THERMTRIP_ASSERT",
+        "LineName": "AMC_THERMTRIP_ASSERT",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_HIGH": ["thermal-event-logger@AMC_THERMTRIP_ASSERT:assert.service"],
+            "FALLING":  ["thermal-event-logger@AMC_THERMTRIP_ASSERT:deassert.service"],
+            "RISING":   ["thermal-event-logger@AMC_THERMTRIP_ASSERT:assert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "LPDB_P50V_FAN0_R2_PG",
+        "LineName": "LPDB_P50V_FAN0_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+        "INIT_LOW": ["fan-pg-event-logger@LPDB_P50V_FAN0_R2_PG:assert.service"],
+        "FALLING": ["fan-pg-event-logger@LPDB_P50V_FAN0_R2_PG:assert.service"],
+        "RISING": ["fan-pg-event-logger@LPDB_P50V_FAN0_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "LPDB_P50V_FAN1_R2_PG",
+        "LineName": "LPDB_P50V_FAN1_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["fan-pg-event-logger@LPDB_P50V_FAN1_R2_PG:assert.service"],
+            "FALLING":  ["fan-pg-event-logger@LPDB_P50V_FAN1_R2_PG:assert.service"],
+            "RISING":   ["fan-pg-event-logger@LPDB_P50V_FAN1_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "LPDB_P50V_FAN2_R2_PG",
+        "LineName": "LPDB_P50V_FAN2_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["fan-pg-event-logger@LPDB_P50V_FAN2_R2_PG:assert.service"],
+            "FALLING":  ["fan-pg-event-logger@LPDB_P50V_FAN2_R2_PG:assert.service"],
+            "RISING":   ["fan-pg-event-logger@LPDB_P50V_FAN2_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "LPDB_P50V_FAN3_R2_PG",
+        "LineName": "LPDB_P50V_FAN3_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["fan-pg-event-logger@LPDB_P50V_FAN3_R2_PG:assert.service"],
+            "FALLING":  ["fan-pg-event-logger@LPDB_P50V_FAN3_R2_PG:assert.service"],
+            "RISING":   ["fan-pg-event-logger@LPDB_P50V_FAN3_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "LPDB_P50V_FAN4_R2_PG",
+        "LineName": "LPDB_P50V_FAN4_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["fan-pg-event-logger@LPDB_P50V_FAN4_R2_PG:assert.service"],
+            "FALLING":  ["fan-pg-event-logger@LPDB_P50V_FAN4_R2_PG:assert.service"],
+            "RISING":   ["fan-pg-event-logger@LPDB_P50V_FAN4_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "RPDB_P50V_FAN5_R2_PG",
+        "LineName": "RPDB_P50V_FAN5_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["fan-pg-event-logger@RPDB_P50V_FAN5_R2_PG:assert.service"],
+            "FALLING":  ["fan-pg-event-logger@RPDB_P50V_FAN5_R2_PG:assert.service"],
+            "RISING":   ["fan-pg-event-logger@RPDB_P50V_FAN5_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "RPDB_P50V_FAN6_R2_PG",
+        "LineName": "RPDB_P50V_FAN6_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["fan-pg-event-logger@RPDB_P50V_FAN6_R2_PG:assert.service"],
+            "FALLING":  ["fan-pg-event-logger@RPDB_P50V_FAN6_R2_PG:assert.service"],
+            "RISING":   ["fan-pg-event-logger@RPDB_P50V_FAN6_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "RPDB_P50V_FAN7_R2_PG",
+        "LineName": "RPDB_P50V_FAN7_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["fan-pg-event-logger@RPDB_P50V_FAN7_R2_PG:assert.service"],
+            "FALLING":  ["fan-pg-event-logger@RPDB_P50V_FAN7_R2_PG:assert.service"],
+            "RISING":   ["fan-pg-event-logger@RPDB_P50V_FAN7_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "RPDB_P50V_FAN8_R2_PG",
+        "LineName": "RPDB_P50V_FAN8_R2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["fan-pg-event-logger@RPDB_P50V_FAN8_R2_PG:assert.service"],
+            "FALLING":  ["fan-pg-event-logger@RPDB_P50V_FAN8_R2_PG:assert.service"],
+            "RISING":   ["fan-pg-event-logger@RPDB_P50V_FAN8_R2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "HPM_EDSFF_PG",
+        "LineName": "HPM_EDSFF_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["ssd-pg-event-logger@HPM_EDSFF_PG:assert.service"],
+            "FALLING":  ["ssd-pg-event-logger@HPM_EDSFF_PG:assert.service"],
+            "RISING":   ["ssd-pg-event-logger@HPM_EDSFF_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "L_EDSFF0_PG",
+        "LineName": "L_EDSFF0_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["ssd-pg-event-logger@L_EDSFF0_PG:assert.service"],
+            "FALLING":  ["ssd-pg-event-logger@L_EDSFF0_PG:assert.service"],
+            "RISING":   ["ssd-pg-event-logger@L_EDSFF0_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "L_EDSFF1_PG",
+        "LineName": "L_EDSFF1_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["ssd-pg-event-logger@L_EDSFF1_PG:assert.service"],
+            "FALLING":  ["ssd-pg-event-logger@L_EDSFF1_PG:assert.service"],
+            "RISING":   ["ssd-pg-event-logger@L_EDSFF1_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "R_EDSFF2_PG",
+        "LineName": "R_EDSFF2_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["ssd-pg-event-logger@R_EDSFF2_PG:assert.service"],
+            "FALLING":  ["ssd-pg-event-logger@R_EDSFF2_PG:assert.service"],
+            "RISING":   ["ssd-pg-event-logger@R_EDSFF2_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "R_EDSFF3_PG",
+        "LineName": "R_EDSFF3_PG",
+        "EventMon": "BOTH",
+        "Targets": {
+            "INIT_LOW": ["ssd-pg-event-logger@R_EDSFF3_PG:assert.service"],
+            "FALLING":  ["ssd-pg-event-logger@R_EDSFF3_PG:assert.service"],
+            "RISING":   ["ssd-pg-event-logger@R_EDSFF3_PG:deassert.service"]
+        },
+        "Continue": true
+    },
+    {
+        "Name": "PRSNT_EDSFF_BOOT",
+        "LineName": "PRSNT_EDSFF_BOOT_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@PRSNT_EDSFF_BOOT.service"],
+            "RISING": ["rescan-fru-device@PRSNT_EDSFF_BOOT.service"]
+        }
+    },
+    {
+        "Name": "L_PRSNT_EDSFF0",
+        "LineName": "L_PRSNT_EDSFF0_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@L_PRSNT_EDSFF0.service"],
+            "RISING": ["rescan-fru-device@L_PRSNT_EDSFF0.service"]
+        }
+    },
+    {
+        "Name": "L_PRSNT_EDSFF1",
+        "LineName": "L_PRSNT_EDSFF1_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@L_PRSNT_EDSFF1.service"],
+            "RISING": ["rescan-fru-device@L_PRSNT_EDSFF1.service"]
+        }
+    },
+    {
+        "Name": "R_PRSNT_EDSFF2",
+        "LineName": "R_PRSNT_EDSFF2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@R_PRSNT_EDSFF2.service"],
+            "RISING": ["rescan-fru-device@R_PRSNT_EDSFF2.service"]
+        }
+    },
+    {
+        "Name": "R_PRSNT_EDSFF3",
+        "LineName": "R_PRSNT_EDSFF3_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@R_PRSNT_EDSFF3.service"],
+            "RISING": ["rescan-fru-device@R_PRSNT_EDSFF3.service"]
+        }
+    },
+    {
+        "Name": "L_PRSNT_B_FENIC",
+        "LineName": "L_PRSNT_B_FENIC_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@L_PRSNT_B_FENIC.service"],
+            "RISING": ["rescan-fru-device@L_PRSNT_B_FENIC.service"]
+        }
+    },
+    {
+        "Name": "L_PRSNT_B_BENIC0",
+        "LineName": "L_PRSNT_B_BENIC0_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@L_PRSNT_B_BENIC0.service"],
+            "RISING": ["rescan-fru-device@L_PRSNT_B_BENIC0.service"]
+        }
+    },
+    {
+        "Name": "L_PRSNT_B_BENIC1",
+        "LineName": "L_PRSNT_B_BENIC1_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@L_PRSNT_B_BENIC1.service"],
+            "RISING": ["rescan-fru-device@L_PRSNT_B_BENIC1.service"]
+        }
+    },
+    {
+        "Name": "L_PRSNT_B_BENIC2",
+        "LineName": "L_PRSNT_B_BENIC2_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@L_PRSNT_B_BENIC2.service"],
+            "RISING": ["rescan-fru-device@L_PRSNT_B_BENIC2.service"]
+        }
+    },
+    {
+        "Name": "L_PRSNT_B_BENIC3",
+        "LineName": "L_PRSNT_B_BENIC3_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@L_PRSNT_B_BENIC3.service"],
+            "RISING": ["rescan-fru-device@L_PRSNT_B_BENIC3.service"]
+        }
+    },
+    {
+        "Name": "R_PRSNT_B_BENIC0",
+        "LineName": "R_PRSNT_B_BENIC0_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@R_PRSNT_B_BENIC0.service"],
+            "RISING": ["rescan-fru-device@R_PRSNT_B_BENIC0.service"]
+        }
+    },
+    {
+        "Name": "R_PRSNT_B_BENIC1",
+        "LineName": "R_PRSNT_B_BENIC1_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@R_PRSNT_B_BENIC1.service"],
+            "RISING": ["rescan-fru-device@R_PRSNT_B_BENIC1.service"]
+        }
+    },
+    {
+        "Name": "R_PRSNT_B_BENIC2",
+        "LineName": "R_PRSNT_B_BENIC2_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@R_PRSNT_B_BENIC2.service"],
+            "RISING": ["rescan-fru-device@R_PRSNT_B_BENIC2.service"]
+        }
+    },
+    {
+        "Name": "R_PRSNT_B_BENIC3",
+        "LineName": "R_PRSNT_B_BENIC3_R2_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@R_PRSNT_B_BENIC3.service"],
+            "RISING": ["rescan-fru-device@R_PRSNT_B_BENIC3.service"]
+        }
+    },
+    {
+        "Name": "PRSNT_NFC_BOARD",
+        "LineName": "PRSNT_NFC_BOARD_R",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@PRSNT_NFC_BOARD.service"],
+            "RISING": ["rescan-fru-device@PRSNT_NFC_BOARD.service"]
+        }
+    },
+    {
+        "Name": "AMC_BRD_PRSNT_CPLD",
+        "LineName": "AMC_BRD_PRSNT_CPLD_L",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@AMC_BRD_PRSNT_CPLD.service"],
+            "RISING": ["rescan-fru-device@AMC_BRD_PRSNT_CPLD.service"]
+        }
+    },
+    {
+        "Name": "PRSNT_L_BRIDGE",
+        "LineName": "PRSNT_L_BRIDGE_R",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@PRSNT_L_BRIDGE.service"],
+            "RISING": ["rescan-fru-device@PRSNT_L_BRIDGE.service"]
+        }
+    },
+    {
+        "Name": "PRSNT_R_BRIDGE",
+        "LineName": "PRSNT_R_BRIDGE_R",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@PRSNT_R_BRIDGE.service"],
+            "RISING": ["rescan-fru-device@PRSNT_R_BRIDGE.service"]
+        }
+    },
+    {
+        "Name": "PDB_L_PRSNT",
+        "LineName": "PDB_L_PRSNT_R_N",
+        "EventMon": "BOTH",
+        "Continue": true,
+        "Targets": {
+            "FALLING": ["rescan-fru-device@PDB_L_PRSNT.service"],
+            "RISING": ["rescan-fru-device@PDB_L_PRSNT.service"]
+        }
     }
 ]

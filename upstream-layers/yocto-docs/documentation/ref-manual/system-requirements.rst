@@ -65,10 +65,10 @@ supported on the following distributions:
 -  AlmaLinux 8
 -  AlmaLinux 9
 -  CentOS Stream 9
+-  CentOS Stream 10
 -  Debian 11
 -  Debian 12
 -  Debian 13
--  Fedora 42
 -  Fedora 43
 -  OpenSUSE Leap 15.6
 -  OpenSUSE Leap 16.0
@@ -514,7 +514,7 @@ installer and automatically installs the tools for you:
 
    After you have sourced the setup script, the tools are added to
    ``PATH`` and any other environment variables required to run the
-   tools are initialized. The results are working versions versions of
+   tools are initialized. The results are working versions of
    Git, tar, Python and ``chrpath``. And in the case of the
    :term:`buildtools-extended` tarball, additional working versions of tools
    including ``gcc``, ``make`` and the other tools included in
@@ -555,7 +555,7 @@ steps:
 
    After you have sourced the setup script, the tools are added to
    ``PATH`` and any other environment variables required to run the
-   tools are initialized. The results are working versions versions of
+   tools are initialized. The results are working versions of
    Git, tar, Python and ``chrpath``. And in the case of the
    :term:`buildtools-extended` tarball, additional working versions of tools
    including ``gcc``, ``make`` and the other tools included in
@@ -626,7 +626,7 @@ installer:
 
    After you have sourced the setup script, the tools are added to
    ``PATH`` and any other environment variables required to run the
-   tools are initialized. The results are working versions versions of
+   tools are initialized. The results are working versions of
    Git, tar, Python and ``chrpath``. And in the case of the
    :term:`buildtools-extended` tarball, additional working versions of tools
    including ``gcc``, ``make`` and the other tools included in

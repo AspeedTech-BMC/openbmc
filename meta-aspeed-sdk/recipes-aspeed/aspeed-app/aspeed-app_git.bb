@@ -19,6 +19,11 @@ EXTRA_OEMESON:append:aspeed-g7 = " \
     -Dotp-platform='ast2700' \
 "
 
+EXTRA_OEMESON:append:ast27x5 = " \
+    -Dotp-platform='ast2705' \
+    -Dcptra-platform='ast2705' \
+"
+
 # mctp-i3c and i3c-test are not supported on AST2500, remove them after install
 do_install:append:aspeed-g5() {
     rm -f ${D}${bindir}/mctp-i3c

@@ -161,46 +161,14 @@ def class_filter_features(defaults, features_var, filter_var, d):
     filtered = set(bb.utils.filter_string(defaults, d.getVar(filter_var)).split())
     return " ".join(sorted(features | filtered))
 
-def all_distro_features(d, features, truevalue="1", falsevalue=""):
-    """
-    Returns truevalue if *all* given features are set in DISTRO_FEATURES,
-    else falsevalue. The features can be given as single string or anything
-    that can be turned into a set.
-
-    This is a shorter, more flexible version of
-    bb.utils.contains("DISTRO_FEATURES", features, truevalue, falsevalue, d).
-
-    Without explicit true/false values it can be used directly where
-    Python expects a boolean:
-       if oe.utils.all_distro_features(d, "foo bar"):
-           bb.fatal("foo and bar are mutually exclusive DISTRO_FEATURES")
-
-    With just a truevalue, it can be used to include files that are meant to be
-    used only when requested via DISTRO_FEATURES:
-       require ${@ oe.utils.all_distro_features(d, "foo bar", "foo-and-bar.inc")
-    """
-    return bb.utils.contains("DISTRO_FEATURES", features, truevalue, falsevalue, d)
-
-def any_distro_features(d, features, truevalue="1", falsevalue=""):
-    """
-    Returns truevalue if at least *one* of the given features is set in DISTRO_FEATURES,
-    else falsevalue. The features can be given as single string or anything
-    that can be turned into a set.
-
-    This is a shorter, more flexible version of
-    bb.utils.contains_any("DISTRO_FEATURES", features, truevalue, falsevalue, d).
-
-    Without explicit true/false values it can be used directly where
-    Python expects a boolean:
-       if not oe.utils.any_distro_features(d, "foo bar"):
-           bb.fatal("foo, bar or both must be set in DISTRO_FEATURES")
-
-    With just a truevalue, it can be used to include files that are meant to be
-    used only when requested via DISTRO_FEATURES:
-       require ${@ oe.utils.any_distro_features(d, "foo bar", "foo-or-bar.inc")
-
-    """
-    return bb.utils.contains_any("DISTRO_FEATURES", features, truevalue, falsevalue, d)
+def set_class_filter(var, features_var, filter_var, d):
+    defaults = d.getVar(var)
+    if "}" in defaults:
+        issues = [c for c in defaults.split() if "}" in c]
+        for issue in issues:
+            defaults = defaults.replace(issue, "")
+            bb.warn("Unexpanded variable %s in %s is not recommended" % (issue, var))
+    d.setVar(var, '${@oe.utils.class_filter_features("' + defaults + '", "' + features_var + '", "' + filter_var + '", d)}')
 
 def parallel_make_value(pm):
     """
@@ -465,10 +433,12 @@ def get_host_gcc_version(d, taskcontextonly=False):
         # datastore PATH does not contain session PATH as set by environment-setup-...
         # this breaks the install-buildtools use-case
         # env["PATH"] = d.getVar("PATH")
-        output = subprocess.check_output("gcc --version", \
-                    shell=True, env=env, stderr=subprocess.STDOUT).decode("utf-8")
+        output = subprocess.check_output(["gcc", "--version"], \
+                    env=env, stderr=subprocess.STDOUT).decode("utf-8")
     except subprocess.CalledProcessError as e:
         bb.fatal("Error running gcc --version: %s" % (e.output.decode("utf-8")))
+    except OSError as e:
+        bb.fatal("Error running gcc --version: %s" % e)
 
     match = re.match(r".* (\d+\.\d+)\.\d+.*", output.split('\n')[0])
     if not match:
@@ -545,9 +515,6 @@ def touch(filename):
 # Used by allarch recipes and other cases where arch independence is needed
 #
 def make_arch_independent(d):
-    # No need for virtual/libc or a cross compiler
-    d.setVar("INHIBIT_DEFAULT_DEPS","1")
-
     # Set these to a common set of values, we shouldn't be using them other that for WORKDIR directory
     # naming anyway
     d.setVar("baselib", "lib")

@@ -13,7 +13,8 @@ SERVICE_LIST = "assert-module-power-good@.service \
                 deassert-power-good-drop.service \
                 deassert-reset-button.service \
                 deassert-rmc-main-power-enable.service \
-                get-mmc-lastest-version.service \
+                get-mmc-lastest-version@.service \
+                mctp_remove.service \
                 platform-host-ready.target \
                 power-rail-assert-log@.service \
                 power-rail-deassert-log@.service \
@@ -22,6 +23,10 @@ SERVICE_LIST = "assert-module-power-good@.service \
                 multi-gpios-sys-init.service \
                 vr-fault-assert-log@.service \
                 vr-fault-deassert-log@.service \
+                swb-pwr-fault-assert.service \
+                swb-pwr-fault-deassert.service \
+                mb-pwr-fault-assert.service \
+                mb-pwr-fault-deassert.service \
                 "
 
 SERVICE_FILE_FMT = "file://{0}"
@@ -38,11 +43,14 @@ SRC_URI += " \
     file://deassert-reset-button \
     file://deassert-rmc-main-power-enable \
     file://get-mmc-lastest-version \
+    file://mctp_remove \
     file://multi-gpios-sys-init \
     file://plat-phosphor-multi-gpio-monitor.json \
     file://power-rail-event-logger \
     file://thermal-event-logger \
     file://vr-fault-event-logger \
+    file://swb-pwr-fault-handler \
+    file://mb-pwr-fault-handler \
     file://phosphor-multi-gpio-monitor.conf \
     ${@compose_list(d, 'SERVICE_FILE_FMT', 'SERVICE_LIST')} \
     "
@@ -54,6 +62,7 @@ FILES:${PN} += "${systemd_system_unitdir}/*"
 SYSTEMD_SERVICE:${PN} += "${SERVICE_LIST}"
 
 do_install:append() {
+    install -d ${D}${localstatedir}/lib/phosphor-gpio-monitor
     install -d ${D}${datadir}/phosphor-gpio-monitor
     install -m 0644 ${UNPACKDIR}/plat-phosphor-multi-gpio-monitor.json \
                     ${D}${datadir}/phosphor-gpio-monitor/phosphor-multi-gpio-monitor.json
@@ -76,10 +85,13 @@ do_install:append() {
     install -m 0755 ${UNPACKDIR}/deassert-reset-button ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/deassert-rmc-main-power-enable ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/get-mmc-lastest-version ${D}${libexecdir}/${PN}/
+    install -m 0755 ${UNPACKDIR}/mctp_remove ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/multi-gpios-sys-init ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/power-rail-event-logger ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/thermal-event-logger ${D}${libexecdir}/${PN}/
     install -m 0755 ${UNPACKDIR}/vr-fault-event-logger ${D}${libexecdir}/${PN}/
+    install -m 0755 ${UNPACKDIR}/swb-pwr-fault-handler ${D}${libexecdir}/${PN}/
+    install -m 0755 ${UNPACKDIR}/mb-pwr-fault-handler ${D}${libexecdir}/${PN}/
 
     install -d ${D}${systemd_system_unitdir}/phosphor-multi-gpio-monitor.service.d
     install -m 0644 ${UNPACKDIR}/phosphor-multi-gpio-monitor.conf \

@@ -31,6 +31,7 @@ PACKAGES = " \
         ${PN}-user-mgmt \
         ${PN}-user-mgmt-ldap \
         ${PN}-dmtf-pmci \
+        ${PN}-dmtf-spdm \
         ${PN}-webui \
         ${PN}-tpm \
         "
@@ -196,6 +197,10 @@ SUMMARY:${PN}-dmtf-pmci = "DMTF PMCI Protocol Implementations"
 RDEPENDS:${PN}-dmtf-pmci = ""
 RDEPENDS:${PN}-dmtf-pmci:append:df-pldm = " pldm"
 RDEPENDS:${PN}-dmtf-pmci:append:df-mctp = " mctp"
+
+SUMMARY:${PN}-dmtf-spdm = "DMTF SPDM Implementations"
+RDEPENDS:${PN}-dmtf-spdm = ""
+RDEPENDS:${PN}-dmtf-spdm:append:df-spdm = " spdm"
 
 SUMMARY:${PN}-webui = "Web User Interface support"
 RDEPENDS:${PN}-webui = "webui-vue"

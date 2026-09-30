@@ -23,7 +23,7 @@ Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
  3 files changed, 29 insertions(+), 3 deletions(-)
 
 diff --git a/ikvm_input.cpp b/ikvm_input.cpp
-index 8adcbcc..f499096 100644
+index bead052..eff48ce 100644
 --- a/ikvm_input.cpp
 +++ b/ikvm_input.cpp
 @@ -27,6 +27,18 @@ Input::Input(const std::string& kbdPath, const std::string& ptrPath,
@@ -46,12 +46,12 @@ index 8adcbcc..f499096 100644
      hidUdcStream.open(hidUdcPath, std::ios::out | std::ios::app);
  }
 diff --git a/ikvm_input.hpp b/ikvm_input.hpp
-index afd2561..d34bd9a 100644
+index acce9c2..9ae770f 100644
 --- a/ikvm_input.hpp
 +++ b/ikvm_input.hpp
-@@ -79,11 +79,15 @@ class Input
-         0x40  // right alt
-     };
+@@ -64,11 +64,15 @@ class Input
+     static constexpr int PTR_REPORT_LENGTH = 6;
+ 
      /* @brief Path to the HID gadget UDC */
 -    static constexpr const char* hidUdcPath =
 +    static constexpr const char* OBMC_HID_PATH =
@@ -67,8 +67,8 @@ index afd2561..d34bd9a 100644
 +        "/sys/bus/platform/devices/12062000.usb-vhub";
      /* @brief Retry limit for writing an HID report */
      static constexpr int HID_REPORT_RETRY_MAX = 5;
-     /*
-@@ -116,6 +120,10 @@ class Input
+ 
+@@ -89,6 +93,10 @@ class Input
      std::string pointerPath;
      /* @brief Name of UDC */
      std::string udcName;
@@ -80,7 +80,7 @@ index afd2561..d34bd9a 100644
       * @brief Mapping of RFB key code to report data index to keep track
       *        of which keys are down
 diff --git a/ikvm_server.cpp b/ikvm_server.cpp
-index ef29a38..6852b9a 100644
+index 9891b95..6a52fb5 100644
 --- a/ikvm_server.cpp
 +++ b/ikvm_server.cpp
 @@ -52,6 +52,12 @@ Server::Server(const Args& args, Input& i, Video& v) :

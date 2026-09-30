@@ -37,7 +37,8 @@ def runstrip(file, elftype, strip, extra_strip_sections=''):
 
     stripcmd = [strip]
     skip_strip = False
-    # kernel module
+    # kernel module: use --strip-debug and --preserve-dates (required for
+    # module signing to remain valid after stripping)
     if elftype & 16:
         if is_kernel_module_signed(file):
             bb.debug(1, "Skip strip on signed module %s" % file)
@@ -1016,26 +1017,50 @@ def copydebugsources(debugsrcdir, sources, d):
         bb.utils.mkdirhier(basepath)
         cpath.updatecache(basepath)
 
-        for pmap in prefixmap:
-            # Ignore files from the recipe sysroots (target and native)
-            cmd =  "LC_ALL=C ; sort -z -u '%s' | egrep -v -z '((<internal>|<built-in>)$|/.*recipe-sysroot.*/)' | " % sourcefile
-            # We need to ignore files that are not actually ours
-            # we do this by only paying attention to items from this package
-            cmd += "fgrep -zw '%s' | " % prefixmap[pmap]
-            # Remove prefix in the source paths
-            cmd += "sed 's#%s/##g' | " % (prefixmap[pmap])
-            cmd += "(cd '%s' ; cpio -pd0mlLu --no-preserve-owner '%s%s' 2>/dev/null)" % (pmap, dvar, prefixmap[pmap])
+        with open(sourcefile, "rb") as f:
+            rawpaths = f.read().split(b"\0")
 
-            try:
-                subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError:
-                # Can "fail" if internal headers/transient sources are attempted
-                pass
+        # Ignore files from the recipe sysroots (target and native), and
+        # compiler internal entries. Use a set comprehension to prevent
+        # duplicate entries.
+        sourcepaths = {path for path in rawpaths
+                       if path
+                       and not path.endswith((b"<internal>", b"<built-in>"))
+                       and b"recipe-sysroot" not in os.path.dirname(path)}
+
+        for pmap, prefix in prefixmap.items():
+            dstroot = dvar + prefix
+            prefix_slash = os.fsencode(prefix) + b"/"
+            relpaths = [path.removeprefix(prefix_slash) for path in sourcepaths
+                        if path.startswith(prefix_slash)]
+
+            if relpaths:
+                subprocess.run(["cpio", "-pd0mlLu", "--no-preserve-owner", dstroot],
+                               input=b"\0".join(sorted(relpaths)) + b"\0",
+                               cwd=pmap, stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL, check=False)
+
             # cpio seems to have a bug with -lL together and symbolic links are just copied, not dereferenced.
             # Work around this by manually finding and copying any symbolic links that made it through.
-            cmd = "find %s%s -type l -print0 -delete | sed s#%s%s/##g | (cd '%s' ; cpio -pd0mL --no-preserve-owner '%s%s')" % \
-                    (dvar, prefixmap[pmap], dvar, prefixmap[pmap], pmap, dvar, prefixmap[pmap])
-            subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+            symlinks = []
+            for root, dirs, files in os.walk(dstroot, topdown=True, followlinks=False):
+                for name in dirs[:]:
+                    path = os.path.join(root, name)
+                    if os.path.islink(path):
+                        symlinks.append(os.fsencode(os.path.relpath(path, dstroot)))
+                        os.unlink(path)
+                        dirs.remove(name)
+
+                for name in files:
+                    path = os.path.join(root, name)
+                    if os.path.islink(path):
+                        symlinks.append(os.fsencode(os.path.relpath(path, dstroot)))
+                        os.unlink(path)
+
+            if symlinks:
+                subprocess.check_output(["cpio", "-pd0mL", "--no-preserve-owner", dstroot],
+                                        input=b"\0".join(sorted(symlinks)) + b"\0",
+                                        cwd=pmap, stderr=subprocess.STDOUT)
 
         # debugsources.list may be polluted from the host if we used externalsrc,
         # cpio uses copy-pass and may have just created a directory structure
@@ -1045,13 +1070,17 @@ def copydebugsources(debugsrcdir, sources, d):
 
         # Same check as above for externalsrc
         if workdir not in sdir:
-            if os.path.exists(dvar + debugsrcdir + sdir):
-                cmd = "mv %s%s%s/* %s%s" % (dvar, debugsrcdir, sdir, dvar,debugsrcdir)
-                subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+            srcdir = dvar + debugsrcdir + sdir
+            dstdir = dvar + debugsrcdir
+            if os.path.exists(srcdir):
+                entries = sorted(glob.glob(os.path.join(glob.escape(srcdir), "*")))
+                if entries:
+                    subprocess.check_output(["mv", "--"] + entries + [dstdir],
+                                            stderr=subprocess.STDOUT)
 
         # The copy by cpio may have resulted in some empty directories!  Remove these
-        cmd = "find %s%s -empty -type d -delete" % (dvar, debugsrcdir)
-        subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        cmd = ["find", dvar + debugsrcdir, "-empty", "-type", "d", "-delete"]
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
 
         # Also remove debugsrcdir if its empty
         for p in nosuchdir[::-1]:
@@ -1167,7 +1196,7 @@ def process_split_and_strip_files(d):
                         or (s[stat.ST_MODE] & stat.S_IXOTH) \
                         or ((file.startswith(libdir) or file.startswith(baselibdir)) \
                         and (".so" in f or ".node" in f)) \
-                        or (f.startswith('vmlinux') or ".ko" in f):
+                        or (f.startswith('vmlinux') or f.endswith(".ko")):
 
                     if cpath.islink(file):
                         checkelflinks[file] = ltarget

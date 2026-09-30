@@ -22,7 +22,7 @@
 #define ROT_EID  0x7B
 #define CPU0_EID 0x1D
 
-#define BMC_I3C_SLAVE_ADDR       0x08
+#define I3C_TARGET_MCTP_SYSFS_FMT "/sys/class/i3c-target-mctp/%s/device/dynamic_address"
 
 #define MCTP_CONTROL_MSG         0
 #define MCTP_VENDOR_MSG          0x7E
@@ -204,10 +204,47 @@ bool is_mctp_vendor_message_valid(struct mctp_i3c_doe_msg *msg, uint16_t len)
 	return true;
 }
 
+/*
+ * PEC is computed over the addr_rnw byte (dyn_addr << 1 | rnw) followed by
+ * the message, since addr_rnw is what actually appears on the bus. The
+ * dynamic address is DAA-assigned, so it must be read back from sysfs
+ * rather than assumed to be a fixed value.
+ */
+int get_i3c_addr_rnw(uint8_t *addr_rnw)
+{
+	const char *name = strrchr(dev, '/');
+	char path[256];
+	char buf[8];
+	FILE *f;
+
+	name = name ? name + 1 : dev;
+	snprintf(path, sizeof(path), I3C_TARGET_MCTP_SYSFS_FMT, name);
+
+	f = fopen(path, "r");
+	if (!f) {
+		perror("Failed to open dynamic_address");
+		return -1;
+	}
+
+	if (!fgets(buf, sizeof(buf), f)) {
+		fclose(f);
+		return -1;
+	}
+	fclose(f);
+
+	*addr_rnw = ((uint8_t)strtoul(buf, NULL, 16) << 1) | 0x01;
+	return 0;
+}
+
 void send_mctp_set_eid(struct i3c_mctp_packet_data *mctp_msg, uint16_t len)
 {
-	uint8_t pec, i3c_addr = (BMC_I3C_SLAVE_ADDR << 1) | 0x01;
+	uint8_t pec, i3c_addr;
 	struct mctp_i3c_set_eid *msg = (struct mctp_i3c_set_eid *)mctp_msg;
+
+	if (get_i3c_addr_rnw(&i3c_addr) < 0) {
+		printf("Failed to get i3c dynamic address\n");
+		return;
+	}
 
 	msg->mctp_header.dest_eid = 0;
 	msg->mctp_header.src_eid = SELF_EID;
@@ -238,8 +275,14 @@ void send_mctp_set_eid(struct i3c_mctp_packet_data *mctp_msg, uint16_t len)
 
 int send_doe_registration_res(struct i3c_mctp_packet_data *mctp_msg, uint16_t len)
 {
-	uint8_t pec, i3c_addr = (BMC_I3C_SLAVE_ADDR << 1) | 0x01;
+	uint8_t pec, i3c_addr;
 	struct mctp_i3c_doe_registration *msg = (struct mctp_i3c_doe_registration *)mctp_msg;
+
+	if (get_i3c_addr_rnw(&i3c_addr) < 0) {
+		printf("Failed to get i3c dynamic address\n");
+		return -1;
+	}
+
 	msg->mctp_header.dest_eid = ROT_EID;
 	msg->mctp_header.src_eid = CPU0_EID;
 	msg->mctp_header.to = 0;

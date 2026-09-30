@@ -31,6 +31,8 @@ IMAGE_INSTALL:remove:aspeed-g5 = " \
 IMAGE_FEATURES:remove:aspeed-g5 = " \
         obmc-telemetry \
         obmc-debug-collector \
+        obmc-fan-control \
+        obmc-fan-mgmt \
         "
 
 
@@ -42,6 +44,10 @@ IMAGE_INSTALL:append:aspeed-g6 = " \
 # packagegroup for ast2700
 IMAGE_INSTALL:append:aspeed-g7 = " \
         packagegroup-oss-extended \
+        "
+
+IMAGE_INSTALL:append = " \
+        ${@bb.utils.contains('MACHINE_FEATURES', 'obmf', 'lstp-module', '', d)} \
         "
 
 EXTRA_IMAGE_FEATURES:append = " \

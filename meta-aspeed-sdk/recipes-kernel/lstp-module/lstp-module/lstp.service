@@ -1,0 +1,13 @@
+[Unit]
+Description=Load NVIDIA LSTP kernel module
+DefaultDependencies=no
+After=systemd-modules-load.service
+Before=sysinit.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/modprobe lstp
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

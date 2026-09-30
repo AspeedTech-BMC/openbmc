@@ -1,0 +1,64 @@
+From 64b7fd73a298c341b894dfe0311446b477ac7db9 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Wed, 2 Sep 2026 11:12:51 +0800
+Subject: [PATCH] ocp-recovery-tool: report last RECOVERY_STATUS on
+ PerformOCPRecovery timeout
+
+"recovery did not complete in time" gave no way to tell why without
+capturing a bus waveform. Track the last successfully-read
+RECOVERY_STATUS through the poll loop and print its decoded status and
+image index on timeout; specifically call out
+RecoveryStatus::awaitingImage as "device is awaiting another recovery
+image stage - pass it via another -i/--image", since that state means
+the device is mid a multi-stage recovery and simply hasn't been given
+its next image yet.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+
+Upstream-Status: Pending
+---
+ libocp/tools/ocp_recovery_tool.cpp | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/libocp/tools/ocp_recovery_tool.cpp b/libocp/tools/ocp_recovery_tool.cpp
+index 16d667d..b01f995 100644
+--- a/libocp/tools/ocp_recovery_tool.cpp
++++ b/libocp/tools/ocp_recovery_tool.cpp
+@@ -401,10 +401,12 @@ int cmdPerformRecovery(Target& target, uint8_t cms,
+         }
+     }
+ 
++    std::optional<RecoveryStatusInfo> lastStatus;
+     for (unsigned int poll = 0; poll < statusPollRetries; poll++)
+     {
+         if (const auto info = target.getRecoveryStatus())
+         {
++            lastStatus = *info;
+             if (info->status == RecoveryStatus::success)
+             {
+                 std::cout << "recovery successful\n";
+@@ -421,7 +423,23 @@ int cmdPerformRecovery(Target& target, uint8_t cms,
+         sleepSec(1);
+     }
+ 
+-    std::cerr << "recovery did not complete in time\n";
++    if (lastStatus)
++    {
++        std::cerr << std::format(
++            "recovery did not complete in time; last RECOVERY_STATUS: "
++            "{:#04x} ({}), image index {}\n",
++            std::to_underlying(lastStatus->status),
++            recoveryStatusStr(lastStatus->status), lastStatus->imageIndex);
++        if (lastStatus->status == RecoveryStatus::awaitingImage)
++        {
++            std::cerr << "device is awaiting another recovery image stage "
++                         "- pass it via another -i/--image\n";
++        }
++    }
++    else
++    {
++        std::cerr << "recovery did not complete in time\n";
++    }
+     return failure;
+ }
+ 

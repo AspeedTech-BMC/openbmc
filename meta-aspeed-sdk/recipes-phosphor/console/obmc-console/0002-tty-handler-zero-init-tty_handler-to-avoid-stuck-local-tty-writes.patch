@@ -1,0 +1,50 @@
+From 8eb1bba833baf5e515151e363558b62cbe5610ba Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Wed, 26 Aug 2026 08:47:50 +0800
+Subject: [PATCH] tty-handler: zero-init tty_handler to avoid stuck local-tty
+ writes
+
+th->blocked was left as malloc() garbage. If it happened to read as
+true, tty_set_blocked(true) became a no-op (blocked already matched),
+POLLOUT was never watched for, and local-tty writes stayed stuck
+until the ringbuffer's forced drain kicked in.
+
+Also zero-initialize the socket_handler allocation in socket_init(),
+as it is allocated with malloc() without being initialized.
+
+Upstream-Status: Submitted
+[https://gerrit.openbmc.org/c/openbmc/obmc-console/+/93953]
+
+Change-Id: Ia64a794fa0998a73b93359f9ccedd7166c4bf46e
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ socket-handler.c | 2 ++
+ tty-handler.c    | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/socket-handler.c b/socket-handler.c
+index c036b58..a24a249 100644
+--- a/socket-handler.c
++++ b/socket-handler.c
+@@ -442,6 +442,8 @@ static struct handler *socket_init(const struct handler_type *type
+ 		return NULL;
+ 	}
+
++	memset(sh, 0, sizeof(*sh));
++
+ 	sh->console = console;
+ 	sh->clients = NULL;
+ 	sh->n_clients = 0;
+diff --git a/tty-handler.c b/tty-handler.c
+index a722d24..12a6699 100644
+--- a/tty-handler.c
++++ b/tty-handler.c
+@@ -263,6 +263,8 @@ static struct handler *tty_init(const struct handler_type *type
+ 	if (!th) {
+ 		return NULL;
+ 	}
++
++	memset(th, 0, sizeof(*th));
+
+ 	th->fd = open(tty_path, O_RDWR | O_NONBLOCK);
+ 	if (th->fd < 0) {

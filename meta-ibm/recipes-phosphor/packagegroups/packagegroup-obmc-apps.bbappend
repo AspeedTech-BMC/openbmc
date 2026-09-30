@@ -35,13 +35,16 @@ RDEPENDS:${PN}-inventory:remove:huygens = " openpower-occ-control"
 RDEPENDS:${PN}-fan-control:append:ibm-ac-server = " fan-watchdog"
 RDEPENDS:${PN}-fan-control:append:ibm-enterprise = " fan-watchdog"
 RDEPENDS:${PN}-fan-control:append:sbp1 = " fan-watchdog phosphor-fan-sensor-monitor"
+RDEPENDS:${PN}-fan-control:remove:huygens = " fan-watchdog"
 
 RDEPENDS:${PN}-extras:append:ibm-ac-server = " ${POWER_SERVICE_PACKAGES_AC_SERVER}"
 RDEPENDS:${PN}-extras:append:ibm-enterprise = " ${POWER_SERVICE_PACKAGES_IBM_ENTERPRISE} dbus-sensors phosphor-virtual-sensor"
-RDEPENDS:${PN}-extras:append:ibm-enterprise = " pldm openpower-hw-diags srvcfg-manager biosconfig-manager phosphor-post-code-manager phosphor-host-postd debug-trigger libmctp"
+RDEPENDS:${PN}-extras:append:ibm-enterprise = " pldm openpower-hw-diags srvcfg-manager biosconfig-manager phosphor-post-code-manager phosphor-host-postd debug-trigger libmctp phosphor-watchdog"
 RDEPENDS:${PN}-extras:remove:ibm-enterprise = "obmc-ikvm liberation-fonts uart-render-controller"
 RDEPENDS:${PN}-extras:append:sbp1 = " phosphor-ipmi-ipmb "
 RDEPENDS:${PN}-extras:append:huygens = " ${POWER_SERVICE_PACKAGES_HUYGENS}"
+
+RDEPENDS:${PN}-dmtf-spdm:append:df-spdm-emu = " spdm-emu"
 
 RDEPENDS:${PN}-software:append:ibm-ac-server = " phosphor-software-manager-sync"
 RDEPENDS:${PN}-software:append:ibm-enterprise = " phosphor-software-manager-usb"

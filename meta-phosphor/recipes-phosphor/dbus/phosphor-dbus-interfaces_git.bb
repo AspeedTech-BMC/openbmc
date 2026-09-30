@@ -7,7 +7,7 @@ DEPENDS += " \
         sdbusplus \
         systemd \
         "
-SRCREV = "a4cbceeaf729ea94d765b86fa518183906c5696c"
+SRCREV = "079b8cd84f979a4863333864bad140fd5c28c0b6"
 PV = "1.0+git${SRCPV}"
 PR = "r1"
 
@@ -45,4 +45,4 @@ do_write_config:append() {
 # The write-config needs to happen after the unpack and patch steps.
 # Unpack is what creates the original source.  Someone could apply patches to
 # the repository that affects meson.options.
-do_write_config[depends] += "${PN}:do_unpack ${PN}:do_patch"
+addtask write_config after do_unpack do_patch before do_configure

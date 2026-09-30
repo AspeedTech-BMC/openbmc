@@ -3,8 +3,8 @@ SRC_URI_ASPEED_ZEPHYR_PROJECT = "git://github.com/AspeedTech-BMC/aspeed-zephyr-p
 ASPEED_ZEPHYR_PROJECT_BRANCH ??= "aspeed-master"
 ASPEED_ZEPHYR_PROJECT_NOBRANCH ??= "0"
 
-# Tag for v03.07
-SRCREV_app = "1e85331603dc82f8a9cfa433f1044567e4ed7b00"
+# Tag for v03.07+
+SRCREV_app = "18f49b320531e2ef0909e4d2131bf1f1f70184ff"
 
 # Submodule
 # dtc

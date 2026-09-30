@@ -16,8 +16,8 @@ CPTRA_TOML_PADDING_ALIGN_SIZE ?= "256"
 CPTRA_TOML_PADDING_OUT_FOLDER ?= "out/padding_output"
 
 # Vendor firmware keys.
-CPTRA_TOML_VND_FW_ECC_PUB ?= "vnd-fw-ecc-pub-key-1.pem"
-CPTRA_TOML_VND_FW_ECC_PRIV ?= "vnd-fw-ecc-priv-key-1.pem"
+CPTRA_TOML_VND_FW_ECC_PUB ?= "vnd-fw-ecc-pub-key-0.pem"
+CPTRA_TOML_VND_FW_ECC_PRIV ?= "vnd-fw-ecc-priv-key-0.pem"
 CPTRA_TOML_VND_FW_LMS_PUB ?= "vnd-fw-lms-pub-key-0.pem"
 CPTRA_TOML_VND_FW_LMS_PRIV ?= "vnd-fw-lms-priv-key-0.pem"
 CPTRA_TOML_VND_FW_MLDSA_PUB ?= "vnd-fw-mldsa-pub-key-0.bin"
