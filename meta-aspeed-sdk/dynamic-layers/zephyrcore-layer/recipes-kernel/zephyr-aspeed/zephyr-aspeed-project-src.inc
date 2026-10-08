@@ -4,7 +4,7 @@ ASPEED_ZEPHYR_PROJECT_BRANCH ??= "aspeed-master"
 ASPEED_ZEPHYR_PROJECT_NOBRANCH ??= "0"
 
 # Tag for v03.08
-SRCREV_app = "714d04e3bc8eebeacbc5db3f228ba9890d75976b"
+SRCREV_app = "e5862a5b048cc7ce7557c3d4600cb98faab66f3b"
 
 # Submodule
 # dtc
