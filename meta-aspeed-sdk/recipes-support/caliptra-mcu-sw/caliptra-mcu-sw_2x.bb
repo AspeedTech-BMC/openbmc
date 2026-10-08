@@ -4,13 +4,14 @@ HOMEPAGE = "https://github.com/chipsalliance/caliptra-mcu-sw"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 
-BRANCH = "main-2.1"
-SRC_URI = "gitsm://github.com/chipsalliance/caliptra-mcu-sw;protocol=https;branch=${BRANCH}; \
+BRANCH = "aspeed-main-2.1-rt"
+SRC_URI = "gitsm://github.com/AspeedTech-BMC/caliptra-mcu-sw;protocol=https;branch=${BRANCH}; \
            https://raw.githubusercontent.com/rust-lang/rustup/1.29.1/rustup-init.sh;name=rustup-init;subdir=${UNPACKDIR};downloadfilename=rustup-init.sh;unpack=0 \
           "
 SRC_URI[rustup-init.sha256sum] = "7d0ea0f8eba7fa1ebfe998091cd7ec4501e33ec5ca6b884eb4d894d7da5170af"
 
-SRCREV = "279d213f04922f78b6eb71535fecc6ca8ab2b804"
+# Tag for v00.01.00
+SRCREV = "98d8659be399656e4f7ffd5cf12fcad5cf652e41"
 
 B = "${UNPACKDIR}/build"
 

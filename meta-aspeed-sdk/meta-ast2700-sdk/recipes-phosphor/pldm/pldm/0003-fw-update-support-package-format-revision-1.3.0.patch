@@ -1,0 +1,4842 @@
+From 0c534765fdccea186d5d0d75463a60c5ff3481fc Mon Sep 17 00:00:00 2001
+From: Steven Lee <steven_lee@aspeedtech.com>
+Date: Thu, 10 Sep 2026 10:27:16 +0800
+Subject: [PATCH] fw-update: support PLDM package format revision 1.3.0
+
+Squashed backport of openbmc/pldm Gerrit change 93835 ("fw-update:
+support package format revision 1.3.0", patchset 6) together with its
+whole relation chain and the master commits it sits on, rebased onto the
+pldm SRCREV pinned by meta-phosphor (ecb4b2bb) with the SDK's
+0001-Add-back-maximum-transfer-size-configuration.patch already applied.
+
+Carrying the chain as a single patch keeps the SDK on the stock pldm,
+libpldm and sdbusplus revisions: no SRCREV override, no libpldm bbappend
+and no sdbusplus compatibility shim are needed. libpldm 58463c9c already
+ships the libpldm++ C++ bindings with v1_3_0 package support, and
+sdbusplus 4e82142c already provides the top-level match aliases.
+
+Squashed upstream commits (oldest first):
+
+  039648e pldm: prefer empty() over size() == 0
+  fef35d5 oem-ibm: Fix null buffer check in PCIeInfoHandler::write
+  b109898 common/utils: use decoder in findStateSensorPDR
+  2cd857d common/utils: use decoder in findStateSensorId
+  cc8d016 fix build failure by reverting 2cd857d b109898
+  283e1dd pldmd: fix unsupported command handling
+  7dabc62 bios: add getValueIndex unit test coverage
+  ea365dc fw_update: add pre-post update conditions
+  4a48c52 fw-update/test: fix ComponentClassification            (92394, merged)
+  dff776e package_parser: remove redundant pkg size param        (92432, merged)
+  4e11a78 common/types.hpp: fix name conflict                    (92387)
+  1546c7b migrate to libpldm++ PackageParser                     (92352)
+  a47e4dc fw-update: sort descriptors before comparing           (93831)
+  f9643e2 fw-update: widen RequestFirmwareData offsets           (93832)
+  204b769 fw-update: hold component images as spans              (93833)
+  ddc0e54 fw-update: restore component image validation          (93834)
+  3acbf1e fw-update: support package format revision 1.3.0       (93835)
+
+Conflict resolved during the rebase: 204b769 reintroduced the hardcoded
+MAXIMUM_TRANSFER_SIZE constant in fw-update/update_manager.cpp that
+0001-Add-back-maximum-transfer-size-configuration.patch removes; the
+meson-configured value is kept.
+
+Drop this patch once the SDK moves to an OpenBMC revision that already
+carries Gerrit 93835.
+
+Upstream-Status: Backport [https://gerrit.openbmc.org/c/openbmc/pldm/+/93835]
+Signed-off-by: Steven Lee <steven_lee@aspeedtech.com>
+---
+ docs/fw_update_configuration.md               | 104 ++++++
+ meson.build                                   |  12 +
+ common/types.hpp                              |  52 ++-
+ .../fw-update-conditions/schema/schema.json   |  42 +++
+ configurations/meson.build                    |   2 +
+ fw-update/aggregate_update_manager.cpp        |  20 +-
+ fw-update/aggregate_update_manager.hpp        |  41 +-
+ fw-update/condition_collector.hpp             | 183 +++++++++
+ fw-update/device_updater.cpp                  | 113 +++---
+ fw-update/device_updater.hpp                  |  21 +-
+ fw-update/firmware_inventory.cpp              |   2 +-
+ fw-update/firmware_inventory.hpp              |   7 +-
+ fw-update/firmware_inventory_manager.cpp      |  17 +-
+ fw-update/firmware_inventory_manager.hpp      |  18 +-
+ fw-update/inventory_manager.cpp               |  45 ++-
+ fw-update/inventory_manager.hpp               |  16 +-
+ fw-update/item_update_manager.cpp             | 217 ++++++++---
+ fw-update/item_update_manager.hpp             | 106 +++++-
+ fw-update/manager.hpp                         |   8 +-
+ fw-update/package_parser.cpp                  | 349 +++++-------------
+ fw-update/package_parser.hpp                  | 137 +++----
+ fw-update/systemd_interface.cpp               | 215 +++++++++++
+ fw-update/systemd_interface.hpp               | 161 ++++++++
+ fw-update/test/condition_collector_test.cpp   | 288 +++++++++++++++
+ fw-update/test/device_updater_test.cpp        |  87 +++--
+ .../test/firmware_inventory_manager_test.cpp  |  18 +-
+ fw-update/test/firmware_inventory_test.cpp    |  13 +-
+ fw-update/test/inventory_manager_test.cpp     |  20 +-
+ fw-update/test/meson.build                    |   4 +
+ fw-update/test/package_parser_test.cpp        | 205 ++++++++--
+ fw-update/test/systemd_interface_test.cpp     |  90 +++++
+ fw-update/test/update_manager_test.cpp        | 107 ++++++
+ fw-update/update_manager.cpp                  | 231 +++++++++---
+ fw-update/update_manager.hpp                  |  89 ++++-
+ libpldmresponder/event_parser.cpp             |   2 +-
+ .../platform_numeric_effecter.hpp             |   2 +-
+ ...pldmresponder_bios_enum_attribute_test.cpp |  43 +++
+ meson.options                                 |   7 +
+ .../libpldmresponder/file_io_type_pcie.cpp    |   2 +-
+ pldmd/handler.hpp                             |   7 +-
+ pldmtool/pldm_base_cmd.cpp                    |   2 +-
+ pldmtool/pldm_fw_update_cmd.cpp               |  33 +-
+ softoff/softoff.cpp                           |   2 +-
+ subprojects/libpldm.wrap                      |   1 +
+ test/meson.build                              |   1 +
+ test/pldmd_registration_test.cpp              |   6 +-
+ 46 files changed, 2427 insertions(+), 721 deletions(-)
+ create mode 100644 configurations/fw-update-conditions/schema/schema.json
+ create mode 100644 fw-update/condition_collector.hpp
+ create mode 100644 fw-update/systemd_interface.cpp
+ create mode 100644 fw-update/systemd_interface.hpp
+ create mode 100644 fw-update/test/condition_collector_test.cpp
+ create mode 100644 fw-update/test/systemd_interface_test.cpp
+ create mode 100644 fw-update/test/update_manager_test.cpp
+
+diff --git a/docs/fw_update_configuration.md b/docs/fw_update_configuration.md
+index 98953c4..de09f87 100644
+--- a/docs/fw_update_configuration.md
++++ b/docs/fw_update_configuration.md
+@@ -21,3 +21,107 @@ To enable inotify-based firmware update monitoring:
+ ```bash
+ meson setup build -Dfw-update-pkg-inotify=enabled
+ ```
++
++## Pre and Post Update Condition Services
++
++PLDM firmware update supports optional pre and post update condition services
++that can be executed during the firmware update process. These services are
++specified in the configuration files and are used for device-specific handling
++such as checking conditions before update or performing cleanup/validation after
++update.
++
++`PreUpdateTarget` and `PostUpdateTarget` hold a full systemd unit name, for
++example `ABC_PreUpdate.service`. Omit the property when a component has no such
++condition; an empty unit name is rejected by the
++[schema](../configurations/fw-update-conditions/schema/schema.json) and is
++reported at runtime instead of being silently skipped.
++
++### Condition Service Completion and Timeouts
++
++PLDM starts a condition unit with the systemd `StartUnit` method and waits for
++its `JobRemoved` signal, as described in the
++[code update design](https://github.com/openbmc/docs/blob/master/designs/code-update.md#pre-and-post-update-conditions).
++Only the job result `done` is treated as success; any other result fails the
++condition and, for a pre-update condition, aborts the update.
++
++PLDM applies no timeout of its own, because systemd reports every dequeued job
++through `JobRemoved` exactly once. A condition unit that can hang is therefore
++expected to bound its own execution time, which makes systemd terminate the unit
++and deliver the resulting failure through `JobRemoved`. The directive to use
++depends on the service type: `TimeoutStartSec=` bounds a `Type=oneshot` unit,
++for which `RuntimeMaxSec=` is ignored, while `RuntimeMaxSec=` caps the runtime
++of a unit that reaches the active state. Without such a bound a hanging
++condition unit leaves the firmware update waiting indefinitely.
++
++```ini
++[Service]
++Type=oneshot
++TimeoutStartSec=60
++ExecStart=/usr/bin/example-pre-update
++```
++
++### Condition Service Arguments Format
++
++A condition service that needs arguments is configured as a systemd template
++unit, following the standard `<name>@.service` naming convention. PLDM then
++passes all supported named arguments as the instance name of that unit; a unit
++name that is not a template receives no arguments at all. There is no
++per-service argument selection, so a template unit has to tolerate arguments it
++does not use.
++
++The argument string is a comma separated list of `<key>=<value>` pairs:
++
++```text
++boardName=<boardName>,applyTime=<applyTimeValue>
++```
++
++Where:
++
++- `<boardName>`: Name of the inventory board the device belongs to. Omitted when
++  no board name is available.
++- `<applyTimeValue>`: One of:
++  - `Immediate` - Apply the update immediately
++  - `OnReset` - Apply the update on next system reset
++  - `OnStart` - Apply the update on next system start
++
++Since `=` and `,` are not valid characters in a systemd unit name, PLDM escapes
++the instance name as `systemd-escape` would. A unit recovers the original
++argument string with the `%I` specifier; `%i` yields the escaped form.
++
++### Examples
++
++**Example 1: Condition service without arguments** With
++`"PostUpdateTarget": "ABC_PostUpdate.service"`, PLDM starts:
++
++```text
++ABC_PostUpdate.service
++```
++
++**Example 2: Parameterized condition service** With
++`"PostUpdateTarget": "ABC_PostUpdate@.service"`, the board name `board1` and
++`applyTime` `Immediate`, PLDM starts the escaped instance:
++
++```text
++ABC_PostUpdate@boardName\x3dboard1\x2capplyTime\x3dImmediate.service
++```
++
++`ABC_PostUpdate@.service` then sees `boardName=board1,applyTime=Immediate`:
++
++```ini
++[Service]
++Type=oneshot
++TimeoutStartSec=60
++ExecStart=/usr/bin/example-post-update %I
++```
++
++### Post-Condition Service Processing
++
++Post-condition services receive these arguments and can use them for conditional
++processing. For example:
++
++- Skip system reset if `applyTime` is not `Immediate`
++- Perform device-specific validation based on `applyTime`
++- Schedule deferred operations based on the apply time value
++
++The service should interpret these parameters to determine appropriate actions
++for the given apply time.
+diff --git a/meson.build b/meson.build
+index 73c0d0d..271b0ad 100644
+--- a/meson.build
++++ b/meson.build
+@@ -124,6 +124,12 @@ if get_option('fw-update-pkg-inotify').allowed()
+     conf_data.set('FW_UPDATE_INOTIFY_ENABLED', 1)
+ endif
+ 
++# Firmware update targets JSON path
++conf_data.set_quoted(
++    'FW_UPDATE_TARGETS_JSON',
++    get_option('fw-update-targets-json'),
++)
++
+ configure_file(output: 'config.h', configuration: conf_data)
+ 
+ add_project_arguments(
+@@ -194,6 +200,10 @@ libpldm_dep = dependency(
+     fallback: ['libpldm', 'libpldm_dep'],
+     include_type: 'system',
+ )
++libpldmcpp_dep = dependency(
++    'libpldm++',
++    include_type: 'system',
++)
+ 
+ if get_option('oem-ampere').allowed()
+     add_project_arguments('-DOEM_AMPERE', language: 'cpp')
+@@ -232,6 +242,7 @@ libpldmutils = declare_dependency(
+ deps = [
+     CLI11_dep,
+     libpldm_dep,
++    libpldmcpp_dep,
+     libpldmutils,
+     nlohmann_json_dep,
+     phosphor_dbus_interfaces,
+@@ -264,6 +275,7 @@ fw_update_sources = files(
+     'fw-update/inventory_manager.cpp',
+     'fw-update/item_update_manager.cpp',
+     'fw-update/package_parser.cpp',
++    'fw-update/systemd_interface.cpp',
+     'fw-update/update.cpp',
+     'fw-update/update_manager.cpp',
+ )
+diff --git a/common/types.hpp b/common/types.hpp
+index 5cc260d..afa615c 100644
+--- a/common/types.hpp
++++ b/common/types.hpp
+@@ -6,7 +6,9 @@
+ #include <cstdint>
+ #include <functional>
+ #include <map>
++#include <optional>
+ #include <set>
++#include <span>
+ #include <string>
+ #include <unordered_map>
+ #include <variant>
+@@ -108,6 +110,8 @@ namespace fw_update
+ using InventoryPath = std::string;
+ using SoftwareName = std::string;
+ 
++namespace pkg
++{
+ // Descriptor definition
+ using DescriptorType = uint16_t;
+ using DescriptorData = std::vector<uint8_t>;
+@@ -115,9 +119,13 @@ using VendorDefinedDescriptorTitle = std::string;
+ using VendorDefinedDescriptorData = std::vector<uint8_t>;
+ using VendorDefinedDescriptorInfo =
+     std::tuple<VendorDefinedDescriptorTitle, VendorDefinedDescriptorData>;
+-using Descriptors =
+-    std::multimap<DescriptorType,
+-                  std::variant<DescriptorData, VendorDefinedDescriptorInfo>>;
++using DescriptorValue =
++    std::variant<DescriptorData, VendorDefinedDescriptorInfo>;
++using Descriptors = std::multimap<DescriptorType, DescriptorValue>;
++using Descriptor = std::pair<DescriptorType, DescriptorValue>;
++/** @brief Descriptors ordered by the whole entry, not by DescriptorType alone
++ */
++using SortedDescriptors = std::multiset<Descriptor>;
+ using DownstreamDeviceIndex = uint16_t;
+ using DownstreamDeviceInfo =
+     std::unordered_map<DownstreamDeviceIndex, Descriptors>;
+@@ -152,18 +160,32 @@ using FirmwareDeviceIDRecord =
+                FirmwareDevicePackageData>;
+ using FirmwareDeviceIDRecords = std::vector<FirmwareDeviceIDRecord>;
+ 
++// DownstreamDeviceIDRecords, added by PLDM fw update package v1.1.0
++using SelfContainedActivationMinVersion = std::optional<std::string>;
++using SelfContainedActivationMinVersionComparisonStamp =
++    std::optional<uint32_t>;
++using DownstreamDeviceIDRecord =
++    std::tuple<DeviceUpdateOptionFlags, ApplicableComponents,
++               SelfContainedActivationMinVersion,
++               SelfContainedActivationMinVersionComparisonStamp, Descriptors,
++               FirmwareDevicePackageData>;
++using DownstreamDeviceIDRecords = std::vector<DownstreamDeviceIDRecord>;
++
+ // ComponentImageInformation
+ using ComponentImageCount = uint16_t;
+ using CompComparisonStamp = uint32_t;
+ using CompOptions = std::bitset<16>;
+ using ReqCompActivationMethod = std::bitset<16>;
+-using CompLocationOffset = uint32_t;
+-using CompSize = uint32_t;
+ using CompVersion = std::string;
++/** @brief View of a component image inside the firmware update package.
++ *
++ *  @note The view is only valid while the buffer the package was parsed from
++ *        is alive.
++ */
++using CompImage = std::span<const uint8_t>;
+ using ComponentImageInfo =
+     std::tuple<CompClassification, CompIdentifier, CompComparisonStamp,
+-               CompOptions, ReqCompActivationMethod, CompLocationOffset,
+-               CompSize, CompVersion>;
++               CompOptions, ReqCompActivationMethod, CompImage, CompVersion>;
+ using ComponentImageInfos = std::vector<ComponentImageInfo>;
+ 
+ enum class ComponentImageInfoPos : size_t
+@@ -173,10 +195,20 @@ enum class ComponentImageInfoPos : size_t
+     CompComparisonStampPos = 2,
+     CompOptionsPos = 3,
+     ReqCompActivationMethodPos = 4,
+-    CompLocationOffsetPos = 5,
+-    CompSizePos = 6,
+-    CompVersionPos = 7,
++    CompImagePos = 5,
++    CompVersionPos = 6,
+ };
++} // namespace pkg
++
++// Pre/Post condition
++using ConditionIdentifier = SoftwareName;
++using ConditionArg = std::string;
++using ConditionPath = std::string;
++using ConditionPaths = std::pair<ConditionPath, ConditionPath>;
++using PrePostCondition = std::pair<ConditionIdentifier, ConditionPaths>;
++using PrePostConditionMap =
++    std::unordered_map<ConditionIdentifier, ConditionPaths>;
++using ConditionConfig = std::pair<ConditionIdentifier, ConditionArg>;
+ 
+ } // namespace fw_update
+ 
+diff --git a/configurations/fw-update-conditions/schema/schema.json b/configurations/fw-update-conditions/schema/schema.json
+new file mode 100644
+index 0000000..cb628b9
+--- /dev/null
++++ b/configurations/fw-update-conditions/schema/schema.json
+@@ -0,0 +1,42 @@
++{
++    "$schema": "https://json-schema.org/draft/2020-12/schema",
++    "$id": "https://openbmc.github.io/pldm/fw-update-conditions/schema.json",
++    "title": "PLDM Firmware Update Conditions",
++    "description": "Schema for pre/post setup targets used by platform firmware update conditions.",
++    "type": "object",
++    "required": ["Components"],
++    "additionalProperties": false,
++    "properties": {
++        "Components": {
++            "type": "array",
++            "minItems": 1,
++            "items": {
++                "$ref": "#/$defs/ComponentCondition"
++            }
++        }
++    },
++    "$defs": {
++        "ComponentCondition": {
++            "type": "object",
++            "required": ["Component"],
++            "additionalProperties": false,
++            "properties": {
++                "Component": {
++                    "type": "string",
++                    "minLength": 1,
++                    "description": "Component name used to map update conditions."
++                },
++                "PreUpdateTarget": {
++                    "type": "string",
++                    "pattern": "^[^/]+\\.(service|target)$",
++                    "description": "Systemd unit name to run before update, for example ABC_PreUpdate.service. A template unit name such as ABC_PreUpdate@.service receives all supported named arguments as its instance name. Omit this property when the component has no pre-condition."
++                },
++                "PostUpdateTarget": {
++                    "type": "string",
++                    "pattern": "^[^/]+\\.(service|target)$",
++                    "description": "Systemd unit name to run after a successful update, for example ABC_PostUpdate.service. A template unit name such as ABC_PostUpdate@.service receives all supported named arguments as its instance name. Omit this property when the component has no post-condition."
++                }
++            }
++        }
++    }
++}
+diff --git a/configurations/meson.build b/configurations/meson.build
+index 42eaf68..092bd04 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -6,6 +6,8 @@ install_subdir('events', install_dir: package_datadir)
+ 
+ install_subdir('softoff', install_dir: package_datadir)
+ 
++install_subdir('fw-update-conditions', install_dir: package_datadir)
++
+ if get_option('oem-ibm').disabled()
+     install_data('fru_master.json', install_dir: package_datadir)
+     install_data('entityMap.json', install_dir: package_datadir)
+diff --git a/fw-update/aggregate_update_manager.cpp b/fw-update/aggregate_update_manager.cpp
+index 97efeba..f28b2dd 100644
+--- a/fw-update/aggregate_update_manager.cpp
++++ b/fw-update/aggregate_update_manager.cpp
+@@ -26,25 +26,29 @@ Response AggregateUpdateManager::handleRequest(
+ }
+ 
+ void AggregateUpdateManager::createUpdateManager(
+-    const SoftwareIdentifier& softwareIdentifier,
+-    const Descriptors& descriptors, const ComponentInfo& componentInfo,
+-    const std::string& updateObjPath, const std::string& generatedId)
++    const pkg::SoftwareIdentifier& softwareIdentifier,
++    const pkg::Descriptors& descriptors,
++    const pkg::ComponentInfo& componentInfo, const std::string& updateObjPath,
++    const std::string& generatedId, const ConditionPaths& conditionPathPair,
++    const std::string& conditionArg,
++    std::function<void()> taskCompletionCallback)
+ {
+     auto eid = softwareIdentifier.first;
+ 
+     descriptorMap[softwareIdentifier] =
+-        std::make_unique<Descriptors>(descriptors);
++        std::make_unique<pkg::Descriptors>(descriptors);
+     componentInfoMap[softwareIdentifier] =
+-        std::make_unique<ComponentInfo>(componentInfo);
++        std::make_unique<pkg::ComponentInfo>(componentInfo);
+ 
+     updateManagers[softwareIdentifier] = std::make_unique<ItemUpdateManager>(
+         eid, event, handler, instanceIdDb, updateObjPath, generatedId,
+         *descriptorMap[softwareIdentifier],
+-        *componentInfoMap[softwareIdentifier]);
++        *componentInfoMap[softwareIdentifier], conditionPathPair, conditionArg,
++        std::move(taskCompletionCallback));
+ }
+ 
+ void AggregateUpdateManager::eraseUpdateManager(
+-    const SoftwareIdentifier& softwareIdentifier)
++    const pkg::SoftwareIdentifier& softwareIdentifier)
+ {
+     updateManagers.erase(softwareIdentifier);
+     descriptorMap.erase(softwareIdentifier);
+@@ -52,7 +56,7 @@ void AggregateUpdateManager::eraseUpdateManager(
+ }
+ 
+ void AggregateUpdateManager::eraseUpdateManagerIf(
+-    std::function<bool(const SoftwareIdentifier&)>&& predicate)
++    std::function<bool(const pkg::SoftwareIdentifier&)>&& predicate)
+ {
+     for (auto it = updateManagers.begin(); it != updateManagers.end();)
+     {
+diff --git a/fw-update/aggregate_update_manager.hpp b/fw-update/aggregate_update_manager.hpp
+index c9acc6c..14bfaec 100644
+--- a/fw-update/aggregate_update_manager.hpp
++++ b/fw-update/aggregate_update_manager.hpp
+@@ -22,16 +22,24 @@ class AggregateUpdateManager : public UpdateManager
+      * @param[in] handler - PLDM request handler
+      * @param[in] instanceIdDb - Reference to the instance ID database
+      * @param[in] descriptorMap - Descriptor map for the update manager
++     * @param[in] downstreamDescriptorMap - Downstream descriptor map for the
++     * update manager
+      * @param[in] componentInfoMap - Component information map for the update
+      * manager
+      */
+     explicit AggregateUpdateManager(
+         Event& event,
+         pldm::requester::Handler<pldm::requester::Request>& handler,
+-        InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
+-        const ComponentInfoMap& componentInfoMap) :
++        InstanceIdDb& instanceIdDb, const pkg::DescriptorMap& descriptorMap,
++        const pkg::DownstreamDescriptorMap& downstreamDescriptorMap,
++        const pkg::ComponentInfoMap& componentInfoMap,
++        const ConditionPaths& conditionPathPair = ConditionPaths{},
++        const std::string& conditionArg = std::string{},
++        std::function<void()> taskCompletionCallback = nullptr) :
+         UpdateManager(event, handler, instanceIdDb, descriptorMap,
+-                      componentInfoMap)
++                      downstreamDescriptorMap, componentInfoMap,
++                      conditionPathPair, conditionArg,
++                      std::move(taskCompletionCallback))
+     {}
+ 
+     /**
+@@ -65,11 +73,21 @@ class AggregateUpdateManager : public UpdateManager
+      * software identifier
+      * @param[in] updateObjPath - The D-Bus object path for the update manager
+      * @param[in] generatedId - The software hash identifier
++     * @param[in] conditionPathPair - The condition paths associated with the
++     * update manager
++     * @param[in] conditionArg - The condition argument associated with the
++     * update manager
++     * @param[in] taskCompletionCallback - The callback function to be called
++     * upon task completion
+      */
+     void createUpdateManager(
+-        const SoftwareIdentifier& softwareIdentifier,
+-        const Descriptors& descriptors, const ComponentInfo& componentInfo,
+-        const std::string& updateObjPath, const std::string& generatedId);
++        const pkg::SoftwareIdentifier& softwareIdentifier,
++        const pkg::Descriptors& descriptors,
++        const pkg::ComponentInfo& componentInfo,
++        const std::string& updateObjPath, const std::string& generatedId,
++        const ConditionPaths& conditionPathPair = ConditionPaths{},
++        const std::string& conditionArg = std::string{},
++        std::function<void()> taskCompletionCallback = nullptr);
+ 
+     /**
+      * @brief Erase an existing UpdateManager instance associated with a
+@@ -82,7 +100,7 @@ class AggregateUpdateManager : public UpdateManager
+      * @param[in] softwareIdentifier - The software identifier (pair of eid and
+      * component identifier)
+      */
+-    void eraseUpdateManager(const SoftwareIdentifier& softwareIdentifier);
++    void eraseUpdateManager(const pkg::SoftwareIdentifier& softwareIdentifier);
+ 
+     /**
+      * @brief Erase UpdateManager instances that satisfy a given predicate
+@@ -95,24 +113,25 @@ class AggregateUpdateManager : public UpdateManager
+      * returns true if the corresponding UpdateManager should be erased
+      */
+     void eraseUpdateManagerIf(
+-        std::function<bool(const SoftwareIdentifier&)>&& predicate);
++        std::function<bool(const pkg::SoftwareIdentifier&)>&& predicate);
+ 
+   private:
+     /**
+      * @brief Map of UpdateManager instances keyed by software identifier
+      */
+-    std::map<SoftwareIdentifier, std::unique_ptr<ItemUpdateManager>>
++    std::map<pkg::SoftwareIdentifier, std::unique_ptr<ItemUpdateManager>>
+         updateManagers;
+ 
+     /**
+      * @brief Map of descriptor maps keyed by software identifier
+      */
+-    std::map<SoftwareIdentifier, std::unique_ptr<Descriptors>> descriptorMap;
++    std::map<pkg::SoftwareIdentifier, std::unique_ptr<pkg::Descriptors>>
++        descriptorMap;
+ 
+     /**
+      * @brief Map of component information maps keyed by software identifier
+      */
+-    std::map<SoftwareIdentifier, std::unique_ptr<ComponentInfo>>
++    std::map<pkg::SoftwareIdentifier, std::unique_ptr<pkg::ComponentInfo>>
+         componentInfoMap;
+ };
+ 
+diff --git a/fw-update/condition_collector.hpp b/fw-update/condition_collector.hpp
+new file mode 100644
+index 0000000..79a2ee4
+--- /dev/null
++++ b/fw-update/condition_collector.hpp
+@@ -0,0 +1,183 @@
++#pragma once
++
++#include "common/types.hpp"
++#include "common/utils.hpp"
++
++#include <libpldm/base.h>
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <filesystem>
++#include <format>
++#include <fstream>
++#include <optional>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm::fw_update
++{
++
++namespace fs = std::filesystem;
++using Json = nlohmann::json;
++
++// Helper structure for JSON deserialization
++struct ComponentCondition
++{
++    std::string component;
++    std::optional<std::string> preUpdateTarget;
++    std::optional<std::string> postUpdateTarget;
++};
++
++// Custom from_json for ComponentCondition
++inline void from_json(const Json& j, ComponentCondition& cc)
++{
++    if (!j.contains("Component") || !j["Component"].is_string() ||
++        j["Component"].get<std::string>().empty())
++    {
++        throw std::runtime_error("Missing or invalid 'Component' field");
++    }
++    cc.component = j["Component"].get<std::string>();
++
++    if (j.contains("PreUpdateTarget") && j["PreUpdateTarget"].is_string())
++    {
++        cc.preUpdateTarget = j["PreUpdateTarget"].get<std::string>();
++    }
++
++    if (j.contains("PostUpdateTarget") && j["PostUpdateTarget"].is_string())
++    {
++        cc.postUpdateTarget = j["PostUpdateTarget"].get<std::string>();
++    }
++}
++
++class ConditionConfigManager
++{
++  public:
++    explicit ConditionConfigManager(fs::path jsonPath)
++    {
++        if (jsonPath.empty())
++        {
++            return;
++        }
++        if (!fs::exists(jsonPath))
++        {
++            error("Json file does not exist: {JSPATH}", "JSPATH", jsonPath);
++            return;
++        }
++        std::ifstream jsonFile(jsonPath);
++        if (!jsonFile.is_open())
++        {
++            error("Failed to open the json file: {JSPATH}", "JSPATH", jsonPath);
++            return;
++        }
++        try
++        {
++            Json data = Json::parse(jsonFile);
++            if (!data.contains("Components") || !data["Components"].is_array())
++            {
++                error("Bad Json format for parsing: {JSPATH}", "JSPATH",
++                      jsonPath);
++                return;
++            }
++
++            for (const auto& componentJson : data["Components"])
++            {
++                try
++                {
++                    ComponentCondition cc =
++                        componentJson.get<ComponentCondition>();
++                    ConditionPath prePath = cc.preUpdateTarget.value_or("");
++                    ConditionPath postPath = cc.postUpdateTarget.value_or("");
++
++                    // The schema requires a non-empty unit name and omission of
++                    // the property to skip a condition. Warn on a present but
++                    // empty name so a misconfiguration is not silently treated
++                    // as an intentionally omitted hook.
++                    if (prePath.empty() && cc.preUpdateTarget)
++                    {
++                        warning(
++                            "Empty 'PreUpdateTarget' for component {COMPONENT}, treating it as no pre-condition",
++                            "COMPONENT", cc.component);
++                    }
++                    if (postPath.empty() && cc.postUpdateTarget)
++                    {
++                        warning(
++                            "Empty 'PostUpdateTarget' for component {COMPONENT}, treating it as no post-condition",
++                            "COMPONENT", cc.component);
++                    }
++
++                    // Skip entries where both pre and post conditions are empty
++                    if (!prePath.empty() || !postPath.empty())
++                    {
++                        conditionMap.insert_or_assign(
++                            cc.component, ConditionPaths{prePath, postPath});
++                    }
++                }
++                catch (const std::exception& e)
++                {
++                    error("Failed to parse component: {ERROR}", "ERROR",
++                          e.what());
++                    continue;
++                }
++            }
++        }
++        catch (const Json::parse_error& e)
++        {
++            error("Failed to parse the json file: {JSPATH}, error: {ERROR}",
++                  "JSPATH", jsonPath, "ERROR", e.what());
++            return;
++        }
++    }
++
++    ConditionPath preCondition(const ConditionIdentifier& name) const
++    {
++        if (conditionMap.contains(name))
++        {
++            return conditionMap.at(name).first;
++        }
++        return "";
++    }
++
++    ConditionPath postCondition(const ConditionIdentifier& name) const
++    {
++        if (conditionMap.contains(name))
++        {
++            return conditionMap.at(name).second;
++        }
++        return "";
++    }
++
++    ConditionPaths conditions(const ConditionIdentifier& name) const
++    {
++        if (conditionMap.contains(name))
++        {
++            return conditionMap.at(name);
++        }
++        return {};
++    }
++
++  private:
++    PrePostConditionMap conditionMap;
++};
++
++/**
++ * @brief Generate the static named arguments for a condition service
++ *
++ * All supported named arguments are passed to every parameterized condition
++ * service, so no per-component selection is needed. Only the arguments known
++ * ahead of an update are generated here; dynamic fields such as applyTime are
++ * appended once startUpdate provides them.
++ *
++ * @param[in] boardName - The board name value to use for boardName argument
++ * @return Generated argument string, empty when no value is available
++ */
++inline std::string generateArg(const std::string& boardName)
++{
++    if (boardName.empty())
++    {
++        return "";
++    }
++
++    return std::format("boardName={}", boardName);
++}
++
++} // namespace pldm::fw_update
+diff --git a/fw-update/device_updater.cpp b/fw-update/device_updater.cpp
+index 39fbd2d..f3e00ae 100644
+--- a/fw-update/device_updater.cpp
++++ b/fw-update/device_updater.cpp
+@@ -7,6 +7,7 @@
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
++#include <cstring>
+ #include <functional>
+ 
+ PHOSPHOR_LOG2_USING;
+@@ -91,24 +92,24 @@ void UpdateProgress::reportFwUpdate(uint32_t amountUpdated)
+ }
+ 
+ DeviceUpdater::DeviceUpdater(
+-    mctp_eid_t eid, std::istream& package,
+-    const FirmwareDeviceIDRecord& fwDeviceIDRecord,
+-    const ComponentImageInfos& compImageInfos, const ComponentInfo& compInfo,
+-    uint32_t maxTransferSize, UpdateManagerBase* updateManager) :
+-    eid(eid), package(package), fwDeviceIDRecord(fwDeviceIDRecord),
++    mctp_eid_t eid, const pkg::FirmwareDeviceIDRecord& fwDeviceIDRecord,
++    const pkg::ComponentImageInfos& compImageInfos,
++    const pkg::ComponentInfo& compInfo, uint32_t maxTransferSize,
++    UpdateManagerBase* updateManager) :
++    eid(eid), fwDeviceIDRecord(fwDeviceIDRecord),
+     compImageInfos(compImageInfos), compInfo(compInfo),
+     maxTransferSize(maxTransferSize), updateManager(updateManager),
+     activationComplete{false}
+ {
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     // create as many progress objects as there are components
+     // and initialize them with the size of each component
+     for (const auto& applicableComponent : applicableComponents)
+     {
+-        const auto& componentSize =
+-            std::get<6>(compImageInfos[applicableComponent]);
+-        progress.emplace_back(componentSize, eid);
++        const auto& componentImage =
++            std::get<pkg::CompImage>(compImageInfos[applicableComponent]);
++        progress.emplace_back(componentImage.size(), eid);
+     }
+ }
+ 
+@@ -122,13 +123,13 @@ void DeviceUpdater::startFwUpdateFlow()
+     auto instanceId = instanceIdResult.value();
+     // NumberOfComponents
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     // PackageDataLength
+     const auto& fwDevicePkgData =
+-        std::get<FirmwareDevicePackageData>(fwDeviceIDRecord);
++        std::get<pkg::FirmwareDevicePackageData>(fwDeviceIDRecord);
+     // ComponentImageSetVersionString
+     const auto& compImageSetVersion =
+-        std::get<ComponentImageSetVersion>(fwDeviceIDRecord);
++        std::get<pkg::ComponentImageSetVersion>(fwDeviceIDRecord);
+     variable_field compImgSetVerStrInfo{};
+     compImgSetVerStrInfo.ptr =
+         reinterpret_cast<const uint8_t*>(compImageSetVersion.data());
+@@ -223,7 +224,7 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
+     auto instanceId = instanceIdResult.value();
+     // TransferFlag
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     uint8_t transferFlag = 0;
+     if (applicableComponents.size() == 1)
+     {
+@@ -243,14 +244,13 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
+     }
+     const auto& comp = compImageInfos[applicableComponents[offset]];
+     // ComponentClassification
+-    CompClassification compClassification = std::get<static_cast<size_t>(
+-        ComponentImageInfoPos::CompClassificationPos)>(comp);
++    pkg::CompClassification compClassification = std::get<static_cast<size_t>(
++        pkg::ComponentImageInfoPos::CompClassificationPos)>(comp);
+     // ComponentIdentifier
+-    CompIdentifier compIdentifier =
+-        std::get<static_cast<size_t>(ComponentImageInfoPos::CompIdentifierPos)>(
+-            comp);
++    pkg::CompIdentifier compIdentifier = std::get<static_cast<size_t>(
++        pkg::ComponentImageInfoPos::CompIdentifierPos)>(comp);
+     // ComponentClassificationIndex
+-    CompClassificationIndex compClassificationIndex{};
++    pkg::CompClassificationIndex compClassificationIndex{};
+     auto compKey = std::make_pair(compClassification, compIdentifier);
+     if (compInfo.contains(compKey))
+     {
+@@ -265,12 +265,10 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
+             "CLASSIFICATION", compClassification, "IDENTIFIER", compIdentifier);
+     }
+     // ComponentComparisonStamp
+-    CompComparisonStamp compComparisonStamp = std::get<static_cast<size_t>(
+-        ComponentImageInfoPos::CompComparisonStampPos)>(comp);
++    pkg::CompComparisonStamp compComparisonStamp = std::get<static_cast<size_t>(
++        pkg::ComponentImageInfoPos::CompComparisonStampPos)>(comp);
+     // ComponentVersionString
+-    const auto& compVersion =
+-        std::get<static_cast<size_t>(ComponentImageInfoPos::CompVersionPos)>(
+-            comp);
++    const auto& compVersion = std::get<pkg::CompVersion>(comp);
+     variable_field compVerStrInfo{};
+     compVerStrInfo.ptr = reinterpret_cast<const uint8_t*>(compVersion.data());
+     compVerStrInfo.length = static_cast<uint8_t>(compVersion.size());
+@@ -349,7 +347,7 @@ void DeviceUpdater::passCompTable(mctp_eid_t eid, const pldm_msg* response,
+     // Handle ComponentResponseCode
+ 
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     if (componentIndex == applicableComponents.size() - 1)
+     {
+         componentIndex = 0;
+@@ -378,17 +376,16 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
+     }
+     auto instanceId = instanceIdResult.value();
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     const auto& comp = compImageInfos[applicableComponents[offset]];
+     // ComponentClassification
+-    CompClassification compClassification = std::get<static_cast<size_t>(
+-        ComponentImageInfoPos::CompClassificationPos)>(comp);
++    pkg::CompClassification compClassification = std::get<static_cast<size_t>(
++        pkg::ComponentImageInfoPos::CompClassificationPos)>(comp);
+     // ComponentIdentifier
+-    CompIdentifier compIdentifier =
+-        std::get<static_cast<size_t>(ComponentImageInfoPos::CompIdentifierPos)>(
+-            comp);
++    pkg::CompIdentifier compIdentifier = std::get<static_cast<size_t>(
++        pkg::ComponentImageInfoPos::CompIdentifierPos)>(comp);
+     // ComponentClassificationIndex
+-    CompClassificationIndex compClassificationIndex{};
++    pkg::CompClassificationIndex compClassificationIndex{};
+     auto compKey = std::make_pair(compClassification, compIdentifier);
+     if (compInfo.contains(compKey))
+     {
+@@ -407,7 +404,7 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
+     bitfield32_t updateOptionFlags;
+     updateOptionFlags.bits.bit0 = std::get<3>(comp)[0];
+     // ComponentVersion
+-    const auto& compVersion = std::get<7>(comp);
++    const auto& compVersion = std::get<pkg::CompVersion>(comp);
+     variable_field compVerStrInfo{};
+     compVerStrInfo.ptr = reinterpret_cast<const uint8_t*>(compVersion.data());
+     compVerStrInfo.length = static_cast<uint8_t>(compVersion.size());
+@@ -420,10 +417,9 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
+     auto rc = encode_update_component_req(
+         instanceId, compClassification, compIdentifier, compClassificationIndex,
+         std::get<static_cast<size_t>(
+-            ComponentImageInfoPos::CompComparisonStampPos)>(comp),
+-        std::get<static_cast<size_t>(ComponentImageInfoPos::CompSizePos)>(comp),
+-        updateOptionFlags, PLDM_STR_TYPE_ASCII, compVerStrInfo.length,
+-        &compVerStrInfo, requestMsg,
++            pkg::ComponentImageInfoPos::CompComparisonStampPos)>(comp),
++        std::get<pkg::CompImage>(comp).size(), updateOptionFlags,
++        PLDM_STR_TYPE_ASCII, compVerStrInfo.length, &compVerStrInfo, requestMsg,
+         sizeof(pldm_update_component_req) + compVerStrInfo.length);
+     if (rc)
+     {
+@@ -489,7 +485,7 @@ void DeviceUpdater::updateComponent(mctp_eid_t eid, const pldm_msg* response,
+     }
+ 
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     if (applicableComponents.empty())
+     {
+         error("No applicable components for endpoint ID '{EID}'", "EID", eid);
+@@ -497,9 +493,7 @@ void DeviceUpdater::updateComponent(mctp_eid_t eid, const pldm_msg* response,
+         return;
+     }
+     const auto& comp = compImageInfos[applicableComponents[componentIndex]];
+-    const auto& compVersion =
+-        std::get<static_cast<size_t>(ComponentImageInfoPos::CompVersionPos)>(
+-            comp);
++    const auto& compVersion = std::get<pkg::CompVersion>(comp);
+ 
+     if (compCompatibilityResp != PLDM_CCR_COMP_CAN_BE_UPDATED &&
+         compCompatibilityResp != PLDM_CCR_COMP_CANNOT_BE_UPDATED)
+@@ -589,10 +583,10 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+     }
+ 
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     const auto& comp = compImageInfos[applicableComponents[componentIndex]];
+-    auto compOffset = std::get<5>(comp);
+-    auto compSize = std::get<6>(comp);
++    const auto& compImage = std::get<pkg::CompImage>(comp);
++    const auto compSize = compImage.size();
+     debug("Decoded fw request data at offset '{OFFSET}' and length '{LENGTH}' ",
+           "OFFSET", offset, "LENGTH", length);
+     if (length < PLDM_FWUP_BASELINE_TRANSFER_SIZE || length > maxTransferSize)
+@@ -609,7 +603,11 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+         return response;
+     }
+ 
+-    if (offset + length > compSize + PLDM_FWUP_BASELINE_TRANSFER_SIZE)
++    // offset and length are both uint32_t as decoded from the request, so the
++    // sum has to be computed in a wider type to not wrap around.
++    const uint64_t end = static_cast<uint64_t>(offset) + length;
++
++    if (end > compSize + PLDM_FWUP_BASELINE_TRANSFER_SIZE)
+     {
+         rc = encode_request_firmware_data_resp(
+             request->hdr.instance_id, PLDM_FWUP_DATA_OUT_OF_RANGE, responseMsg,
+@@ -624,9 +622,9 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+     }
+ 
+     size_t padBytes = 0;
+-    if (offset + length > compSize)
++    if (end > compSize)
+     {
+-        padBytes = offset + length - compSize;
++        padBytes = end - compSize;
+     }
+ 
+     if (componentIndex < progress.size())
+@@ -642,11 +640,8 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+ 
+     response.resize(sizeof(pldm_msg_hdr) + sizeof(completionCode) + length);
+     responseMsg = new (response.data()) pldm_msg;
+-    package.seekg(compOffset + offset);
+-    package.read(
+-        reinterpret_cast<char*>(
+-            response.data() + sizeof(pldm_msg_hdr) + sizeof(completionCode)),
+-        length - padBytes);
++    memcpy(response.data() + sizeof(pldm_msg_hdr) + sizeof(completionCode),
++           compImage.data() + offset, length - padBytes);
+     rc = encode_request_firmware_data_resp(
+         request->hdr.instance_id, completionCode, responseMsg,
+         sizeof(completionCode));
+@@ -716,9 +711,9 @@ Response DeviceUpdater::transferComplete(const pldm_msg* request,
+     }
+ 
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     const auto& comp = compImageInfos[applicableComponents[componentIndex]];
+-    const auto& compVersion = std::get<7>(comp);
++    const auto& compVersion = std::get<pkg::CompVersion>(comp);
+ 
+     if (transferResult == PLDM_FWUP_TRANSFER_SUCCESS)
+     {
+@@ -777,9 +772,9 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
+     }
+ 
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     const auto& comp = compImageInfos[applicableComponents[componentIndex]];
+-    const auto& compVersion = std::get<7>(comp);
++    const auto& compVersion = std::get<pkg::CompVersion>(comp);
+     if (componentIndex < progress.size())
+     {
+         progress[componentIndex].updateState(UpdateProgress::state::Verify);
+@@ -847,9 +842,9 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
+     }
+ 
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     const auto& comp = compImageInfos[applicableComponents[componentIndex]];
+-    const auto& compVersion = std::get<7>(comp);
++    const auto& compVersion = std::get<pkg::CompVersion>(comp);
+ 
+     if (applyResult == PLDM_FWUP_APPLY_SUCCESS ||
+         applyResult == PLDM_FWUP_APPLY_SUCCESS_WITH_ACTIVATION_METHOD)
+@@ -1071,7 +1066,7 @@ void DeviceUpdater::cancelUpdateComponent(
+     }
+ 
+     const auto& applicableComponents =
+-        std::get<ApplicableComponents>(fwDeviceIDRecord);
++        std::get<pkg::ApplicableComponents>(fwDeviceIDRecord);
+     // Check if this is the last component being cancelled
+     if (componentIndex == applicableComponents.size() - 1)
+     {
+diff --git a/fw-update/device_updater.hpp b/fw-update/device_updater.hpp
+index a0621c3..7214004 100644
+--- a/fw-update/device_updater.hpp
++++ b/fw-update/device_updater.hpp
+@@ -124,7 +124,6 @@ class DeviceUpdater
+     /** @brief Constructor
+      *
+      *  @param[in] eid - Endpoint ID of the firmware device
+-     *  @param[in] package - File stream for firmware update package
+      *  @param[in] fwDeviceIDRecord - FirmwareDeviceIDRecord in the fw update
+      *                                package that matches this firmware device
+      *  @param[in] compImageInfos - Component image information for all the
+@@ -136,12 +135,11 @@ class DeviceUpdater
+      *  @param[in] updateManager - To update the status of fw update of the
+      *                             device
+      */
+-    explicit DeviceUpdater(mctp_eid_t eid, std::istream& package,
+-                           const FirmwareDeviceIDRecord& fwDeviceIDRecord,
+-                           const ComponentImageInfos& compImageInfos,
+-                           const ComponentInfo& compInfo,
+-                           uint32_t maxTransferSize,
+-                           UpdateManagerBase* updateManager);
++    explicit DeviceUpdater(
++        mctp_eid_t eid, const pkg::FirmwareDeviceIDRecord& fwDeviceIDRecord,
++        const pkg::ComponentImageInfos& compImageInfos,
++        const pkg::ComponentInfo& compInfo, uint32_t maxTransferSize,
++        UpdateManagerBase* updateManager);
+ 
+     /** @brief Get the progress of updating this device as percentage
+      *
+@@ -285,23 +283,20 @@ class DeviceUpdater
+     /** @brief Endpoint ID of the firmware device */
+     mctp_eid_t eid;
+ 
+-    /** @brief File stream for firmware update package */
+-    std::istream& package;
+-
+     /** @brief FirmwareDeviceIDRecord in the fw update package that matches this
+      *         firmware device
+      */
+-    const FirmwareDeviceIDRecord& fwDeviceIDRecord;
++    const pkg::FirmwareDeviceIDRecord& fwDeviceIDRecord;
+ 
+     /** @brief Component image information for all the components in the fw
+      *         update package
+      */
+-    const ComponentImageInfos& compImageInfos;
++    const pkg::ComponentImageInfos& compImageInfos;
+ 
+     /** @brief Component info for the components in this FD derived from
+      *         GetFirmwareParameters response
+      */
+-    const ComponentInfo& compInfo;
++    const pkg::ComponentInfo& compInfo;
+ 
+     /** @brief Maximum size in bytes of the variable payload to be requested by
+      *         the FD via RequestFirmwareData command
+diff --git a/fw-update/firmware_inventory.cpp b/fw-update/firmware_inventory.cpp
+index 8ac3fb9..a88107e 100644
+--- a/fw-update/firmware_inventory.cpp
++++ b/fw-update/firmware_inventory.cpp
+@@ -4,7 +4,7 @@ namespace pldm::fw_update
+ {
+ 
+ FirmwareInventory::FirmwareInventory(
+-    SoftwareIdentifier softwareIdentifier, const std::string& softwarePath,
++    pkg::SoftwareIdentifier softwareIdentifier, const std::string& softwarePath,
+     const std::string& generatedId, const std::string& softwareVersion,
+     const std::string& associatedEndpoint, SoftwareVersionPurpose purpose) :
+     softwareIdentifier(softwareIdentifier),
+diff --git a/fw-update/firmware_inventory.hpp b/fw-update/firmware_inventory.hpp
+index ca31290..19a22d5 100644
+--- a/fw-update/firmware_inventory.hpp
++++ b/fw-update/firmware_inventory.hpp
+@@ -52,8 +52,9 @@ class FirmwareInventory
+      * future use and currently not used in the implementation.
+      */
+     explicit FirmwareInventory(
+-        SoftwareIdentifier softwareIdentifier, const std::string& softwarePath,
+-        const std::string& generatedId, const std::string& softwareVersion,
++        pkg::SoftwareIdentifier softwareIdentifier,
++        const std::string& softwarePath, const std::string& generatedId,
++        const std::string& softwareVersion,
+         const std::string& associatedEndpoint,
+         SoftwareVersionPurpose purpose = SoftwareVersionPurpose::Other);
+ 
+@@ -66,7 +67,7 @@ class FirmwareInventory
+     /**
+      * @brief Software identifier containing EID and component identifier
+      */
+-    SoftwareIdentifier softwareIdentifier;
++    pkg::SoftwareIdentifier softwareIdentifier;
+ 
+     /**
+      * @brief The D-Bus object path for the firmware inventory entry, obtained
+diff --git a/fw-update/firmware_inventory_manager.cpp b/fw-update/firmware_inventory_manager.cpp
+index d093d3e..4882a8f 100644
+--- a/fw-update/firmware_inventory_manager.cpp
++++ b/fw-update/firmware_inventory_manager.cpp
+@@ -18,9 +18,11 @@ namespace pldm::fw_update
+ {
+ 
+ void FirmwareInventoryManager::createFirmwareEntry(
+-    const SoftwareIdentifier& softwareIdentifier,
++    const pkg::SoftwareIdentifier& softwareIdentifier,
+     const SoftwareName& softwareName, const std::string& activeVersion,
+-    const Descriptors& descriptors, const ComponentInfo& componentInfo)
++    const pkg::Descriptors& descriptors,
++    const pkg::ComponentInfo& componentInfo,
++    std::function<void()> taskCompletionCallback)
+ {
+     struct timespec ts;
+     clock_gettime(CLOCK_REALTIME, &ts);
+@@ -45,8 +47,13 @@ void FirmwareInventoryManager::createFirmwareEntry(
+         "{}/{}_{}", SoftwareVersion::namespace_path, boardName, softwareName);
+     const auto generatedId = std::to_string(utils::generateSwId());
+ 
+-    updateManager.createUpdateManager(softwareIdentifier, descriptors,
+-                                      componentInfo, softwarePath, generatedId);
++    auto conditions = conditionConfigManager.conditions(softwareName);
++    auto conditionArg = generateArg(boardName);
++
++    updateManager.createUpdateManager(
++        softwareIdentifier, descriptors, componentInfo, softwarePath,
++        generatedId, conditions, conditionArg,
++        std::move(taskCompletionCallback));
+ 
+     softwareMap.insert_or_assign(softwareIdentifier,
+                                  std::make_unique<FirmwareInventory>(
+@@ -59,7 +66,7 @@ void FirmwareInventoryManager::deleteFirmwareEntry(const pldm::eid& eid)
+     std::erase_if(softwareMap,
+                   [&](const auto& pair) { return pair.first.first == eid; });
+     updateManager.eraseUpdateManagerIf(
+-        [&](const SoftwareIdentifier& softwareIdentifier) {
++        [&](const pkg::SoftwareIdentifier& softwareIdentifier) {
+             return softwareIdentifier.first == eid;
+         });
+ }
+diff --git a/fw-update/firmware_inventory_manager.hpp b/fw-update/firmware_inventory_manager.hpp
+index 45ffd8e..d199071 100644
+--- a/fw-update/firmware_inventory_manager.hpp
++++ b/fw-update/firmware_inventory_manager.hpp
+@@ -2,6 +2,7 @@
+ 
+ #include "aggregate_update_manager.hpp"
+ #include "common/types.hpp"
++#include "condition_collector.hpp"
+ #include "firmware_inventory.hpp"
+ 
+ class FirmwareInventoryManagerTest;
+@@ -11,7 +12,7 @@ namespace pldm::fw_update
+ 
+ using ObjectPath = pldm::dbus::ObjectPath;
+ using SoftwareMap =
+-    std::map<SoftwareIdentifier, std::unique_ptr<FirmwareInventory>>;
++    std::map<pkg::SoftwareIdentifier, std::unique_ptr<FirmwareInventory>>;
+ 
+ /**
+  * @brief Get the Board path from Entity Manager for the given inventory path
+@@ -43,7 +44,8 @@ class FirmwareInventoryManager
+         const pldm::utils::DBusHandler* dbusHandler,
+         const Configurations& config, AggregateUpdateManager& updateManager) :
+         dbusHandler(dbusHandler), configurations(config),
+-        updateManager(updateManager)
++        updateManager(updateManager),
++        conditionConfigManager(FW_UPDATE_TARGETS_JSON)
+     {}
+ 
+     /**
+@@ -57,10 +59,12 @@ class FirmwareInventoryManager
+      * @param[in] componentInfo - Component information associated with the
+      * firmware
+      */
+-    void createFirmwareEntry(
+-        const SoftwareIdentifier& softwareIdentifier,
+-        const SoftwareName& softwareName, const std::string& activeVersion,
+-        const Descriptors& descriptors, const ComponentInfo& componentInfo);
++    void createFirmwareEntry(const pkg::SoftwareIdentifier& softwareIdentifier,
++                             const SoftwareName& softwareName,
++                             const std::string& activeVersion,
++                             const pkg::Descriptors& descriptors,
++                             const pkg::ComponentInfo& componentInfo,
++                             std::function<void()> taskCompletionCallback);
+ 
+     /**
+      * @brief Deletes the firmware inventory entry for the given EID
+@@ -103,6 +107,8 @@ class FirmwareInventoryManager
+      * @brief Reference to the aggregate update manager
+      */
+     AggregateUpdateManager& updateManager;
++
++    ConditionConfigManager conditionConfigManager;
+ };
+ 
+ } // namespace pldm::fw_update
+diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
+index aa5794f..b876a36 100644
+--- a/fw-update/inventory_manager.cpp
++++ b/fw-update/inventory_manager.cpp
+@@ -6,6 +6,8 @@
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
++#include <format>
++
+ PHOSPHOR_LOG2_USING;
+ 
+ namespace pldm
+@@ -117,7 +119,7 @@ void InventoryManager::queryDeviceIdentifiers(
+         return;
+     }
+ 
+-    Descriptors descriptors{};
++    pkg::Descriptors descriptors{};
+     while (descriptorCount-- && (deviceIdentifiersLen > 0))
+     {
+         uint16_t descriptorType = 0;
+@@ -371,8 +373,8 @@ void InventoryManager::queryDownstreamIdentifiers(
+         return;
+     }
+ 
+-    DownstreamDeviceInfo initialDownstreamDevices{};
+-    DownstreamDeviceInfo* downstreamDevices = nullptr;
++    pkg::DownstreamDeviceInfo initialDownstreamDevices{};
++    pkg::DownstreamDeviceInfo* downstreamDevices = nullptr;
+     if (!downstreamDescriptorMap.contains(eid) ||
+         downstreamIds.transfer_flag == PLDM_START ||
+         downstreamIds.transfer_flag == PLDM_START_AND_END)
+@@ -388,7 +390,7 @@ void InventoryManager::queryDownstreamIdentifiers(
+     foreach_pldm_downstream_device(devs, dev, rc)
+     {
+         pldm_descriptor desc;
+-        Descriptors descriptors{};
++        pkg::Descriptors descriptors{};
+         foreach_pldm_downstream_device_descriptor(devs, dev, desc, rc)
+         {
+             const auto descriptorData =
+@@ -576,8 +578,8 @@ void InventoryManager::getDownstreamFirmwareParameters(
+     }
+ }
+ 
+-void InventoryManager::obtainFirmwareDeviceName(pldm::eid eid,
+-                                                const Descriptors& descriptors)
++void InventoryManager::obtainFirmwareDeviceName(
++    pldm::eid eid, const pkg::Descriptors& descriptors)
+ {
+     auto firmwareDeviceName =
+         obtainDeviceNameFromConfigurations(configurations, eid);
+@@ -674,7 +676,7 @@ void InventoryManager::getFirmwareParameters(
+     variable_field activeCompVerStr{};
+     variable_field pendingCompVerStr{};
+ 
+-    ComponentInfo componentInfo{};
++    pkg::ComponentInfo componentInfo{};
+ 
+     const auto imageSetVersion = utils::toString(activeCompImageSetVerStr);
+ 
+@@ -686,11 +688,15 @@ void InventoryManager::getFirmwareParameters(
+         if (devNameIt != firmwareDeviceNameMap.end() &&
+             descIt != descriptorMap.end())
+         {
+-            const SoftwareIdentifier totalIdentifier = std::make_pair(eid, 0);
++            const pkg::SoftwareIdentifier totalIdentifier =
++                std::make_pair(eid, 0);
+ 
+             firmwareInventoryManager.createFirmwareEntry(
+                 totalIdentifier, devNameIt->second, imageSetVersion,
+-                descIt->second, componentInfo);
++                descIt->second, componentInfo, [this, eid]() {
++                    this->sendQueryDeviceIdentifiersRequest(eid);
++                    this->sendQueryDownstreamDevicesRequest(eid);
++                });
+         }
+     }
+ 
+@@ -715,13 +721,17 @@ void InventoryManager::getFirmwareParameters(
+ 
+         if (firmwareDeviceNameMap.contains(eid) and descriptorMap.contains(eid))
+         {
+-            auto componentName = firmwareDeviceNameMap.at(eid) + "_Component_" +
+-                                 std::to_string(compIdentifier);
++            auto componentName =
++                std::format("{}_Component_{}", firmwareDeviceNameMap.at(eid),
++                            compIdentifier);
+ 
+             firmwareInventoryManager.createFirmwareEntry(
+-                SoftwareIdentifier(eid, compIdentifier), componentName,
++                pkg::SoftwareIdentifier(eid, compIdentifier), componentName,
+                 utils::toString(activeCompVerStr), descriptorMap.at(eid),
+-                componentInfo);
++                componentInfo, [this, eid]() {
++                    this->sendQueryDeviceIdentifiersRequest(eid);
++                    this->sendQueryDownstreamDevicesRequest(eid);
++                });
+         }
+         else
+         {
+@@ -758,19 +768,20 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
+ }
+ 
+ std::optional<SoftwareName> obtainDeviceNameFromDescriptors(
+-    const Descriptors& descriptors)
++    const pkg::Descriptors& descriptors)
+ {
+     for (const auto& [descriptorType, descriptorData] : descriptors)
+     {
+         if (descriptorType == PLDM_FWUP_VENDOR_DEFINED)
+         {
+             auto vendorInfo =
+-                std::get<VendorDefinedDescriptorInfo>(descriptorData);
+-            auto title = std::get<VendorDefinedDescriptorTitle>(vendorInfo);
++                std::get<pkg::VendorDefinedDescriptorInfo>(descriptorData);
++            auto title =
++                std::get<pkg::VendorDefinedDescriptorTitle>(vendorInfo);
+             if (title == "OpenBMC.Name")
+             {
+                 auto deviceNameData =
+-                    std::get<VendorDefinedDescriptorData>(vendorInfo);
++                    std::get<pkg::VendorDefinedDescriptorData>(vendorInfo);
+                 return SoftwareName{
+                     reinterpret_cast<char*>(deviceNameData.data()),
+                     deviceNameData.size()};
+diff --git a/fw-update/inventory_manager.hpp b/fw-update/inventory_manager.hpp
+index e100a52..662f592 100644
+--- a/fw-update/inventory_manager.hpp
++++ b/fw-update/inventory_manager.hpp
+@@ -45,9 +45,9 @@ class InventoryManager
+     explicit InventoryManager(
+         const pldm::utils::DBusHandler* dbusHandler,
+         pldm::requester::Handler<pldm::requester::Request>& handler,
+-        InstanceIdDb& instanceIdDb, DescriptorMap& descriptorMap,
+-        DownstreamDescriptorMap& downstreamDescriptorMap,
+-        ComponentInfoMap& componentInfoMap,
++        InstanceIdDb& instanceIdDb, pkg::DescriptorMap& descriptorMap,
++        pkg::DownstreamDescriptorMap& downstreamDescriptorMap,
++        pkg::ComponentInfoMap& componentInfoMap,
+         const Configurations& configurations,
+         AggregateUpdateManager& updateManager) :
+         handler(handler), instanceIdDb(instanceIdDb),
+@@ -177,7 +177,7 @@ class InventoryManager
+      * @param[in] descriptors - Descriptors of the firmware device
+      */
+     void obtainFirmwareDeviceName(pldm::eid eid,
+-                                  const Descriptors& descriptors);
++                                  const pkg::Descriptors& descriptors);
+ 
+     /** @brief Send GetFirmwareParameters command request
+      *
+@@ -192,16 +192,16 @@ class InventoryManager
+     InstanceIdDb& instanceIdDb;
+ 
+     /** @brief Device identifiers of the managed FDs */
+-    DescriptorMap& descriptorMap;
++    pkg::DescriptorMap& descriptorMap;
+ 
+     /** @brief Firmware Device names of the managed FDs */
+     std::map<eid, SoftwareName> firmwareDeviceNameMap;
+ 
+     /** @brief Downstream Device identifiers of the managed FDs */
+-    DownstreamDescriptorMap& downstreamDescriptorMap;
++    pkg::DownstreamDescriptorMap& downstreamDescriptorMap;
+ 
+     /** @brief Component information needed for the update of the managed FDs */
+-    ComponentInfoMap& componentInfoMap;
++    pkg::ComponentInfoMap& componentInfoMap;
+ 
+     /** @brief Configuration bindings from Entity Manager */
+     const Configurations& configurations;
+@@ -229,7 +229,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
+  * @return SoftwareName - The Device name, std::nullopt if not found
+  */
+ std::optional<SoftwareName> obtainDeviceNameFromDescriptors(
+-    const Descriptors& descriptors);
++    const pkg::Descriptors& descriptors);
+ 
+ } // namespace fw_update
+ 
+diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
+index 90abcc0..bac53f4 100644
+--- a/fw-update/item_update_manager.cpp
++++ b/fw-update/item_update_manager.cpp
+@@ -4,6 +4,7 @@
+ #include "common/start_lifetime_as.hpp"
+ #include "common/utils.hpp"
+ #include "package_parser.hpp"
++#include "systemd_interface.hpp"
+ 
+ #include <fcntl.h>
+ #include <sys/mman.h>
+@@ -11,11 +12,11 @@
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
++#include <algorithm>
+ #include <cassert>
+ #include <cmath>
+ #include <cstdlib>
+ #include <span>
+-#include <spanstream>
+ #include <string>
+ #include <system_error>
+ 
+@@ -24,6 +25,8 @@ PHOSPHOR_LOG2_USING;
+ namespace pldm::fw_update
+ {
+ 
++constexpr auto APPLY_TIME_ARG_KEY = "applyTime";
++
+ bool ItemUpdateManager::processPackage()
+ {
+     inProgressActivation = std::make_unique<Activation>(
+@@ -42,9 +45,9 @@ bool ItemUpdateManager::processPackage()
+         return false;
+     }
+ 
+-    auto buffer = std::vector<uint8_t>(packageMap->getBytes().begin(),
+-                                       packageMap->getBytes().end());
+-    parser = parsePkgHeader(buffer);
++    // Parsed straight out of the mapping, the component image views of the
++    // parser point into it. packageMap therefore has to outlive the parser.
++    parser = parsePkgHeader(std::as_const(*packageMap).getBytes());
+     if (parser == nullptr)
+     {
+         error("Invalid PLDM package header information");
+@@ -53,19 +56,6 @@ bool ItemUpdateManager::processPackage()
+         packageMap.reset();
+         return false;
+     }
+-    try
+-    {
+-        parser->parse(buffer, buffer.size());
+-    }
+-    catch (const std::exception& e)
+-    {
+-        error("Invalid PLDM package header, error - {ERROR}", "ERROR", e);
+-        inProgressActivation->activation(
+-            software::Activation::Activations::Invalid);
+-        parser.reset();
+-        packageMap.reset();
+-        return false;
+-    }
+ 
+     auto deviceIdRecordOffset =
+         associatePkgToDevice(parser->getFwDeviceIDRecords(), descriptors);
+@@ -74,6 +64,7 @@ bool ItemUpdateManager::processPackage()
+         error("Failed to associate package to device");
+         inProgressActivation->activation(
+             software::Activation::Activations::Invalid);
++        parser.reset();
+         packageMap.reset();
+         return false;
+     }
+@@ -81,17 +72,42 @@ bool ItemUpdateManager::processPackage()
+     const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
+     const auto& compImageInfos = parser->getComponentImageInfos();
+ 
+-    auto packageSpan = packageMap->getChars();
+-    packageDataStream =
+-        std::make_unique<std::ispanstream>(packageSpan, std::ios::binary);
+     deviceUpdater = std::make_unique<DeviceUpdater>(
+-        eid, *packageDataStream, fwDeviceIDRecords[*deviceIdRecordOffset],
+-        compImageInfos, componentInfo, MAXIMUM_TRANSFER_SIZE, this);
++        eid, fwDeviceIDRecords[*deviceIdRecordOffset], compImageInfos,
++        componentInfo, MAXIMUM_TRANSFER_SIZE, this);
+     inProgressActivation->activation(software::Activation::Activations::Ready);
+-    activationProgress = std::make_unique<ActivationProgress>(
+-        pldm::utils::DBusHandler::getBus(), objPathWithSwId);
+-    inProgressActivation->activation(
+-        software::Activation::Activations::Activating);
++    if (!preConditionPath.empty())
++    {
++        SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
++            .execute(preConditionPath, conditionArg,
++                     [this, alive = std::weak_ptr(aliveToken)](bool success) {
++                         if (alive.expired())
++                         {
++                             // This manager was erased while the condition was
++                             // running
++                             return;
++                         }
++
++                         if (!updateInProgress)
++                         {
++                             return;
++                         }
++
++                         if (!success)
++                         {
++                             error("Pre-update condition failed for {PATH}",
++                                   "PATH", preConditionPath);
++                             completeUpdate(false);
++                             return;
++                         }
++
++                         startFirmwareUpdate();
++                     });
++
++        return true;
++    }
++
++    startFirmwareUpdate();
+ 
+     return true;
+ }
+@@ -117,16 +133,13 @@ std::string ItemUpdateManager::processFd(int fd)
+         catch (const std::exception& e)
+         {
+             error("Failed to mmap package file, error - {ERROR}", "ERROR", e);
+-            updateInProgress = false;
+-            this->dupFd.reset();
++            teardownUpdate();
+             throw sdbusplus::xyz::openbmc_project::Common::Error::Unavailable();
+         }
+         if (!processPackage())
+         {
+             error("Failed to process firmware update package");
+-            updateInProgress = false;
+-            packageMap.reset();
+-            this->dupFd.reset();
++            teardownUpdate();
+             throw sdbusplus::xyz::openbmc_project::Common::Error::Unavailable();
+         }
+     });
+@@ -134,16 +147,22 @@ std::string ItemUpdateManager::processFd(int fd)
+ }
+ 
+ std::optional<DeviceIDRecordOffset> ItemUpdateManager::associatePkgToDevice(
+-    const FirmwareDeviceIDRecords& fwDeviceIDRecords,
+-    const Descriptors& descriptors)
++    const pkg::FirmwareDeviceIDRecords& fwDeviceIDRecords,
++    const pkg::Descriptors& descriptors)
+ {
++    const pkg::SortedDescriptors sortedDeviceDescriptors(descriptors.begin(),
++                                                         descriptors.end());
++
+     for (size_t index = 0; index < fwDeviceIDRecords.size(); ++index)
+     {
+-        const auto& deviceIDDescriptors =
+-            std::get<Descriptors>(fwDeviceIDRecords[index]);
+-        if (std::includes(descriptors.begin(), descriptors.end(),
+-                          deviceIDDescriptors.begin(),
+-                          deviceIDDescriptors.end()))
++        const auto& recordDescriptors =
++            std::get<pkg::Descriptors>(fwDeviceIDRecords[index]);
++        const pkg::SortedDescriptors sortedRecordDescriptors(
++            recordDescriptors.begin(), recordDescriptors.end());
++
++        if (std::includes(
++                sortedDeviceDescriptors.begin(), sortedDeviceDescriptors.end(),
++                sortedRecordDescriptors.begin(), sortedRecordDescriptors.end()))
+         {
+             return index;
+         }
+@@ -153,24 +172,94 @@ std::optional<DeviceIDRecordOffset> ItemUpdateManager::associatePkgToDevice(
+ 
+ void ItemUpdateManager::updateDeviceCompletion(mctp_eid_t /*eid*/, bool status)
+ {
+-    activationProgress->progress(100);
+-    packageMap.reset();
+-    dupFd.reset();
++    if (!postConditionPath.empty() && status == true)
++    {
++        SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
++            .execute(postConditionPath, conditionArg,
++                     [this, status, alive = std::weak_ptr(aliveToken)](
++                         bool conditionSuccess) {
++                         if (alive.expired())
++                         {
++                             // This manager was erased while the condition was
++                             // running
++                             return;
++                         }
++
++                         if (!updateInProgress)
++                         {
++                             return;
++                         }
++
++                         if (!conditionSuccess)
++                         {
++                             error("Post-update condition failed for {PATH}",
++                                   "PATH", postConditionPath);
++                         }
++
++                         completeUpdate(status && conditionSuccess);
++                     });
++        return;
++    }
++
++    completeUpdate(status);
++}
++
++void ItemUpdateManager::startFirmwareUpdate()
++{
++    if (!updateInProgress)
++    {
++        return;
++    }
++
++    activationProgress = std::make_unique<ActivationProgress>(
++        pldm::utils::DBusHandler::getBus(), objPathWithSwId);
++    inProgressActivation->activation(
++        software::Activation::Activations::Activating);
++}
++
++void ItemUpdateManager::completeUpdate(bool status)
++{
++    if (!updateInProgress)
++    {
++        return;
++    }
++
++    // A failing pre-update condition completes the update before the firmware
++    // update flow starts, so neither the progress interface nor the start time
++    // is necessarily available here.
++    if (activationProgress)
++    {
++        activationProgress->progress(100);
++        activationProgress.reset();
++    }
++
++    if (startTime)
++    {
++        auto dur = std::chrono::duration<double, std::milli>(
++                       std::chrono::steady_clock::now() - *startTime)
++                       .count();
++        info("Firmware update time: {DURATION}ms", "DURATION", dur);
++    }
+ 
+-    auto endTime = std::chrono::steady_clock::now();
+-    auto dur =
+-        std::chrono::duration<double, std::milli>(endTime - startTime).count();
+-    info("Firmware update time: {DURATION}ms", "DURATION", dur);
+-    activationProgress.reset();
+     inProgressActivation->activation(
+         status ? software::Activation::Activations::Active
+                : software::Activation::Activations::Failed);
++    teardownUpdate();
++    if (taskCompletionCallback)
++    {
++        taskCompletionCallback();
++    }
++}
++
++void ItemUpdateManager::teardownUpdate()
++{
++    // deviceUpdater refers into the parser, which refers into packageMap, so
++    // they have to be released in that order.
+     deviceUpdater.reset();
+-    packageDataStream.reset();
++    parser.reset();
+     packageMap.reset();
+     dupFd.reset();
+     updateInProgress = false;
+-    return;
+ }
+ 
+ Response ItemUpdateManager::handleRequest(
+@@ -222,6 +311,11 @@ void ItemUpdateManager::resetActivationState()
+ {
+     inProgressActivation.reset();
+     activationProgress.reset();
++    // deviceUpdater refers into the parser, which refers into packageMap, so
++    // they have to be released in that order.
++    deviceUpdater.reset();
++    parser.reset();
++    packageMap.reset();
+     dupFd.reset();
+     updateInProgress = false;
+ }
+@@ -241,7 +335,7 @@ void ItemUpdateManager::updateActivationProgress()
+ 
+ sdbusplus::object_path ItemUpdateManager::startUpdate(
+     sdbusplus::message::unix_fd image,
+-    ApplyTimeIntf::RequestedApplyTimes /*applyTime*/)
++    ApplyTimeIntf::RequestedApplyTimes applyTime)
+ {
+     if (updateInProgress)
+     {
+@@ -254,8 +348,33 @@ sdbusplus::object_path ItemUpdateManager::startUpdate(
+         throw sdbusplus::xyz::openbmc_project::Common::Error::Unavailable();
+     }
+     updateInProgress = true;
++    this->applyTime = applyTime;
++
++    // Every parameterized condition service receives all supported named
++    // arguments, so the requested apply time is always appended here.
++    conditionArg = baseConditionArg;
++    if (!conditionArg.empty())
++    {
++        conditionArg += ",";
++    }
++    conditionArg +=
++        std::format("{}={}", APPLY_TIME_ARG_KEY, applyTimeToString());
+ 
+     return processFd(image.fd);
+ }
+ 
++std::string ItemUpdateManager::applyTimeToString() const
++{
++    constexpr std::string_view applyTimePrefix =
++        "xyz.openbmc_project.Software.ApplyTime.RequestedApplyTimes.";
++    auto applyTimeStr =
++        ApplyTimeIntf::convertRequestedApplyTimesToString(applyTime);
++    if (applyTimeStr.starts_with(applyTimePrefix))
++    {
++        return applyTimeStr.substr(applyTimePrefix.size());
++    }
++
++    return applyTimeStr;
++}
++
+ } // namespace pldm::fw_update
+diff --git a/fw-update/item_update_manager.hpp b/fw-update/item_update_manager.hpp
+index 7d6c0ec..c98e11a 100644
+--- a/fw-update/item_update_manager.hpp
++++ b/fw-update/item_update_manager.hpp
+@@ -5,8 +5,10 @@
+ #include <xyz/openbmc_project/Software/ApplyTime/server.hpp>
+ #include <xyz/openbmc_project/Software/Update/server.hpp>
+ 
++#include <memory>
++#include <optional>
+ #include <span>
+-#include <spanstream>
++#include <variant>
+ 
+ namespace pldm::fw_update
+ {
+@@ -44,13 +46,19 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+         mctp_eid_t eid, Event& event,
+         pldm::requester::Handler<pldm::requester::Request>& handler,
+         InstanceIdDb& instanceIdDb, const std::string& objPath,
+-        const std::string& generatedId, const Descriptors& descriptors,
+-        const ComponentInfo& componentInfo) :
++        const std::string& generatedId, const pkg::Descriptors& descriptors,
++        const pkg::ComponentInfo& componentInfo,
++        const ConditionPaths& conditionPathPair = ConditionPaths{},
++        const std::string& conditionArg = std::string{},
++        std::function<void()> taskCompletionCallback = nullptr) :
+         UpdateManagerBase(event, handler, instanceIdDb),
+         ItemUpdateIntf(pldm::utils::DBusHandler::getBus(),
+                        std::format("{}_{}", objPath, generatedId).c_str()),
+         eid(eid), objPath(objPath), descriptors(descriptors),
+-        componentInfo(componentInfo)
++        componentInfo(componentInfo), preConditionPath(conditionPathPair.first),
++        postConditionPath(conditionPathPair.second),
++        baseConditionArg(conditionArg), conditionArg(conditionArg),
++        taskCompletionCallback(std::move(taskCompletionCallback))
+     {}
+ 
+     /**
+@@ -95,7 +103,10 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+      * D-Bus method implementation for starting the update process
+      *
+      * @param[in] image The image file descriptor
+-     * @param[in] applyTime The requested apply time
++     * @param[in] applyTime The requested apply time (Immediate, OnReset,
++     * OnStart, etc.) This will be passed to post-condition services to allow
++     *                       conditional handling (e.g., skip reset if not
++     * immediate)
+      */
+     virtual sdbusplus::object_path startUpdate(
+         sdbusplus::message::unix_fd image,
+@@ -115,8 +126,8 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+      * otherwise.
+      */
+     std::optional<DeviceIDRecordOffset> associatePkgToDevice(
+-        const FirmwareDeviceIDRecords& fwDeviceIDRecords,
+-        const Descriptors& descriptors);
++        const pkg::FirmwareDeviceIDRecords& fwDeviceIDRecords,
++        const pkg::Descriptors& descriptors);
+ 
+   private:
+     mctp_eid_t eid;
+@@ -126,23 +137,18 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+     /**
+      * @brief The descriptors to match against
+      */
+-    const Descriptors& descriptors;
++    const pkg::Descriptors& descriptors;
+ 
+     /**
+      * @brief The component information of the target device
+      */
+-    const ComponentInfo& componentInfo;
++    const pkg::ComponentInfo& componentInfo;
+ 
+     /**
+      * @brief The package data for the firmware update
+      */
+     std::unique_ptr<pldm::utils::MMapHandler> packageMap;
+ 
+-    /**
+-     * @brief The package data stream for the firmware update
+-     */
+-    std::unique_ptr<std::ispanstream> packageDataStream;
+-
+     /**
+      * @brief Process the firmware update package
+      *
+@@ -158,11 +164,40 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+      */
+     std::string processFd(int fd);
+ 
++    void startFirmwareUpdate();
++
++    /**
++     * @brief Common completion path for an update attempt
++     *
++     * Reports the final activation state, releases the update resources and
++     * notifies the completion callback. This is the single completion path for
++     * both a finished firmware update and a failing pre/post update condition,
++     * so it tolerates being called before the firmware update flow started.
++     *
++     * @param[in] status - true when the update succeeded
++     */
++    void completeUpdate(bool status);
++
++    /**
++     * @brief Common teardown path for cleaning up update resources
++     *
++     * Resets deviceUpdater, parser, packageMap, dupFd and
++     * marks updateInProgress as false. Should be called from all cleanup
++     * paths to ensure consistent resource management.
++     */
++    void teardownUpdate();
++
+     std::unique_ptr<Activation> inProgressActivation;
+     std::unique_ptr<ActivationProgress> activationProgress;
+-    std::unique_ptr<PackageParser> parser;
++    std::unique_ptr<WrapPackageParser> parser;
+     std::unique_ptr<DeviceUpdater> deviceUpdater;
+-    decltype(std::chrono::steady_clock::now()) startTime;
++    /**
++     * @brief Start time of the firmware update flow
++     *
++     * Only set once the update has been activated, so that a completion before
++     * that point does not report a bogus duration.
++     */
++    std::optional<decltype(std::chrono::steady_clock::now())> startTime;
+ 
+     /**
+      * @brief The defer handler for processing package
+@@ -174,6 +209,45 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+      */
+     std::unique_ptr<pldm::utils::CustomFD> dupFd;
+ 
++    /**
++     * @brief Liveness token for callbacks that can outlive this manager
++     *
++     * A condition callback is owned by the SystemdInterface singleton, which
++     * lives as long as the daemon, while this manager is erased as soon as its
++     * MCTP endpoint goes away. Callbacks therefore capture a weak reference to
++     * this token and return early once it has expired, both while the StartUnit
++     * reply is still pending and after the callback has been registered for the
++     * JobRemoved signal.
++     */
++    std::shared_ptr<std::monostate> aliveToken =
++        std::make_shared<std::monostate>();
++
++    std::string preConditionPath;
++    std::string postConditionPath;
++
++    /**
++     * @brief Named arguments known before an update is requested
++     */
++    std::string baseConditionArg;
++
++    /**
++     * @brief All named arguments passed to a parameterized condition service
++     *
++     * The base arguments plus the fields only known once an update has been
++     * requested. Ignored for a condition service that is not parameterized.
++     */
++    std::string conditionArg;
++    ApplyTimeIntf::RequestedApplyTimes applyTime =
++        ApplyTimeIntf::RequestedApplyTimes::Immediate;
++
++    /**
++     * @brief Convert applyTime enum to string representation
++     * @return String representation of applyTime
++     */
++    std::string applyTimeToString() const;
++
++    std::function<void()> taskCompletionCallback;
++
+     bool updateInProgress = false;
+ 
+     /** @brief The last progress that was calculated. Used to avoid spamming
+diff --git a/fw-update/manager.hpp b/fw-update/manager.hpp
+index 924f4fc..f5458cf 100644
+--- a/fw-update/manager.hpp
++++ b/fw-update/manager.hpp
+@@ -44,7 +44,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+                      requester::Handler<requester::Request>& handler,
+                      pldm::InstanceIdDb& instanceIdDb) :
+         updateManager(event, handler, instanceIdDb, descriptorMap,
+-                      componentInfoMap),
++                      downstreamDescriptorMap, componentInfoMap),
+         inventoryMgr(dbusHandler, handler, instanceIdDb, descriptorMap,
+                      downstreamDescriptorMap, componentInfoMap, configurations,
+                      updateManager)
+@@ -118,14 +118,14 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+ 
+   private:
+     /** Descriptor information of all the discovered MCTP endpoints */
+-    DescriptorMap descriptorMap;
++    pkg::DescriptorMap descriptorMap;
+ 
+     /** Downstream descriptor information of all the discovered MCTP endpoints
+      */
+-    DownstreamDescriptorMap downstreamDescriptorMap;
++    pkg::DownstreamDescriptorMap downstreamDescriptorMap;
+ 
+     /** Component information of all the discovered MCTP endpoints */
+-    ComponentInfoMap componentInfoMap;
++    pkg::ComponentInfoMap componentInfoMap;
+ 
+     /** Configuration bindings from the Entity Manager */
+     Configurations configurations;
+diff --git a/fw-update/package_parser.cpp b/fw-update/package_parser.cpp
+index b8745f6..1d8c9ca 100644
+--- a/fw-update/package_parser.cpp
++++ b/fw-update/package_parser.cpp
+@@ -2,13 +2,14 @@
+ 
+ #include "common/utils.hpp"
+ 
+-#include <libpldm/edac.h>
+ #include <libpldm/firmware_update.h>
+ 
++#include <libpldm++/firmware_update.hpp>
+ #include <phosphor-logging/lg2.hpp>
+ #include <xyz/openbmc_project/Common/error.hpp>
+ 
+ #include <memory>
++#include <utility>
+ 
+ PHOSPHOR_LOG2_USING;
+ 
+@@ -21,306 +22,142 @@ namespace fw_update
+ using InternalFailure =
+     sdbusplus::xyz::openbmc_project::Common::Error::InternalFailure;
+ 
+-size_t PackageParser::parseFDIdentificationArea(
+-    DeviceIDRecordCount deviceIdRecCount, const std::vector<uint8_t>& pkgHdr,
+-    size_t offset)
++/** @brief Checks which the deprecated decode_pldm_comp_image_info() enforced
++ *         but the libpldm package iterators do not.
++ *
++ *  @note Throws InternalFailure if the component image information is not
++ *        usable for an update.
++ */
++static void validateComponentImageInfo(const ComponentImageInfo& c)
+ {
+-    size_t pkgHdrRemainingSize = pkgHdr.size() - offset;
+-
+-    while (deviceIdRecCount-- && (pkgHdrRemainingSize > 0))
++    if (c.componentLocation.ptr == nullptr || c.componentLocation.length == 0)
+     {
+-        pldm_firmware_device_id_record deviceIdRecHeader{};
+-        variable_field applicableComponents{};
+-        variable_field compImageSetVersionStr{};
+-        variable_field recordDescriptors{};
+-        variable_field fwDevicePkgData{};
+-
+-        auto rc = decode_firmware_device_id_record(
+-            pkgHdr.data() + offset, pkgHdrRemainingSize,
+-            componentBitmapBitLength, &deviceIdRecHeader, &applicableComponents,
+-            &compImageSetVersionStr, &recordDescriptors, &fwDevicePkgData);
+-        if (rc)
+-        {
+-            error(
+-                "Failed to decode firmware device ID record, response code '{RC}'",
+-                "RC", rc);
+-            throw InternalFailure();
+-        }
+-
+-        Descriptors descriptors{};
+-        while (deviceIdRecHeader.descriptor_count-- &&
+-               (recordDescriptors.length > 0))
+-        {
+-            uint16_t descriptorType = 0;
+-            variable_field descriptorData{};
+-
+-            rc = decode_descriptor_type_length_value(
+-                recordDescriptors.ptr, recordDescriptors.length,
+-                &descriptorType, &descriptorData);
+-            if (rc)
+-            {
+-                error(
+-                    "Failed to decode descriptor type value of type '{TYPE}' and  length '{LENGTH}', response code '{RC}'",
+-                    "TYPE", descriptorType, "LENGTH", recordDescriptors.length,
+-                    "RC", rc);
+-                throw InternalFailure();
+-            }
+-
+-            if (descriptorType != PLDM_FWUP_VENDOR_DEFINED)
+-            {
+-                descriptors.emplace(
+-                    descriptorType,
+-                    DescriptorData{descriptorData.ptr,
+-                                   descriptorData.ptr + descriptorData.length});
+-            }
+-            else
+-            {
+-                uint8_t descTitleStrType = 0;
+-                variable_field descTitleStr{};
+-                variable_field vendorDefinedDescData{};
+-
+-                rc = decode_vendor_defined_descriptor_value(
+-                    descriptorData.ptr, descriptorData.length,
+-                    &descTitleStrType, &descTitleStr, &vendorDefinedDescData);
+-                if (rc)
+-                {
+-                    error(
+-                        "Failed to decode vendor-defined descriptor value of type '{TYPE}' and  length '{LENGTH}', response code '{RC}'",
+-                        "TYPE", descriptorType, "LENGTH",
+-                        recordDescriptors.length, "RC", rc);
+-                    throw InternalFailure();
+-                }
+-
+-                descriptors.emplace(
+-                    descriptorType,
+-                    std::make_tuple(utils::toString(descTitleStr),
+-                                    VendorDefinedDescriptorData{
+-                                        vendorDefinedDescData.ptr,
+-                                        vendorDefinedDescData.ptr +
+-                                            vendorDefinedDescData.length}));
+-            }
+-
+-            auto nextDescriptorOffset =
+-                sizeof(pldm_descriptor_tlv().descriptor_type) +
+-                sizeof(pldm_descriptor_tlv().descriptor_length) +
+-                descriptorData.length;
+-            recordDescriptors.ptr += nextDescriptorOffset;
+-            recordDescriptors.length -= nextDescriptorOffset;
+-        }
+-
+-        DeviceUpdateOptionFlags deviceUpdateOptionFlags =
+-            deviceIdRecHeader.device_update_option_flags.value;
+-
+-        ApplicableComponents componentsList;
++        error(
++            "Component image is empty for classification '{CLASSIFICATION}' and identifier '{IDENTIFIER}'",
++            "CLASSIFICATION", c.componentClassification, "IDENTIFIER",
++            c.componentIdentifier);
++        throw InternalFailure();
++    }
+ 
+-        for (size_t varBitfieldIdx = 0;
+-             varBitfieldIdx < applicableComponents.length; varBitfieldIdx++)
+-        {
+-            std::bitset<8> entry{*(applicableComponents.ptr + varBitfieldIdx)};
+-            for (size_t idx = 0; idx < entry.size(); idx++)
+-            {
+-                if (entry[idx])
+-                {
+-                    componentsList.emplace_back(
+-                        idx + (varBitfieldIdx * entry.size()));
+-                }
+-            }
+-        }
++    // An empty ComponentVersionString is rejected by libpldm++ itself, so it is
++    // not checked here.
+ 
+-        fwDeviceIDRecords.emplace_back(std::make_tuple(
+-            deviceUpdateOptionFlags, componentsList,
+-            utils::toString(compImageSetVersionStr), std::move(descriptors),
+-            FirmwareDevicePackageData{
+-                fwDevicePkgData.ptr,
+-                fwDevicePkgData.ptr + fwDevicePkgData.length}));
+-        offset += deviceIdRecHeader.record_length;
+-        pkgHdrRemainingSize -= deviceIdRecHeader.record_length;
++    // DSP0267: when the UseComponentComparisonStamp bit is not set, the
++    // ComponentComparisonStamp shall be 0xFFFFFFFF.
++    constexpr uint32_t unusedComparisonStamp = 0xFFFFFFFF;
++    constexpr size_t useComparisonStampBit = 1;
++    if (!c.componentOptions.test(useComparisonStampBit) &&
++        c.compComparisonStamp != unusedComparisonStamp)
++    {
++        error(
++            "Component comparison stamp '{STAMP}' has to be 0xFFFFFFFF while UseComponentComparisonStamp is not set, for identifier '{IDENTIFIER}'",
++            "STAMP", c.compComparisonStamp, "IDENTIFIER",
++            c.componentIdentifier);
++        throw InternalFailure();
+     }
+-
+-    return offset;
+ }
+ 
+-size_t PackageParser::parseCompImageInfoArea(ComponentImageCount compImageCount,
+-                                             const std::vector<uint8_t>& pkgHdr,
+-                                             size_t offset)
++static pkg::ComponentImageInfo convertComponentImageInfo(
++    const ComponentImageInfo& c)
+ {
+-    size_t pkgHdrRemainingSize = pkgHdr.size() - offset;
++    validateComponentImageInfo(c);
++
++    return {c.componentClassification,
++            c.componentIdentifier,
++            c.compComparisonStamp,
++            c.componentOptions,
++            c.requestedComponentActivationMethod,
++            pkg::CompImage{c.componentLocation.ptr, c.componentLocation.length},
++            c.componentVersion};
++}
+ 
+-    while (compImageCount-- && (pkgHdrRemainingSize > 0))
++static std::variant<pkg::DescriptorData, pkg::VendorDefinedDescriptorInfo>
++    convertDescriptor(const DescriptorData& dd)
++{
++    if (dd.vendorDefinedDescriptorTitle.has_value())
+     {
+-        pldm_component_image_information compImageInfo{};
+-        variable_field compVersion{};
+-
+-        auto rc = decode_pldm_comp_image_info(
+-            pkgHdr.data() + offset, pkgHdrRemainingSize, &compImageInfo,
+-            &compVersion);
+-        if (rc)
+-        {
+-            error(
+-                "Failed to decode component image information, response code '{RC}'",
+-                "RC", rc);
+-            throw InternalFailure();
+-        }
+-
+-        CompClassification compClassification =
+-            compImageInfo.comp_classification;
+-        CompIdentifier compIdentifier = compImageInfo.comp_identifier;
+-        CompComparisonStamp compComparisonTime =
+-            compImageInfo.comp_comparison_stamp;
+-        CompOptions compOptions = compImageInfo.comp_options.value;
+-        ReqCompActivationMethod reqCompActivationMethod =
+-            compImageInfo.requested_comp_activation_method.value;
+-        CompLocationOffset compLocationOffset =
+-            compImageInfo.comp_location_offset;
+-        CompSize compSize = compImageInfo.comp_size;
+-
+-        componentImageInfos.emplace_back(std::make_tuple(
+-            compClassification, compIdentifier, compComparisonTime, compOptions,
+-            reqCompActivationMethod, compLocationOffset, compSize,
+-            utils::toString(compVersion)));
+-        offset += sizeof(pldm_component_image_information) +
+-                  compImageInfo.comp_version_string_length;
+-        pkgHdrRemainingSize -= sizeof(pldm_component_image_information) +
+-                               compImageInfo.comp_version_string_length;
++        return pkg::VendorDefinedDescriptorInfo{
++            dd.vendorDefinedDescriptorTitle.value(), dd.data};
+     }
+-
+-    return offset;
++    return dd.data;
+ }
+ 
+-void PackageParser::validatePkgTotalSize(uintmax_t pkgSize)
++static pkg::FirmwareDeviceIDRecord convertFirmwareDeviceIDRecord(
++    const FirmwareDeviceIDRecord& f)
+ {
+-    uintmax_t calcPkgSize = pkgHeaderSize;
+-    for (const auto& componentImageInfo : componentImageInfos)
++    pkg::Descriptors recordDescriptors;
++    for (const auto& [k, v] : f.recordDescriptors)
+     {
+-        CompLocationOffset compLocOffset = std::get<static_cast<size_t>(
+-            ComponentImageInfoPos::CompLocationOffsetPos)>(componentImageInfo);
+-        CompSize compSize =
+-            std::get<static_cast<size_t>(ComponentImageInfoPos::CompSizePos)>(
+-                componentImageInfo);
+-
+-        if (compLocOffset != calcPkgSize)
+-        {
+-            auto cmpVersion = std::get<static_cast<size_t>(
+-                ComponentImageInfoPos::CompVersionPos)>(componentImageInfo);
+-            error(
+-                "Failed to validate the component location offset '{OFFSET}' for version '{COMPONENT_VERSION}' and package size '{SIZE}'",
+-                "OFFSET", compLocOffset, "COMPONENT_VERSION", cmpVersion,
+-                "SIZE", calcPkgSize);
+-            throw InternalFailure();
+-        }
+-
+-        calcPkgSize += compSize;
++        recordDescriptors.insert({k, convertDescriptor(*v)});
+     }
+ 
+-    if (calcPkgSize != pkgSize)
+-    {
+-        error(
+-            "Failed to match package size '{PKG_SIZE}' to calculated package size '{CALCULATED_PACKAGE_SIZE}'.",
+-            "PKG_SIZE", pkgSize, "CALCULATED_PACKAGE_SIZE", calcPkgSize);
+-        throw InternalFailure();
+-    }
++    return {f.deviceUpdateOptionFlags, f.applicableComponents,
++            f.componentImageSetVersionString, recordDescriptors,
++            f.firmwareDevicePackageData};
+ }
+ 
+-void PackageParser::parse(const std::vector<uint8_t>& pkgHdr, uintmax_t pkgSize)
++static pkg::DownstreamDeviceIDRecord convertDownstreamDeviceIDRecord(
++    const DownstreamDeviceIDRecord& d)
+ {
+-    if (pkgHeaderSize >= pkgHdr.size())
++    pkg::Descriptors recordDescriptors;
++    for (const auto& [k, v] : d.downstreamDeviceRecordDescriptors)
+     {
+-        error("Invalid package header size '{PKG_HDR_SIZE}' ", "PKG_HDR_SIZE",
+-              pkgHeaderSize);
+-        throw InternalFailure();
++        recordDescriptors.insert({k, convertDescriptor(*v)});
+     }
+ 
+-    size_t offset = sizeof(pldm_package_header_information) + pkgVersion.size();
+-    if (offset + sizeof(DeviceIDRecordCount) >= pkgHeaderSize)
+-    {
+-        error("Failed to parse package header of size '{PKG_HDR_SIZE}'",
+-              "PKG_HDR_SIZE", pkgHeaderSize);
+-        throw InternalFailure();
+-    }
++    return {d.downstreamDeviceUpdateOptionFlags,
++            d.downstreamDeviceApplicableComponents,
++            d.downstreamDeviceSelfContainedActivationMinVersionString,
++            d.downstreamDeviceSelfContainedActivationMinVersionComparisonStamp,
++            recordDescriptors,
++            d.downstreamDevicePackageData};
++}
+ 
+-    auto deviceIdRecCount = static_cast<DeviceIDRecordCount>(pkgHdr[offset]);
+-    offset += sizeof(DeviceIDRecordCount);
++const static PackagePin currentPin = PackagePin::v1_3_0;
+ 
+-    offset = parseFDIdentificationArea(deviceIdRecCount, pkgHdr, offset);
+-    if (deviceIdRecCount != fwDeviceIDRecords.size())
+-    {
+-        error("Failed to find DeviceIDRecordCount {DREC_CNT} entries",
+-              "DREC_CNT", deviceIdRecCount);
+-        throw InternalFailure();
+-    }
+-    if (offset + sizeof(ComponentImageCount) >= pkgHeaderSize)
++WrapPackageParser::WrapPackageParser(std::span<const uint8_t> pkgHdr)
++{
++    auto expected = pldm::fw_update::PackageParser::parse(pkgHdr, currentPin);
++
++    if (!expected.has_value())
+     {
+-        error("Failed to parsing package header of size '{PKG_HDR_SIZE}'",
+-              "PKG_HDR_SIZE", pkgHeaderSize);
++        error("Package parsing failed: {ERR}", "ERR", expected.error().msg);
+         throw InternalFailure();
+     }
+ 
+-    auto compImageCount = static_cast<ComponentImageCount>(
+-        le16toh(pkgHdr[offset] | (pkgHdr[offset + 1] << 8)));
+-    offset += sizeof(ComponentImageCount);
++    // Only used to populate the members below. The component image views point
++    // into pkgHdr, not into the package, so it does not have to be kept alive.
++    const std::unique_ptr<Package> package = std::move(expected.value());
+ 
+-    offset = parseCompImageInfoArea(compImageCount, pkgHdr, offset);
+-    if (compImageCount != componentImageInfos.size())
++    for (const ComponentImageInfo& cii : package->componentImageInformation)
+     {
+-        error("Failed to find ComponentImageCount '{COMP_IMG_CNT}' entries",
+-              "COMP_IMG_CNT", compImageCount);
+-        throw InternalFailure();
++        componentImageInfos.emplace_back(convertComponentImageInfo(cii));
+     }
+ 
+-    if (offset + sizeof(PackageHeaderChecksum) != pkgHeaderSize)
++    for (const FirmwareDeviceIDRecord& fdir : package->firmwareDeviceIdRecords)
+     {
+-        error("Failed to parse package header of size '{PKG_HDR_SIZE}'",
+-              "PKG_HDR_SIZE", pkgHeaderSize);
+-        throw InternalFailure();
++        fwDeviceIDRecords.emplace_back(convertFirmwareDeviceIDRecord(fdir));
+     }
+ 
+-    auto calcChecksum = pldm_edac_crc32(pkgHdr.data(), offset);
+-    auto checksum = static_cast<PackageHeaderChecksum>(
+-        le32toh(pkgHdr[offset] | (pkgHdr[offset + 1] << 8) |
+-                (pkgHdr[offset + 2] << 16) | (pkgHdr[offset + 3] << 24)));
+-    if (calcChecksum != checksum)
++    for (const DownstreamDeviceIDRecord& ddir :
++         package->downstreamDeviceIdRecords)
+     {
+-        error(
+-            "Failed to parse package header for calculated checksum '{CALCULATED_CHECKSUM}' and header checksum '{PACKAGE_HEADER_CHECKSUM}'",
+-            "CALCULATED_CHECKSUM", calcChecksum, "PACKAGE_HEADER_CHECKSUM",
+-            checksum);
+-        throw InternalFailure();
++        downstreamDeviceIDRecords.emplace_back(
++            convertDownstreamDeviceIDRecord(ddir));
+     }
+-
+-    validatePkgTotalSize(pkgSize);
+ }
+ 
+-std::unique_ptr<PackageParser> parsePkgHeader(std::vector<uint8_t>& pkgData)
++std::unique_ptr<WrapPackageParser> parsePkgHeader(
++    std::span<const uint8_t> pkgHdr)
+ {
+-    constexpr std::array<uint8_t, PLDM_FWUP_UUID_LENGTH> hdrIdentifierv1{
+-        0xF0, 0x18, 0x87, 0x8C, 0xCB, 0x7D, 0x49, 0x43,
+-        0x98, 0x00, 0xA0, 0x2F, 0x05, 0x9A, 0xCA, 0x02};
+-    constexpr uint8_t pkgHdrVersion1 = 0x01;
+-
+-    pldm_package_header_information pkgHeader{};
+-    variable_field pkgVersion{};
+-    auto rc = decode_pldm_package_header_info(pkgData.data(), pkgData.size(),
+-                                              &pkgHeader, &pkgVersion);
+-    if (rc)
++    try
+     {
+-        error(
+-            "Failed to decode PLDM package header information, response code '{RC}'",
+-            "RC", rc);
+-        return nullptr;
++        return std::make_unique<WrapPackageParser>(pkgHdr);
+     }
+-
+-    if (std::equal(pkgHeader.uuid, pkgHeader.uuid + PLDM_FWUP_UUID_LENGTH,
+-                   hdrIdentifierv1.begin(), hdrIdentifierv1.end()) &&
+-        (pkgHeader.package_header_format_version == pkgHdrVersion1))
++    catch (const InternalFailure&)
+     {
+-        PackageHeaderSize pkgHdrSize = pkgHeader.package_header_size;
+-        ComponentBitmapBitLength componentBitmapBitLength =
+-            pkgHeader.component_bitmap_bit_length;
+-        return std::make_unique<PackageParser>(
+-            pkgHdrSize, utils::toString(pkgVersion), componentBitmapBitLength);
++        return nullptr;
+     }
+-
+-    return nullptr;
+ }
+ 
+ } // namespace fw_update
+diff --git a/fw-update/package_parser.hpp b/fw-update/package_parser.hpp
+index ee3be56..c756b01 100644
+--- a/fw-update/package_parser.hpp
++++ b/fw-update/package_parser.hpp
+@@ -4,8 +4,11 @@
+ 
+ #include <libpldm/firmware_update.h>
+ 
++#include <libpldm++/firmware_update.hpp>
++
+ #include <cstdint>
+ #include <memory>
++#include <span>
+ #include <vector>
+ 
+ namespace pldm
+@@ -14,133 +17,81 @@ namespace pldm
+ namespace fw_update
+ {
+ 
+-/** @class PackageParser
++/** @class WrapPackageParser
++ *
++ *  WrapPackageParser parses the PLDM firmware update package via libpldm++ and
++ *  presents the result using the data structures of this repository.
+  *
+- *  PackageParser is the class for parsing the PLDM firmware update package.
++ *  @note The component images are exposed as views into @a pkgHdr, so the
++ *        buffer the package was parsed from has to outlive this object.
+  */
+-class PackageParser
++class WrapPackageParser
+ {
+   public:
+-    PackageParser() = delete;
+-    PackageParser(const PackageParser&) = delete;
+-    PackageParser(PackageParser&&) = default;
+-    PackageParser& operator=(const PackageParser&) = delete;
+-    PackageParser& operator=(PackageParser&&) = delete;
+-    ~PackageParser() = default;
+-
+-    /** @brief Constructor
+-     *
+-     *  @param[in] pkgHeaderSize - Size of package header section
+-     *  @param[in] pkgVersion - Package version
+-     *  @param[in] componentBitmapBitLength - The number of bits used to
+-     *                                        represent the bitmap in the
+-     *                                        ApplicableComponents field for a
+-     *                                        matching device.
+-     */
+-    explicit PackageParser(PackageHeaderSize pkgHeaderSize,
+-                           const PackageVersion& pkgVersion,
+-                           ComponentBitmapBitLength componentBitmapBitLength) :
+-        pkgHeaderSize(pkgHeaderSize), pkgVersion(pkgVersion),
+-        componentBitmapBitLength(componentBitmapBitLength)
+-    {}
+-
+-    /** @brief Parse the firmware update package header
++    WrapPackageParser() = delete;
++    WrapPackageParser(const WrapPackageParser&) = delete;
++    WrapPackageParser(WrapPackageParser&&) = default;
++    WrapPackageParser& operator=(const WrapPackageParser&) = delete;
++    WrapPackageParser& operator=(WrapPackageParser&&) = delete;
++    ~WrapPackageParser() = default;
++
++    /** @brief Constructor, parses the firmware update package
+      *
+-     *  @param[in] pkgHdr - Package header
+-     *  @param[in] pkgSize - Size of the firmware update package
++     *  @param[in] pkgHdr - the whole firmware update package
+      *
+-     *  @note Throws exception is parsing fails
++     *  @note Throws InternalFailure if parsing fails
+      */
+-    void parse(const std::vector<uint8_t>& pkgHdr, uintmax_t pkgSize);
++    explicit WrapPackageParser(std::span<const uint8_t> pkgHdr);
+ 
+     /** @brief Get firmware device ID records from the package
+      *
+      *  @return if parsing the package is successful, return firmware device ID
+      *          records
+      */
+-    const FirmwareDeviceIDRecords& getFwDeviceIDRecords() const
++    const pkg::FirmwareDeviceIDRecords& getFwDeviceIDRecords() const
+     {
+         return fwDeviceIDRecords;
+     }
+ 
++    /** @brief Get downstream device ID records from the package
++     *
++     *  @return if parsing the package is successful, return downstream device
++     *          ID records. Empty for packages older than v1.1.0.
++     */
++    const pkg::DownstreamDeviceIDRecords& getDownstreamDeviceIDRecords() const
++    {
++        return downstreamDeviceIDRecords;
++    }
++
+     /** @brief Get component image information from the package
+      *
+      *  @return if parsing the package is successful, return component image
+      *          information
+      */
+-    const ComponentImageInfos& getComponentImageInfos() const
++    const pkg::ComponentImageInfos& getComponentImageInfos() const
+     {
+         return componentImageInfos;
+     }
+ 
+-    /** @brief Device identifiers of the managed FDs */
+-    const PackageHeaderSize pkgHeaderSize;
+-
+-    /** @brief Package version string */
+-    const PackageVersion pkgVersion;
+-
+-  protected:
+-    /** @brief Parse the firmware device identification area
+-     *
+-     *  @param[in] deviceIdRecCount - count of firmware device ID records
+-     *  @param[in] pkgHdr - firmware package header
+-     *  @param[in] offset - offset in package header which is the start of the
+-     *                      firmware device identification area
+-     *
+-     *  @return On success return the offset which is the end of the firmware
+-     *          device identification area, on error throw exception.
+-     */
+-    size_t parseFDIdentificationArea(DeviceIDRecordCount deviceIdRecCount,
+-                                     const std::vector<uint8_t>& pkgHdr,
+-                                     size_t offset);
+-
+-    /** @brief Parse the component image information area
+-     *
+-     *  @param[in] compImageCount - component image count
+-     *  @param[in] pkgHdr - firmware package header
+-     *  @param[in] offset - offset in package header which is the start of the
+-     *                      component image information area
+-     *
+-     *  @return On success return the offset which is the end of the component
+-     *          image information area, on error throw exception.
+-     */
+-    size_t parseCompImageInfoArea(ComponentImageCount compImageCount,
+-                                  const std::vector<uint8_t>& pkgHdr,
+-                                  size_t offset);
+-
+-    /** @brief Validate the total size of the package
+-     *
+-     *  Verify the total size of the package is the sum of package header and
+-     *  the size of each component.
+-     *
+-     *  @param[in] pkgSize - firmware update package size
+-     *
+-     *  @note Throws exception if validation fails
+-     */
+-    void validatePkgTotalSize(uintmax_t pkgSize);
+-
++  private:
+     /** @brief Firmware Device ID Records in the package */
+-    FirmwareDeviceIDRecords fwDeviceIDRecords;
++    pkg::FirmwareDeviceIDRecords fwDeviceIDRecords;
+ 
+-    /** @brief Component Image Information in the package */
+-    ComponentImageInfos componentImageInfos;
++    /** @brief Downstream Device ID Records in the package */
++    pkg::DownstreamDeviceIDRecords downstreamDeviceIDRecords;
+ 
+-    /** @brief The number of bits that will be used to represent the bitmap in
+-     *         the ApplicableComponents field for matching device. The value
+-     *         shall be a multiple of 8 and be large enough to contain a bit
+-     *         for each component in the package.
+-     */
+-    const ComponentBitmapBitLength componentBitmapBitLength;
++    /** @brief Component Image Information in the package */
++    pkg::ComponentImageInfos componentImageInfos;
+ };
+ 
+-/** @brief Parse the package header information
++/** @brief Parse the firmware update package
+  *
+- *  @param[in] pkgHdrInfo - package header information section in the package
++ *  @param[in] pkgHdr - the whole firmware update package
+  *
+- *  @return On success return the PackageParser for the header format version
+- *          on failure return nullptr
++ *  @return On success return the WrapPackageParser, on failure return nullptr
+  */
+-std::unique_ptr<PackageParser> parsePkgHeader(std::vector<uint8_t>& pkgHdrInfo);
++std::unique_ptr<WrapPackageParser> parsePkgHeader(
++    std::span<const uint8_t> pkgHdr);
+ 
+ } // namespace fw_update
+ 
+diff --git a/fw-update/systemd_interface.cpp b/fw-update/systemd_interface.cpp
+new file mode 100644
+index 0000000..ed8f13a
+--- /dev/null
++++ b/fw-update/systemd_interface.cpp
+@@ -0,0 +1,215 @@
++#include "systemd_interface.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <cstdint>
++#include <format>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm::fw_update
++{
++
++constexpr auto SYSTEMD_SERVICE = "org.freedesktop.systemd1";
++constexpr auto SYSTEMD_ROOT = "/org/freedesktop/systemd1";
++constexpr auto SYSTEMD_INTERFACE = "org.freedesktop.systemd1.Manager";
++constexpr auto SYSTEMD_JOB_RESULT_DONE = "done";
++
++// Characters systemd-escape(1) leaves as they are. '-' is not among them even
++// though a unit name may carry it, since it is the escaped form of '/'.
++constexpr std::string_view UNIT_INSTANCE_SAFE_CHARS =
++    "0123456789"
++    "abcdefghijklmnopqrstuvwxyz"
++    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
++    ":_.";
++
++// Marks a systemd template unit, whose instance name carries the arguments
++constexpr auto UNIT_TEMPLATE_MARKER = '@';
++
++const auto SYSTEMD_JOB_REMOVED_EVENT =
++    sdbusRule::type::signal() + sdbusRule::path(SYSTEMD_ROOT) +
++    sdbusRule::interface(SYSTEMD_INTERFACE) + sdbusRule::member("JobRemoved");
++
++SystemdInterface::SystemdInterface(sdbusplus::bus_t& bus) :
++    bus(bus),
++    systemdSignals(
++        bus, SYSTEMD_JOB_REMOVED_EVENT,
++        std::bind_front(&SystemdInterface::handleSystemdJobRemoved, this))
++{}
++
++SystemdInterface& SystemdInterface::getInstance(sdbusplus::bus_t& bus)
++{
++    static SystemdInterface instance(bus);
++    return instance;
++}
++
++void SystemdInterface::execute(const ConditionPath& conditionPath,
++                               const std::string& args,
++                               TaskCallback&& taskCallback)
++{
++    if (conditionPath.empty())
++    {
++        if (taskCallback)
++        {
++            taskCallback(true);
++        }
++        return;
++    }
++
++    const auto service = conditionUnitName(conditionPath, args);
++
++    releaseCompletedSlots();
++
++    try
++    {
++        auto method = bus.new_method_call(SYSTEMD_SERVICE, SYSTEMD_ROOT,
++                                          SYSTEMD_INTERFACE, "StartUnit");
++        method.append(service, "replace");
++
++        const auto slotId = nextSlotId++;
++        auto callback = [this, slotId, service,
++                         taskCallback = std::move(taskCallback)](
++                            sdbusplus::message_t&& msg) mutable {
++            completedSlots.push_back(slotId);
++
++            if (msg.is_method_error())
++            {
++                error("Failed to start service {SERV}: {ERROR}", "SERV",
++                      service, "ERROR", msg.get_error()->message);
++                if (taskCallback)
++                {
++                    taskCallback(false);
++                }
++                return;
++            }
++
++            try
++            {
++                sdbusplus::object_path jobPath;
++                msg.read(jobPath);
++
++                if (taskCallback)
++                {
++                    taskCallbacks.insert_or_assign(jobPath,
++                                                   std::move(taskCallback));
++                }
++                debug("Started Service: {SERV}", "SERV", service);
++                debug("Job path: {JOB}", "JOB", jobPath);
++            }
++            catch (const std::exception& e)
++            {
++                error("Failed to parse StartUnit reply: {ERROR}", "ERROR", e);
++                if (taskCallback)
++                {
++                    taskCallback(false);
++                }
++            }
++        };
++
++        asyncSlots.insert_or_assign(slotId, method.call_async(callback));
++    }
++    catch (const std::exception& e)
++    {
++        error("Failed to issue StartUnit for service {SERV}: {ERROR}", "SERV",
++              service, "ERROR", e);
++        if (taskCallback)
++        {
++            taskCallback(false);
++        }
++    }
++}
++
++void SystemdInterface::releaseCompletedSlots()
++{
++    for (const auto slotId : completedSlots)
++    {
++        asyncSlots.erase(slotId);
++    }
++    completedSlots.clear();
++}
++
++std::string escapeUnitInstance(std::string_view arg)
++{
++    std::string escaped;
++    for (const auto c : arg)
++    {
++        if (c == '/')
++        {
++            escaped += '-';
++        }
++        else if (UNIT_INSTANCE_SAFE_CHARS.find(c) != std::string_view::npos &&
++                 !(c == '.' && escaped.empty()))
++        {
++            escaped += c;
++        }
++        else
++        {
++            escaped += std::format("\\x{:02x}", static_cast<uint8_t>(c));
++        }
++    }
++    return escaped;
++}
++
++std::string conditionUnitName(const ConditionPath& conditionPath,
++                              const std::string& args)
++{
++    // A parameterized condition follows the systemd template naming convention
++    // <name>@<suffix>, so the arguments belong between the '@' and the suffix.
++    // Anything else takes no arguments.
++    const auto suffix = conditionPath.rfind('.');
++    if (suffix == std::string::npos || suffix == 0 ||
++        conditionPath[suffix - 1] != UNIT_TEMPLATE_MARKER)
++    {
++        return conditionPath;
++    }
++
++    if (args.empty())
++    {
++        error(
++            "No arguments available for the parameterized condition {UNIT}, starting it will fail",
++            "UNIT", conditionPath);
++        return conditionPath;
++    }
++
++    return std::format("{}{}{}", conditionPath.substr(0, suffix),
++                       escapeUnitInstance(args), conditionPath.substr(suffix));
++}
++
++void SystemdInterface::handleSystemdJobRemoved(sdbusplus::message_t& msg)
++{
++    releaseCompletedSlots();
++
++    uint32_t jobId;
++    sdbusplus::object_path returnedJobPath;
++    std::string unit;
++    std::string result;
++    try
++    {
++        msg.read(jobId, returnedJobPath, unit, result);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("Failed to read JobRemoved signal: {ERROR}", "ERROR", e);
++        return;
++    }
++
++    auto it = taskCallbacks.find(returnedJobPath);
++    if (it != taskCallbacks.end())
++    {
++        auto taskCallback = std::move(it->second);
++        taskCallbacks.erase(it);
++
++        const bool success = (result == SYSTEMD_JOB_RESULT_DONE);
++        debug(
++            "Condition execution completed: id={ID}, job={JOB}, unit={UNIT}, result={RESULT}",
++            "ID", jobId, "JOB", returnedJobPath, "UNIT", unit, "RESULT",
++            result);
++
++        if (taskCallback)
++        {
++            taskCallback(success);
++        }
++    }
++}
++
++} // namespace pldm::fw_update
+diff --git a/fw-update/systemd_interface.hpp b/fw-update/systemd_interface.hpp
+new file mode 100644
+index 0000000..6214201
+--- /dev/null
++++ b/fw-update/systemd_interface.hpp
+@@ -0,0 +1,161 @@
++#pragma once
++
++#include "common/types.hpp"
++#include "common/utils.hpp"
++
++#include <libpldm/base.h>
++
++#include <sdbusplus/async.hpp>
++#include <sdbusplus/server/object.hpp>
++
++#include <cstdint>
++#include <functional>
++#include <map>
++#include <string>
++#include <string_view>
++#include <vector>
++
++namespace pldm::fw_update
++{
++
++namespace sdbusRule = sdbusplus::bus::match::rules;
++
++/** @brief Escapes a string so that it is valid inside a systemd unit name.
++ *
++ *  Applies the escaping rules of systemd-escape(1): '/' becomes '-', characters
++ *  outside the set allowed in a unit name become "\xNN" and a leading '.' is
++ *  escaped as well. A unit can recover the original string from its escaped
++ *  instance name with the "%I" specifier.
++ *
++ *  @param[in] arg - The string to escape
++ *
++ *  @return The escaped string
++ */
++std::string escapeUnitInstance(std::string_view arg);
++
++/** @brief Builds the systemd unit name of a condition.
++ *
++ *  @p conditionPath is a unit name as configured for a component, so it carries
++ *  its own unit suffix. Named arguments are only meaningful for a parameterized
++ *  condition, which is identified by the systemd template naming convention
++ *  <name>@.service; the arguments then form its escaped instance name. For any
++ *  other unit the arguments are ignored.
++ *
++ *  @param[in] conditionPath - Configured unit name of the condition
++ *  @param[in] args - Named arguments for a parameterized condition
++ *
++ *  @return The unit name to start
++ */
++std::string conditionUnitName(const ConditionPath& conditionPath,
++                              const std::string& args);
++
++/** @class SystemdInterface
++ *  @brief Starts pre/post update condition units and tracks their completion.
++ *
++ *  Per the "Executing Pre/Post Update Services" and "Handling Pre/Post Update
++ *  Service Completion" sections of the code update design[1], a condition is
++ *  executed with the systemd StartUnit method and its completion is observed by
++ *  subscribing to the JobRemoved signal of org.freedesktop.systemd1.Manager.
++ *  The job result carried by that signal decides whether the update proceeds or
++ *  fails.
++ *
++ *  systemd emits JobRemoved for every job it dequeues, including jobs that are
++ *  cancelled, that fail to start, or that are terminated on a timeout, so a
++ *  started job always ends with exactly one JobRemoved. This interface
++ *  therefore keeps no timer of its own. Following the "Handling Hanging Tasks"
++ *  section of the design[1], a condition unit that can hang is expected to
++ *  bound its own execution time, with TimeoutStartSec for a Type=oneshot unit,
++ *  for which RuntimeMaxSec is ignored, and with RuntimeMaxSec for a unit that
++ *  reaches the active state. systemd then terminates the unit and delivers the
++ *  resulting failure state through JobRemoved. Without such a bound a hanging
++ *  unit leaves the update waiting indefinitely.
++ *
++ *  [1]:
++ *  https://github.com/openbmc/docs/blob/master/designs/code-update.md#pre-and-post-update-conditions
++ */
++class SystemdInterface
++{
++  public:
++    /** @brief Completion callback for condition execution.
++     *
++     *  The callback receives true when the systemd job result is successful,
++     *  otherwise false.
++     */
++    using TaskCallback = std::function<void(bool)>;
++
++    SystemdInterface() = delete;
++    SystemdInterface(const SystemdInterface&) = delete;
++    SystemdInterface(SystemdInterface&&) = delete;
++    SystemdInterface& operator=(const SystemdInterface&) = delete;
++    SystemdInterface& operator=(SystemdInterface&&) = delete;
++    ~SystemdInterface() = default;
++
++    /** @brief Returns the singleton SystemdInterface instance.
++     *
++     *  @param[in] bus - D-Bus connection used to issue systemd calls
++     *
++     *  @return Reference to the singleton SystemdInterface
++     */
++    static SystemdInterface& getInstance(sdbusplus::bus_t& bus);
++
++    /** @brief Executes a condition by starting a systemd unit.
++     *
++     *  If @p conditionPath is empty, the callback is invoked with success.
++     *  Otherwise this issues systemd StartUnit asynchronously and invokes
++     *  @p taskCallback when the corresponding JobRemoved signal is received.
++     *
++     *  @param[in] conditionPath - Configured unit name of the condition
++     *  @param[in] args - Named arguments of a parameterized condition
++     *  @param[in] taskCallback - Callback consumed by this API and invoked
++     *                            with final execution status
++     */
++    void execute(const ConditionPath& conditionPath, const std::string& args,
++                 TaskCallback&& taskCallback);
++
++    /** @brief Handles systemd JobRemoved signals for tracked jobs.
++     *
++     *  Matches the job path against pending callbacks and invokes the matched
++     *  callback with the translated success status. Only a job result of "done"
++     *  is reported as success, so a unit terminated on its start or runtime
++     *  timeout arrives here as a condition failure. Signals for jobs started by
++     *  anyone else are ignored.
++     *
++     *  @param[in] msg - The JobRemoved signal message
++     */
++    void handleSystemdJobRemoved(sdbusplus::message_t& msg);
++
++  private:
++    /** @brief Constructs the SystemdInterface and subscribes to JobRemoved.
++     *
++     *  @param[in] bus - D-Bus connection used for systemd method calls/signals
++     */
++    explicit SystemdInterface(sdbusplus::bus_t& bus);
++
++    /** @brief Releases the slots of StartUnit calls that have been answered.
++     *
++     *  Called from outside the reply handlers, which still run from the very
++     *  slot they would otherwise release.
++     */
++    void releaseCompletedSlots();
++
++    sdbusplus::bus_t& bus;
++
++    sdbusplus::bus::match_t systemdSignals;
++
++    std::map<sdbusplus::object_path, TaskCallback> taskCallbacks;
++
++    /** @brief Slots of the StartUnit calls issued so far, keyed by slot id
++     *
++     *  A slot has to outlive the call it belongs to, so an entry is only erased
++     *  once its reply has been handled.
++     */
++    std::map<uint64_t, sdbusplus::slot_t> asyncSlots;
++
++    /** @brief Ids of the entries in asyncSlots whose reply has been handled */
++    std::vector<uint64_t> completedSlots;
++
++    /** @brief Id to use for the next entry in asyncSlots */
++    uint64_t nextSlotId = 0;
++};
++
++} // namespace pldm::fw_update
+diff --git a/fw-update/test/condition_collector_test.cpp b/fw-update/test/condition_collector_test.cpp
+new file mode 100644
+index 0000000..7144618
+--- /dev/null
++++ b/fw-update/test/condition_collector_test.cpp
+@@ -0,0 +1,288 @@
++#include "fw-update/condition_collector.hpp"
++
++#include <filesystem>
++#include <fstream>
++
++#include <gmock/gmock.h>
++#include <gtest/gtest.h>
++
++using namespace pldm::fw_update;
++namespace fs = std::filesystem;
++
++class ConditionCollectorTest : public testing::Test
++{
++  protected:
++    void SetUp() override
++    {
++        testConfigPath = "test_condition_config.json";
++    }
++
++    void TearDown() override
++    {
++        if (fs::exists(testConfigPath))
++        {
++            fs::remove(testConfigPath);
++        }
++    }
++
++    fs::path testConfigPath;
++};
++
++TEST_F(ConditionCollectorTest, EmptyPathReturnsEmpty)
++{
++    ConditionConfigManager manager("");
++    EXPECT_EQ(manager.preCondition("BIC"), "");
++    EXPECT_EQ(manager.postCondition("BIC"), "");
++    EXPECT_EQ(manager.conditions("BIC"), ConditionPaths());
++}
++
++TEST_F(ConditionCollectorTest, NonExistentFileReturnsEmpty)
++{
++    fs::path nonExistentPath = "/nonexistent/path/config.json";
++    ConditionConfigManager manager(nonExistentPath);
++    EXPECT_EQ(manager.preCondition("BIC"), "");
++    EXPECT_EQ(manager.postCondition("BIC"), "");
++}
++
++TEST_F(ConditionCollectorTest, ValidConfigParsingPreCondition)
++{
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIC",
++                "PreUpdateTarget": "bic-pre-update.service",
++                "PostUpdateTarget": "bic-post-update@.service"
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("BIC"), "bic-pre-update.service");
++    EXPECT_EQ(manager.postCondition("BIC"), "bic-post-update@.service");
++
++    auto [pre, post] = manager.conditions("BIC");
++    EXPECT_EQ(pre, "bic-pre-update.service");
++    EXPECT_EQ(post, "bic-post-update@.service");
++}
++
++TEST_F(ConditionCollectorTest, GenerateArgFromBoardName)
++{
++    EXPECT_EQ(generateArg("board1"), "boardName=board1");
++    EXPECT_EQ(generateArg(""), "");
++}
++
++// The schema requires a non-empty unit name and omission of the property to
++// skip a condition. An empty name is still tolerated at runtime and reported as
++// no condition.
++TEST_F(ConditionCollectorTest, EmptyConditionStrings)
++{
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "NIC",
++                "PreUpdateTarget": "",
++                "PostUpdateTarget": ""
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("NIC"), "");
++    EXPECT_EQ(manager.postCondition("NIC"), "");
++}
++
++TEST_F(ConditionCollectorTest, MultipleComponentsParsing)
++{
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIOS",
++                "PreUpdateTarget": "bios-pre.service",
++                "PostUpdateTarget": "bios-post.service"
++            },
++            {
++                "Component": "BIOS_VR",
++                "PostUpdateTarget": "vr-post.service"
++            },
++            {
++                "Component": "EC",
++                "PreUpdateTarget": "ec-pre.service"
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++
++    EXPECT_EQ(manager.preCondition("BIOS"), "bios-pre.service");
++    EXPECT_EQ(manager.postCondition("BIOS"), "bios-post.service");
++
++    EXPECT_EQ(manager.preCondition("BIOS_VR"), "");
++    EXPECT_EQ(manager.postCondition("BIOS_VR"), "vr-post.service");
++
++    EXPECT_EQ(manager.preCondition("EC"), "ec-pre.service");
++    EXPECT_EQ(manager.postCondition("EC"), "");
++}
++
++TEST_F(ConditionCollectorTest, NonExistentComponentReturnsEmpty)
++{
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIC",
++                "PreUpdateTarget": "bic-pre.service",
++                "PostUpdateTarget": "bic-post.service"
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("UNKNOWN"), "");
++    EXPECT_EQ(manager.postCondition("UNKNOWN"), "");
++    EXPECT_EQ(manager.conditions("UNKNOWN"), ConditionPaths());
++}
++
++TEST_F(ConditionCollectorTest, InvalidJsonFormat)
++{
++    const std::string configContent = R"({invalid json})";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    // Should not throw, just handle gracefully
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("BIC"), "");
++}
++
++TEST_F(ConditionCollectorTest, MissingComponentsKey)
++{
++    const std::string configContent = R"(
++    {
++        "NotComponents": []
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("BIC"), "");
++}
++
++TEST_F(ConditionCollectorTest, MissingComponentNameField)
++{
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "PreUpdateTarget": "pre.service",
++                "PostUpdateTarget": "post.service"
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    // Should skip invalid entry and not crash
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("BIC"), "");
++}
++
++TEST_F(ConditionCollectorTest, BothTargetFieldsAbsent)
++{
++    // Neither PreUpdateTarget nor PostUpdateTarget is present —
++    // entry should be skipped and queries should return empty string
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIC"
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("BIC"), "");
++    EXPECT_EQ(manager.postCondition("BIC"), "");
++}
++
++TEST_F(ConditionCollectorTest, OnlyPreTargetAbsent)
++{
++    // PostUpdateTarget is present but PreUpdateTarget is absent —
++    // pre should default to empty string, post should be populated
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIOS",
++                "PostUpdateTarget": "bios-post.service"
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("BIOS"), "");
++    EXPECT_EQ(manager.postCondition("BIOS"), "bios-post.service");
++}
++
++TEST_F(ConditionCollectorTest, OnlyPostTargetAbsent)
++{
++    // PreUpdateTarget is present but PostUpdateTarget is absent —
++    // post should default to empty string, pre should be populated
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "NIC",
++                "PreUpdateTarget": "nic-pre.service"
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_EQ(manager.preCondition("NIC"), "nic-pre.service");
++    EXPECT_EQ(manager.postCondition("NIC"), "");
++}
+diff --git a/fw-update/test/device_updater_test.cpp b/fw-update/test/device_updater_test.cpp
+index 93641b6..50e0a56 100644
+--- a/fw-update/test/device_updater_test.cpp
++++ b/fw-update/test/device_updater_test.cpp
+@@ -17,6 +17,11 @@ class DeviceUpdaterTest : public testing::Test
+     DeviceUpdaterTest() :
+         package("./test_pkg", std::ios::binary | std::ios::in | std::ios::ate)
+     {
++        packageData.resize(package.tellg());
++        package.seekg(0);
++        package.read(reinterpret_cast<char*>(packageData.data()),
++                     packageData.size());
++
+         fwDeviceIDRecord = {
+             1,
+             {0x00},
+@@ -26,47 +31,65 @@ class DeviceUpdaterTest : public testing::Test
+                                    0x15, 0x95, 0xF4, 0x48, 0x70, 0x1D, 0x49,
+                                    0xD6, 0x75}}},
+             {}};
+-        compImageInfos = {
+-            {10, 100, 0xFFFFFFFF, 0, 0, 139, 1024, "VersionString3"}};
++        compImageInfos = {{10, 100, 0xFFFFFFFF, 0, 0,
++                           pkg::CompImage{packageData.data() + compImageOffset,
++                                          compImageSize},
++                           "VersionString3"}};
+         compInfo = {{std::make_pair(10, 100), 1}};
+     }
+ 
++    static constexpr size_t compImageOffset = 139;
++    static constexpr size_t compImageSize = 1024;
++
+     int fd = -1;
+     std::ifstream package;
+-    FirmwareDeviceIDRecord fwDeviceIDRecord;
+-    ComponentImageInfos compImageInfos;
+-    ComponentInfo compInfo;
++
++    /** @brief The test package. Has to be declared before compImageInfos, whose
++     *         component image views point into it.
++     */
++    std::vector<uint8_t> packageData;
++
++    pkg::FirmwareDeviceIDRecord fwDeviceIDRecord;
++    pkg::ComponentImageInfos compImageInfos;
++    pkg::ComponentInfo compInfo;
+ };
+ 
+ TEST_F(DeviceUpdaterTest, validatePackage)
+ {
+     constexpr uintmax_t testPkgSize = 1163;
+-    uintmax_t packageSize = package.tellg();
+-    EXPECT_EQ(packageSize, testPkgSize);
+-
+-    package.seekg(0);
+-    std::vector<uint8_t> packageHeader(testPkgSize);
+-    package.read(new (packageHeader.data()) char, testPkgSize);
+-
+-    auto parser = parsePkgHeader(packageHeader);
+-    EXPECT_NE(parser, nullptr);
++    EXPECT_EQ(packageData.size(), testPkgSize);
+ 
+-    package.seekg(0);
++    auto parser = parsePkgHeader(packageData);
++    ASSERT_NE(parser, nullptr);
+ 
+-    parser->parse(packageHeader, packageSize);
+     const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
+     const auto& testPkgCompImageInfos = parser->getComponentImageInfos();
+ 
+-    EXPECT_EQ(fwDeviceIDRecords.size(), 1);
+-    EXPECT_EQ(compImageInfos.size(), 1);
++    ASSERT_EQ(fwDeviceIDRecords.size(), 1);
+     EXPECT_EQ(fwDeviceIDRecords[0], fwDeviceIDRecord);
+-    EXPECT_EQ(testPkgCompImageInfos, compImageInfos);
++
++    // pkg::ComponentImageInfo holds a std::span, which is not equality
++    // comparable, so the entries are compared field by field
++    ASSERT_EQ(testPkgCompImageInfos.size(), compImageInfos.size());
++    for (size_t i = 0; i < testPkgCompImageInfos.size(); ++i)
++    {
++        const auto& actual = testPkgCompImageInfos[i];
++        const auto& expected = compImageInfos[i];
++
++        EXPECT_EQ(std::get<pkg::CompVersion>(actual),
++                  std::get<pkg::CompVersion>(expected));
++
++        const auto& actualImage = std::get<pkg::CompImage>(actual);
++        const auto& expectedImage = std::get<pkg::CompImage>(expected);
++        EXPECT_EQ(actualImage.data(), expectedImage.data());
++        EXPECT_EQ(actualImage.size(), expectedImage.size());
++    }
+ }
+ 
+ TEST_F(DeviceUpdaterTest, ReadPackage512B)
+ {
+-    DeviceUpdater deviceUpdater(0, package, fwDeviceIDRecord, compImageInfos,
+-                                compInfo, 512, nullptr);
++    DeviceUpdater deviceUpdater(0, fwDeviceIDRecord, compImageInfos, compInfo,
++                                512, nullptr);
+ 
+     constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
+                                       sizeof(pldm_request_firmware_data_req)>
+@@ -138,8 +161,8 @@ TEST_F(DeviceUpdaterTest, ReadPackage512B)
+ 
+ TEST_F(DeviceUpdaterTest, FullUpdateProgress)
+ {
+-    DeviceUpdater deviceUpdater(0, package, fwDeviceIDRecord, compImageInfos,
+-                                compInfo, 512, nullptr);
++    DeviceUpdater deviceUpdater(0, fwDeviceIDRecord, compImageInfos, compInfo,
++                                512, nullptr);
+ 
+     constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
+                                       sizeof(pldm_request_firmware_data_req)>
+@@ -184,3 +207,21 @@ TEST_F(DeviceUpdaterTest, FullUpdateProgress)
+     deviceUpdater.activateFirmware(0, activateMsg, 3);
+     EXPECT_EQ(deviceUpdater.getProgress(), 100);
+ }
++
++TEST_F(DeviceUpdaterTest, RequestFwDataOffsetWraparound)
++{
++    DeviceUpdater deviceUpdater(0, fwDeviceIDRecord, compImageInfos, compInfo,
++                                512, nullptr);
++
++    // Offset 0xFFFFFFF0 with length 512 wraps around in uint32_t arithmetic
++    constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
++                                      sizeof(pldm_request_firmware_data_req)>
++        reqFwDataReq{0x8A, 0x05, 0x15, 0xF0, 0xFF, 0xFF,
++                     0xFF, 0x00, 0x02, 0x00, 0x00};
++    auto requestMsg = reinterpret_cast<const pldm_msg*>(reqFwDataReq.data());
++    auto response = deviceUpdater.requestFwData(
++        requestMsg, sizeof(pldm_request_firmware_data_req));
++
++    EXPECT_EQ(response.size(), sizeof(pldm_msg_hdr) + sizeof(uint8_t));
++    EXPECT_EQ(response[sizeof(pldm_msg_hdr)], PLDM_FWUP_DATA_OUT_OF_RANGE);
++}
+diff --git a/fw-update/test/firmware_inventory_manager_test.cpp b/fw-update/test/firmware_inventory_manager_test.cpp
+index d279b35..8bffb71 100644
+--- a/fw-update/test/firmware_inventory_manager_test.cpp
++++ b/fw-update/test/firmware_inventory_manager_test.cpp
+@@ -71,24 +71,26 @@ TEST(GetBoardPath_WithMockHandler, ReturnsExpectedBoardPath)
+     requester::Handler<requester::Request> handler(
+         nullptr, event, instanceIdDb, false, seconds(1), 2, milliseconds(100));
+ 
+-    DescriptorMap descriptorMap{};
+-    ComponentInfoMap componentInfoMap{};
++    pkg::DescriptorMap descriptorMap{};
++    pkg::DownstreamDescriptorMap downstreamDescriptorMap{};
++    pkg::ComponentInfoMap componentInfoMap{};
+ 
+-    AggregateUpdateManager updateManager(event, handler, instanceIdDb,
+-                                         descriptorMap, componentInfoMap);
++    AggregateUpdateManager updateManager(
++        event, handler, instanceIdDb, descriptorMap, downstreamDescriptorMap,
++        componentInfoMap);
+ 
+     FirmwareInventoryManagerTest inventoryManager(&mockHandler, configurations,
+                                                   updateManager);
+ 
+-    SoftwareIdentifier softwareIdentifier{endpointId, 100};
++    pkg::SoftwareIdentifier softwareIdentifier{endpointId, 100};
+     SoftwareName softwareName{"TestDevice"};
+     std::string firmwareVersion{"1.0.0"};
+-    Descriptors firmwareDescriptors;
+-    ComponentInfo firmwareComponentInfo;
++    pkg::Descriptors firmwareDescriptors;
++    pkg::ComponentInfo firmwareComponentInfo;
+ 
+     inventoryManager.createFirmwareEntry(
+         softwareIdentifier, softwareName, firmwareVersion, firmwareDescriptors,
+-        firmwareComponentInfo);
++        firmwareComponentInfo, nullptr);
+     ASSERT_TRUE(inventoryManager.getSoftwareMap().contains(softwareIdentifier));
+ 
+     auto inventoryIt =
+diff --git a/fw-update/test/firmware_inventory_test.cpp b/fw-update/test/firmware_inventory_test.cpp
+index beb17ec..9af4394 100644
+--- a/fw-update/test/firmware_inventory_test.cpp
++++ b/fw-update/test/firmware_inventory_test.cpp
+@@ -29,17 +29,18 @@ class FirmwareInventoryTest : public FirmwareInventory
+ 
+ TEST(FirmwareInventoryTest, ConstructorSetsProperties)
+ {
+-    SoftwareIdentifier softwareIdentifier{1, 100};
++    pkg::SoftwareIdentifier softwareIdentifier{1, 100};
+     std::string expectedSoftwarePath =
+         "/xyz/openbmc_project/software/PLDM_Device_TestDevice";
+     std::string expectedSoftwareHash = "1234";
+     std::string expectedSoftwareVersion = "2.3.4";
+     std::string expectedEndpointPath =
+         "/xyz/openbmc_project/inventory/system/board/PLDM_Device";
+-    Descriptors firmwareDescriptors;
+-    DescriptorMap firmwareDescriptorMap{};
+-    ComponentInfo firmwareComponentInfo;
+-    ComponentInfoMap firmwareComponentInfoMap{};
++    pkg::Descriptors firmwareDescriptors;
++    pkg::DescriptorMap firmwareDescriptorMap{};
++    pkg::DownstreamDescriptorMap firmwareDownstreamDescriptorMap{};
++    pkg::ComponentInfo firmwareComponentInfo;
++    pkg::ComponentInfoMap firmwareComponentInfoMap{};
+     SoftwareVersionPurpose expectedPurpose = SoftwareVersionPurpose::Unknown;
+ 
+     Event event(sdeventplus::Event::get_default());
+@@ -49,7 +50,7 @@ TEST(FirmwareInventoryTest, ConstructorSetsProperties)
+ 
+     AggregateUpdateManager updateManager(
+         event, handler, instanceIdDb, firmwareDescriptorMap,
+-        firmwareComponentInfoMap);
++        firmwareDownstreamDescriptorMap, firmwareComponentInfoMap);
+ 
+     FirmwareInventoryTest inventory(
+         softwareIdentifier, expectedSoftwarePath, expectedSoftwareHash,
+diff --git a/fw-update/test/inventory_manager_test.cpp b/fw-update/test/inventory_manager_test.cpp
+index 0b0672f..aa9edfe 100644
+--- a/fw-update/test/inventory_manager_test.cpp
++++ b/fw-update/test/inventory_manager_test.cpp
+@@ -22,7 +22,7 @@ class InventoryManagerTest : public testing::Test
+         reqHandler(nullptr, event, instanceIdDb, false, seconds(1), 2,
+                    milliseconds(100)),
+         updateManager(event, reqHandler, instanceIdDb, outDescriptorMap,
+-                      outComponentInfoMap),
++                      outDownstreamDescriptorMap, outComponentInfoMap),
+         inventoryManager(&dBusHandler, reqHandler, instanceIdDb,
+                          outDescriptorMap, outDownstreamDescriptorMap,
+                          outComponentInfoMap, configurations, updateManager)
+@@ -35,9 +35,9 @@ class InventoryManagerTest : public testing::Test
+     requester::Handler<requester::Request> reqHandler;
+     AggregateUpdateManager updateManager;
+     InventoryManager inventoryManager;
+-    DescriptorMap outDescriptorMap{};
+-    DownstreamDescriptorMap outDownstreamDescriptorMap{};
+-    ComponentInfoMap outComponentInfoMap{};
++    pkg::DescriptorMap outDescriptorMap{};
++    pkg::DownstreamDescriptorMap outDownstreamDescriptorMap{};
++    pkg::ComponentInfoMap outComponentInfoMap{};
+     Configurations configurations;
+ };
+ 
+@@ -56,7 +56,7 @@ TEST_F(InventoryManagerTest, handleQueryDeviceIdentifiersResponse)
+     inventoryManager.queryDeviceIdentifiers(1, responseMsg1,
+                                             respPayloadLength1);
+ 
+-    DescriptorMap descriptorMap1{
++    pkg::DescriptorMap descriptorMap1{
+         {0x01,
+          {{PLDM_FWUP_IANA_ENTERPRISE_ID,
+            std::vector<uint8_t>{0x0a, 0x0b, 0x0c, 0xd}},
+@@ -80,7 +80,7 @@ TEST_F(InventoryManagerTest, handleQueryDeviceIdentifiersResponse)
+         reinterpret_cast<const pldm_msg*>(queryDeviceIdentifiersResp2.data());
+     inventoryManager.queryDeviceIdentifiers(2, responseMsg2,
+                                             respPayloadLength2);
+-    DescriptorMap descriptorMap2{
++    pkg::DescriptorMap descriptorMap2{
+         {0x01,
+          {{PLDM_FWUP_IANA_ENTERPRISE_ID,
+            std::vector<uint8_t>{0x0a, 0x0b, 0x0c, 0xd}},
+@@ -128,11 +128,11 @@ TEST_F(InventoryManagerTest, handleQueryDownstreamIdentifierResponse)
+     inventoryManager.queryDownstreamIdentifiers(eid, responseMsg,
+                                                 respPayloadLength);
+ 
+-    DownstreamDeviceInfo downstreamDevices = {
++    pkg::DownstreamDeviceInfo downstreamDevices = {
+         {0,
+          {{PLDM_FWUP_IANA_ENTERPRISE_ID,
+            std::vector<uint8_t>{0x00, 0x00, 0xa0, 0x15}}}}};
+-    DownstreamDescriptorMap refDownstreamDescriptorMap{
++    pkg::DownstreamDescriptorMap refDownstreamDescriptorMap{
+         {eid, downstreamDevices}};
+ 
+     ASSERT_EQ(outDownstreamDescriptorMap.size(), downstreamDeviceCount);
+@@ -186,7 +186,7 @@ TEST_F(InventoryManagerTest, getFirmwareParametersResponse)
+         reinterpret_cast<const pldm_msg*>(getFirmwareParametersResp1.data());
+     inventoryManager.getFirmwareParameters(1, responseMsg1, respPayloadLength1);
+ 
+-    ComponentInfoMap componentInfoMap1{
++    pkg::ComponentInfoMap componentInfoMap1{
+         {1,
+          {{std::make_pair(compClassification1, compIdentifier1),
+            compClassificationIndex1},
+@@ -216,7 +216,7 @@ TEST_F(InventoryManagerTest, getFirmwareParametersResponse)
+         reinterpret_cast<const pldm_msg*>(getFirmwareParametersResp2.data());
+     inventoryManager.getFirmwareParameters(2, responseMsg2, respPayloadLength2);
+ 
+-    ComponentInfoMap componentInfoMap2{
++    pkg::ComponentInfoMap componentInfoMap2{
+         {1,
+          {{std::make_pair(compClassification1, compIdentifier1),
+            compClassificationIndex1},
+diff --git a/fw-update/test/meson.build b/fw-update/test/meson.build
+index 92ba092..7c475c2 100644
+--- a/fw-update/test/meson.build
++++ b/fw-update/test/meson.build
+@@ -2,10 +2,13 @@ fw_update_test_src = declare_dependency(sources: fw_update_sources)
+ 
+ tests = [
+     'inventory_manager_test',
++    'update_manager_test',
+     'package_parser_test',
+     'device_updater_test',
+     'firmware_inventory_manager_test',
+     'firmware_inventory_test',
++    'condition_collector_test',
++    'systemd_interface_test',
+ ]
+ 
+ foreach t : tests
+@@ -21,6 +24,7 @@ foreach t : tests
+                 gmock,
+                 gtest,
+                 libpldm_dep,
++                libpldmcpp_dep,
+                 libpldmutils,
+                 nlohmann_json_dep,
+                 phosphor_dbus_interfaces,
+diff --git a/fw-update/test/package_parser_test.cpp b/fw-update/test/package_parser_test.cpp
+index b53da29..c68c777 100644
+--- a/fw-update/test/package_parser_test.cpp
++++ b/fw-update/test/package_parser_test.cpp
+@@ -1,5 +1,9 @@
+ #include "fw-update/package_parser.hpp"
+ 
++#include <libpldm/edac.h>
++
++#include <array>
++#include <bit>
+ #include <typeinfo>
+ 
+ #include <gmock/gmock.h>
+@@ -7,6 +11,20 @@
+ 
+ using namespace pldm::fw_update;
+ 
++/** @brief Append the PackageHeaderChecksum of the package header
++ *
++ *  Computing it here rather than hardcoding it keeps the test packages
++ *  maintainable, patching a header field does not require recomputing a
++ *  constant by hand.
++ */
++void appendChecksum(std::vector<uint8_t>& fwPkgHdr)
++{
++    const uint32_t check = pldm_edac_crc32(fwPkgHdr.data(), fwPkgHdr.size());
++    const auto checksum =
++        std::bit_cast<std::array<uint8_t, sizeof(check)>>(check);
++    fwPkgHdr.insert(fwPkgHdr.end(), checksum.begin(), checksum.end());
++}
++
+ void imageGenerate(std::vector<uint8_t>& image, size_t size)
+ {
+     for (size_t i = 1; i <= size; ++i)
+@@ -21,6 +39,43 @@ void imageInsert(std::vector<uint8_t>& fwPkgHdr, std::vector<uint8_t>& image)
+     fwPkgHdr.insert(fwPkgHdr.end(), image.begin(), image.end());
+ }
+ 
++/** @brief Check one entry of the parsed component image information
++ *
++ *  @param[in] actual - the parsed entry
++ *  @param[in] package - the package the entry was parsed from
++ *  @param[in] offset - where in @a package the component image is expected
++ *  @param[in] size - the expected size of the component image
++ */
++void expectCompImageInfo(
++    const pkg::ComponentImageInfo& actual, const std::vector<uint8_t>& package,
++    pkg::CompClassification classification, pkg::CompIdentifier identifier,
++    pkg::CompComparisonStamp stamp, pkg::CompOptions options,
++    pkg::ReqCompActivationMethod method, size_t offset, size_t size,
++    const pkg::CompVersion& version)
++{
++    using Pos = pkg::ComponentImageInfoPos;
++
++    EXPECT_EQ(std::get<static_cast<size_t>(Pos::CompClassificationPos)>(actual),
++              classification);
++    EXPECT_EQ(std::get<static_cast<size_t>(Pos::CompIdentifierPos)>(actual),
++              identifier);
++    EXPECT_EQ(
++        std::get<static_cast<size_t>(Pos::CompComparisonStampPos)>(actual),
++        stamp);
++    EXPECT_EQ(std::get<static_cast<size_t>(Pos::CompOptionsPos)>(actual),
++              options);
++    EXPECT_EQ(
++        std::get<static_cast<size_t>(Pos::ReqCompActivationMethodPos)>(actual),
++        method);
++
++    // The component image has to be a view into the package, not a copy
++    const auto& image = std::get<pkg::CompImage>(actual);
++    EXPECT_EQ(image.data(), package.data() + offset);
++    EXPECT_EQ(image.size(), size);
++
++    EXPECT_EQ(std::get<pkg::CompVersion>(actual), version);
++}
++
+ TEST(PackageParser, ValidPkgSingleDescriptorSingleComponent)
+ {
+     std::vector<uint8_t> fwPkgHdr{
+@@ -43,16 +98,13 @@ TEST(PackageParser, ValidPkgSingleDescriptorSingleComponent)
+     std::vector<uint8_t> compImage;
+     imageGenerate(compImage, pkgImageSize);
+     imageInsert(fwPkgHdr, compImage);
+-    constexpr std::string_view pkgVersion{"VersionString1"};
+     auto parser = parsePkgHeader(fwPkgHdr);
++    ASSERT_NE(parser, nullptr);
+     auto obj = parser.get();
+-    EXPECT_EQ(typeid(*obj).name(), typeid(PackageParser).name());
+-    EXPECT_EQ(parser->pkgHeaderSize, pkgHeaderSize);
+-    EXPECT_EQ(parser->pkgVersion, pkgVersion);
++    EXPECT_EQ(typeid(*obj).name(), typeid(WrapPackageParser).name());
+ 
+-    parser->parse(fwPkgHdr, pkgSize);
+     auto outfwDeviceIDRecords = parser->getFwDeviceIDRecords();
+-    FirmwareDeviceIDRecords fwDeviceIDRecords{
++    pkg::FirmwareDeviceIDRecords fwDeviceIDRecords{
+         {1,
+          {0},
+          "VersionString2",
+@@ -64,10 +116,12 @@ TEST(PackageParser, ValidPkgSingleDescriptorSingleComponent)
+     };
+     EXPECT_EQ(outfwDeviceIDRecords, fwDeviceIDRecords);
+ 
+-    auto outCompImageInfos = parser->getComponentImageInfos();
+-    ComponentImageInfos compImageInfos{
+-        {10, 100, 0xFFFFFFFF, 0, 0, 139, 27, "VersionString3"}};
+-    EXPECT_EQ(outCompImageInfos, compImageInfos);
++    const auto& outCompImageInfos = parser->getComponentImageInfos();
++    ASSERT_EQ(outCompImageInfos.size(), 1);
++    expectCompImageInfo(outCompImageInfos[0], fwPkgHdr, 10, 100, 0xFFFFFFFF, 0,
++                        0, 139, 27, "VersionString3");
++
++    EXPECT_TRUE(parser->getDownstreamDeviceIDRecords().empty());
+ }
+ 
+ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
+@@ -96,15 +150,18 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
+         0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x35, 0x0A, 0x00,
+         0xC8, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x01, 0x00, 0x61, 0x01,
+         0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01, 0x0E, 0x56, 0x65, 0x72, 0x73,
+-        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x36, 0x10, 0x00,
++        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x36, 0x0b, 0x00,
+         0x2C, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x0C, 0x00, 0x7C, 0x01,
+         0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01, 0x0E, 0x56, 0x65, 0x72, 0x73,
+-        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x37, 0xF1, 0x90,
+-        0x9C, 0x71};
++        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x37};
++
++    appendChecksum(fwPkgHdr);
++
++    const uintmax_t pkgHeaderSize = fwPkgHdr.size();
++    EXPECT_EQ(pkgHeaderSize, 326);
+ 
+     constexpr uintmax_t pkgSize = 407;
+-    constexpr uintmax_t pkgHeaderSize = 326;
+-    constexpr uintmax_t pkgImageSize = (pkgSize - pkgHeaderSize) / 3;
++    const uintmax_t pkgImageSize = (pkgSize - pkgHeaderSize) / 3;
+     std::vector<uint8_t> compImage1, compImage2, compImage3;
+     imageGenerate(compImage1, pkgImageSize);
+     imageGenerate(compImage2, pkgImageSize);
+@@ -112,16 +169,16 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
+     imageInsert(fwPkgHdr, compImage1);
+     imageInsert(fwPkgHdr, compImage2);
+     imageInsert(fwPkgHdr, compImage3);
+-    constexpr std::string_view pkgVersion{"VersionString1"};
++
+     auto parser = parsePkgHeader(fwPkgHdr);
++    ASSERT_NE(parser, nullptr);
+     auto obj = parser.get();
+-    EXPECT_EQ(typeid(*obj).name(), typeid(PackageParser).name());
+-    EXPECT_EQ(parser->pkgHeaderSize, pkgHeaderSize);
+-    EXPECT_EQ(parser->pkgVersion, pkgVersion);
++    EXPECT_EQ(typeid(*obj).name(), typeid(WrapPackageParser).name());
++
++    EXPECT_EQ(fwPkgHdr.size(), pkgSize);
+ 
+-    parser->parse(fwPkgHdr, pkgSize);
+     auto outfwDeviceIDRecords = parser->getFwDeviceIDRecords();
+-    FirmwareDeviceIDRecords fwDeviceIDRecords{
++    pkg::FirmwareDeviceIDRecords fwDeviceIDRecords{
+         {1,
+          {0, 1},
+          "VersionString2",
+@@ -153,12 +210,14 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
+     };
+     EXPECT_EQ(outfwDeviceIDRecords, fwDeviceIDRecords);
+ 
+-    auto outCompImageInfos = parser->getComponentImageInfos();
+-    ComponentImageInfos compImageInfos{
+-        {10, 100, 0xFFFFFFFF, 0, 0, 326, 27, "VersionString5"},
+-        {10, 200, 0xFFFFFFFF, 0, 1, 353, 27, "VersionString6"},
+-        {16, 300, 0xFFFFFFFF, 1, 12, 380, 27, "VersionString7"}};
+-    EXPECT_EQ(outCompImageInfos, compImageInfos);
++    const auto& outCompImageInfos = parser->getComponentImageInfos();
++    ASSERT_EQ(outCompImageInfos.size(), 3);
++    expectCompImageInfo(outCompImageInfos[0], fwPkgHdr, 10, 100, 0xFFFFFFFF, 0,
++                        0, 326, 27, "VersionString5");
++    expectCompImageInfo(outCompImageInfos[1], fwPkgHdr, 10, 200, 0xFFFFFFFF, 0,
++                        1, 353, 27, "VersionString6");
++    expectCompImageInfo(outCompImageInfos[2], fwPkgHdr, 11, 300, 0xFFFFFFFF, 1,
++                        12, 380, 27, "VersionString7");
+ }
+ 
+ TEST(PackageParser, InvalidPkgHeaderInfoIncomplete)
+@@ -208,3 +267,95 @@ TEST(PackageParser, InvalidPkgBadChecksum)
+     imageInsert(fwPkgHdr, compImage);
+     EXPECT_EQ(parsePkgHeader(fwPkgHdr), nullptr);
+ }
++
++TEST(PackageParser, InvalidPkgZeroComponentSize)
++{
++    // As InvalidPkgBadChecksum, but with a ComponentSize of 0
++    std::vector<uint8_t> fwPkgHdr{
++        0xF0, 0x18, 0x87, 0x8C, 0xCB, 0x7D, 0x49, 0x43, 0x98, 0x00, 0xA0, 0x2F,
++        0x05, 0x9A, 0xCA, 0x02, 0x01, 0x8B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++        0x00, 0x00, 0x00, 0x19, 0x0C, 0xE5, 0x07, 0x00, 0x08, 0x00, 0x01, 0x0E,
++        0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E,
++        0x67, 0x31, 0x01, 0x2E, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x0E,
++        0x00, 0x00, 0x01, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x53, 0x74,
++        0x72, 0x69, 0x6E, 0x67, 0x32, 0x02, 0x00, 0x10, 0x00, 0x16, 0x20, 0x23,
++        0xC9, 0x3E, 0xC5, 0x41, 0x15, 0x95, 0xF4, 0x48, 0x70, 0x1D, 0x49, 0xD6,
++        0x75, 0x01, 0x00, 0x0A, 0x00, 0x64, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00,
++        0x00, 0x00, 0x00, 0x8B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
++        0x0E, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69,
++        0x6E, 0x67, 0x33};
++    appendChecksum(fwPkgHdr);
++
++    constexpr uintmax_t pkgHeaderSize = 139;
++    constexpr uintmax_t pkgImageSize = 27;
++    ASSERT_EQ(fwPkgHdr.size(), pkgHeaderSize);
++
++    std::vector<uint8_t> compImage;
++    imageGenerate(compImage, pkgImageSize);
++    imageInsert(fwPkgHdr, compImage);
++
++    EXPECT_EQ(parsePkgHeader(fwPkgHdr), nullptr);
++}
++
++TEST(PackageParser, InvalidPkgEmptyComponentVersionString)
++{
++    // Rejected by libpldm++ rather than by this repository, the test pins the
++    // behaviour down so that it is noticed if that ever changes.
++    //
++    // As InvalidPkgBadChecksum, but with a ComponentVersionStringLength of 0.
++    // PackageHeaderSize and ComponentLocationOffset shrink by the 14 bytes of
++    // the dropped version string.
++    std::vector<uint8_t> fwPkgHdr{
++        0xF0, 0x18, 0x87, 0x8C, 0xCB, 0x7D, 0x49, 0x43, 0x98, 0x00, 0xA0,
++        0x2F, 0x05, 0x9A, 0xCA, 0x02, 0x01, 0x7D, 0x00, 0x00, 0x00, 0x00,
++        0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x0C, 0xE5, 0x07, 0x00, 0x08,
++        0x00, 0x01, 0x0E, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x53,
++        0x74, 0x72, 0x69, 0x6E, 0x67, 0x31, 0x01, 0x2E, 0x00, 0x01, 0x01,
++        0x00, 0x00, 0x00, 0x01, 0x0E, 0x00, 0x00, 0x01, 0x56, 0x65, 0x72,
++        0x73, 0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x32,
++        0x02, 0x00, 0x10, 0x00, 0x16, 0x20, 0x23, 0xC9, 0x3E, 0xC5, 0x41,
++        0x15, 0x95, 0xF4, 0x48, 0x70, 0x1D, 0x49, 0xD6, 0x75, 0x01, 0x00,
++        0x0A, 0x00, 0x64, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00,
++        0x00, 0x7D, 0x00, 0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01, 0x00};
++    appendChecksum(fwPkgHdr);
++
++    constexpr uintmax_t pkgHeaderSize = 125;
++    constexpr uintmax_t pkgImageSize = 27;
++    ASSERT_EQ(fwPkgHdr.size(), pkgHeaderSize);
++
++    std::vector<uint8_t> compImage;
++    imageGenerate(compImage, pkgImageSize);
++    imageInsert(fwPkgHdr, compImage);
++
++    EXPECT_EQ(parsePkgHeader(fwPkgHdr), nullptr);
++}
++
++TEST(PackageParser, InvalidPkgComparisonStampWithoutUseComparisonStamp)
++{
++    // As InvalidPkgBadChecksum, but with a ComponentComparisonStamp of
++    // 0x12345678 while the UseComponentComparisonStamp option is not set
++    std::vector<uint8_t> fwPkgHdr{
++        0xF0, 0x18, 0x87, 0x8C, 0xCB, 0x7D, 0x49, 0x43, 0x98, 0x00, 0xA0, 0x2F,
++        0x05, 0x9A, 0xCA, 0x02, 0x01, 0x8B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++        0x00, 0x00, 0x00, 0x19, 0x0C, 0xE5, 0x07, 0x00, 0x08, 0x00, 0x01, 0x0E,
++        0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E,
++        0x67, 0x31, 0x01, 0x2E, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x0E,
++        0x00, 0x00, 0x01, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x53, 0x74,
++        0x72, 0x69, 0x6E, 0x67, 0x32, 0x02, 0x00, 0x10, 0x00, 0x16, 0x20, 0x23,
++        0xC9, 0x3E, 0xC5, 0x41, 0x15, 0x95, 0xF4, 0x48, 0x70, 0x1D, 0x49, 0xD6,
++        0x75, 0x01, 0x00, 0x0A, 0x00, 0x64, 0x00, 0x78, 0x56, 0x34, 0x12, 0x00,
++        0x00, 0x00, 0x00, 0x8B, 0x00, 0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01,
++        0x0E, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69,
++        0x6E, 0x67, 0x33};
++    appendChecksum(fwPkgHdr);
++
++    constexpr uintmax_t pkgHeaderSize = 139;
++    constexpr uintmax_t pkgImageSize = 27;
++    ASSERT_EQ(fwPkgHdr.size(), pkgHeaderSize);
++
++    std::vector<uint8_t> compImage;
++    imageGenerate(compImage, pkgImageSize);
++    imageInsert(fwPkgHdr, compImage);
++
++    EXPECT_EQ(parsePkgHeader(fwPkgHdr), nullptr);
++}
+diff --git a/fw-update/test/systemd_interface_test.cpp b/fw-update/test/systemd_interface_test.cpp
+new file mode 100644
+index 0000000..73f1713
+--- /dev/null
++++ b/fw-update/test/systemd_interface_test.cpp
+@@ -0,0 +1,90 @@
++#include "fw-update/systemd_interface.hpp"
++
++#include <sdbusplus/bus.hpp>
++
++#include <atomic>
++
++#include <gtest/gtest.h>
++
++using namespace pldm;
++using namespace pldm::fw_update;
++
++class SystemdInterfaceTest : public testing::Test
++{
++  protected:
++    static sdbusplus::bus_t bus;
++};
++
++sdbusplus::bus_t SystemdInterfaceTest::bus = sdbusplus::bus::new_default();
++
++TEST_F(SystemdInterfaceTest, ExecuteInvokesCallbackWhenConditionPathIsEmpty)
++{
++    auto& systemdInterface = SystemdInterface::getInstance(bus);
++
++    bool callbackInvoked = false;
++    bool callbackSuccess = false;
++
++    systemdInterface.execute(
++        "", // Empty path - should invoke callback immediately
++        "", [&callbackInvoked, &callbackSuccess](bool success) {
++            callbackInvoked = true;
++            callbackSuccess = success;
++        });
++
++    // With empty condition path, callback should be invoked synchronously
++    EXPECT_TRUE(callbackInvoked);
++    EXPECT_TRUE(callbackSuccess);
++}
++
++TEST_F(SystemdInterfaceTest,
++       ExecuteDoesNotInvokeCallbackSynchronouslyForNonEmptyPath)
++{
++    auto& systemdInterface = SystemdInterface::getInstance(bus);
++
++    std::atomic_bool callbackInvoked{false};
++
++    systemdInterface.execute(
++        "pldm-test.service", "arg",
++        [&callbackInvoked](bool /*success*/) { callbackInvoked = true; });
++
++    // For non-empty path, execute() should return without invoking callback
++    // (callback will be invoked later when dbus responds asynchronously)
++    EXPECT_FALSE(callbackInvoked.load());
++}
++
++TEST(ConditionUnitNameTest, NonTemplateUnitIgnoresArgs)
++{
++    EXPECT_EQ(conditionUnitName("pldm-test.service", ""), "pldm-test.service");
++    EXPECT_EQ(conditionUnitName("pldm-test.service", "boardName=board1"),
++              "pldm-test.service");
++    EXPECT_EQ(conditionUnitName("pldm-test.target", "boardName=board1"),
++              "pldm-test.target");
++}
++
++TEST(ConditionUnitNameTest, TemplateUnitTakesArgsAsInstanceName)
++{
++    EXPECT_EQ(
++        conditionUnitName("pldm-test@.service",
++                          "boardName=board1,applyTime=Immediate"),
++        "pldm-test@boardName\\x3dboard1\\x2capplyTime\\x3dImmediate.service");
++    EXPECT_EQ(conditionUnitName("pldm-test@.target", "boardName=board1"),
++              "pldm-test@boardName\\x3dboard1.target");
++}
++
++TEST(ConditionUnitNameTest, TemplateUnitWithoutArgsIsLeftUnchanged)
++{
++    EXPECT_EQ(conditionUnitName("pldm-test@.service", ""),
++              "pldm-test@.service");
++}
++
++TEST(EscapeUnitInstanceTest, EscapesCharactersInvalidInUnitNames)
++{
++    // Alphanumerics, ':', '_' and a non-leading '.' are kept as they are
++    EXPECT_EQ(escapeUnitInstance("board1_A2:3.4"), "board1_A2:3.4");
++    // '/' maps to '-', and a literal '-' is escaped since it stands for '/'
++    EXPECT_EQ(escapeUnitInstance("a/b"), "a-b");
++    EXPECT_EQ(escapeUnitInstance("a-b"), "a\\x2db");
++    EXPECT_EQ(escapeUnitInstance("a=b,c"), "a\\x3db\\x2cc");
++    // A leading '.' is escaped as well
++    EXPECT_EQ(escapeUnitInstance(".board"), "\\x2eboard");
++}
+diff --git a/fw-update/test/update_manager_test.cpp b/fw-update/test/update_manager_test.cpp
+new file mode 100644
+index 0000000..d892f3c
+--- /dev/null
++++ b/fw-update/test/update_manager_test.cpp
+@@ -0,0 +1,107 @@
++#include "fw-update/aggregate_update_manager.hpp"
++#include "test/test_instance_id.hpp"
++
++#include <libpldm/firmware_update.h>
++
++#include <gtest/gtest.h>
++
++using namespace pldm;
++using namespace pldm::fw_update;
++using namespace std::chrono;
++
++class UpdateManagerTest : public testing::Test
++{
++  protected:
++    UpdateManagerTest() :
++        event(sdeventplus::Event::get_default()), instanceIdDb(),
++        reqHandler(nullptr, event, instanceIdDb, false, seconds(1), 2,
++                   milliseconds(100)),
++        updateManager(event, reqHandler, instanceIdDb, descriptorMap,
++                      downstreamDescriptorMap, componentInfoMap)
++    {}
++
++    /** @brief A record whose only applicable component is component 0 */
++    static pkg::FirmwareDeviceIDRecord record(pkg::Descriptors descriptors)
++    {
++        return {0, {0}, "VersionString", std::move(descriptors), {}};
++    }
++
++    static pkg::Descriptor vendorDefined(const std::string& title,
++                                         std::vector<uint8_t> data)
++    {
++        return {PLDM_FWUP_VENDOR_DEFINED,
++                pkg::VendorDefinedDescriptorInfo{title, std::move(data)}};
++    }
++
++    sdeventplus::Event event;
++    TestInstanceIdDb instanceIdDb;
++    requester::Handler<requester::Request> reqHandler;
++    pkg::DescriptorMap descriptorMap{};
++    pkg::DownstreamDescriptorMap downstreamDescriptorMap{};
++    pkg::ComponentInfoMap componentInfoMap{};
++    AggregateUpdateManager updateManager;
++};
++
++TEST_F(UpdateManagerTest, associatePkgToDevicesMatchesRecordWithOneDescriptor)
++{
++    const pkg::Descriptor uuid{
++        PLDM_FWUP_UUID,
++        pkg::DescriptorData{0x16, 0x20, 0x23, 0xC9, 0x3E, 0xC5, 0x41, 0x15,
++                            0x95, 0xF4, 0x48, 0x70, 0x1D, 0x49, 0xD6, 0x75}};
++
++    descriptorMap[1] = pkg::Descriptors{uuid};
++
++    const pkg::FirmwareDeviceIDRecords records{record(pkg::Descriptors{uuid})};
++    TotalComponentUpdates total = 0;
++
++    const auto infos = updateManager.associatePkgToDevices(
++        records, {}, descriptorMap, downstreamDescriptorMap, total);
++
++    ASSERT_EQ(infos.size(), 1);
++    EXPECT_EQ(infos[0].first, 1);
++    EXPECT_EQ(infos[0].second, 0);
++    EXPECT_EQ(total, 1);
++}
++
++TEST_F(UpdateManagerTest,
++       associatePkgToDevicesMatchesVendorDefinedDescriptorsInAnyOrder)
++{
++    // Two vendor-defined descriptors share PLDM_FWUP_VENDOR_DEFINED, so a
++    // std::multimap keeps them in insertion order rather than in value order.
++    // The device and the record list the same pair in opposite orders, which
++    // std::includes only handles if both sides are ordered by the whole entry.
++    const auto titleA = vendorDefined("TitleA", {0xAA, 0xAA});
++    const auto titleB = vendorDefined("TitleB", {0xBB, 0xBB});
++
++    descriptorMap[1] = pkg::Descriptors{titleB, titleA};
++
++    const pkg::FirmwareDeviceIDRecords records{
++        record(pkg::Descriptors{titleA, titleB})};
++    TotalComponentUpdates total = 0;
++
++    const auto infos = updateManager.associatePkgToDevices(
++        records, {}, descriptorMap, downstreamDescriptorMap, total);
++
++    ASSERT_EQ(infos.size(), 1);
++    EXPECT_EQ(infos[0].first, 1);
++}
++
++TEST_F(UpdateManagerTest, associatePkgToDevicesRejectsAnUnknownDescriptor)
++{
++    const auto titleA = vendorDefined("TitleA", {0xAA, 0xAA});
++    const auto titleB = vendorDefined("TitleB", {0xBB, 0xBB});
++
++    // The device only carries TitleA, so a record asking for both must not
++    // match it
++    descriptorMap[1] = pkg::Descriptors{titleA};
++
++    const pkg::FirmwareDeviceIDRecords records{
++        record(pkg::Descriptors{titleA, titleB})};
++    TotalComponentUpdates total = 0;
++
++    const auto infos = updateManager.associatePkgToDevices(
++        records, {}, descriptorMap, downstreamDescriptorMap, total);
++
++    EXPECT_TRUE(infos.empty());
++    EXPECT_EQ(total, 0);
++}
+diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
+index bcf70ee..caa5392 100644
+--- a/fw-update/update_manager.cpp
++++ b/fw-update/update_manager.cpp
+@@ -3,10 +3,12 @@
+ #include "activation.hpp"
+ #include "common/utils.hpp"
+ #include "package_parser.hpp"
++#include "systemd_interface.hpp"
+ 
+ #include <phosphor-logging/lg2.hpp>
+ #include <sdeventplus/source/event.hpp>
+ 
++#include <algorithm>
+ #include <cassert>
+ #include <filesystem>
+ #include <fstream>
+@@ -47,9 +49,7 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
+         if (activation->activation() ==
+             software::Activation::Activations::Activating)
+         {
+-            error(
+-                "Activation of PLDM fw update package for version '{VERSION}' already in progress.",
+-                "VERSION", parser->pkgVersion);
++            error("Activation of PLDM fw update package already in progress.");
+             std::filesystem::remove(packageFilePath);
+             return -1;
+         }
+@@ -127,46 +127,30 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+         activation = std::make_unique<Activation>(
+             pldm::utils::DBusHandler::getBus(), objPath,
+             software::Activation::Activations::Invalid, this);
+-        parser.reset();
++        clearPackageData();
+         throw sdbusplus::error::xyz::openbmc_project::software::update::
+             InvalidImage();
+     }
+ 
+     package.seekg(0);
+-    std::vector<uint8_t> packageHeader(packageSize);
+-    package.read(reinterpret_cast<char*>(packageHeader.data()), packageSize);
++    packageData.assign(packageSize, 0);
++    package.read(reinterpret_cast<char*>(packageData.data()), packageSize);
+ 
+-    parser = parsePkgHeader(packageHeader);
++    parser = parsePkgHeader(packageData);
+     if (parser == nullptr)
+     {
+         error("Invalid PLDM package header information");
+         activation = std::make_unique<Activation>(
+             pldm::utils::DBusHandler::getBus(), objPath,
+             software::Activation::Activations::Invalid, this);
+-        parser.reset();
+-        throw sdbusplus::error::xyz::openbmc_project::software::update::
+-            InvalidImage();
+-    }
+-
+-    package.seekg(0);
+-    try
+-    {
+-        parser->parse(packageHeader, packageSize);
+-    }
+-    catch (const std::exception& e)
+-    {
+-        error("Invalid PLDM package header, error - {ERROR}", "ERROR", e);
+-        activation = std::make_unique<Activation>(
+-            pldm::utils::DBusHandler::getBus(), objPath,
+-            software::Activation::Activations::Invalid, this);
+-        parser.reset();
++        clearPackageData();
+         throw sdbusplus::error::xyz::openbmc_project::software::update::
+             InvalidImage();
+     }
+ 
+-    auto deviceUpdaterInfos =
+-        associatePkgToDevices(parser->getFwDeviceIDRecords(), descriptorMap,
+-                              totalNumComponentUpdates);
++    auto deviceUpdaterInfos = associatePkgToDevices(
++        parser->getFwDeviceIDRecords(), parser->getDownstreamDeviceIDRecords(),
++        descriptorMap, downstreamDescriptorMap, totalNumComponentUpdates);
+     if (!deviceUpdaterInfos.size())
+     {
+         error(
+@@ -174,7 +158,7 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+         activation = std::make_unique<Activation>(
+             pldm::utils::DBusHandler::getBus(), objPath,
+             software::Activation::Activations::Invalid, this);
+-        parser.reset();
++        clearPackageData();
+         throw sdbusplus::error::xyz::openbmc_project::software::update::
+             Incompatible();
+     }
+@@ -182,18 +166,29 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+     const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
+     const auto& compImageInfos = parser->getComponentImageInfos();
+ 
+-    for (const auto& deviceUpdaterInfo : deviceUpdaterInfos)
++    for (const auto& [eid, index] : deviceUpdaterInfos)
+     {
+-        const auto& fwDeviceIDRecord =
+-            fwDeviceIDRecords[deviceUpdaterInfo.second];
+-        auto search = componentInfoMap.find(deviceUpdaterInfo.first);
+-        deviceUpdaterMap.emplace(
+-            deviceUpdaterInfo.first,
+-            std::make_unique<DeviceUpdater>(
+-                deviceUpdaterInfo.first, package, fwDeviceIDRecord,
+-                compImageInfos, search->second, MAXIMUM_TRANSFER_SIZE, this));
++        const auto& fwDeviceIDRecord = fwDeviceIDRecords[index];
++        auto search = componentInfoMap.find(eid);
++        const bool inserted =
++            deviceUpdaterMap
++                .emplace(eid, std::make_unique<DeviceUpdater>(
++                                  eid, fwDeviceIDRecord, compImageInfos,
++                                  search->second, MAXIMUM_TRANSFER_SIZE, this))
++                .second;
++        if (!inserted)
++        {
++            // Only one DeviceUpdater can drive an FD at a time, so the
++            // components of the record we drop are never transferred.
++            error(
++                "Endpoint ID '{EID}' is matched by more than one device ID record, ignoring the record at offset '{OFFSET}'",
++                "EID", eid, "OFFSET", index);
++            totalNumComponentUpdates -=
++                std::get<pkg::ApplicableComponents>(fwDeviceIDRecord).size();
++        }
+     }
+ 
++    updateInProgress = true;
+     activation = std::make_unique<Activation>(
+         pldm::utils::DBusHandler::getBus(), objPath,
+         software::Activation::Activations::Ready, this);
+@@ -206,28 +201,72 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+ }
+ 
+ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
+-    const FirmwareDeviceIDRecords& fwDeviceIDRecords,
+-    const DescriptorMap& descriptorMap,
++    const pkg::FirmwareDeviceIDRecords& fwDeviceIDRecords,
++    const pkg::DownstreamDeviceIDRecords& downstreamDeviceIDRecords,
++    const pkg::DescriptorMap& descriptorMap,
++    const pkg::DownstreamDescriptorMap& downstreamDescriptorMap,
+     TotalComponentUpdates& totalNumComponentUpdates)
+ {
+     DeviceUpdaterInfos deviceUpdaterInfos;
++
++    std::unordered_map<eid, pkg::SortedDescriptors> sortedDescriptorMap;
++    for (const auto& [eid, descriptors] : descriptorMap)
++    {
++        sortedDescriptorMap.emplace(
++            eid,
++            pkg::SortedDescriptors(descriptors.begin(), descriptors.end()));
++    }
++
+     for (size_t index = 0; index < fwDeviceIDRecords.size(); ++index)
+     {
+-        const auto& deviceIDDescriptors =
+-            std::get<Descriptors>(fwDeviceIDRecords[index]);
+-        for (const auto& [eid, descriptors] : descriptorMap)
++        const auto& recordDescriptors =
++            std::get<pkg::Descriptors>(fwDeviceIDRecords[index]);
++        const pkg::SortedDescriptors sortedRecordDescriptors(
++            recordDescriptors.begin(), recordDescriptors.end());
++        for (const auto& [eid, descriptors] : sortedDescriptorMap)
+         {
+             if (std::includes(descriptors.begin(), descriptors.end(),
+-                              deviceIDDescriptors.begin(),
+-                              deviceIDDescriptors.end()))
++                              sortedRecordDescriptors.begin(),
++                              sortedRecordDescriptors.end()))
+             {
+                 deviceUpdaterInfos.emplace_back(std::make_pair(eid, index));
+                 const auto& applicableComponents =
+-                    std::get<ApplicableComponents>(fwDeviceIDRecords[index]);
++                    std::get<pkg::ApplicableComponents>(
++                        fwDeviceIDRecords[index]);
+                 totalNumComponentUpdates += applicableComponents.size();
+             }
+         }
+     }
++
++    // Downstream devices cannot be updated yet, they need the dedicated
++    // PLDM_REQUEST_DOWNSTREAM_DEVICE_UPDATE flow. Report the records which
++    // would apply, so that such a package does not silently do nothing.
++    for (size_t index = 0; index < downstreamDeviceIDRecords.size(); ++index)
++    {
++        const auto& record =
++            std::get<pkg::Descriptors>(downstreamDeviceIDRecords[index]);
++        const pkg::SortedDescriptors recordDescriptors(record.begin(),
++                                                       record.end());
++        for (const auto& [eid, downstreamDeviceInfo] : downstreamDescriptorMap)
++        {
++            for (const auto& [downstreamDeviceIndex, descriptors] :
++                 downstreamDeviceInfo)
++            {
++                const pkg::SortedDescriptors deviceDescriptors(
++                    descriptors.begin(), descriptors.end());
++                if (std::includes(
++                        deviceDescriptors.begin(), deviceDescriptors.end(),
++                        recordDescriptors.begin(), recordDescriptors.end()))
++                {
++                    warning(
++                        "Skipping downstream device ID record '{INDEX}' which matched downstream device '{DOWNSTREAM_INDEX}' of endpoint ID '{EID}', downstream device update is not supported yet",
++                        "INDEX", index, "DOWNSTREAM_INDEX",
++                        downstreamDeviceIndex, "EID", eid);
++                }
++            }
++        }
++    }
++
+     return deviceUpdaterInfos;
+ }
+ 
+@@ -241,18 +280,34 @@ void UpdateManager::updateDeviceCompletion(mctp_eid_t eid, bool status)
+             if (!status)
+             {
+                 info("Firmware update failed on eid {EID}", "EID", eid);
+-                activation->activation(
+-                    software::Activation::Activations::Failed);
++                completeUpdate(false);
+                 return;
+             }
+         }
+ 
+-        auto endTime = std::chrono::steady_clock::now();
+-        auto dur =
+-            std::chrono::duration<double, std::milli>(endTime - startTime)
+-                .count();
+-        info("Firmware update time: {DURATION}ms", "DURATION", dur);
+-        activation->activation(software::Activation::Activations::Active);
++        if (!postConditionPath.empty())
++        {
++            SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
++                .execute(
++                    postConditionPath, conditionArg,
++                    [this](bool conditionSuccess) {
++                        if (!updateInProgress)
++                        {
++                            return;
++                        }
++
++                        if (!conditionSuccess)
++                        {
++                            error("Post-update condition failed for {PATH}",
++                                  "PATH", postConditionPath);
++                        }
++
++                        completeUpdate(conditionSuccess);
++                    });
++            return;
++        }
++
++        completeUpdate(true);
+     }
+     return;
+ }
+@@ -303,6 +358,43 @@ Response UpdateManager::handleRequest(mctp_eid_t eid, uint8_t command,
+ 
+ void UpdateManager::activatePackage()
+ {
++    if (!updateInProgress)
++    {
++        return;
++    }
++
++    if (!preConditionPath.empty())
++    {
++        SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
++            .execute(preConditionPath, conditionArg, [this](bool success) {
++                if (!updateInProgress)
++                {
++                    return;
++                }
++
++                if (!success)
++                {
++                    error("Pre-update condition failed for {PATH}", "PATH",
++                          preConditionPath);
++                    completeUpdate(false);
++                    return;
++                }
++
++                startFirmwareUpdate();
++            });
++        return;
++    }
++
++    startFirmwareUpdate();
++}
++
++void UpdateManager::startFirmwareUpdate()
++{
++    if (!updateInProgress)
++    {
++        return;
++    }
++
+     startTime = std::chrono::steady_clock::now();
+     for (const auto& [eid, deviceUpdaterPtr] : deviceUpdaterMap)
+     {
+@@ -310,8 +402,30 @@ void UpdateManager::activatePackage()
+     }
+ }
+ 
++void UpdateManager::completeUpdate(bool status)
++{
++    if (!updateInProgress)
++    {
++        return;
++    }
++
++    updateInProgress = false;
++    auto endTime = std::chrono::steady_clock::now();
++    auto dur =
++        std::chrono::duration<double, std::milli>(endTime - startTime).count();
++    info("Firmware update time: {DURATION}ms", "DURATION", dur);
++    activation->activation(status ? software::Activation::Activations::Active
++                                  : software::Activation::Activations::Failed);
++
++    if (taskCompletionCallback)
++    {
++        taskCompletionCallback();
++    }
++}
++
+ void UpdateManager::resetActivationState()
+ {
++    updateInProgress = false;
+     activation.reset();
+     activationProgress.reset();
+     objPath.clear();
+@@ -322,11 +436,20 @@ void UpdateManager::resetActivationState()
+     }
+     deviceUpdaterMap.clear();
+     deviceUpdateCompletionMap.clear();
+-    parser.reset();
++    clearPackageData();
+     std::filesystem::remove(fwPackageFilePath);
+     totalNumComponentUpdates = 0;
+ }
+ 
++void UpdateManager::clearPackageData()
++{
++    // The component image views of the parser point into packageData, so the
++    // parser has to be destroyed first.
++    parser.reset();
++    packageData.clear();
++    packageData.shrink_to_fit();
++}
++
+ void UpdateManager::updateActivationProgress()
+ {
+     using mapEl = std::pair<const mctp_eid_t, std::unique_ptr<DeviceUpdater>>;
+diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
+index d6a8924..16811d6 100644
+--- a/fw-update/update_manager.hpp
++++ b/fw-update/update_manager.hpp
+@@ -20,7 +20,9 @@
+ #include <chrono>
+ #include <filesystem>
+ #include <fstream>
++#include <functional>
+ #include <unordered_map>
++#include <utility>
+ 
+ namespace pldm
+ {
+@@ -84,13 +86,29 @@ class UpdateManager : public UpdateManagerBase
+     UpdateManager& operator=(UpdateManager&&) = delete;
+     virtual ~UpdateManager() = default;
+ 
++    /** @brief Constructor
++     *
++     *  @param[in] event - Reference to PLDM daemon's main event loop
++     *  @param[in] handler - PLDM request handler
++     *  @param[in] instanceIdDb - Managing instance ID for PLDM requests
++     *  @param[in] descriptorMap - Device identifiers of the managed FDs
++     *  @param[in] downstreamDescriptorMap - Device identifiers of the
++     * downstream devices of the managed FDs
++     *  @param[in] componentInfoMap - Component info for the managed FDs
++     */
+     explicit UpdateManager(
+         Event& event,
+         pldm::requester::Handler<pldm::requester::Request>& handler,
+-        InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
+-        const ComponentInfoMap& componentInfoMap) :
++        InstanceIdDb& instanceIdDb, const pkg::DescriptorMap& descriptorMap,
++        const pkg::DownstreamDescriptorMap& downstreamDescriptorMap,
++        const pkg::ComponentInfoMap& componentInfoMap,
++        const ConditionPaths& conditionPathPair = ConditionPaths{},
++        const std::string& conditionArg = std::string{},
++        std::function<void()> taskCompletionCallback = nullptr) :
+         UpdateManagerBase(event, handler, instanceIdDb),
+-        descriptorMap(descriptorMap), componentInfoMap(componentInfoMap),
++        descriptorMap(descriptorMap),
++        downstreamDescriptorMap(downstreamDescriptorMap),
++        componentInfoMap(componentInfoMap),
+ #ifdef FW_UPDATE_INOTIFY_ENABLED
+         watch(event.get(),
+               [this](const std::string& packageFilePath) {
+@@ -102,7 +120,9 @@ class UpdateManager : public UpdateManagerBase
+                                          "/xyz/openbmc_project/software/pldm",
+                                          this)),
+ #endif
+-        totalNumComponentUpdates(0)
++        totalNumComponentUpdates(0), preConditionPath(conditionPathPair.first),
++        postConditionPath(conditionPathPair.second), conditionArg(conditionArg),
++        taskCompletionCallback(std::move(taskCompletionCallback))
+     {}
+ 
+     /** @brief Handle PLDM request for the commands in the FW update
+@@ -151,12 +171,35 @@ class UpdateManager : public UpdateManagerBase
+ 
+     void resetActivationState() override;
+ 
+-    /** @brief
++    /** @brief Release the package and everything referring into it
+      *
++     *  @note deviceUpdaterMap refers into the parser, so it has to be cleared
++     *        before calling this.
++     */
++    void clearPackageData();
++
++    /** @brief Match the device ID records of a package against the discovered
++     *         devices
++     *
++     *  Downstream device ID records are matched as well, but only to report
++     *  that the package targets a device which cannot be updated yet.
++     *
++     *  @param[in] fwDeviceIDRecords - FD records of the package
++     *  @param[in] downstreamDeviceIDRecords - downstream device records of the
++     *                                         package
++     *  @param[in] descriptorMap - Device identifiers of the managed FDs
++     *  @param[in] downstreamDescriptorMap - Device identifiers of the
++     *                                       downstream devices
++     *  @param[out] totalNumComponentUpdates - number of component updates the
++     *                                         matched records add up to
++     *
++     *  @return the FDs to update, together with the record which matched them
+      */
+     DeviceUpdaterInfos associatePkgToDevices(
+-        const FirmwareDeviceIDRecords& fwDeviceIDRecords,
+-        const DescriptorMap& descriptorMap,
++        const pkg::FirmwareDeviceIDRecords& fwDeviceIDRecords,
++        const pkg::DownstreamDeviceIDRecords& downstreamDeviceIDRecords,
++        const pkg::DescriptorMap& descriptorMap,
++        const pkg::DownstreamDescriptorMap& downstreamDescriptorMap,
+         TotalComponentUpdates& totalNumComponentUpdates);
+ 
+     /** @brief Generate a unique software ID based on current timestamp
+@@ -170,10 +213,23 @@ class UpdateManager : public UpdateManagerBase
+     std::unique_ptr<Activation> activation;
+ 
+   private:
++    /** @brief Starts firmware activation for all associated devices.
++     */
++    void startFirmwareUpdate();
++
++    /** @brief Completes the update flow and sets final activation state.
++     *
++     *  @param[in] status - Overall update status, true on success
++     */
++    void completeUpdate(bool status);
++
+     /** @brief Device identifiers of the managed FDs */
+-    const DescriptorMap& descriptorMap;
++    const pkg::DescriptorMap& descriptorMap;
++    /** @brief Device identifiers of the downstream devices of the managed FDs
++     */
++    const pkg::DownstreamDescriptorMap& downstreamDescriptorMap;
+     /** @brief Component information needed for the update of the managed FDs */
+-    const ComponentInfoMap& componentInfoMap;
++    const pkg::ComponentInfoMap& componentInfoMap;
+ #ifdef FW_UPDATE_INOTIFY_ENABLED
+     Watch watch;
+ #else
+@@ -184,7 +240,14 @@ class UpdateManager : public UpdateManagerBase
+     std::string objPath;
+ 
+     std::filesystem::path fwPackageFilePath;
+-    std::unique_ptr<PackageParser> parser;
++
++    /** @brief The firmware update package.
++     *
++     *  @note Has to outlive parser, whose component image views point into it.
++     */
++    std::vector<uint8_t> packageData;
++
++    std::unique_ptr<WrapPackageParser> parser;
+     std::ifstream package;
+ 
+     std::unordered_map<mctp_eid_t, std::unique_ptr<DeviceUpdater>>
+@@ -199,6 +262,12 @@ class UpdateManager : public UpdateManagerBase
+     decltype(std::chrono::steady_clock::now()) startTime;
+     std::unique_ptr<sdeventplus::source::Defer> updateDeferHandler;
+ 
++    std::string preConditionPath;
++    std::string postConditionPath;
++    std::string conditionArg;
++    std::function<void()> taskCompletionCallback;
++    bool updateInProgress = false;
++
+     /** @brief The last progress that was calculated. Used to avoid spamming
+      * dbus
+      *
+diff --git a/libpldmresponder/event_parser.cpp b/libpldmresponder/event_parser.cpp
+index 5158eda..7a57d15 100644
+--- a/libpldmresponder/event_parser.cpp
++++ b/libpldmresponder/event_parser.cpp
+@@ -84,7 +84,7 @@ StateSensorHandler::StateSensorHandler(const std::string& dirPath)
+ 
+             auto eventStates = entry.value("event_states", emptyJsonList);
+             auto propertyValues = dbus.value("property_values", emptyJsonList);
+-            if ((eventStates.size() == 0) || (propertyValues.size() == 0) ||
++            if (eventStates.empty() || propertyValues.empty() ||
+                 (eventStates.size() != propertyValues.size()))
+             {
+                 error(
+diff --git a/libpldmresponder/platform_numeric_effecter.hpp b/libpldmresponder/platform_numeric_effecter.hpp
+index 3116542..52bfaac 100644
+--- a/libpldmresponder/platform_numeric_effecter.hpp
++++ b/libpldmresponder/platform_numeric_effecter.hpp
+@@ -537,7 +537,7 @@ int getNumericEffecterData(const DBusInterface& dBusIntf, Handler& handler,
+     {
+         const auto& [dbusMappings, dbusValMaps] =
+             handler.getDbusObjMaps(effecterId);
+-        if (dbusMappings.size() > 0)
++        if (!dbusMappings.empty())
+         {
+             dbusMapping = {
+                 dbusMappings[0].objectPath, dbusMappings[0].interface,
+diff --git a/libpldmresponder/test/libpldmresponder_bios_enum_attribute_test.cpp b/libpldmresponder/test/libpldmresponder_bios_enum_attribute_test.cpp
+index 34a62b9..435f312 100644
+--- a/libpldmresponder/test/libpldmresponder_bios_enum_attribute_test.cpp
++++ b/libpldmresponder/test/libpldmresponder_bios_enum_attribute_test.cpp
+@@ -28,6 +28,13 @@ class TestBIOSEnumAttribute : public ::testing::Test
+     {
+         return attribute.defaultValue;
+     }
++
++    uint8_t getValueIndex(BIOSEnumAttribute& attribute,
++                          const std::string& value,
++                          const std::vector<std::string>& pVs)
++    {
++        return attribute.getValueIndex(value, pVs);
++    }
+ };
+ 
+ TEST_F(TestBIOSEnumAttribute, CtorTest)
+@@ -234,3 +241,39 @@ TEST_F(TestBIOSEnumAttribute, setAttrValueOnDbus)
+         new (attrValueEntry.data()) pldm_bios_attr_val_table_entry,
+         new (attrEntry.data()) pldm_bios_attr_table_entry, biosStringTable);
+ }
++
++TEST_F(TestBIOSEnumAttribute, GetValueIndexThrowsOnUnknownValue)
++{
++    auto json = R"({
++         "attribute_name" : "CodeUpdatePolicy",
++         "possible_values" : [ "Concurrent", "Disruptive" ],
++         "value_names" : [ "Concurrent", "Disruptive" ],
++         "default_values" : [ "Concurrent" ],
++         "read_only" : true,
++         "help_text" : "HelpText",
++         "display_name" : "DisplayName"
++      })"_json;
++
++    BIOSEnumAttribute attr{json, nullptr};
++    EXPECT_THROW(getValueIndex(attr, "unknown", {"Concurrent", "Disruptive"}),
++                 std::invalid_argument);
++}
++
++TEST_F(TestBIOSEnumAttribute, GetValueIndexReturnsCorrectIndex)
++{
++    auto json = R"({
++         "attribute_name" : "CodeUpdatePolicy",
++         "possible_values" : [ "Concurrent", "Disruptive" ],
++         "value_names" : [ "Concurrent", "Disruptive" ],
++         "default_values" : [ "Concurrent" ],
++         "read_only" : true,
++         "help_text" : "HelpText",
++         "display_name" : "DisplayName"
++      })"_json;
++
++    BIOSEnumAttribute attr{json, nullptr};
++    EXPECT_EQ(getValueIndex(attr, "Concurrent", {"Concurrent", "Disruptive"}),
++              0);
++    EXPECT_EQ(getValueIndex(attr, "Disruptive", {"Concurrent", "Disruptive"}),
++              1);
++}
+diff --git a/meson.options b/meson.options
+index 7158d74..3080911 100644
+--- a/meson.options
++++ b/meson.options
+@@ -143,3 +143,10 @@ option(
+     value: 'disabled',
+     description: 'Enable inotify-based firmware update package monitoring',
+ )
++
++option(
++    'fw-update-targets-json',
++    type: 'string',
++    value: '/var/lib/pldmd/fw-update-targets.json',
++    description: 'Path to firmware update targets configuration JSON file',
++)
+diff --git a/oem/ibm/libpldmresponder/file_io_type_pcie.cpp b/oem/ibm/libpldmresponder/file_io_type_pcie.cpp
+index a0f9a61..8837fb7 100644
+--- a/oem/ibm/libpldmresponder/file_io_type_pcie.cpp
++++ b/oem/ibm/libpldmresponder/file_io_type_pcie.cpp
+@@ -142,7 +142,7 @@ int PCIeInfoHandler::write(const char* buffer, uint32_t, uint32_t& length,
+         std::ofstream pcieData(infoFile, std::ios::out | std::ios::binary |
+                                              std::ios::app);
+ 
+-        if (!buffer)
++        if (buffer)
+         {
+             pcieData.write(buffer, length);
+         }
+diff --git a/pldmd/handler.hpp b/pldmd/handler.hpp
+index 89b8a7f..9709f80 100644
+--- a/pldmd/handler.hpp
++++ b/pldmd/handler.hpp
+@@ -36,7 +36,12 @@ class CmdHandler
+     Response handle(pldm_tid_t tid, Command pldmCommand,
+                     const pldm_msg* request, size_t reqMsgLen)
+     {
+-        return handlers.at(pldmCommand)(tid, request, reqMsgLen);
++        auto handler = handlers.find(pldmCommand);
++        if (handler == handlers.end())
++        {
++            return ccOnlyResponse(request, PLDM_ERROR_UNSUPPORTED_PLDM_CMD);
++        }
++        return handler->second(tid, request, reqMsgLen);
+     }
+ 
+     /** @brief Create a response message containing only cc
+diff --git a/pldmtool/pldm_base_cmd.cpp b/pldmtool/pldm_base_cmd.cpp
+index 1073f4c..4199184 100644
+--- a/pldmtool/pldm_base_cmd.cpp
++++ b/pldmtool/pldm_base_cmd.cpp
+@@ -418,7 +418,7 @@ class GetPLDMCommands : public CommandInterface
+             sizeof(pldm_msg_hdr) + PLDM_GET_COMMANDS_REQ_BYTES);
+         auto request = new (requestMsg.data()) pldm_msg;
+         ver32_t version{0xFF, 0xFF, 0xFF, 0xFF};
+-        if (inputVersion.size() != 0)
++        if (!inputVersion.empty())
+         {
+             if (inputVersion.size() != 4)
+             {
+diff --git a/pldmtool/pldm_fw_update_cmd.cpp b/pldmtool/pldm_fw_update_cmd.cpp
+index 98ffbcd..80293a0 100644
+--- a/pldmtool/pldm_fw_update_cmd.cpp
++++ b/pldmtool/pldm_fw_update_cmd.cpp
+@@ -60,7 +60,7 @@ const std::map<uint8_t, const char*> fdReasonCode{
+  * @brief descriptor type to name mapping
+  *
+  */
+-const std::map<DescriptorType, const char*> descriptorName{
++const std::map<pkg::DescriptorType, const char*> descriptorName{
+     {PLDM_FWUP_PCI_VENDOR_ID, "PCI Vendor ID"},
+     {PLDM_FWUP_IANA_ENTERPRISE_ID, "IANA Enterprise ID"},
+     {PLDM_FWUP_UUID, "UUID"},
+@@ -488,26 +488,26 @@ class QueryDeviceIdentifiers : public CommandInterface
+      * @param[in] descriptorVal - descriptor value
+      */
+     void updateDescriptor(
+-        ordered_json& descriptors, const DescriptorType& descriptorType,
+-        const std::variant<DescriptorData, VendorDefinedDescriptorInfo>&
+-            descriptorVal);
++        ordered_json& descriptors, const pkg::DescriptorType& descriptorType,
++        const std::variant<pkg::DescriptorData,
++                           pkg::VendorDefinedDescriptorInfo>& descriptorVal);
+ };
+ 
+ void QueryDeviceIdentifiers::updateDescriptor(
+-    ordered_json& descriptors, const DescriptorType& descriptorType,
+-    const std::variant<DescriptorData, VendorDefinedDescriptorInfo>&
++    ordered_json& descriptors, const pkg::DescriptorType& descriptorType,
++    const std::variant<pkg::DescriptorData, pkg::VendorDefinedDescriptorInfo>&
+         descriptorVal)
+ {
+     std::ostringstream descDataStream;
+-    DescriptorData descData;
++    pkg::DescriptorData descData;
+     if (descriptorType != PLDM_FWUP_VENDOR_DEFINED)
+     {
+-        descData = std::get<DescriptorData>(descriptorVal);
++        descData = std::get<pkg::DescriptorData>(descriptorVal);
+     }
+     else
+     {
+-        descData = std::get<VendorDefinedDescriptorData>(
+-            std::get<VendorDefinedDescriptorInfo>(descriptorVal));
++        descData = std::get<pkg::VendorDefinedDescriptorData>(
++            std::get<pkg::VendorDefinedDescriptorInfo>(descriptorVal));
+     }
+     for (int byte : descData)
+     {
+@@ -528,9 +528,10 @@ void QueryDeviceIdentifiers::updateDescriptor(
+                 else
+                 {
+                     ordered_json vendorDefinedVal;
+-                    vendorDefinedVal[std::get<VendorDefinedDescriptorTitle>(
+-                        std::get<VendorDefinedDescriptorInfo>(descriptorVal))] =
+-                        descDataStream.str();
++                    vendorDefinedVal
++                        [std::get<pkg::VendorDefinedDescriptorTitle>(
++                            std::get<pkg::VendorDefinedDescriptorInfo>(
++                                descriptorVal))] = descDataStream.str();
+                     descriptor["Value"].emplace_back(vendorDefinedVal);
+                 }
+                 return;
+@@ -547,8 +548,8 @@ void QueryDeviceIdentifiers::updateDescriptor(
+         else
+         {
+             ordered_json vendorDefinedVal;
+-            vendorDefinedVal[std::get<VendorDefinedDescriptorTitle>(
+-                std::get<VendorDefinedDescriptorInfo>(descriptorVal))] =
++            vendorDefinedVal[std::get<pkg::VendorDefinedDescriptorTitle>(
++                std::get<pkg::VendorDefinedDescriptorInfo>(descriptorVal))] =
+                 descDataStream.str();
+             descriptor["Value"].emplace_back(vendorDefinedVal);
+         }
+@@ -599,7 +600,7 @@ void QueryDeviceIdentifiers::parseResponseMsg(pldm_msg* responsePtr,
+     ordered_json descriptors;
+     while (descriptorCount-- && (deviceIdentifiersLen > 0))
+     {
+-        DescriptorType descriptorType = 0;
++        pkg::DescriptorType descriptorType = 0;
+         variable_field descriptorData{};
+ 
+         rc = decode_descriptor_type_length_value(
+diff --git a/softoff/softoff.cpp b/softoff/softoff.cpp
+index f741211..4ad6a66 100644
+--- a/softoff/softoff.cpp
++++ b/softoff/softoff.cpp
+@@ -231,7 +231,7 @@ int SoftPowerOff::getSensorInfo(pldm::pdr::EntityType& entityType,
+ 
+         ResponseMsg.read(Response);
+ 
+-        if (Response.size() == 0)
++        if (Response.empty())
+         {
+             error(
+                 "No State Sensor PDR found for TID={TID}, EntityType={ENTITY_TYPE}, StateSetId={STATE_SET}",
+diff --git a/subprojects/libpldm.wrap b/subprojects/libpldm.wrap
+index 5c90142..963ad15 100644
+--- a/subprojects/libpldm.wrap
++++ b/subprojects/libpldm.wrap
+@@ -4,3 +4,4 @@ revision = HEAD
+ 
+ [provide]
+ libpldm = libpldm_dep
++libpldm++ = libpldmpp_dep
+diff --git a/test/meson.build b/test/meson.build
+index 6927b47..375c215 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -13,6 +13,7 @@ foreach t : tests
+             dependencies: [
+                 gtest,
+                 libpldm_dep,
++                libpldmcpp_dep,
+                 nlohmann_json_dep,
+                 phosphor_logging_dep,
+                 test_src,
+diff --git a/test/pldmd_registration_test.cpp b/test/pldmd_registration_test.cpp
+index e98bb21..6247e2d 100644
+--- a/test/pldmd_registration_test.cpp
++++ b/test/pldmd_registration_test.cpp
+@@ -55,6 +55,8 @@ TEST(Registration, testFailure)
+     Invoker invoker{};
+     const Response kExpectedBadTypeResponse = {0x01, 0x02, 0x03,
+                                                PLDM_ERROR_INVALID_PLDM_TYPE};
++    const Response kExpectedBadCmdResponse = {0x01, 0x02, 0x03,
++                                              PLDM_ERROR_UNSUPPORTED_PLDM_CMD};
+     const std::array<uint8_t, sizeof(pldm_msg)> kDummyPldmRequestBacking = {
+         0x01, 0x02, 0x03};
+     const pldm_msg* kDummyPldmRequest =
+@@ -65,6 +67,6 @@ TEST(Registration, testFailure)
+ 
+     invoker.registerHandler(testType, std::make_unique<TestHandler>());
+     uint8_t badCmd = 0xFE;
+-    ASSERT_THROW(invoker.handle(tid, testType, badCmd, nullptr, 0),
+-                 std::out_of_range);
++    EXPECT_EQ(invoker.handle(tid, testType, badCmd, kDummyPldmRequest, 0),
++              kExpectedBadCmdResponse);
+ }
+-- 
+2.43.0
+
